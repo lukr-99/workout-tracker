@@ -85,6 +85,18 @@
         <Setter Property="MinimumWidthRequest" Value="36"/>
     </Style>
 
+    <Style x:Key="CompactPrimaryActionButtonStyle" TargetType="Button">
+        <Setter Property="TextColor" Value="{StaticResource White}" />
+        <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+        <Setter Property="FontFamily" Value="OpenSansSemibold"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="BorderWidth" Value="0"/>
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="Padding" Value="12,8"/>
+        <Setter Property="MinimumHeightRequest" Value="38"/>
+        <Setter Property="MinimumWidthRequest" Value="38"/>
+    </Style>
+
     <Style x:Key="DangerInlineActionButtonStyle" TargetType="Button">
         <Setter Property="TextColor" Value="{StaticResource White}" />
         <Setter Property="BackgroundColor" Value="#991B1B" />
@@ -107,6 +119,41 @@
     <Style x:Key="MutedCaptionStyle" TargetType="Label">
         <Setter Property="TextColor" Value="{StaticResource Gray200}" />
         <Setter Property="FontSize" Value="12" />
+    </Style>
+
+    <Style x:Key="FloatingActionButtonStyle" TargetType="Button">
+        <Setter Property="TextColor" Value="{StaticResource White}" />
+        <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+        <Setter Property="FontFamily" Value="OpenSansSemibold" />
+        <Setter Property="FontSize" Value="26" />
+        <Setter Property="CornerRadius" Value="28" />
+        <Setter Property="WidthRequest" Value="56" />
+        <Setter Property="HeightRequest" Value="56" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Shadow">
+            <Shadow Radius="18" Opacity="0.35" Brush="{StaticResource BlackBrush}" Offset="0,8" />
+        </Setter>
+    </Style>
+
+    <Style x:Key="OverlayDismissButtonStyle" TargetType="Button">
+        <Setter Property="TextColor" Value="{StaticResource Gray100}" />
+        <Setter Property="BackgroundColor" Value="{StaticResource Gray600}" />
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="CornerRadius" Value="18" />
+        <Setter Property="WidthRequest" Value="36" />
+        <Setter Property="HeightRequest" Value="36" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+
+    <Style x:Key="SelectionChipStyle" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource Gray900}" />
+        <Setter Property="Stroke" Value="{StaticResource Gray600}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="StrokeShape">
+            <RoundRectangle CornerRadius="16" />
+        </Setter>
+        <Setter Property="Padding" Value="12,8" />
+        <Setter Property="Margin" Value="0,0,8,8" />
     </Style>
 
     <Style TargetType="CheckBox">

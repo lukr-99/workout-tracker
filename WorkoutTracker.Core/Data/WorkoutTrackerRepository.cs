@@ -336,7 +336,9 @@ public sealed class WorkoutTrackerRepository : IWorkoutDataService, IWorkoutHist
             ExerciseCount = entriesBySession.GetValueOrDefault(session.Id, []).Count,
             StrengthSetCount = entriesBySession.GetValueOrDefault(session.Id, []).Sum(x => setsByEntry.GetValueOrDefault(x.Id, []).Count),
             TotalVolumeKg = entriesBySession.GetValueOrDefault(session.Id, []).Sum(x => setsByEntry.GetValueOrDefault(x.Id, []).Sum(y => y.WeightKg * y.Reps)),
-            CardioMinutes = entriesBySession.GetValueOrDefault(session.Id, []).Sum(x => cardioByEntry.TryGetValue(x.Id, out var cardioEntry) ? cardioEntry.DurationSeconds / 60 : 0)
+            CardioMinutes = entriesBySession.GetValueOrDefault(session.Id, []).Sum(x => cardioByEntry.TryGetValue(x.Id, out var cardioEntry) ? cardioEntry.DurationSeconds / 60 : 0),
+            SessionTypeLabel = DescribeSessionType(entriesBySession.GetValueOrDefault(session.Id, [])),
+            BodyPartsSummary = DescribeBodyParts(entriesBySession.GetValueOrDefault(session.Id, []))
         }).ToList();
     }
 
@@ -786,5 +788,31 @@ public sealed class WorkoutTrackerRepository : IWorkoutDataService, IWorkoutHist
         {
             return [];
         }
+    }
+
+    private static string DescribeSessionType(IReadOnlyCollection<WorkoutEntryRecord> entries)
+    {
+        var hasStrength = entries.Any(x => x.EntryType == ExerciseCategory.Strength);
+        var hasCardio = entries.Any(x => x.EntryType == ExerciseCategory.Cardio);
+
+        return (hasStrength, hasCardio) switch
+        {
+            (true, true) => "Mixed",
+            (true, false) => "Strength",
+            (false, true) => "Cardio",
+            _ => "Unspecified"
+        };
+    }
+
+    private static string DescribeBodyParts(IReadOnlyCollection<WorkoutEntryRecord> entries)
+    {
+        var bodyParts = entries
+            .Select(x => x.ExerciseSnapshotPrimaryBodyPart)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x)
+            .ToList();
+
+        return bodyParts.Count == 0 ? "No body part tags" : string.Join(" • ", bodyParts);
     }
 }

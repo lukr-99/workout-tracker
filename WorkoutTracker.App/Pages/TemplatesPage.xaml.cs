@@ -18,4 +18,7 @@ public partial class TemplatesPage : ContentPage
         base.OnAppearing();
         await _viewModel.RefreshAsync();
     }
+
+    private async void OnSettingsClicked(object sender, EventArgs e) =>
+        await Shell.Current.GoToAsync(nameof(SettingsPage));
 }

@@ -30,6 +30,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<IExportService, ExportService>();
         builder.Services.AddSingleton<IAppThemeService, AppThemeService>();
         builder.Services.AddSingleton<IAppDialogService, AppDialogService>();
+        builder.Services.AddSingleton<IToastService, ToastService>();
 
         builder.Services.AddTransient<HomeViewModel>();
         builder.Services.AddTransient<TemplatesViewModel>();

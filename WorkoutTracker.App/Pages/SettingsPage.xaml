@@ -27,8 +27,6 @@
                     <Button Text="Export JSON + CSV" Command="{Binding ExportCommand}" />
                 </VerticalStackLayout>
             </Border>
-
-            <Label Text="{Binding StatusMessage}" TextColor="{StaticResource Primary}" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>
