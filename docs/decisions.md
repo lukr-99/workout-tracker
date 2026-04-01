@@ -43,3 +43,5 @@
 - Dark theme is the default and intended look.
 - The layout favors compact, spreadsheet-like editing over card-heavy mobile patterns.
 - Live workout editing prioritizes speed and direct manipulation over wizard-like flows.
+- Full pages are preferred for rich editing flows; dialogs should stay limited to confirmations and compact one-shot actions.
+- Appearance preferences should be user-selectable and persisted locally instead of being hardcoded in the app bootstrap.

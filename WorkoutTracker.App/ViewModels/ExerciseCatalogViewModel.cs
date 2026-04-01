@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using WorkoutTracker.App.Services;
 using WorkoutTracker.Core.Domain;
 using WorkoutTracker.Core.Services;
 
@@ -10,6 +11,7 @@ public sealed partial class ExerciseCatalogViewModel : BaseViewModel
 {
     private readonly IWorkoutDataService _workoutDataService;
     private readonly IExerciseCatalogSyncService _syncService;
+    private readonly IAppDialogService _dialogService;
     private string? _currentExerciseId;
 
     [ObservableProperty]
@@ -43,10 +45,11 @@ public sealed partial class ExerciseCatalogViewModel : BaseViewModel
     public ObservableCollection<string> Categories { get; } = ["All", nameof(ExerciseCategory.Strength), nameof(ExerciseCategory.Cardio)];
     public ObservableCollection<Exercise> Exercises { get; } = [];
 
-    public ExerciseCatalogViewModel(IWorkoutDataService workoutDataService, IExerciseCatalogSyncService syncService)
+    public ExerciseCatalogViewModel(IWorkoutDataService workoutDataService, IExerciseCatalogSyncService syncService, IAppDialogService dialogService)
     {
         _workoutDataService = workoutDataService;
         _syncService = syncService;
+        _dialogService = dialogService;
         Title = "Catalog";
     }
 
@@ -139,6 +142,14 @@ public sealed partial class ExerciseCatalogViewModel : BaseViewModel
         RunBusyAsync(async () =>
         {
             if (exercise is null)
+            {
+                return;
+            }
+
+            var confirmed = await _dialogService
+                .ConfirmAsync("Archive exercise", $"Archive \"{exercise.Name}\" from the active catalog?", "Archive", "Cancel")
+                .ConfigureAwait(false);
+            if (!confirmed)
             {
                 return;
             }

@@ -64,6 +64,7 @@ public sealed partial class StrengthSetItemViewModel : ObservableObject
     private string notes = string.Empty;
 
     public string SetLabel { get; set; } = "Set 1";
+    public string SetSummary => $"{RepsText} reps | {WeightKgText} kg";
 
     public StrengthSetItemViewModel(Action<StrengthSetItemViewModel> remove)
     {
@@ -72,6 +73,10 @@ public sealed partial class StrengthSetItemViewModel : ObservableObject
 
     [RelayCommand]
     private void Remove() => _remove(this);
+
+    partial void OnRepsTextChanged(string value) => OnPropertyChanged(nameof(SetSummary));
+
+    partial void OnWeightKgTextChanged(string value) => OnPropertyChanged(nameof(SetSummary));
 
     public StrengthSet ToDomain(string workoutEntryId, int setNumber) =>
         new()
@@ -102,7 +107,7 @@ public sealed partial class StrengthSetItemViewModel : ObservableObject
 
 public sealed partial class WorkoutEntryItemViewModel : ObservableObject
 {
-    private readonly Action<WorkoutEntryItemViewModel> _remove;
+    private readonly Func<WorkoutEntryItemViewModel, Task> _remove;
 
     [ObservableProperty]
     private string exerciseId = string.Empty;
@@ -132,7 +137,7 @@ public sealed partial class WorkoutEntryItemViewModel : ObservableObject
     public bool IsStrength => Category == ExerciseCategory.Strength;
     public bool IsCardio => !IsStrength;
 
-    public WorkoutEntryItemViewModel(Action<WorkoutEntryItemViewModel> remove)
+    public WorkoutEntryItemViewModel(Func<WorkoutEntryItemViewModel, Task> remove)
     {
         _remove = remove;
     }
@@ -145,7 +150,7 @@ public sealed partial class WorkoutEntryItemViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void RemoveEntry() => _remove(this);
+    private Task RemoveEntryAsync() => _remove(this);
 
     private void RemoveSet(StrengthSetItemViewModel set)
     {
@@ -193,7 +198,7 @@ public sealed partial class WorkoutEntryItemViewModel : ObservableObject
         return entry;
     }
 
-    public static WorkoutEntryItemViewModel FromDomain(WorkoutEntry entry, Action<WorkoutEntryItemViewModel> remove)
+    public static WorkoutEntryItemViewModel FromDomain(WorkoutEntry entry, Func<WorkoutEntryItemViewModel, Task> remove)
     {
         var vm = new WorkoutEntryItemViewModel(remove)
         {

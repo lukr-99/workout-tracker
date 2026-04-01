@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using WorkoutTracker.App.Services;
 using WorkoutTracker.Core.Domain;
 using WorkoutTracker.Core.Services;
 
@@ -9,6 +10,7 @@ namespace WorkoutTracker.App.ViewModels;
 public sealed partial class WorkoutEditorViewModel : BaseViewModel
 {
     private readonly IWorkoutDataService _workoutDataService;
+    private readonly IAppDialogService _dialogService;
     private IDispatcherTimer? _timer;
     private WorkoutSession? _currentSession;
 
@@ -27,12 +29,17 @@ public sealed partial class WorkoutEditorViewModel : BaseViewModel
     [ObservableProperty]
     private Exercise? selectedExercise;
 
+    [ObservableProperty]
+    private string exerciseSearchText = string.Empty;
+
     public ObservableCollection<Exercise> AvailableExercises { get; } = [];
+    public ObservableCollection<Exercise> FilteredExercises { get; } = [];
     public ObservableCollection<WorkoutEntryItemViewModel> Entries { get; } = [];
 
-    public WorkoutEditorViewModel(IWorkoutDataService workoutDataService)
+    public WorkoutEditorViewModel(IWorkoutDataService workoutDataService, IAppDialogService dialogService)
     {
         _workoutDataService = workoutDataService;
+        _dialogService = dialogService;
         Title = "Live Workout";
     }
 
@@ -53,11 +60,12 @@ public sealed partial class WorkoutEditorViewModel : BaseViewModel
                 {
                     AvailableExercises.Add(exercise);
                 }
+                UpdateExerciseSuggestions();
 
                 Entries.Clear();
                 foreach (var entry in _currentSession.Entries.OrderBy(x => x.SortOrder))
                 {
-                    Entries.Add(WorkoutEntryItemViewModel.FromDomain(entry, RemoveEntry));
+                    Entries.Add(WorkoutEntryItemViewModel.FromDomain(entry, RemoveEntryAsync));
                 }
                 OnPropertyChanged(nameof(SessionId));
             });
@@ -73,7 +81,7 @@ public sealed partial class WorkoutEditorViewModel : BaseViewModel
             return;
         }
 
-        Entries.Add(new WorkoutEntryItemViewModel(RemoveEntry)
+        Entries.Add(new WorkoutEntryItemViewModel(RemoveEntryAsync)
         {
             ExerciseId = SelectedExercise.Id,
             ExerciseName = SelectedExercise.Name,
@@ -86,6 +94,9 @@ public sealed partial class WorkoutEditorViewModel : BaseViewModel
         {
             Entries.Last().AddSetCommand.Execute(null);
         }
+
+        SelectedExercise = null;
+        ExerciseSearchText = string.Empty;
     }
 
     [RelayCommand]
@@ -132,6 +143,14 @@ public sealed partial class WorkoutEditorViewModel : BaseViewModel
                 return;
             }
 
+            var confirmed = await _dialogService
+                .ConfirmAsync("Discard workout", "Discard the active workout and remove its unsaved progress?", "Discard", "Keep editing")
+                .ConfigureAwait(false);
+            if (!confirmed)
+            {
+                return;
+            }
+
             await _workoutDataService.DeleteWorkoutSessionAsync(_currentSession.Id).ConfigureAwait(false);
             _timer?.Stop();
             await MainThread.InvokeOnMainThreadAsync(() => Shell.Current.GoToAsync("///home"));
@@ -168,8 +187,43 @@ public sealed partial class WorkoutEditorViewModel : BaseViewModel
         ElapsedText = $"{(int)elapsed.TotalHours:00}:{elapsed.Minutes:00}:{elapsed.Seconds:00}";
     }
 
-    private void RemoveEntry(WorkoutEntryItemViewModel entry)
+    partial void OnExerciseSearchTextChanged(string value)
     {
+        UpdateExerciseSuggestions();
+    }
+
+    private async Task RemoveEntryAsync(WorkoutEntryItemViewModel entry)
+    {
+        var confirmed = await _dialogService
+            .ConfirmAsync("Remove exercise", $"Remove {entry.ExerciseName} from this workout?", "Remove", "Cancel")
+            .ConfigureAwait(false);
+        if (!confirmed)
+        {
+            return;
+        }
+
         Entries.Remove(entry);
+    }
+
+    private void UpdateExerciseSuggestions()
+    {
+        var filtered = AvailableExercises
+            .Where(exercise =>
+                string.IsNullOrWhiteSpace(ExerciseSearchText)
+                || exercise.Name.Contains(ExerciseSearchText, StringComparison.OrdinalIgnoreCase)
+                || exercise.PrimaryBodyPart.Contains(ExerciseSearchText, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(exercise => exercise.Name)
+            .ToList();
+
+        FilteredExercises.Clear();
+        foreach (var exercise in filtered)
+        {
+            FilteredExercises.Add(exercise);
+        }
+
+        if (SelectedExercise is not null && !FilteredExercises.Contains(SelectedExercise))
+        {
+            SelectedExercise = null;
+        }
     }
 }

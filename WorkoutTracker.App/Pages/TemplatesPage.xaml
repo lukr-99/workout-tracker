@@ -10,21 +10,29 @@
                     <Label Text="Template editor" FontSize="22" FontAttributes="Bold" />
                     <Entry Placeholder="Template name" Text="{Binding TemplateName}" />
                     <Editor Placeholder="Notes" AutoSize="TextChanges" Text="{Binding TemplateNotes}" />
+                    <Entry Placeholder="Search exercises"
+                           Text="{Binding ExerciseSearchText}" />
                     <Picker Title="Add exercise"
-                            ItemsSource="{Binding AvailableExercises}"
+                            ItemsSource="{Binding FilteredExercises}"
                             ItemDisplayBinding="{Binding Name}"
                             SelectedItem="{Binding SelectedExercise}" />
-                    <Button Text="Add selected exercise" Command="{Binding AddExerciseCommand}" />
+                    <Button Text="Add selected exercise"
+                            Command="{Binding AddExerciseCommand}"
+                            HorizontalOptions="Start" />
                     <CollectionView ItemsSource="{Binding CurrentExercises}" SelectionMode="None" HeightRequest="220">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
                                 <Border BackgroundColor="{StaticResource Gray900}" Padding="10" Margin="0,0,0,8">
                                     <VerticalStackLayout Spacing="6">
-                                        <HorizontalStackLayout>
-                                            <Label Text="{Binding ExerciseName}" FontAttributes="Bold" HorizontalOptions="StartAndExpand" />
-                                            <Button Text="Remove" Command="{Binding RemoveCommand}" />
+                                        <HorizontalStackLayout Spacing="10">
+                                            <VerticalStackLayout Spacing="2" HorizontalOptions="StartAndExpand">
+                                                <Label Text="{Binding ExerciseName}" FontAttributes="Bold" />
+                                                <Label Text="{Binding BodyPart}" TextColor="{StaticResource Gray200}" />
+                                            </VerticalStackLayout>
+                                            <Button Text="Remove"
+                                                    Style="{StaticResource DangerInlineActionButtonStyle}"
+                                                    Command="{Binding RemoveCommand}" />
                                         </HorizontalStackLayout>
-                                        <Label Text="{Binding BodyPart}" TextColor="{StaticResource Gray200}" />
                                         <Editor Placeholder="Optional notes" AutoSize="TextChanges" Text="{Binding Notes}" />
                                     </VerticalStackLayout>
                                 </Border>
@@ -47,6 +55,7 @@
                                 <HorizontalStackLayout>
                                     <Label Text="{Binding Name}" FontAttributes="Bold" HorizontalOptions="StartAndExpand" />
                                     <Button Text="Edit"
+                                            Style="{StaticResource InlineActionButtonStyle}"
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditTemplateCommand}"
                                             CommandParameter="{Binding .}" />
                                 </HorizontalStackLayout>
@@ -54,9 +63,11 @@
                                 <Label Text="{Binding Exercises.Count, StringFormat='{}{0} exercises'}" />
                                 <HorizontalStackLayout Spacing="10">
                                     <Button Text="Start"
+                                            Style="{StaticResource SecondaryButtonStyle}"
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.StartTemplateCommand}"
                                             CommandParameter="{Binding .}" />
                                     <Button Text="Delete"
+                                            Style="{StaticResource DangerButtonStyle}"
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteTemplateCommand}"
                                             CommandParameter="{Binding .}" />
                                 </HorizontalStackLayout>

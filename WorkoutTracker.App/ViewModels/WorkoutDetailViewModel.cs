@@ -54,7 +54,7 @@ public sealed partial class WorkoutDetailViewModel : BaseViewModel
                 {
                     foreach (var set in entry.StrengthSets.OrderBy(x => x.SetNumber))
                     {
-                        item.Lines.Add($"Set {set.SetNumber}: {set.Reps} reps @ {set.WeightKg} kg");
+                        item.Lines.Add($"Set {set.SetNumber}: {set.Reps} reps, {set.WeightKg} kg");
                     }
 
                     var analytics = await _analyticsService.GetExerciseProgressAsync(entry.ExerciseId).ConfigureAwait(false);

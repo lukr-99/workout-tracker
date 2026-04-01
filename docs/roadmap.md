@@ -16,11 +16,24 @@ Goal: establish a reliable offline workout logging foundation.
 
 Goal: strengthen usability and first-layer analytics.
 
-- Add better in-app summaries on the home screen
+- [x] Add better in-app summaries on the home screen
 - Show exercise-level best set, total volume, and recent trend summaries
-- Add filters for body part, date range, and workout type
+- [x] Add filters for body part, date range, and workout type
 - Improve live workout editing ergonomics and validation
+- Add persisted appearance selection in settings for system, light, and dark theme modes
+- Clarify strength set rows with explicit reps and kg labeling in editor and detail views
+- Tighten edit, delete, archive, and discard button placement with more consistent spacing
+- Add confirmation dialogs for destructive actions such as discarding workouts and deleting saved items
 - Add duplicate previous workout / repeat workout shortcuts
+
+## UI architecture follow-up
+
+Goal: keep the app fast to use without letting every action become a full page.
+
+- Use full pages for longer editing flows such as workouts, templates, and exercise maintenance
+- Reserve dialogs and popups for confirmations and single-purpose quick actions
+- Improve searchable selection flows for larger dropdowns and design a reusable editable suggestion input for common numeric fields
+- Extract shared action-row and card-spacing patterns so list screens stay visually consistent
 
 ## Milestone 0.3
 

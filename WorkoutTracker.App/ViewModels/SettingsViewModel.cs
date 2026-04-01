@@ -1,4 +1,6 @@
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using WorkoutTracker.App.Services;
 using WorkoutTracker.Core.Services;
 
 namespace WorkoutTracker.App.ViewModels;
@@ -6,13 +8,20 @@ namespace WorkoutTracker.App.ViewModels;
 public sealed partial class SettingsViewModel : BaseViewModel
 {
     private readonly IExportService _exportService;
+    private readonly IAppThemeService _appThemeService;
 
     public string VersionText => $"Version {AppInfo.Current.VersionString} ({AppInfo.Current.BuildString})";
+    public IReadOnlyList<string> ThemeOptions => _appThemeService.AvailableThemes.Select(theme => theme.ToString()).ToList();
 
-    public SettingsViewModel(IExportService exportService)
+    [ObservableProperty]
+    private string selectedTheme = string.Empty;
+
+    public SettingsViewModel(IExportService exportService, IAppThemeService appThemeService)
     {
         _exportService = exportService;
+        _appThemeService = appThemeService;
         Title = "Settings";
+        selectedTheme = _appThemeService.CurrentTheme.ToString();
     }
 
     [RelayCommand]
@@ -31,4 +40,15 @@ public sealed partial class SettingsViewModel : BaseViewModel
                 Files = shareFiles
             }));
         }, "Export created and ready to share.");
+
+    partial void OnSelectedThemeChanged(string value)
+    {
+        if (!Enum.TryParse<AppThemePreference>(value, true, out var themePreference))
+        {
+            return;
+        }
+
+        _appThemeService.ApplyTheme(themePreference);
+        StatusMessage = $"{themePreference} theme applied.";
+    }
 }
