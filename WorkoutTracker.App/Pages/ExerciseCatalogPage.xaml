@@ -46,14 +46,16 @@
                                 <HorizontalStackLayout>
                                     <Label Text="{Binding Name}" FontAttributes="Bold" HorizontalOptions="StartAndExpand" />
                                     <Button Text="Edit"
+                                            Style="{StaticResource InlineActionButtonStyle}"
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditExerciseCommand}"
                                             CommandParameter="{Binding .}" />
                                 </HorizontalStackLayout>
                                 <Label Text="{Binding PrimaryBodyPart}" TextColor="{StaticResource Gray200}" />
                                 <Label Text="{Binding Equipment}" TextColor="{StaticResource Gray200}" />
-                                <HorizontalStackLayout>
+                                <HorizontalStackLayout Spacing="10">
                                     <Label Text="{Binding Category}" HorizontalOptions="StartAndExpand" />
                                     <Button Text="Archive"
+                                            Style="{StaticResource DangerInlineActionButtonStyle}"
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ArchiveExerciseCommand}"
                                             CommandParameter="{Binding .}" />
                                 </HorizontalStackLayout>

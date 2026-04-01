@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using WorkoutTracker.App.Services;
 using WorkoutTracker.Core.Domain;
 using WorkoutTracker.Core.Services;
 
@@ -9,6 +10,7 @@ namespace WorkoutTracker.App.ViewModels;
 public sealed partial class TemplatesViewModel : BaseViewModel
 {
     private readonly IWorkoutDataService _workoutDataService;
+    private readonly IAppDialogService _dialogService;
 
     private string? _currentTemplateId;
 
@@ -21,13 +23,18 @@ public sealed partial class TemplatesViewModel : BaseViewModel
     [ObservableProperty]
     private Exercise? selectedExercise;
 
+    [ObservableProperty]
+    private string exerciseSearchText = string.Empty;
+
     public ObservableCollection<WorkoutTemplate> Templates { get; } = [];
     public ObservableCollection<Exercise> AvailableExercises { get; } = [];
+    public ObservableCollection<Exercise> FilteredExercises { get; } = [];
     public ObservableCollection<TemplateExerciseItemViewModel> CurrentExercises { get; } = [];
 
-    public TemplatesViewModel(IWorkoutDataService workoutDataService)
+    public TemplatesViewModel(IWorkoutDataService workoutDataService, IAppDialogService dialogService)
     {
         _workoutDataService = workoutDataService;
+        _dialogService = dialogService;
         Title = "Templates";
     }
 
@@ -48,6 +55,7 @@ public sealed partial class TemplatesViewModel : BaseViewModel
                 {
                     AvailableExercises.Add(exercise);
                 }
+                UpdateExerciseSuggestions();
             });
         });
 
@@ -75,6 +83,9 @@ public sealed partial class TemplatesViewModel : BaseViewModel
             BodyPart = SelectedExercise.PrimaryBodyPart,
             Category = SelectedExercise.Category
         });
+
+        SelectedExercise = null;
+        ExerciseSearchText = string.Empty;
     }
 
     [RelayCommand]
@@ -128,6 +139,14 @@ public sealed partial class TemplatesViewModel : BaseViewModel
                 return;
             }
 
+            var confirmed = await _dialogService
+                .ConfirmAsync("Delete template", $"Delete the template \"{template.Name}\"?", "Delete", "Cancel")
+                .ConfigureAwait(false);
+            if (!confirmed)
+            {
+                return;
+            }
+
             await _workoutDataService.DeleteTemplateAsync(template.Id).ConfigureAwait(false);
             if (_currentTemplateId == template.Id)
             {
@@ -151,5 +170,32 @@ public sealed partial class TemplatesViewModel : BaseViewModel
     private void RemoveExercise(TemplateExerciseItemViewModel exercise)
     {
         CurrentExercises.Remove(exercise);
+    }
+
+    partial void OnExerciseSearchTextChanged(string value)
+    {
+        UpdateExerciseSuggestions();
+    }
+
+    private void UpdateExerciseSuggestions()
+    {
+        var filtered = AvailableExercises
+            .Where(exercise =>
+                string.IsNullOrWhiteSpace(ExerciseSearchText)
+                || exercise.Name.Contains(ExerciseSearchText, StringComparison.OrdinalIgnoreCase)
+                || exercise.PrimaryBodyPart.Contains(ExerciseSearchText, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(exercise => exercise.Name)
+            .ToList();
+
+        FilteredExercises.Clear();
+        foreach (var exercise in filtered)
+        {
+            FilteredExercises.Add(exercise);
+        }
+
+        if (SelectedExercise is not null && !FilteredExercises.Contains(SelectedExercise))
+        {
+            SelectedExercise = null;
+        }
     }
 }

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using WorkoutTracker.App.Pages;
+using WorkoutTracker.App.Services;
 using WorkoutTracker.App.ViewModels;
 using WorkoutTracker.Core.Data;
 using WorkoutTracker.Core.Services;
@@ -27,6 +28,8 @@ public static class MauiProgram
         builder.Services.AddSingleton<IAnalyticsService>(sp => sp.GetRequiredService<WorkoutTrackerRepository>());
         builder.Services.AddSingleton<IExerciseCatalogSyncService, WgerSyncService>();
         builder.Services.AddSingleton<IExportService, ExportService>();
+        builder.Services.AddSingleton<IAppThemeService, AppThemeService>();
+        builder.Services.AddSingleton<IAppDialogService, AppDialogService>();
 
         builder.Services.AddTransient<HomeViewModel>();
         builder.Services.AddTransient<TemplatesViewModel>();

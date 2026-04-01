@@ -6,6 +6,20 @@
     <ScrollView>
         <VerticalStackLayout Padding="20" Spacing="16">
             <Border BackgroundColor="{StaticResource Gray950}" Padding="18">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Appearance" FontSize="22" FontAttributes="Bold" />
+                    <Label Text="Choose how the app should look on this device." TextColor="{StaticResource Gray200}" />
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                        <Label Text="Theme mode" VerticalOptions="Center" TextColor="{StaticResource Gray200}" />
+                        <Picker Grid.Column="1"
+                                Title="Theme mode"
+                                ItemsSource="{Binding ThemeOptions}"
+                                SelectedItem="{Binding SelectedTheme}" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border BackgroundColor="{StaticResource Gray950}" Padding="18">
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Export and versioning" FontSize="22" FontAttributes="Bold" />
                     <Label Text="Create JSON and CSV exports for your future desktop manager or spreadsheet use." TextColor="{StaticResource Gray200}" />
