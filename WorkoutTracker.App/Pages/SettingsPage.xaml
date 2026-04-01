@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="WorkoutTracker.App.Pages.SettingsPage"
+             Title="Settings">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="16">
+            <Border BackgroundColor="{StaticResource Gray950}" Padding="18">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Export and versioning" FontSize="22" FontAttributes="Bold" />
+                    <Label Text="Create JSON and CSV exports for your future desktop manager or spreadsheet use." TextColor="{StaticResource Gray200}" />
+                    <Label Text="{Binding VersionText}" />
+                    <Button Text="Export JSON + CSV" Command="{Binding ExportCommand}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Label Text="{Binding StatusMessage}" TextColor="{StaticResource Primary}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="WorkoutTracker.App.Pages.TemplatesPage"
+             Title="Templates">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="16">
+            <Border BackgroundColor="{StaticResource Gray950}" Padding="18">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Template editor" FontSize="22" FontAttributes="Bold" />
+                    <Entry Placeholder="Template name" Text="{Binding TemplateName}" />
+                    <Editor Placeholder="Notes" AutoSize="TextChanges" Text="{Binding TemplateNotes}" />
+                    <Picker Title="Add exercise"
+                            ItemsSource="{Binding AvailableExercises}"
+                            ItemDisplayBinding="{Binding Name}"
+                            SelectedItem="{Binding SelectedExercise}" />
+                    <Button Text="Add selected exercise" Command="{Binding AddExerciseCommand}" />
+                    <CollectionView ItemsSource="{Binding CurrentExercises}" SelectionMode="None" HeightRequest="220">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border BackgroundColor="{StaticResource Gray900}" Padding="10" Margin="0,0,0,8">
+                                    <VerticalStackLayout Spacing="6">
+                                        <HorizontalStackLayout>
+                                            <Label Text="{Binding ExerciseName}" FontAttributes="Bold" HorizontalOptions="StartAndExpand" />
+                                            <Button Text="Remove" Command="{Binding RemoveCommand}" />
+                                        </HorizontalStackLayout>
+                                        <Label Text="{Binding BodyPart}" TextColor="{StaticResource Gray200}" />
+                                        <Editor Placeholder="Optional notes" AutoSize="TextChanges" Text="{Binding Notes}" />
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                    <HorizontalStackLayout Spacing="10">
+                        <Button Text="New template" Command="{Binding NewTemplateCommand}" />
+                        <Button Text="Save template" Command="{Binding SaveTemplateCommand}" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
+            <Label Text="Saved templates" FontSize="20" FontAttributes="Bold" />
+            <CollectionView ItemsSource="{Binding Templates}" SelectionMode="None">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border BackgroundColor="{StaticResource Gray900}" Padding="14" Margin="0,0,0,10">
+                            <VerticalStackLayout Spacing="8">
+                                <HorizontalStackLayout>
+                                    <Label Text="{Binding Name}" FontAttributes="Bold" HorizontalOptions="StartAndExpand" />
+                                    <Button Text="Edit"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditTemplateCommand}"
+                                            CommandParameter="{Binding .}" />
+                                </HorizontalStackLayout>
+                                <Label Text="{Binding Notes}" TextColor="{StaticResource Gray200}" />
+                                <Label Text="{Binding Exercises.Count, StringFormat='{}{0} exercises'}" />
+                                <HorizontalStackLayout Spacing="10">
+                                    <Button Text="Start"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.StartTemplateCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    <Button Text="Delete"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteTemplateCommand}"
+                                            CommandParameter="{Binding .}" />
+                                </HorizontalStackLayout>
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Label Text="{Binding StatusMessage}" TextColor="{StaticResource Primary}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

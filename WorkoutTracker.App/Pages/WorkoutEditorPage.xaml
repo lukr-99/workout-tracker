@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="WorkoutTracker.App.Pages.WorkoutEditorPage"
+             Title="Workout">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="16">
+            <Border BackgroundColor="{StaticResource Gray950}" Padding="18">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Live workout" FontSize="24" FontAttributes="Bold" />
+                    <Label Text="{Binding ElapsedText}" FontSize="26" FontAttributes="Bold" TextColor="{StaticResource Primary}" />
+                    <Entry Placeholder="Workout name" Text="{Binding SessionName}" />
+                    <Editor Placeholder="Session notes" AutoSize="TextChanges" Text="{Binding Notes}" />
+                    <Picker Title="Add exercise"
+                            ItemsSource="{Binding AvailableExercises}"
+                            ItemDisplayBinding="{Binding Name}"
+                            SelectedItem="{Binding SelectedExercise}" />
+                    <Button Text="Add selected exercise" Command="{Binding AddSelectedExerciseCommand}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <CollectionView ItemsSource="{Binding Entries}" SelectionMode="None">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border BackgroundColor="{StaticResource Gray900}" Padding="14" Margin="0,0,0,10">
+                            <VerticalStackLayout Spacing="10">
+                                <HorizontalStackLayout>
+                                    <Label Text="{Binding ExerciseName}" FontAttributes="Bold" FontSize="17" HorizontalOptions="StartAndExpand" />
+                                    <Button Text="Remove" Command="{Binding RemoveEntryCommand}" />
+                                </HorizontalStackLayout>
+                                <Label Text="{Binding BodyPart}" TextColor="{StaticResource Gray200}" />
+                                <Editor Placeholder="Entry notes" AutoSize="TextChanges" Text="{Binding Notes}" />
+
+                                <VerticalStackLayout IsVisible="{Binding IsStrength}" Spacing="8">
+                                    <Button Text="Add set" Command="{Binding AddSetCommand}" />
+                                    <CollectionView ItemsSource="{Binding StrengthSets}" SelectionMode="None">
+                                        <CollectionView.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border BackgroundColor="{StaticResource Gray950}" Padding="10" Margin="0,0,0,8">
+                                                    <VerticalStackLayout Spacing="6">
+                                                        <HorizontalStackLayout>
+                                                            <Label Text="{Binding SetLabel}" FontAttributes="Bold" HorizontalOptions="StartAndExpand" />
+                                                            <Button Text="Delete" Command="{Binding RemoveCommand}" />
+                                                        </HorizontalStackLayout>
+                                                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                                                            <Entry Grid.Column="0" Placeholder="Reps" Keyboard="Numeric" Text="{Binding RepsText}" />
+                                                            <Entry Grid.Column="1" Placeholder="Kg" Keyboard="Numeric" Text="{Binding WeightKgText}" />
+                                                            <Entry Grid.Column="2" Placeholder="RIR / RPE" Text="{Binding RirText}" />
+                                                        </Grid>
+                                                    </VerticalStackLayout>
+                                                </Border>
+                                            </DataTemplate>
+                                        </CollectionView.ItemTemplate>
+                                    </CollectionView>
+                                </VerticalStackLayout>
+
+                                <VerticalStackLayout IsVisible="{Binding IsCardio}" Spacing="8">
+                                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                                        <Entry Grid.Column="0" Placeholder="Seconds" Keyboard="Numeric" Text="{Binding DurationSecondsText}" />
+                                        <Entry Grid.Column="1" Placeholder="Distance km" Keyboard="Numeric" Text="{Binding DistanceKmText}" />
+                                        <Entry Grid.Column="2" Placeholder="Calories" Keyboard="Numeric" Text="{Binding CaloriesText}" />
+                                    </Grid>
+                                </VerticalStackLayout>
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <HorizontalStackLayout Spacing="10">
+                <Button Text="Save draft" Command="{Binding SaveDraftCommand}" />
+                <Button Text="Finish workout" Command="{Binding FinishWorkoutCommand}" />
+                <Button Text="Discard" Command="{Binding DiscardWorkoutCommand}" />
+            </HorizontalStackLayout>
+
+            <Label Text="{Binding StatusMessage}" TextColor="{StaticResource Primary}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
