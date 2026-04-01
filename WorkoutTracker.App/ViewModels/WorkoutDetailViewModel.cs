@@ -121,4 +121,15 @@ public sealed partial class WorkoutDetailViewModel : BaseViewModel
         var session = await _workoutDataService.CreateWorkoutSessionAsync(template.Id).ConfigureAwait(false);
         await MainThread.InvokeOnMainThreadAsync(() => Shell.Current.GoToAsync($"{nameof(Pages.WorkoutEditorPage)}?sessionId={session.Id}"));
     }
+
+    [RelayCommand]
+    private async Task EditWorkoutAsync()
+    {
+        if (_currentSession is null)
+        {
+            return;
+        }
+
+        await MainThread.InvokeOnMainThreadAsync(() => Shell.Current.GoToAsync($"{nameof(Pages.WorkoutEditorPage)}?sessionId={_currentSession.Id}"));
+    }
 }

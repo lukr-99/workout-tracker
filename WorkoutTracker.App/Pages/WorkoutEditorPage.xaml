@@ -7,36 +7,65 @@
         <VerticalStackLayout Padding="20" Spacing="16">
             <Border BackgroundColor="{StaticResource Gray950}" Padding="18">
                 <VerticalStackLayout Spacing="10">
-                    <Label Text="Live workout" FontSize="24" FontAttributes="Bold" />
+                    <Label Text="Workout overview" FontSize="22" FontAttributes="Bold" />
                     <Label Text="{Binding ElapsedText}" FontSize="26" FontAttributes="Bold" TextColor="{StaticResource Primary}" />
                     <Entry Placeholder="Workout name" Text="{Binding SessionName}" />
                     <Editor Placeholder="Session notes" AutoSize="TextChanges" Text="{Binding Notes}" />
-                    <Entry Placeholder="Search exercises"
-                           Text="{Binding ExerciseSearchText}" />
-                    <Picker Title="Add exercise"
-                            ItemsSource="{Binding FilteredExercises}"
-                            ItemDisplayBinding="{Binding Name}"
-                            SelectedItem="{Binding SelectedExercise}" />
-                    <Button Text="Add selected exercise"
-                            Command="{Binding AddSelectedExerciseCommand}"
-                            HorizontalOptions="Start" />
                 </VerticalStackLayout>
             </Border>
+
+            <Border BackgroundColor="{StaticResource Gray950}" Padding="18">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Add exercises" FontSize="22" FontAttributes="Bold" />
+                    <Label Text="Search the catalog first, then add the selected exercise into the current session." TextColor="{StaticResource Gray200}" />
+                    <Entry Placeholder="Search exercises"
+                           Text="{Binding ExerciseSearchText}" />
+                    <CollectionView ItemsSource="{Binding FilteredExercises}"
+                                    SelectionMode="None"
+                                    HeightRequest="200">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border BackgroundColor="{StaticResource Gray900}" Padding="10" Margin="0,0,0,8">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                        <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                            <Label Text="{Binding Name}" FontAttributes="Bold" />
+                                            <Label Text="{Binding BodyPartsSummary}" TextColor="{StaticResource Gray200}" />
+                                            <Label Text="{Binding Category}" TextColor="{StaticResource Gray300}" FontSize="12" />
+                                        </VerticalStackLayout>
+                                        <Button Grid.Column="1"
+                                                Text="Add"
+                                                Style="{StaticResource InlineActionButtonStyle}"
+                                                VerticalOptions="Center"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.AddExerciseFromSuggestionCommand}"
+                                                CommandParameter="{Binding .}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Border>
+
+            <VerticalStackLayout Spacing="8">
+                <Label Text="Logged exercises" FontSize="22" FontAttributes="Bold" />
+                <Label Text="Each exercise keeps its own notes and set rows so the session stays readable while it grows." TextColor="{StaticResource Gray200}" />
+            </VerticalStackLayout>
 
             <CollectionView ItemsSource="{Binding Entries}" SelectionMode="None">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
                         <Border BackgroundColor="{StaticResource Gray900}" Padding="14" Margin="0,0,0,10">
                             <VerticalStackLayout Spacing="10">
-                                <HorizontalStackLayout Spacing="10">
-                                    <VerticalStackLayout Spacing="2" HorizontalOptions="StartAndExpand">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                    <VerticalStackLayout Grid.Column="0" Spacing="2" HorizontalOptions="StartAndExpand">
                                         <Label Text="{Binding ExerciseName}" FontAttributes="Bold" FontSize="17" />
                                         <Label Text="{Binding BodyPart}" TextColor="{StaticResource Gray200}" />
                                     </VerticalStackLayout>
-                                    <Button Text="Remove"
+                                    <Button Grid.Column="1"
+                                            Text="Remove"
                                             Style="{StaticResource DangerInlineActionButtonStyle}"
                                             Command="{Binding RemoveEntryCommand}" />
-                                </HorizontalStackLayout>
+                                </Grid>
                                 <Editor Placeholder="Entry notes" AutoSize="TextChanges" Text="{Binding Notes}" />
 
                                 <VerticalStackLayout IsVisible="{Binding IsStrength}" Spacing="8">
@@ -49,15 +78,16 @@
                                             <DataTemplate>
                                                 <Border BackgroundColor="{StaticResource Gray950}" Padding="10" Margin="0,0,0,8">
                                                     <VerticalStackLayout Spacing="6">
-                                                        <HorizontalStackLayout Spacing="10">
-                                                            <VerticalStackLayout Spacing="2" HorizontalOptions="StartAndExpand">
+                                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                            <VerticalStackLayout Grid.Column="0" Spacing="2" HorizontalOptions="StartAndExpand">
                                                                 <Label Text="{Binding SetLabel}" FontAttributes="Bold" />
                                                                 <Label Text="{Binding SetSummary}" Style="{StaticResource MutedCaptionStyle}" />
                                                             </VerticalStackLayout>
-                                                            <Button Text="Delete"
+                                                            <Button Grid.Column="1"
+                                                                    Text="Delete"
                                                                     Style="{StaticResource DangerInlineActionButtonStyle}"
                                                                     Command="{Binding RemoveCommand}" />
-                                                        </HorizontalStackLayout>
+                                                        </Grid>
                                                         <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="4">
                                                             <Label Grid.Column="0" Text="Reps" Style="{StaticResource FieldCaptionStyle}" />
                                                             <Label Grid.Column="1" Text="Kg" Style="{StaticResource FieldCaptionStyle}" />
@@ -74,10 +104,13 @@
                                 </VerticalStackLayout>
 
                                 <VerticalStackLayout IsVisible="{Binding IsCardio}" Spacing="8">
-                                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
-                                        <Entry Grid.Column="0" Placeholder="Seconds" Keyboard="Numeric" Text="{Binding DurationSecondsText}" />
-                                        <Entry Grid.Column="1" Placeholder="Distance km" Keyboard="Numeric" Text="{Binding DistanceKmText}" />
-                                        <Entry Grid.Column="2" Placeholder="Calories" Keyboard="Numeric" Text="{Binding CaloriesText}" />
+                                    <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="4">
+                                        <Label Grid.Column="0" Text="Seconds" Style="{StaticResource FieldCaptionStyle}" />
+                                        <Label Grid.Column="1" Text="Distance km" Style="{StaticResource FieldCaptionStyle}" />
+                                        <Label Grid.Column="2" Text="Calories" Style="{StaticResource FieldCaptionStyle}" />
+                                        <Entry Grid.Row="1" Grid.Column="0" Placeholder="Seconds" Keyboard="Numeric" Text="{Binding DurationSecondsText}" />
+                                        <Entry Grid.Row="1" Grid.Column="1" Placeholder="Distance km" Keyboard="Numeric" Text="{Binding DistanceKmText}" />
+                                        <Entry Grid.Row="1" Grid.Column="2" Placeholder="Calories" Keyboard="Numeric" Text="{Binding CaloriesText}" />
                                     </Grid>
                                 </VerticalStackLayout>
                             </VerticalStackLayout>
@@ -86,21 +119,20 @@
                 </CollectionView.ItemTemplate>
             </CollectionView>
 
-            <VerticalStackLayout Spacing="10">
-                <Button Text="Finish workout" Command="{Binding FinishWorkoutCommand}" />
+            <VerticalStackLayout Spacing="10" Margin="0,0,0,20">
+                <Button Text="{Binding PrimaryActionText}" Command="{Binding FinishWorkoutCommand}" />
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                     <Button Grid.Column="0"
-                            Text="Save draft"
+                            Text="{Binding SecondaryActionText}"
                             Style="{StaticResource SecondaryButtonStyle}"
                             Command="{Binding SaveDraftCommand}" />
                     <Button Grid.Column="1"
                             Text="Discard"
                             Style="{StaticResource DangerButtonStyle}"
+                            IsVisible="{Binding CanDiscardWorkout}"
                             Command="{Binding DiscardWorkoutCommand}" />
                 </Grid>
             </VerticalStackLayout>
-
-            <Label Text="{Binding StatusMessage}" TextColor="{StaticResource Primary}" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

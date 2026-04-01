@@ -34,6 +34,12 @@ public sealed class Exercise
     public ExerciseSource Source { get; set; } = ExerciseSource.Custom;
     public string? ExternalSourceId { get; set; }
     public bool IsArchived { get; set; }
+    public string BodyPartsSummary =>
+        string.Join(" / ",
+            new[] { PrimaryBodyPart }
+                .Concat(SecondaryBodyParts)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase));
 }
 
 public sealed class ExerciseFilter
@@ -126,6 +132,8 @@ public sealed class WorkoutSessionSummary
     public int StrengthSetCount { get; set; }
     public decimal TotalVolumeKg { get; set; }
     public int CardioMinutes { get; set; }
+    public string SessionTypeLabel { get; set; } = string.Empty;
+    public string BodyPartsSummary { get; set; } = string.Empty;
 }
 
 public sealed class AnalyticsOverview

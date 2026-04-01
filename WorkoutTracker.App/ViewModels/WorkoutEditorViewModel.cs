@@ -32,6 +32,13 @@ public sealed partial class WorkoutEditorViewModel : BaseViewModel
     [ObservableProperty]
     private string exerciseSearchText = string.Empty;
 
+    [ObservableProperty]
+    private bool isHistoricalWorkout;
+
+    public string PrimaryActionText => IsHistoricalWorkout ? "Save changes" : "Finish workout";
+    public string SecondaryActionText => IsHistoricalWorkout ? "Save as completed" : "Save draft";
+    public bool CanDiscardWorkout => !IsHistoricalWorkout;
+
     public ObservableCollection<Exercise> AvailableExercises { get; } = [];
     public ObservableCollection<Exercise> FilteredExercises { get; } = [];
     public ObservableCollection<WorkoutEntryItemViewModel> Entries { get; } = [];
@@ -55,6 +62,7 @@ public sealed partial class WorkoutEditorViewModel : BaseViewModel
                 SessionId = _currentSession.Id;
                 SessionName = _currentSession.Name;
                 Notes = _currentSession.Notes;
+                IsHistoricalWorkout = _currentSession.Status == WorkoutSessionStatus.Completed;
                 AvailableExercises.Clear();
                 foreach (var exercise in exercises)
                 {
@@ -68,8 +76,18 @@ public sealed partial class WorkoutEditorViewModel : BaseViewModel
                     Entries.Add(WorkoutEntryItemViewModel.FromDomain(entry, RemoveEntryAsync));
                 }
                 OnPropertyChanged(nameof(SessionId));
+                OnPropertyChanged(nameof(PrimaryActionText));
+                OnPropertyChanged(nameof(SecondaryActionText));
+                OnPropertyChanged(nameof(CanDiscardWorkout));
             });
-            StartTimer();
+            if (IsHistoricalWorkout)
+            {
+                _timer?.Stop();
+            }
+            else
+            {
+                StartTimer();
+            }
             UpdateElapsed();
         });
 
@@ -100,6 +118,18 @@ public sealed partial class WorkoutEditorViewModel : BaseViewModel
     }
 
     [RelayCommand]
+    private void AddExerciseFromSuggestion(Exercise? exercise)
+    {
+        if (exercise is null)
+        {
+            return;
+        }
+
+        SelectedExercise = exercise;
+        AddSelectedExercise();
+    }
+
+    [RelayCommand]
     private Task SaveDraftAsync() =>
         RunBusyAsync(async () =>
         {
@@ -111,9 +141,9 @@ public sealed partial class WorkoutEditorViewModel : BaseViewModel
             _currentSession.Name = SessionName;
             _currentSession.Notes = Notes;
             _currentSession.Entries = Entries.Select((entry, index) => entry.ToDomain(_currentSession.Id, index)).ToList();
-            _currentSession.Status = WorkoutSessionStatus.Active;
+            _currentSession.Status = IsHistoricalWorkout ? WorkoutSessionStatus.Completed : WorkoutSessionStatus.Active;
             _currentSession = await _workoutDataService.SaveWorkoutSessionAsync(_currentSession).ConfigureAwait(false);
-        }, "Workout draft saved.");
+        }, IsHistoricalWorkout ? "Completed workout updated." : "Workout draft saved.");
 
     [RelayCommand]
     private Task FinishWorkoutAsync() =>
@@ -128,11 +158,12 @@ public sealed partial class WorkoutEditorViewModel : BaseViewModel
             _currentSession.Notes = Notes;
             _currentSession.Entries = Entries.Select((entry, index) => entry.ToDomain(_currentSession.Id, index)).ToList();
             _currentSession.Status = WorkoutSessionStatus.Completed;
-            _currentSession.EndedAtUtc = DateTime.UtcNow;
+            _currentSession.EndedAtUtc = _currentSession.EndedAtUtc ?? DateTime.UtcNow;
+            _currentSession.CompletedDateUtc = _currentSession.CompletedDateUtc ?? _currentSession.EndedAtUtc;
             _currentSession = await _workoutDataService.SaveWorkoutSessionAsync(_currentSession).ConfigureAwait(false);
             _timer?.Stop();
-            await MainThread.InvokeOnMainThreadAsync(() => Shell.Current.GoToAsync("///history"));
-        }, "Workout completed.");
+            await MainThread.InvokeOnMainThreadAsync(() => Shell.Current.GoToAsync("///home"));
+        }, IsHistoricalWorkout ? "Workout changes saved." : "Workout completed.");
 
     [RelayCommand]
     private Task DiscardWorkoutAsync() =>
@@ -183,7 +214,9 @@ public sealed partial class WorkoutEditorViewModel : BaseViewModel
             return;
         }
 
-        var elapsed = DateTime.UtcNow - _currentSession.StartedAtUtc;
+        var elapsed = IsHistoricalWorkout
+            ? (_currentSession.EndedAtUtc ?? _currentSession.CompletedDateUtc ?? _currentSession.StartedAtUtc) - _currentSession.StartedAtUtc
+            : DateTime.UtcNow - _currentSession.StartedAtUtc;
         ElapsedText = $"{(int)elapsed.TotalHours:00}:{elapsed.Minutes:00}:{elapsed.Seconds:00}";
     }
 

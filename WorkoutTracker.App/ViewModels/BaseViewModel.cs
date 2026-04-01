@@ -28,15 +28,29 @@ public abstract partial class BaseViewModel : ObservableObject
             if (!string.IsNullOrWhiteSpace(successMessage))
             {
                 StatusMessage = successMessage;
+                await ShowToastAsync(successMessage).ConfigureAwait(false);
             }
         }
         catch (Exception ex)
         {
             StatusMessage = ex.Message;
+            await ShowToastAsync(ex.Message).ConfigureAwait(false);
         }
         finally
         {
             IsBusy = false;
+        }
+    }
+
+    private static Task ShowToastAsync(string message)
+    {
+        try
+        {
+            return ServiceHelper.GetService<Services.IToastService>().ShowAsync(message);
+        }
+        catch
+        {
+            return Task.CompletedTask;
         }
     }
 }

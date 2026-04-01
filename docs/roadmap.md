@@ -39,6 +39,13 @@ Goal: keep the app fast to use without letting every action become a full page.
 
 Goal: introduce visual progression and consistency tracking.
 
+- [x] Rework browse screens around list-first layouts with floating actions and popup-style editors
+- [x] Restore smooth scrolling and stronger filter surfaces in workout history
+- [x] Separate active workout into overview, add-exercise, and logged-exercise sections
+- [x] Allow full editing of completed workouts after the fact
+- [x] Replace ambiguous catalog terminology and expose richer body-part context for exercises
+- [x] Move settings out of the bottom nav and continue the floating-menu navigation redesign
+- [x] Show transient top toast notifications for action confirmations instead of inline status blocks
 - Exercise progression charts
 - Workout frequency and streak views
 - Body-part distribution summaries

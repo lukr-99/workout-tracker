@@ -45,3 +45,6 @@
 - Live workout editing prioritizes speed and direct manipulation over wizard-like flows.
 - Full pages are preferred for rich editing flows; dialogs should stay limited to confirmations and compact one-shot actions.
 - Appearance preferences should be user-selectable and persisted locally instead of being hardcoded in the app bootstrap.
+- Browse-heavy areas such as catalog, templates, and history should default to list-first layouts with overlay editors instead of stacking editor forms above the content feed.
+- Exercise selection surfaces should show category and body-part context directly in the chooser instead of relying on generic picker rows.
+- Short-lived success and error feedback should use top toast notifications instead of consuming layout space inside the page content.

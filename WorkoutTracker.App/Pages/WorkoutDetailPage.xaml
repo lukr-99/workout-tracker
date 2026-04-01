@@ -9,10 +9,20 @@
                 <VerticalStackLayout Spacing="8">
                     <Label Text="{Binding SessionHeader}" FontSize="22" FontAttributes="Bold" />
                     <Label Text="{Binding Notes}" TextColor="{StaticResource Gray200}" />
-                    <HorizontalStackLayout Spacing="10">
-                        <Button Text="Duplicate as template" Command="{Binding DuplicateAsTemplateCommand}" />
-                        <Button Text="Start copy" Command="{Binding StartCopyCommand}" />
-                    </HorizontalStackLayout>
+                    <FlexLayout Direction="Row" Wrap="Wrap" AlignItems="Start">
+                        <Button Text="Edit workout"
+                                Style="{StaticResource CompactPrimaryActionButtonStyle}"
+                                Margin="0,0,10,10"
+                                Command="{Binding EditWorkoutCommand}" />
+                        <Button Text="Duplicate as template"
+                                Style="{StaticResource InlineActionButtonStyle}"
+                                Margin="0,0,10,10"
+                                Command="{Binding DuplicateAsTemplateCommand}" />
+                        <Button Text="Start copy"
+                                Style="{StaticResource InlineActionButtonStyle}"
+                                Margin="0,0,10,10"
+                                Command="{Binding StartCopyCommand}" />
+                    </FlexLayout>
                 </VerticalStackLayout>
             </Border>
 
@@ -42,8 +52,6 @@
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>
-
-            <Label Text="{Binding StatusMessage}" TextColor="{StaticResource Primary}" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

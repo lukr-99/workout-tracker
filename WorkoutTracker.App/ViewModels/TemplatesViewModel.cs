@@ -11,6 +11,7 @@ public sealed partial class TemplatesViewModel : BaseViewModel
 {
     private readonly IWorkoutDataService _workoutDataService;
     private readonly IAppDialogService _dialogService;
+    private List<WorkoutTemplate> _allTemplates = [];
 
     private string? _currentTemplateId;
 
@@ -26,10 +27,17 @@ public sealed partial class TemplatesViewModel : BaseViewModel
     [ObservableProperty]
     private string exerciseSearchText = string.Empty;
 
+    [ObservableProperty]
+    private string searchText = string.Empty;
+
+    [ObservableProperty]
+    private bool isEditorOpen;
+
     public ObservableCollection<WorkoutTemplate> Templates { get; } = [];
     public ObservableCollection<Exercise> AvailableExercises { get; } = [];
     public ObservableCollection<Exercise> FilteredExercises { get; } = [];
     public ObservableCollection<TemplateExerciseItemViewModel> CurrentExercises { get; } = [];
+    public string EditorTitle => string.IsNullOrWhiteSpace(_currentTemplateId) ? "New template" : "Edit template";
 
     public TemplatesViewModel(IWorkoutDataService workoutDataService, IAppDialogService dialogService)
     {
@@ -41,20 +49,16 @@ public sealed partial class TemplatesViewModel : BaseViewModel
     public Task RefreshAsync() =>
         RunBusyAsync(async () =>
         {
-            var templates = await _workoutDataService.GetTemplatesAsync().ConfigureAwait(false);
+            _allTemplates = (await _workoutDataService.GetTemplatesAsync().ConfigureAwait(false)).ToList();
             var exercises = await _workoutDataService.GetExercisesAsync().ConfigureAwait(false);
             MainThread.BeginInvokeOnMainThread(() =>
             {
-                Templates.Clear();
                 AvailableExercises.Clear();
-                foreach (var template in templates)
-                {
-                    Templates.Add(template);
-                }
                 foreach (var exercise in exercises)
                 {
                     AvailableExercises.Add(exercise);
                 }
+                ApplyTemplateSearch();
                 UpdateExerciseSuggestions();
             });
         });
@@ -66,6 +70,9 @@ public sealed partial class TemplatesViewModel : BaseViewModel
         TemplateName = string.Empty;
         TemplateNotes = string.Empty;
         CurrentExercises.Clear();
+        ExerciseSearchText = string.Empty;
+        IsEditorOpen = true;
+        OnPropertyChanged(nameof(EditorTitle));
     }
 
     [RelayCommand]
@@ -89,6 +96,18 @@ public sealed partial class TemplatesViewModel : BaseViewModel
     }
 
     [RelayCommand]
+    private void AddExerciseFromSuggestion(Exercise? exercise)
+    {
+        if (exercise is null)
+        {
+            return;
+        }
+
+        SelectedExercise = exercise;
+        AddExercise();
+    }
+
+    [RelayCommand]
     private Task SaveTemplateAsync() =>
         RunBusyAsync(async () =>
         {
@@ -103,6 +122,7 @@ public sealed partial class TemplatesViewModel : BaseViewModel
             await _workoutDataService.SaveTemplateAsync(template).ConfigureAwait(false);
             _currentTemplateId = template.Id;
             await RefreshAsync().ConfigureAwait(false);
+            MainThread.BeginInvokeOnMainThread(() => IsEditorOpen = false);
         }, "Template saved.");
 
     [RelayCommand]
@@ -128,6 +148,9 @@ public sealed partial class TemplatesViewModel : BaseViewModel
                 Notes = exercise.Notes
             });
         }
+        ExerciseSearchText = string.Empty;
+        IsEditorOpen = true;
+        OnPropertyChanged(nameof(EditorTitle));
     }
 
     [RelayCommand]
@@ -172,9 +195,20 @@ public sealed partial class TemplatesViewModel : BaseViewModel
         CurrentExercises.Remove(exercise);
     }
 
+    [RelayCommand]
+    private void CloseEditor()
+    {
+        IsEditorOpen = false;
+    }
+
     partial void OnExerciseSearchTextChanged(string value)
     {
         UpdateExerciseSuggestions();
+    }
+
+    partial void OnSearchTextChanged(string value)
+    {
+        ApplyTemplateSearch();
     }
 
     private void UpdateExerciseSuggestions()
@@ -196,6 +230,23 @@ public sealed partial class TemplatesViewModel : BaseViewModel
         if (SelectedExercise is not null && !FilteredExercises.Contains(SelectedExercise))
         {
             SelectedExercise = null;
+        }
+    }
+
+    private void ApplyTemplateSearch()
+    {
+        var filtered = _allTemplates
+            .Where(template =>
+                string.IsNullOrWhiteSpace(SearchText)
+                || template.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase)
+                || template.Notes.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(template => template.Name)
+            .ToList();
+
+        Templates.Clear();
+        foreach (var template in filtered)
+        {
+            Templates.Add(template);
         }
     }
 }
