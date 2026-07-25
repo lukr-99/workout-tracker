@@ -9,6 +9,10 @@ plugins {
 android {
     namespace = "com.lukr99.workout"
     compileSdk = 35
+    // Pin to build-tools present in the canonical SDK (LOCALAPPDATA has 34/35, not 36). Phase 3
+    // was authored against an SDK that only exposed 36.0.0; 35.0.0 matches compileSdk and keeps
+    // feature/app-rework buildable on the standard toolchain (see reference-build-toolchain).
+    buildToolsVersion = "35.0.0"
 
     defaultConfig {
         applicationId = "com.lukr99.workout"
@@ -45,7 +49,7 @@ android {
     // Ship the exported Room schemas as instrumented-test assets so MigrationTestHelper / schema
     // validation can read them on-device.
     sourceSets {
-        getByName("androidTest").assets.srcDir("$projectDir/schemas")
+        getByName("androidTest").assets.srcDirs("$projectDir/schemas", "src/test/resources")
     }
 }
 

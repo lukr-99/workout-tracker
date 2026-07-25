@@ -99,6 +99,10 @@ interface WorkoutDao {
     @Query("SELECT * FROM sessions WHERE status != 2 ORDER BY startedAtUtc DESC")
     suspend fun getExportableSessions(): List<SessionWithEntries>
 
+    @Transaction
+    @Query("SELECT * FROM sessions ORDER BY startedAtUtc DESC")
+    suspend fun getAllSessions(): List<SessionWithEntries>
+
     @Upsert
     suspend fun upsertSession(session: SessionEntity)
 

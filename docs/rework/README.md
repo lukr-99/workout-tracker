@@ -40,8 +40,12 @@ history → analytics-ready data → export). It did its job. But:
 | [04-feature-roadmap.md](04-feature-roadmap.md) | Full future feature set + milestones |
 | [05-lyfta-import.md](05-lyfta-import.md) | Pulling existing data out of Lyfta and importing it |
 | [06-lyfta-study.md](06-lyfta-study.md) | Lyfta capability backlog to study and fold into the roadmap |
+| [07-data-services.md](07-data-services.md) | Phase 3 creation/query/stats/import/export service contracts |
 | [phase-0-report.md](phase-0-report.md) | Phase 0 scaffold review + open decisions |
-| [handoff-phase-1.md](handoff-phase-1.md) | Prompt for the Phase 1 data-core agent |
+| [phase-1-report.md](phase-1-report.md) | Phase 1 data-core implementation + verification report |
+| [phase-3-report.md](phase-3-report.md) | Phase 3 implementation and verification report |
+| [handoff-phase-1.md](handoff-phase-1.md) | Prompt for the Phase 1 data-core agent (done) |
+| [handoff-phase-2.md](handoff-phase-2.md) | Prompt for the Phase 2 logging-loop UI agent |
 | [../../tools/README.md](../../tools/README.md) | Phone/ADB omni-tooling for building, installing, and pulling data |
 
 ## Status snapshot
@@ -53,4 +57,9 @@ history → analytics-ready data → export). It did its job. But:
 - [x] Lyfta data extraction — 468 sets / 19 sessions captured (`import/lyfta/`)
 - [x] **Phase 0** — scaffold the Gradle/Compose project (verified on-device; see phase-0-report)
 - [x] **Phase 1** — data core (Room + repository + domain). Verified on-device; see [phase-1-report.md](phase-1-report.md)
+- [x] **Phase 3** — data services (import/export + creation/query/stats), built by Codex on
+  `codex/phase-3-data-services` and **merged into `feature/app-rework`**; see
+  [phase-3-report.md](phase-3-report.md) and [07-data-services.md](07-data-services.md)
+- [ ] **Phase 2** — core logging loop UI (in progress on `feature/app-rework`). Handoff:
+  [handoff-phase-2.md](handoff-phase-2.md). Routes Settings → `DataTransferScreen` from Phase 3.
 - [ ] Deeper Lyfta capability study → roadmap ([06-lyfta-study.md](06-lyfta-study.md))
