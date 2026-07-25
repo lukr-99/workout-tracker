@@ -1,0 +1,6 @@
+ Title,Date,Duration,Exercise,"Superset id",Weight,Reps,Distance,Time,"Set Type"
+"Sample Push","2026-06-01 08:00:00",01:05:30,"Bench Press",A,20.000,12,null,null,WARMUP_SET
+"Sample Push","2026-06-01 08:00:00",01:05:30,"Bench Press",A,60.000,8,null,null,NORMAL_SET
+"Sample Push","2026-06-01 08:00:00",01:05:30,"Cable Fly",A,15.000,12,null,null,DROP_SET
+"Sample Push","2026-06-01 08:00:00",01:05:30,"Plank",,null,,null,1:15,NORMAL_SET
+"Sample Cardio","2026-06-03 18:30:00",00:30:00,"Treadmill Run",,null,,5.25,30:00,NORMAL_SET

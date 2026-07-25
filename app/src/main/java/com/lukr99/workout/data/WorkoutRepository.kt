@@ -38,7 +38,10 @@ import kotlinx.serialization.json.Json
  *
  * Ported from `WorkoutTracker.Core/Data/WorkoutTrackerRepository.cs`.
  */
-class WorkoutRepository(private val dao: WorkoutDao) {
+class WorkoutRepository(
+    private val dao: WorkoutDao,
+    private val transactions: TransactionRunner = DirectTransactionRunner,
+) {
 
     private val json = Json { ignoreUnknownKeys = true }
     private val stringListSerializer = ListSerializer(String.serializer())
@@ -105,6 +108,9 @@ class WorkoutRepository(private val dao: WorkoutDao) {
 
     fun observeTemplates(): Flow<List<WorkoutTemplate>> =
         dao.observeTemplates().map { rows -> rows.map { it.toDomain() } }
+
+    suspend fun getTemplates(): List<WorkoutTemplate> =
+        dao.getAllTemplates().map { it.toDomain() }
 
     suspend fun getTemplate(id: String): WorkoutTemplate? = dao.getTemplate(id)?.toDomain()
 
@@ -182,6 +188,12 @@ class WorkoutRepository(private val dao: WorkoutDao) {
     suspend fun getActiveSession(): WorkoutSession? = dao.getActiveSession()?.toDomain()
 
     suspend fun getSession(id: String): WorkoutSession? = dao.getSession(id)?.toDomain()
+
+    /** Full session graph for data services. Discarded sessions are opt-in. */
+    suspend fun getSessions(includeDiscarded: Boolean = false): List<WorkoutSession> {
+        val sessions = if (includeDiscarded) dao.getAllSessions() else dao.getExportableSessions()
+        return sessions.map { it.toDomain() }
+    }
 
     fun observeSession(id: String): Flow<WorkoutSession?> =
         dao.observeSession(id).map { it?.toDomain() }
@@ -306,11 +318,15 @@ class WorkoutRepository(private val dao: WorkoutDao) {
     )
 
     /** Restore a bundle into the DB, preserving ids (upsert). Accepts `1.0` and `1.1`. */
-    suspend fun importBundle(bundle: ExportBundle) {
+    suspend fun importBundle(bundle: ExportBundle) = inTransaction {
         dao.upsertExercises(bundle.exercises.map { it.toEntity() })
         for (template in bundle.templates) saveTemplate(template)
         for (session in bundle.sessions) saveWorkoutSession(session)
     }
+
+    /** Execute a multi-record service operation atomically. */
+    suspend fun <T> inTransaction(block: suspend WorkoutRepository.() -> T): T =
+        transactions.run { block(this@WorkoutRepository) }
 
     // --- Mapping: entity <-> domain ------------------------------------------------------------
 

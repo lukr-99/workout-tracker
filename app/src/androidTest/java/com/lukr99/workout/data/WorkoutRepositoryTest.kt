@@ -5,7 +5,10 @@ import androidx.room.Room
 import androidx.sqlite.db.SimpleSQLiteQuery
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import com.lukr99.workout.data.export.JsonExporter
+import com.lukr99.workout.data.transfer.DataTransferService
+import com.lukr99.workout.data.transfer.ImportOptions
 import com.lukr99.workout.domain.CardioEntryData
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
@@ -44,7 +47,7 @@ class WorkoutRepositoryTest {
         db = Room.inMemoryDatabaseBuilder(context, WorkoutDb::class.java)
             .allowMainThreadQueries()
             .build()
-        repo = WorkoutRepository(db.workoutDao())
+        repo = WorkoutRepository(db.workoutDao(), RoomTransactionRunner(db))
     }
 
     @After
@@ -186,6 +189,38 @@ class WorkoutRepositoryTest {
         } finally {
             freshDb.close()
         }
+    }
+
+    @Test
+    fun lyftaPreviewCommit_isAtomicAndIdempotent() = runTest {
+        repo.ensureSeeded()
+        val service = DataTransferService(repo)
+        val testContext = InstrumentationRegistry.getInstrumentation().context
+        val csv = testContext.assets.open("lyfta-sample.csv").bufferedReader().use { it.readText() }
+
+        val preview = service.previewImport(
+            csv,
+            "lyfta-sample.csv",
+            ImportOptions(sourceTimeZoneId = "Europe/Prague"),
+        )
+        assertTrue(preview.canCommit)
+        assertEquals(2, preview.summary.insertedSessions)
+        assertEquals(1, preview.summary.insertedExercises)
+
+        val committed = service.commitImport(preview)
+        assertEquals(2, committed.insertedSessions)
+        assertEquals(17, repo.getExercises(ExerciseFilter(includeArchived = true)).size)
+        assertEquals(2, repo.getSessions().size)
+
+        val secondPreview = service.previewImport(
+            csv,
+            "lyfta-sample.csv",
+            ImportOptions(sourceTimeZoneId = "Europe/Prague"),
+        )
+        assertEquals(2, secondPreview.summary.skippedSessions)
+        val secondCommit = service.commitImport(secondPreview)
+        assertEquals(2, secondCommit.skippedSessions)
+        assertEquals(2, repo.getSessions().size)
     }
 
     @Test

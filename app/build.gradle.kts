@@ -9,6 +9,7 @@ plugins {
 android {
     namespace = "com.lukr99.workout"
     compileSdk = 35
+    buildToolsVersion = "36.0.0"
 
     defaultConfig {
         applicationId = "com.lukr99.workout"
@@ -45,7 +46,7 @@ android {
     // Ship the exported Room schemas as instrumented-test assets so MigrationTestHelper / schema
     // validation can read them on-device.
     sourceSets {
-        getByName("androidTest").assets.srcDir("$projectDir/schemas")
+        getByName("androidTest").assets.srcDirs("$projectDir/schemas", "src/test/resources")
     }
 }
 

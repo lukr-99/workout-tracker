@@ -40,7 +40,9 @@ history → analytics-ready data → export). It did its job. But:
 | [04-feature-roadmap.md](04-feature-roadmap.md) | Full future feature set + milestones |
 | [05-lyfta-import.md](05-lyfta-import.md) | Pulling existing data out of Lyfta and importing it |
 | [06-lyfta-study.md](06-lyfta-study.md) | Lyfta capability backlog to study and fold into the roadmap |
+| [07-data-services.md](07-data-services.md) | Phase 3 creation/query/stats/import/export service contracts |
 | [phase-0-report.md](phase-0-report.md) | Phase 0 scaffold review + open decisions |
+| [phase-3-report.md](phase-3-report.md) | Phase 3 implementation and verification report |
 | [handoff-phase-1.md](handoff-phase-1.md) | Prompt for the Phase 1 data-core agent |
 | [../../tools/README.md](../../tools/README.md) | Phone/ADB omni-tooling for building, installing, and pulling data |
 
@@ -53,4 +55,6 @@ history → analytics-ready data → export). It did its job. But:
 - [x] Lyfta data extraction — 468 sets / 19 sessions captured (`import/lyfta/`)
 - [x] **Phase 0** — scaffold the Gradle/Compose project (verified on-device; see phase-0-report)
 - [ ] **Phase 1** — data core (Room + repository + domain). Handoff: [handoff-phase-1.md](handoff-phase-1.md)
+- [ ] **Phase 2** — core logging loop (Claude branch, in progress)
+- [x] **Phase 3 data/services branch** — import/export + creation/query/stats services
 - [ ] Deeper Lyfta capability study → roadmap ([06-lyfta-study.md](06-lyfta-study.md))

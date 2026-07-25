@@ -84,8 +84,10 @@ fixture under the app's `src/test/resources/` — the raw personal file itself i
 - [x] USB debugging authorized; phone reachable via `tools/`.
 - [x] Lyfta CSV exported and captured (`import/lyfta/lyfta-export.csv`, 468 sets / 19 sessions).
 - [x] Schema confirmed and mapped (above); schema fields folded into the data model.
-- [ ] `LyftaCsvImporter` implemented + tested against a fixture slice (Phase 3).
-- [ ] In-app "Import from Lyfta" flow (Phase 3).
+- [x] `LyftaCsvImporter` implemented + tested against an anonymised fixture and the full ignored
+      export (Phase 3).
+- [x] In-app "Import from Lyfta" pick → preview → commit state machine and standalone screen
+      implemented (route it from Settings when Phase 2 merges).
 
 Nothing further is needed from the phone for Lyfta — the full history is already on the PC. The
 importer is a pure code task in Phase 3, testable offline against the captured file.
