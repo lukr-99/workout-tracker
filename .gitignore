@@ -486,3 +486,7 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Rework tooling: pulled personal data / screenshots (Lyfta exports, app backups)
+import/
+docs/rework/reference/
