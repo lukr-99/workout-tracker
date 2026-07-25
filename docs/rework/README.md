@@ -45,7 +45,8 @@ history → analytics-ready data → export). It did its job. But:
 | [phase-1-report.md](phase-1-report.md) | Phase 1 data-core implementation + verification report |
 | [phase-3-report.md](phase-3-report.md) | Phase 3 implementation and verification report |
 | [handoff-phase-1.md](handoff-phase-1.md) | Prompt for the Phase 1 data-core agent (done) |
-| [handoff-phase-2.md](handoff-phase-2.md) | Prompt for the Phase 2 logging-loop UI agent |
+| [handoff-phase-2.md](handoff-phase-2.md) | Prompt for the Phase 2 logging-loop UI agent (Claude) |
+| [handoff-codex-phase-3.5.md](handoff-codex-phase-3.5.md) | Parallel non-UI package for Codex: analytics/records/progression/wger sync |
 | [../../tools/README.md](../../tools/README.md) | Phone/ADB omni-tooling for building, installing, and pulling data |
 
 ## Status snapshot
