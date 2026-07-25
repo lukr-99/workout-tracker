@@ -75,6 +75,13 @@ an in-app override (DataStore) pick between them.
 
 - **FloatingNav** — full-width rounded bar pinned bottom, equal-width tabs, icon + tiny label,
   selected tab tinted with `primary @ 16%` behind the icon. (Ported from ring-set `App.kt`.)
+  **Decided shell (resolves phase-0-report §4.2):** **5 items with a central Start action** —
+  `Home · History · (＋ Start) · Progress · Settings`. The center `＋` is a raised **ember**
+  Start/Resume-workout button (the primary action; container-transform into the live session),
+  *not* a peer tab. **Templates + Catalog are not tabs** — they live in a **Library** surface
+  reached from Home. Mirrors Lyfta's `Home · Explore · ＋Workout · Progress · You` bar (we drop
+  Explore and repoint the center action straight at logging). See
+  [06-lyfta-study.md](06-lyfta-study.md).
 - **ScreenHeader** — big title + muted subtitle + optional info affordance. Every screen uses it.
 - **StatTile** — label (caption, `textMid`) over a big tabular number; optional delta chip in
   `positive`/`danger`. Used in Home + Stats KPI rows.
@@ -102,13 +109,25 @@ an in-app override (DataStore) pick between them.
 
 ## Screen inventory (dark-first)
 
-`Home` (dashboard) · `Workout` (live logging) · `Templates` + `TemplateEditor` ·
-`Catalog` + `ExerciseEditor` · `History` + `WorkoutDetail` · `Stats` · `Settings`.
-Longer editing flows are full screens; dialogs are reserved for confirmations and one-shot
-picks (carried over from the MAUI UI direction).
+Grouped by the decided 5-item shell:
+
+- **Home** (dashboard) — today, active/resume, quick-start, recent; hosts the **Library** entry
+  (→ `Templates` + `TemplateEditor`, `Catalog` + `ExerciseEditor`).
+- **History** (+ `WorkoutDetail`) — past sessions list + drill-in.
+- **＋ Start** (center action) — begins/resumes the live **`Workout`** (logging) screen; not a tab.
+- **Progress** — the analytics home (Lyfta's standout): overview stat cards + muscle map, a
+  per-exercise list with sparklines, and per-exercise detail (e1RM + volume). Supersedes the old
+  flat `Stats` tab.
+- **Settings**.
+
+Secondary/full-screen flows off these: `Library` (Templates + Catalog), `TemplateEditor`,
+`ExerciseEditor`, `WorkoutDetail`, per-exercise `ProgressDetail`. Longer editing flows are full
+screens; dialogs are reserved for confirmations and one-shot picks (carried over from the MAUI UI
+direction).
 
 ## Reference
 
 We're following Lyfta's *feel* (minimal, dark, data-forward), not copying its layout or brand.
-Grab a couple of Lyfta screenshots during the extraction session and drop them in
-`docs/rework/reference/` purely as private mood-board input — do not ship its assets.
+Reference frames from Lyfta's Progress tab are captured (git-ignored) under
+`docs/rework/reference/lyfta/` as private mood-board input — do not ship its assets. Findings and
+the component vocabulary they inform are written up in [06-lyfta-study.md](06-lyfta-study.md).
