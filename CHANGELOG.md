@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is inspired by Keep a Changelog, and this project currently uses simple semantic app versions for local releases.
 
+## [1.0.0] - 2026-07-25
+
+### Milestone
+
+- Marks the `.NET MAUI` implementation as the **frozen 1.0 proof-of-concept**. This version
+  is preserved as a historical stepping stone on the `release/1.0` branch and the `v1.0.0` tag.
+- Consolidates the 0.1–0.3 line: reliable offline logging, templates, live sessions, exercise
+  catalog with `wger` sync, list-first browse screens with floating navigation, full editing of
+  completed workouts, toast notifications, persisted theme selection, and JSON/CSV export.
+
+### Notes
+
+- Active development continues on `feature/app-rework`, a ground-up rewrite as a **native
+  Android (Kotlin + Jetpack Compose)** app. See `docs/rework/` for the migration plan.
+- The MAUI app remains buildable from this tag as a reference for behaviour and data shape.
+
 ## [0.1.0] - 2026-04-01
 
 ### Added
