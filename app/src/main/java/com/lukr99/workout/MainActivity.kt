@@ -16,7 +16,9 @@ import com.lukr99.workout.ui.theme.WorkoutTheme
  */
 class MainActivity : ComponentActivity() {
 
-    private val vm: WorkoutViewModel by viewModels()
+    private val vm: WorkoutViewModel by viewModels {
+        WorkoutViewModel.factory((application as WorkoutApp).container.repository)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
