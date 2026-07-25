@@ -52,5 +52,5 @@ history → analytics-ready data → export). It did its job. But:
 - [x] Phone/ADB tooling scaffold
 - [x] Lyfta data extraction — 468 sets / 19 sessions captured (`import/lyfta/`)
 - [x] **Phase 0** — scaffold the Gradle/Compose project (verified on-device; see phase-0-report)
-- [ ] **Phase 1** — data core (Room + repository + domain). Handoff: [handoff-phase-1.md](handoff-phase-1.md)
+- [x] **Phase 1** — data core (Room + repository + domain). Verified on-device; see [phase-1-report.md](phase-1-report.md)
 - [ ] Deeper Lyfta capability study → roadmap ([06-lyfta-study.md](06-lyfta-study.md))

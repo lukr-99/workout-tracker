@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.kotlin.kapt)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -18,6 +18,9 @@ android {
         versionName = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Room schema export — checked in under app/schemas/ (see 03-data-model.md "Migrations").
+        ksp { arg("room.schemaLocation", "$projectDir/schemas") }
     }
 
     buildTypes {
@@ -39,6 +42,11 @@ android {
     buildFeatures {
         compose = true
     }
+    // Ship the exported Room schemas as instrumented-test assets so MigrationTestHelper / schema
+    // validation can read them on-device.
+    sourceSets {
+        getByName("androidTest").assets.srcDir("$projectDir/schemas")
+    }
 }
 
 dependencies {
@@ -59,15 +67,24 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     debugImplementation(libs.compose.ui.tooling)
 
-    // Room (persistence — wiring for Phase 1; no entities/DAO yet)
+    // Room (persistence — entities/DAO/Db; compiled via KSP)
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
-    kapt(libs.room.compiler)
+    ksp(libs.room.compiler)
 
     // Settings (DataStore) + JSON export contract + coroutines
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
 
+    // JVM unit tests (domain analytics/estimates + serialization round-trip)
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+
+    // Instrumented Room tests (DAO CRUD, filters, cascades, seed, round-trip)
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.room.testing)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
 }
