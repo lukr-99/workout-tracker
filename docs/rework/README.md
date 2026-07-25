@@ -44,6 +44,7 @@ history → analytics-ready data → export). It did its job. But:
 | [phase-0-report.md](phase-0-report.md) | Phase 0 scaffold review + open decisions |
 | [phase-1-report.md](phase-1-report.md) | Phase 1 data-core implementation + verification report |
 | [phase-3-report.md](phase-3-report.md) | Phase 3 implementation and verification report |
+| [phase-3.5-report.md](phase-3.5-report.md) | Phase 3.5 records/recovery/progression/catalog-sync report and UI APIs |
 | [handoff-phase-1.md](handoff-phase-1.md) | Prompt for the Phase 1 data-core agent (done) |
 | [handoff-phase-2.md](handoff-phase-2.md) | Prompt for the Phase 2 logging-loop UI agent (Claude) |
 | [handoff-codex-phase-3.5.md](handoff-codex-phase-3.5.md) | Parallel non-UI package for Codex: analytics/records/progression/wger sync |
@@ -61,6 +62,8 @@ history → analytics-ready data → export). It did its job. But:
 - [x] **Phase 3** — data services (import/export + creation/query/stats), built by Codex on
   `codex/phase-3-data-services` and **merged into `feature/app-rework`**; see
   [phase-3-report.md](phase-3-report.md) and [07-data-services.md](07-data-services.md)
+- [x] **Phase 3.5** — non-UI records, recovery, progression, and wger catalog services on
+  `codex/phase-3.5-analytics`; see [phase-3.5-report.md](phase-3.5-report.md)
 - [ ] **Phase 2** — core logging loop UI (in progress on `feature/app-rework`). Handoff:
   [handoff-phase-2.md](handoff-phase-2.md). Routes Settings → `DataTransferScreen` from Phase 3.
 - [ ] Deeper Lyfta capability study → roadmap ([06-lyfta-study.md](06-lyfta-study.md))

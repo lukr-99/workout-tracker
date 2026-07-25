@@ -80,6 +80,7 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.okhttp)
 
     // JVM unit tests (domain analytics/estimates + serialization round-trip)
     testImplementation(libs.junit)

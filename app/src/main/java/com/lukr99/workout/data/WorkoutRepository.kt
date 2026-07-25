@@ -74,22 +74,73 @@ class WorkoutRepository(
 
     suspend fun archiveExercise(id: String) = dao.archiveExercise(id)
 
-    /** Merge external (wger-style) exercises by `externalSourceId`, tagging them `Synced`. */
-    suspend fun mergeExternalExercises(exercises: List<Exercise>): Int {
-        val byExternalId = dao.getAllExercises()
-            .filter { !it.externalSourceId.isNullOrBlank() }
-            .associateBy({ it.externalSourceId!!.lowercase() }, { it.id })
+    /**
+     * Compatibility count for older callers. New sync flows should use
+     * [mergeExternalExercisesDetailed] to distinguish inserts, safe updates, and skips.
+     */
+    suspend fun mergeExternalExercises(exercises: List<Exercise>): Int =
+        mergeExternalExercisesDetailed(exercises).changed
 
-        var merged = 0
+    /**
+     * Additively merge an external catalog without replacing user-owned data.
+     *
+     * Only rows previously tagged [ExerciseSource.Synced] can be updated. Existing values win;
+     * sync may fill blank fields and append secondary body parts, but it never renames, unarchives,
+     * changes defaults, or overwrites notes. Name collisions with custom/seed rows are skipped.
+     */
+    suspend fun mergeExternalExercisesDetailed(
+        exercises: List<Exercise>,
+    ): ExternalExerciseMergeSummary = inTransaction {
+        val existing = dao.getAllExercises().map { it.toDomain() }
+        val byExternalId = existing
+            .filter { !it.externalSourceId.isNullOrBlank() }
+            .associateByTo(linkedMapOf()) { it.externalSourceId!!.trim().lowercase() }
+        val byName = existing.associateByTo(linkedMapOf()) { it.name.trim().lowercase() }
+        val seenExternalIds = mutableSetOf<String>()
+        var summary = ExternalExerciseMergeSummary()
+
         for (raw in exercises) {
-            val normalized = raw.normalized().copy(source = ExerciseSource.Synced)
-            val existingId = normalized.externalSourceId
-                ?.takeIf { it.isNotBlank() }
-                ?.let { byExternalId[it.lowercase()] }
-            dao.upsertExercise(normalized.copy(id = existingId ?: normalized.id).toEntity())
-            merged++
+            val externalId = raw.externalSourceId?.trim()?.takeIf(String::isNotBlank)
+            if (externalId == null || !seenExternalIds.add(externalId.lowercase())) {
+                summary += ExternalExerciseMergeSummary(skipped = 1)
+                continue
+            }
+
+            val incoming = raw.normalized().copy(
+                source = ExerciseSource.Synced,
+                externalSourceId = externalId,
+            )
+            val externalKey = externalId.lowercase()
+            val externalMatch = byExternalId[externalKey]
+            val nameMatch = byName[incoming.name.lowercase()]
+
+            when {
+                externalMatch != null && externalMatch.source != ExerciseSource.Synced -> {
+                    summary += ExternalExerciseMergeSummary(skipped = 1)
+                }
+                externalMatch != null -> {
+                    val merged = externalMatch.addExternalFields(incoming)
+                    if (merged == externalMatch) {
+                        summary += ExternalExerciseMergeSummary(skipped = 1)
+                    } else {
+                        dao.upsertExercise(merged.toEntity())
+                        byExternalId[externalKey] = merged
+                        byName[merged.name.lowercase()] = merged
+                        summary += ExternalExerciseMergeSummary(updated = 1)
+                    }
+                }
+                nameMatch != null -> {
+                    summary += ExternalExerciseMergeSummary(skipped = 1)
+                }
+                else -> {
+                    dao.upsertExercise(incoming.toEntity())
+                    byExternalId[externalKey] = incoming
+                    byName[incoming.name.lowercase()] = incoming
+                    summary += ExternalExerciseMergeSummary(added = 1)
+                }
+            }
         }
-        return merged
+        summary
     }
 
     /** A fresh entry with the exercise's identity snapshotted onto it (the "snapshot on log" rule). */
@@ -517,6 +568,16 @@ class WorkoutRepository(
             .filter { it.isNotBlank() }
             .map { it.trim() }
             .distinctBy { it.lowercase() },
+    )
+
+    private fun Exercise.addExternalFields(incoming: Exercise): Exercise = copy(
+        primaryBodyPart = primaryBodyPart.ifBlank { incoming.primaryBodyPart },
+        secondaryBodyParts = (secondaryBodyParts + incoming.secondaryBodyParts)
+            .filter(String::isNotBlank)
+            .map(String::trim)
+            .distinctBy(String::lowercase),
+        equipment = equipment.ifBlank { incoming.equipment },
+        notes = notes.ifBlank { incoming.notes },
     )
 
     private fun encodeList(list: List<String>): String = json.encodeToString(stringListSerializer, list)
