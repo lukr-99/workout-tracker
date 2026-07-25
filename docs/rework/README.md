@@ -48,4 +48,5 @@ history → analytics-ready data → export). It did its job. But:
 - [x] Write this plan
 - [x] Phone/ADB tooling scaffold
 - [ ] Lyfta data extraction (needs USB debugging authorized)
-- [ ] Scaffold the Gradle/Compose project (next step after plan review)
+- [x] Scaffold the Gradle/Compose project — Phase 0 (authored; on-device build pending an
+  Android SDK + JDK 17 on the build machine, see `tools/env-local.md`)

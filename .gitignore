@@ -490,3 +490,19 @@ $RECYCLE.BIN/
 # Rework tooling: pulled personal data / screenshots (Lyfta exports, app backups)
 import/
 docs/rework/reference/
+
+# Machine-local environment notes (per-computer, not the project)
+tools/env-local.md
+
+# ── Native Android (Gradle/Compose) rework ──────────────────────────────────
+.gradle/
+build/
+app/build/
+# Local SDK/JDK pointers — machine-specific, never commit
+local.properties
+# Kotlin/Gradle scratch
+.kotlin/
+*.hprof
+captures/
+# Android Studio / IntelliJ (.idea/ already ignored above)
+*.iml
