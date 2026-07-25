@@ -1,4 +1,4 @@
-<#
+﻿<#
   pull-lyfta.ps1 — pull Lyfta's exported CSV(s) off the tethered phone to this PC.
 
   Lyfta is a release-signed app, so its private DB isn't reachable via `adb run-as`. The supported

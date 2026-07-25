@@ -19,13 +19,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ListAlt
+import androidx.compose.material.icons.automirrored.rounded.ShowChart
+import androidx.compose.material.icons.automirrored.rounded.ViewList
 import androidx.compose.material.icons.rounded.Dashboard
 import androidx.compose.material.icons.rounded.FitnessCenter
 import androidx.compose.material.icons.rounded.History
-import androidx.compose.material.icons.rounded.ListAlt
 import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material.icons.rounded.ShowChart
-import androidx.compose.material.icons.rounded.ViewList
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -54,10 +54,10 @@ import com.lukr99.workout.ui.screens.WorkoutScreen
 enum class Screen(val label: String, val icon: ImageVector) {
     HOME("Home", Icons.Rounded.Dashboard),
     WORKOUT("Workout", Icons.Rounded.FitnessCenter),
-    TEMPLATES("Templates", Icons.Rounded.ListAlt),
-    CATALOG("Catalog", Icons.Rounded.ViewList),
+    TEMPLATES("Templates", Icons.AutoMirrored.Rounded.ListAlt),
+    CATALOG("Catalog", Icons.AutoMirrored.Rounded.ViewList),
     HISTORY("History", Icons.Rounded.History),
-    STATS("Stats", Icons.Rounded.ShowChart),
+    STATS("Stats", Icons.AutoMirrored.Rounded.ShowChart),
     SETTINGS("Settings", Icons.Rounded.Settings),
 }
 

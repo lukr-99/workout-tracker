@@ -1,4 +1,4 @@
-<#
+﻿<#
   pull-data.ps1 — pull OUR app's exported data off the phone (debug builds only).
 
   Because our debug build is debuggable, `adb run-as <pkg>` can read the app's private files dir

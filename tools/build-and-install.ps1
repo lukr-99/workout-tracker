@@ -1,4 +1,4 @@
-<#
+﻿<#
   build-and-install.ps1 — build the (native Android) app and install it on the tethered phone.
 
   Works once the Gradle/Compose project exists (Phase 0 of docs/rework/00-migration-plan.md).

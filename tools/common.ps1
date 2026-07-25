@@ -1,4 +1,4 @@
-# Shared helpers for the workout-tracker phone/ADB tooling.
+﻿# Shared helpers for the workout-tracker phone/ADB tooling.
 # Dot-source this from the other scripts:  . "$PSScriptRoot\common.ps1"
 
 $ErrorActionPreference = "Stop"

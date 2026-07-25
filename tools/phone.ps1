@@ -1,4 +1,4 @@
-<#
+﻿<#
   phone.ps1 — one omni-tool for working with the tethered Android phone.
 
   Usage:
@@ -76,7 +76,13 @@ switch ($Command.ToLower()) {
         Assert-Device -Adb $adb
         $out = if ($Args) { $Args[0] } else { Join-Path $repo ("import\screen-{0}.png" -f (Get-Date -Format yyyyMMdd-HHmmss)) }
         New-Item -ItemType Directory -Force (Split-Path -Parent $out) | Out-Null
-        & $adb exec-out screencap -p > $out
+        # NB: `adb exec-out screencap -p > $out` corrupts the PNG under Windows PowerShell
+        # (the `>` operator re-encodes the binary stream as text). Capture on-device then pull,
+        # which is byte-safe on every shell.
+        $remote = "/sdcard/__wt_screenshot.png"
+        & $adb shell screencap -p $remote
+        & $adb pull $remote $out | Out-Null
+        & $adb shell rm -f $remote
         Write-Host "Saved $out" -ForegroundColor Green
     }
 
