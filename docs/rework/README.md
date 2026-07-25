@@ -61,6 +61,11 @@ history → analytics-ready data → export). It did its job. But:
 - [x] **Phase 3** — data services (import/export + creation/query/stats), built by Codex on
   `codex/phase-3-data-services` and **merged into `feature/app-rework`**; see
   [phase-3-report.md](phase-3-report.md) and [07-data-services.md](07-data-services.md)
+- [~] **Phase 3.5** — analytics/records/recovery/progression + wger sync (Codex), non-UI. **Complete
+  and reviewed on `codex/phase-3.5-analytics`** (built on the merged tip; additive, no `ui/` changes);
+  **awaiting merge after Phase 2 lands.** Then wire `AppContainer.insights` / `AppContainer.wgerSync`.
+  See `docs/rework/phase-3.5-report.md` on that branch (lands here on merge).
 - [ ] **Phase 2** — core logging loop UI (in progress on `feature/app-rework`). Handoff:
   [handoff-phase-2.md](handoff-phase-2.md). Routes Settings → `DataTransferScreen` from Phase 3.
+- [ ] Merge `codex/phase-3.5-analytics` into `feature/app-rework` (after Phase 2)
 - [ ] Deeper Lyfta capability study → roadmap ([06-lyfta-study.md](06-lyfta-study.md))
