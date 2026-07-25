@@ -5,6 +5,7 @@ import com.lukr99.workout.data.importer.BundleImporter
 import com.lukr99.workout.data.services.WorkoutDataService
 import com.lukr99.workout.data.transfer.AndroidDocumentGateway
 import com.lukr99.workout.data.transfer.DataTransferService
+import com.lukr99.workout.settings.SettingsStore
 
 /**
  * Manual dependency graph (ServiceLocator, ring-set style — see 01-architecture.md "DI"):
@@ -20,6 +21,7 @@ class AppContainer(context: Context) {
     val workoutData: WorkoutDataService by lazy { WorkoutDataService(repository) }
     val dataTransfer: DataTransferService by lazy { DataTransferService(repository) }
     val documents: AndroidDocumentGateway by lazy { AndroidDocumentGateway(context) }
+    val settings: SettingsStore by lazy { SettingsStore(context) }
 
     /** Compatibility endpoint for Phase 1 callers; new flows should use [dataTransfer]. */
     val bundleImporter: BundleImporter by lazy { BundleImporter(repository) }
