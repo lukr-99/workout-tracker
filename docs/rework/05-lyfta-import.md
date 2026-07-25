@@ -3,43 +3,52 @@
 Goal: get **all** existing training history out of Lyfta (`com.lyfta`) and into the new app,
 losslessly where possible.
 
-## Extraction path (decided)
+## Extraction path (done)
 
 Lyfta is a **release-signed** third-party app, so `adb run-as` and `adb backup` on its private
-database won't work without root. The clean, supported path is **Lyfta's own CSV export**:
+database don't work without root. The supported path is **Lyfta's own CSV export**, and it worked:
 
-1. In Lyfta: **Settings → Export data → CSV** (Lyfta added CSV export; it also *imports* from
-   other apps, which confirms a documented tabular format).
-2. Lyfta writes/shares a CSV — either to `Downloads/` or via the Android share sheet.
-3. Pull it to the PC with the tooling:
-   ```powershell
-   .\tools\pull-lyfta.ps1        # scans Downloads + common export dirs, copies CSV(s) to .\import\lyfta\
-   ```
-4. Inspect the real columns and finalize `LyftaCsvImporter`.
+1. In Lyfta: export data → CSV. (It shares the file via the Android share sheet / Phone Link.)
+2. The file arrives as `export<digits>.csv`. Copy it to `import/lyfta/` (git-ignored), or pull
+   from the phone with `.\tools\pull-lyfta.ps1` if it's saved to Downloads.
+3. **Confirmed** — a real export was captured and analysed (below).
 
-> If CSV export turns out to be limited (e.g. summaries only, no per-set rows), fall back to:
-> a) Lyfta → **Health Connect** sync, then read Health Connect; or
-> b) a manual per-exercise export. We confirm which during the extraction session.
+## Confirmed CSV schema (from a real export, 2026-07-25)
 
-## Expected CSV shape (to confirm against a real export)
+Header (note the leading space before `Title`):
 
-Set-level workout exports of this kind typically carry roughly:
+```
+ Title,Date,Duration,Exercise,"Superset id",Weight,Reps,Distance,Time,"Set Type"
+```
 
-| Likely column | Maps to |
-|---------------|---------|
-| Date / datetime | `sessions.startedAtUtc` (grouped into a session per day/workout) |
-| Workout / routine name | `sessions.name` |
-| Exercise name | `exercises.name` (match existing, else create custom) + `entries.exerciseSnapshotName` |
-| Set number | `strength_sets.setNumber` |
-| Reps | `strength_sets.reps` |
-| Weight (+ unit) | `strength_sets.weightKg` (convert lb→kg if needed) |
-| RPE / RIR | `strength_sets.rpe` / `.rir` (if present) |
-| Distance / duration / calories | `cardio_data.*` for cardio rows |
-| Notes | `entries.notes` / `strength_sets.notes` |
-| Body part / category | `exercises.primaryBodyPart` / `.category` when available |
+One row **per set**. Sample:
 
-**These are assumptions.** The mapping is finalized only after we see a real file. A checked-in
-sample (with any personal data trimmed) becomes the importer test fixture.
+```
+"Morning Workout alone Brno, sick","2026-07-13 07:30:19",01:07:22,"Bench Press",,55.000,10,null,null,NORMAL_SET
+```
+
+Real export stats: **468 set rows · 19 sessions · 42 exercises · 2026-03-18 → 2026-07-13.**
+
+| Column | Meaning | Maps to |
+|--------|---------|---------|
+| `Title` | Session name (shared by all rows of a workout) | `sessions.name` |
+| `Date` | Session start `yyyy-MM-dd HH:mm:ss` (shared; groups rows into a session) | `sessions.startedAtUtc` |
+| `Duration` | Session length `HH:mm:ss` (shared) | `sessions.durationSeconds` |
+| `Exercise` | Exercise name (e.g. "Lever Narrow Grip Seated Row") | catalog match/create + `entries.exerciseSnapshotName` |
+| `Superset id` | Superset group — **empty in this dataset** | `entries.supersetGroup` (when present) |
+| `Weight` | kg, `NN.000`; `0.000` = bodyweight; `null` = timed | `strength_sets.weightKg` (0 for bodyweight; null→0) |
+| `Reps` | integer; empty for timed holds | `strength_sets.reps` |
+| `Distance` | `null`/empty — **unused in this dataset** | `cardio_data.distanceKm` (if ever present) |
+| `Time` | `M:SS` hold time for timed/isometric sets (planks, stairs) | `strength_sets.durationSeconds` (new field) |
+| `Set Type` | `NORMAL_SET` / `WARMUP_SET` / `DROP_SET` / `NEGATIVE_REPS_SET` / `FAILURE_SET` / `BACK_OFF_SET` | `strength_sets.setType` (new enum) + `isWarmup` |
+
+Set-type distribution in the real file: NORMAL 418 · WARMUP 26 · DROP 14 · NEGATIVE 5 ·
+FAILURE 4 · BACK_OFF 1. This is what motivates the `SetType` enum and `durationSeconds` field
+added in [03-data-model.md](03-data-model.md).
+
+The full personal export lives at `import/lyfta/lyfta-export.csv` (git-ignored). In Phase 3 a
+small **anonymised** slice (fake titles, a few exercises) gets committed as the importer test
+fixture under the app's `src/test/resources/` — the raw personal file itself is never committed.
 
 ## Import algorithm (`data/importer/LyftaCsvImporter.kt`)
 
@@ -72,5 +81,11 @@ sample (with any personal data trimmed) becomes the importer test fixture.
 
 ## Status
 
-Blocked on: **USB debugging authorization** on the phone, then an in-app Lyfta CSV export.
-Once the real file is in hand, this doc's "expected" table is replaced with the confirmed schema.
+- [x] USB debugging authorized; phone reachable via `tools/`.
+- [x] Lyfta CSV exported and captured (`import/lyfta/lyfta-export.csv`, 468 sets / 19 sessions).
+- [x] Schema confirmed and mapped (above); schema fields folded into the data model.
+- [ ] `LyftaCsvImporter` implemented + tested against a fixture slice (Phase 3).
+- [ ] In-app "Import from Lyfta" flow (Phase 3).
+
+Nothing further is needed from the phone for Lyfta — the full history is already on the PC. The
+importer is a pure code task in Phase 3, testable offline against the captured file.

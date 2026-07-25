@@ -62,7 +62,11 @@ These support roadmap features without breaking the `v1.0.0` shape:
 
 - `strength_sets.isWarmup: Boolean = false`
 - `strength_sets.isPr: Boolean = false` (denormalized flag; source of truth is derived)
-- `entries.supersetGroup: Int? = null` (group entries into supersets)
+- `strength_sets.durationSeconds: Int? = null` (timed/isometric sets — planks, holds; absorbs
+  Lyfta's `Time` column)
+- `strength_sets.setType: SetType = Normal` (enum: `Normal, Warmup, Drop, Failure, Negative,
+  BackOff` — a superset of Lyfta's `Set Type`; `Warmup` also sets `isWarmup`)
+- `entries.supersetGroup: Int? = null` (group entries into supersets; Lyfta `Superset id`)
 - `sessions.perceivedEffort: Int? = null` (session RPE)
 - `sessions.bodyweightKg: Double? = null` (optional log-time bodyweight)
 - `exercises.defaultRestSeconds: Int? = null`
