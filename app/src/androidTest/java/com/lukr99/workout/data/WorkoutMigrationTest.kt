@@ -12,7 +12,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/** Baseline harness: future schema versions add migrations to this class and keep v1 covered. */
+/** Migration harness: every released schema remains covered by a real fixture. */
 @RunWith(AndroidJUnit4::class)
 class WorkoutMigrationTest {
     @get:Rule
@@ -27,7 +27,7 @@ class WorkoutMigrationTest {
     }
 
     @Test
-    fun schemaOneFixtureOpensAndValidatesAgainstExportedSchema() {
+    fun migratesSchemaOneFixtureToSchemaTwo() {
         helper.createDatabase(DatabaseName, 1).apply {
             execSQL(
                 """
@@ -38,6 +38,15 @@ class WorkoutMigrationTest {
                 """.trimIndent(),
                 arrayOf("fixture", "Fixture Lift", 0, "Back", "[]", "", "", 2, null, 0, 90),
             )
+            execSQL(
+                """
+                INSERT INTO sessions (
+                    id, templateId, name, status, startedAtUtc, endedAtUtc, completedDateUtc,
+                    durationSeconds, notes, perceivedEffort, bodyweightKg
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """.trimIndent(),
+                arrayOf("session", null, "Fixture Workout", 1, 1000, 2000, 2000, 1, "", null, null),
+            )
             close()
         }
 
@@ -45,7 +54,7 @@ class WorkoutMigrationTest {
             ApplicationProvider.getApplicationContext(),
             WorkoutDb::class.java,
             DatabaseName,
-        ).allowMainThreadQueries().build()
+        ).addMigrations(WorkoutDb.MIGRATION_1_2).allowMainThreadQueries().build()
         try {
             database.query("SELECT name, defaultRestSeconds FROM exercises WHERE id = 'fixture'", null)
                 .use { cursor ->
@@ -53,6 +62,14 @@ class WorkoutMigrationTest {
                     assertEquals("Fixture Lift", cursor.getString(0))
                     assertEquals(90, cursor.getInt(1))
                 }
+            database.query(
+                "SELECT source, externalKey FROM sessions WHERE id = 'session'",
+                null,
+            ).use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+                assertEquals(true, cursor.isNull(1))
+            }
         } finally {
             database.close()
         }

@@ -25,7 +25,7 @@ data class ExportBundle(
     val sessions: List<WorkoutSession> = emptyList(),
 ) {
     companion object {
-        const val CURRENT_VERSION = "1.1"
-        val SUPPORTED_VERSIONS = setOf("1.0", "1.1")
+        const val CURRENT_VERSION = "1.2"
+        val SUPPORTED_VERSIONS = setOf("1.0", "1.1", "1.2")
     }
 }

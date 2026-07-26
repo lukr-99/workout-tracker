@@ -5,9 +5,11 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
- * The app's Room database (schema v1). Exports its schema to `app/schemas/` (checked in) so future
+ * The app's Room database. Exports its schema to `app/schemas/` (checked in) so future
  * migrations are validated; there is **no destructive fallback** — a schema change without a
  * migration must fail loudly rather than wipe a user's training history.
  *
@@ -24,7 +26,7 @@ import androidx.room.TypeConverters
         StrengthSetEntity::class,
         CardioDataEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -37,6 +39,17 @@ abstract class WorkoutDb : RoomDatabase() {
 
         fun build(context: Context): WorkoutDb =
             Room.databaseBuilder(context.applicationContext, WorkoutDb::class.java, DB_NAME)
+                .addMigrations(MIGRATION_1_2)
                 .build()
+
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE sessions ADD COLUMN source INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE sessions ADD COLUMN externalKey TEXT")
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_sessions_externalKey ON sessions(externalKey)",
+                )
+            }
+        }
     }
 }

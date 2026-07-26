@@ -8,6 +8,7 @@ import com.lukr99.workout.domain.SetType
 import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.domain.WorkoutSession
+import com.lukr99.workout.domain.WorkoutSessionSource
 import com.lukr99.workout.domain.WorkoutSessionStatus
 import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.domain.WorkoutTemplateExercise
@@ -168,6 +169,8 @@ class WorkoutFactory(
                 status = draft.status,
                 perceivedEffort = draft.perceivedEffort?.coerceIn(1, 10),
                 bodyweightKg = draft.bodyweightKg?.takeIf { it > 0 },
+                source = draft.source,
+                externalKey = draft.externalKey?.trim()?.takeIf(String::isNotBlank),
                 entries = entries,
             ),
             issues,
@@ -356,6 +359,8 @@ data class SessionDraft(
     val status: WorkoutSessionStatus = WorkoutSessionStatus.Active,
     val perceivedEffort: Int? = null,
     val bodyweightKg: Double? = null,
+    val source: WorkoutSessionSource = WorkoutSessionSource.Local,
+    val externalKey: String? = null,
     val entries: List<EntryDraft> = emptyList(),
 )
 

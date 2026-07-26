@@ -18,6 +18,10 @@ enum class ExerciseSource { Seeded, Synced, Custom } // Seeded=0, Synced=1, Cust
 @Serializable(with = WorkoutSessionStatusSerializer::class)
 enum class WorkoutSessionStatus { Active, Completed, Discarded } // Active=0, Completed=1, Discarded=2
 
+/** Origin of a persisted session. Appended-only; ordinal values are part of the v1.2 wire schema. */
+@Serializable(with = WorkoutSessionSourceSerializer::class)
+enum class WorkoutSessionSource { Local, HealthConnect }
+
 /**
  * Rework-additive set typing (see 03-data-model.md). A superset of Lyfta's `Set Type`; `Warmup`
  * also implies [StrengthSet.isWarmup]. Appended-only — new members go on the end.

@@ -5,6 +5,7 @@ import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.ExerciseSource
 import com.lukr99.workout.domain.SetType
 import com.lukr99.workout.domain.WorkoutSessionStatus
+import com.lukr99.workout.domain.WorkoutSessionSource
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
@@ -24,6 +25,9 @@ class Converters {
 
     @TypeConverter fun statusToInt(v: WorkoutSessionStatus): Int = v.ordinal
     @TypeConverter fun intToStatus(v: Int): WorkoutSessionStatus = WorkoutSessionStatus.entries[v]
+
+    @TypeConverter fun sessionSourceToInt(v: WorkoutSessionSource): Int = v.ordinal
+    @TypeConverter fun intToSessionSource(v: Int): WorkoutSessionSource = WorkoutSessionSource.entries[v]
 
     @TypeConverter fun setTypeToInt(v: SetType): Int = v.ordinal
     @TypeConverter fun intToSetType(v: Int): SetType = SetType.entries[v]

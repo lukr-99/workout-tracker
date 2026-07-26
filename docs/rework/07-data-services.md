@@ -5,7 +5,7 @@ these are in-process Kotlin service APIs, not HTTP endpoints.
 
 ## Entry points
 
-`AppContainer` owns four stable entry points:
+`AppContainer` owns these stable entry points:
 
 | API | Purpose |
 |---|---|
@@ -13,6 +13,8 @@ these are in-process Kotlin service APIs, not HTTP endpoints.
 | `workoutData` | Validated exercise/template/session creation, snapshots, queries, and stats. |
 | `dataTransfer` | Format detection, import preview/planning/commit, JSON backup, and CSV export. |
 | `documents` | Android Storage Access Framework and share-sheet file transport. |
+| `healthConnect` | Health Connect availability, permissions, and workout import/export. |
+| `backup` | WorkManager scheduling and observable automatic-backup state. |
 
 `DataTransferViewModel` and the standalone `DataTransferScreen` implement the Android-facing
 pick → preview → commit and save/share state machine. Phase 2 only needs to route to the screen.
@@ -80,7 +82,7 @@ Every import follows the same side-effect-free pipeline:
 
 `TextDataImporter` is the format extension point. Phase 3 includes:
 
-- Workout JSON (`ExportBundle` 1.0 and 1.1; unknown fields tolerated).
+- Workout JSON (`ExportBundle` 1.0, 1.1, and 1.2; unknown fields tolerated).
 - Lyfta CSV (RFC-4180 quotes, header aliases/order, local timezone → UTC, kg/lb, set types, timed
   sets, cardio, supersets, catalog matching, and source-name snapshots).
 

@@ -438,6 +438,8 @@ class WorkoutRepository(
         notes = notes,
         perceivedEffort = perceivedEffort,
         bodyweightKg = bodyweightKg,
+        source = source,
+        externalKey = externalKey,
     )
 
     private fun WorkoutEntry.toEntity() = EntryEntity(
@@ -489,6 +491,8 @@ class WorkoutRepository(
         status = session.status,
         perceivedEffort = session.perceivedEffort,
         bodyweightKg = session.bodyweightKg,
+        source = session.source,
+        externalKey = session.externalKey,
         entries = entries.sortedBy { it.entry.sortOrder }.map { it.toDomain() },
     )
 
