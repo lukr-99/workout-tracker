@@ -101,12 +101,15 @@ history → analytics-ready data → export). It did its job. But:
 - [x] Both sub-phases merged; verified on the merged tree: `testDebugUnitTest` + `assembleDebug` +
   **`assembleRelease` (R8)** green, `connectedDebugAndroidTest` green on the A56.
 
-**→ The rework is functionally complete and release-hardened.** Remaining is Play-submission prep
-(mostly user actions): see [phase-6-release-checklist.md](phase-6-release-checklist.md).
+**→ The rework is functionally complete and release-hardened.** Decision: **personal-use only, no
+Play Store release** (Play checklist [phase-6-release-checklist.md](phase-6-release-checklist.md) is
+superseded).
 
-- [ ] **Phase 6 — Play Store submission** — user: create/secure upload keystore + signed build, host
-  the privacy policy at an HTTPS URL, Play Console listing + content-rating/data-safety/health forms.
-  Agent-doable prep: store listing copy, privacy-policy page, screenshot set. See
-  [phase-6-release-checklist.md](phase-6-release-checklist.md).
-- [ ] Optional: dogfood with real data (import the captured Lyfta history), deeper Lyfta study
-  ([06-lyfta-study.md](06-lyfta-study.md)).
+- [x] **Real data imported** — the captured Lyfta history (19 sessions · 468 sets · 35 new exercises)
+  imported in-app via Settings → Data → Import; verified rendering in Progress (19 workouts, ~0.2M kg,
+  Muscle-Recovery map) with no crash.
+- [ ] **Final phase — cutover** — remove the `.NET MAUI` C# app, promote `feature/app-rework` to
+  `main`, cut `release/2.0` + tag `v2.0.0` (MAUI POC stays on `release/1.0`/`v1.0.0`). Plan:
+  [final-phase-cutover.md](final-phase-cutover.md).
+- [ ] Optional: more exercise images (wger backfill + open image dataset + personal photo attach);
+  deeper Lyfta study ([06-lyfta-study.md](06-lyfta-study.md)).

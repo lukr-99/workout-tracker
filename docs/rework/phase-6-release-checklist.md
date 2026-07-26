@@ -1,5 +1,10 @@
 # Phase 6 — Play Store submission checklist
 
+> **SUPERSEDED / not pursued.** The app is **personal-use only** — no Play Store release. The real
+> final step is [final-phase-cutover.md](final-phase-cutover.md) (remove the C# app, promote to
+> `main` + `release/2.0`). This checklist is kept only as reference if that decision ever changes.
+
+
 The rework is **functionally complete and release-hardened** on `feature/app-rework`: native
 Kotlin/Compose app, version **2.0.0**, minified R8 release build, secret-free signing config, CI,
 Health Connect + auto-backup, import/export, analytics/records/recovery/progression, exercise images.
