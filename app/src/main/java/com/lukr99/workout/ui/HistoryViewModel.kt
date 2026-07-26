@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.lukr99.workout.data.AppContainer
 import com.lukr99.workout.data.WorkoutRepository
+import com.lukr99.workout.domain.Exercise
+import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutSessionSummary
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -29,6 +31,14 @@ class HistoryViewModel(private val repo: WorkoutRepository) : ViewModel() {
 
     private val selectedState = MutableStateFlow<WorkoutSession?>(null)
     val selected: StateFlow<WorkoutSession?> = selectedState.asStateFlow()
+
+    /** Non-archived catalog for the past-workout add-exercise picker (mirrors the live screen). */
+    val exercises: StateFlow<List<Exercise>> =
+        repo.observeExercises().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Builds a snapshotted entry for [exercise] to append to a past session being edited. */
+    fun newEntryForExercise(exercise: Exercise, sortOrder: Int): WorkoutEntry =
+        repo.newEntryForExercise(exercise, sortOrder)
 
     fun setSearch(text: String) { searchState.value = text }
 

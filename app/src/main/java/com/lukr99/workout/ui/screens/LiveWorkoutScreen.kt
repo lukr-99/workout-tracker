@@ -51,9 +51,11 @@ import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.LiveWorkoutViewModel
 import com.lukr99.workout.ui.components.ChoiceDialog
 import com.lukr99.workout.ui.components.ConfirmDialog
+import com.lukr99.workout.ui.components.ExercisePicker
 import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.RestTimerBar
+import com.lukr99.workout.ui.components.SetColumnHeader
 import com.lukr99.workout.ui.components.SetRow
 import com.lukr99.workout.ui.components.Tag
 import com.lukr99.workout.ui.theme.Numbers
@@ -277,6 +279,9 @@ private fun EntryCard(
         }
 
         if (entry.isStrength) {
+            if (entry.strengthSets.isNotEmpty()) {
+                SetColumnHeader(units)
+            }
             entry.strengthSets.forEachIndexed { index, set ->
                 SetRow(
                     index = index,
@@ -314,56 +319,3 @@ private fun AddButton(label: String, onClick: () -> Unit) {
     }
 }
 
-@Composable
-private fun ExercisePicker(exercises: List<Exercise>, onPick: (Exercise) -> Unit) {
-    var query by remember { mutableStateOf("") }
-    val filtered = remember(query, exercises) {
-        if (query.isBlank()) exercises
-        else exercises.filter {
-            it.name.contains(query, true) || it.primaryBodyPart.contains(query, true)
-        }
-    }
-    Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp).padding(bottom = 24.dp)) {
-        Text("Add exercise", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
-        Spacer(Modifier.height(10.dp))
-        Row(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant).padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(Icons.Rounded.Search, null, tint = TextMid, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.size(8.dp))
-            BasicTextField(
-                value = query,
-                onValueChange = { query = it },
-                singleLine = true,
-                modifier = Modifier.weight(1f),
-                textStyle = MaterialTheme.typography.bodyLarge.merge(
-                    androidx.compose.ui.text.TextStyle(color = MaterialTheme.colorScheme.onBackground),
-                ),
-                cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
-                decorationBox = { inner ->
-                    if (query.isEmpty()) Text("Search…", color = TextMid, style = MaterialTheme.typography.bodyLarge)
-                    inner()
-                },
-            )
-        }
-        Spacer(Modifier.height(8.dp))
-        LazyColumn(Modifier.fillMaxWidth().height(360.dp)) {
-            items(filtered, key = { it.id }) { ex ->
-                Row(
-                    Modifier.fillMaxWidth().clickable { onPick(ex) }.padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(ex.name, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onBackground)
-                        Text(ex.bodyPartsSummary, style = MaterialTheme.typography.labelSmall, color = TextMid)
-                    }
-                    Text(
-                        ex.category.name, style = Numbers.copy(fontSize = 11.sp), color = TextMid,
-                    )
-                }
-            }
-        }
-    }
-}

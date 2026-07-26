@@ -6,8 +6,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -17,6 +19,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,9 +37,10 @@ import com.lukr99.workout.ui.theme.TextMid
 import com.lukr99.workout.ui.theme.Warning
 
 /**
- * The set-logging workhorse (02-design-system.md): `badge · reps [stepper] × kg [stepper] · ✓`.
- * The done set dims and its ✓ turns `positive`; a PR set tints the badge. Tapping the badge opens
- * set options (type/warmup/remove) via [onOptions]. Previous-set hint shows under the steppers.
+ * The set-logging workhorse (02-design-system.md): `badge · REPS · × · KG · ✓`. Reworked in Phase 4
+ * for touch: the value cells are big and tappable, opening a [NumberPadSheet] (quick ± + full
+ * numpad); the columns are labelled by [SetColumnHeader] above the rows. The done set dims and its ✓
+ * turns `positive`; a PR set tints the badge. Tapping the badge opens set options via [onOptions].
  */
 @Composable
 fun SetRow(
@@ -53,41 +59,38 @@ fun SetRow(
         if (done) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant,
         label = "setRowBg",
     )
+    // null = closed, false = editing reps, true = editing weight
+    var editingWeight by remember { mutableStateOf<Boolean?>(null) }
+
     Row(
         modifier
             .clip(RoundedCornerShape(12.dp))
             .background(bg)
             .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         SetBadge(index = index, set = set, onClick = onOptions)
 
         Row(
             Modifier.weight(1f),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            NumberStepper(
-                value = set.reps.toDouble(),
-                onValueChange = { onReps(it.toInt()) },
-                step = 1.0,
-                decimals = 0,
-                valueWidth = 40.dp,
-            )
+            ValueCell(
+                display = formatReps(set.reps),
+                modifier = Modifier.weight(1f),
+            ) { editingWeight = false }
             Text("×", color = TextMid)
-            NumberStepper(
-                value = Format.toDisplay(set.weightKg, units),
-                onValueChange = { onWeightKg(Format.toKg(it, units)) },
-                step = 2.5,
-                decimals = 1,
-                valueWidth = 52.dp,
-            )
+            ValueCell(
+                display = formatWeight(Format.toDisplay(set.weightKg, units)),
+                modifier = Modifier.weight(1.25f),
+            ) { editingWeight = true }
         }
 
         Box(
             Modifier
-                .size(36.dp)
+                .size(38.dp)
                 .clip(CircleShape)
                 .background(if (done) Positive.copy(alpha = 0.18f) else MaterialTheme.colorScheme.surface)
                 .clickable(onClick = onToggleDone),
@@ -107,6 +110,60 @@ fun SetRow(
             style = MaterialTheme.typography.labelSmall,
             color = TextMid,
             modifier = Modifier.padding(start = 48.dp, top = 1.dp, bottom = 2.dp),
+        )
+    }
+
+    when (editingWeight) {
+        false -> NumberPadSheet(
+            title = "Set ${index + 1} · Reps",
+            initial = set.reps.toDouble(),
+            quickStep = 1.0,
+            onValue = { onReps(it.toInt()) },
+            onDismiss = { editingWeight = null },
+        )
+        true -> NumberPadSheet(
+            title = "Set ${index + 1} · Weight",
+            initial = Format.toDisplay(set.weightKg, units),
+            quickStep = 2.5,
+            allowDecimal = true,
+            unitLabel = Format.unitLabel(units),
+            onValue = { onWeightKg(Format.toKg(it, units)) },
+            onDismiss = { editingWeight = null },
+        )
+        null -> Unit
+    }
+}
+
+/** REPS / KG labels aligned to the [SetRow] value columns. Render once above a set list. */
+@Composable
+fun SetColumnHeader(units: UnitSystem, modifier: Modifier = Modifier) {
+    Row(
+        modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Spacer(Modifier.width(32.dp)) // badge column
+        Row(
+            Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            ColumnLabel("REPS", Modifier.weight(1f))
+            Text("×", color = androidx.compose.ui.graphics.Color.Transparent)
+            ColumnLabel(Format.unitLabel(units).uppercase(), Modifier.weight(1.25f))
+        }
+        Spacer(Modifier.width(38.dp)) // check column
+    }
+}
+
+@Composable
+private fun ColumnLabel(text: String, modifier: Modifier) {
+    Box(modifier, contentAlignment = Alignment.Center) {
+        Text(
+            text,
+            style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp),
+            color = TextMid,
+            fontWeight = FontWeight.SemiBold,
         )
     }
 }
@@ -130,4 +187,11 @@ private fun SetBadge(index: Int, set: StrengthSet, onClick: () -> Unit) {
     ) {
         Text(label, style = Numbers.copy(fontSize = 13.sp, fontWeight = FontWeight.Bold), color = tint)
     }
+}
+
+private fun formatReps(reps: Int): String = reps.toString()
+
+private fun formatWeight(v: Double): String {
+    val r = Math.round(v * 10.0) / 10.0
+    return if (r % 1.0 == 0.0) r.toLong().toString() else r.toString()
 }

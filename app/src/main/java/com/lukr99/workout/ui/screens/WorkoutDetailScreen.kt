@@ -19,11 +19,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -44,13 +47,16 @@ import com.lukr99.workout.domain.newId
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.HistoryViewModel
 import com.lukr99.workout.ui.components.ConfirmDialog
+import com.lukr99.workout.ui.components.ExercisePicker
 import com.lukr99.workout.ui.components.Format
-import com.lukr99.workout.ui.components.NumberStepper
+import com.lukr99.workout.ui.components.SetColumnHeader
 import com.lukr99.workout.ui.components.Tag
+import com.lukr99.workout.ui.components.ValueCell
 import com.lukr99.workout.ui.theme.Numbers
 import com.lukr99.workout.ui.theme.TextMid
 
 /** Drill-in for a past session with full edit-after-the-fact (persists via saveWorkoutSession). */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkoutDetailScreen(
     vm: HistoryViewModel,
@@ -60,6 +66,8 @@ fun WorkoutDetailScreen(
 ) {
     LaunchedEffect(sessionId) { vm.open(sessionId) }
     val selected by vm.selected.collectAsState()
+    val exercises by vm.exercises.collectAsState()
+    var showPicker by remember { mutableStateOf(false) }
 
     var draft by remember(sessionId) { mutableStateOf<WorkoutSession?>(null) }
     var seeded by remember(sessionId) { mutableStateOf(false) }
@@ -127,6 +135,9 @@ fun WorkoutDetailScreen(
                         }
                     }
                     if (entry.isStrength) {
+                        if (entry.strengthSets.isNotEmpty()) {
+                            SetColumnHeader(units)
+                        }
                         entry.strengthSets.forEachIndexed { i, set ->
                             EditSetRow(
                                 index = i, set = set, units = units,
@@ -156,6 +167,19 @@ fun WorkoutDetailScreen(
             }
             item {
                 Row(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
+                        .background(MaterialTheme.colorScheme.surface)
+                        .clickable { showPicker = true }
+                        .padding(vertical = 14.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Rounded.Add, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                    Text("  Add exercise", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                }
+            }
+            item {
+                Row(
                     Modifier.fillMaxWidth().padding(top = 6.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
@@ -169,6 +193,25 @@ fun WorkoutDetailScreen(
                     ) { Text("Delete", color = MaterialTheme.colorScheme.error) }
                 }
             }
+        }
+    }
+
+    if (showPicker) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ModalBottomSheet(
+            onDismissRequest = { showPicker = false },
+            sheetState = sheetState,
+            containerColor = MaterialTheme.colorScheme.surface,
+        ) {
+            ExercisePicker(
+                exercises = exercises,
+                onPick = { ex ->
+                    val entry = vm.newEntryForExercise(ex, session.entries.size)
+                        .copy(workoutSessionId = session.id)
+                    draft = session.copy(entries = session.entries + entry)
+                    showPicker = false
+                },
+            )
         }
     }
 
@@ -193,19 +236,51 @@ private fun EditSetRow(
     onWeight: (Double) -> Unit,
     onRemove: () -> Unit,
 ) {
+    // null = closed, false = editing reps, true = editing weight
+    var editingWeight by remember { mutableStateOf<Boolean?>(null) }
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant).padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text("${index + 1}", style = Numbers, color = TextMid, modifier = Modifier.size(20.dp))
-        NumberStepper(value = set.reps.toDouble(), onValueChange = { onReps(it.toInt()) }, step = 1.0, decimals = 0, valueWidth = 40.dp)
-        Text("×", color = TextMid)
-        NumberStepper(value = Format.toDisplay(set.weightKg, units), onValueChange = { onWeight(Format.toKg(it, units)) }, step = 2.5, decimals = 1, valueWidth = 52.dp)
-        Spacer(Modifier.weight(1f))
-        IconButton(onClick = onRemove, modifier = Modifier.size(32.dp)) {
+        Box(Modifier.size(32.dp), contentAlignment = Alignment.Center) {
+            Text("${index + 1}", style = Numbers, color = TextMid)
+        }
+        Row(
+            Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            ValueCell(display = set.reps.toString(), modifier = Modifier.weight(1f)) { editingWeight = false }
+            Text("×", color = TextMid)
+            ValueCell(
+                display = Format.weight(set.weightKg, units),
+                modifier = Modifier.weight(1.25f),
+            ) { editingWeight = true }
+        }
+        IconButton(onClick = onRemove, modifier = Modifier.size(38.dp)) {
             Icon(Icons.Rounded.Delete, "Remove set", tint = TextMid, modifier = Modifier.size(16.dp))
         }
+    }
+
+    when (editingWeight) {
+        false -> com.lukr99.workout.ui.components.NumberPadSheet(
+            title = "Set ${index + 1} · Reps",
+            initial = set.reps.toDouble(),
+            quickStep = 1.0,
+            onValue = { onReps(it.toInt()) },
+            onDismiss = { editingWeight = null },
+        )
+        true -> com.lukr99.workout.ui.components.NumberPadSheet(
+            title = "Set ${index + 1} · Weight",
+            initial = Format.toDisplay(set.weightKg, units),
+            quickStep = 2.5,
+            allowDecimal = true,
+            unitLabel = Format.unitLabel(units),
+            onValue = { onWeight(Format.toKg(it, units)) },
+            onDismiss = { editingWeight = null },
+        )
+        null -> Unit
     }
 }
