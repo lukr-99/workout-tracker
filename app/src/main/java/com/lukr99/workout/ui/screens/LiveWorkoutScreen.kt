@@ -51,9 +51,12 @@ import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.LiveWorkoutViewModel
 import com.lukr99.workout.ui.components.ChoiceDialog
 import com.lukr99.workout.ui.components.ConfirmDialog
+import com.lukr99.workout.ui.components.ExercisePicker
 import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.LocalToast
+import com.lukr99.workout.ui.components.PrBanner
 import com.lukr99.workout.ui.components.RestTimerBar
+import com.lukr99.workout.ui.components.SetColumnHeader
 import com.lukr99.workout.ui.components.SetRow
 import com.lukr99.workout.ui.components.Tag
 import com.lukr99.workout.ui.theme.Numbers
@@ -75,8 +78,27 @@ fun LiveWorkoutScreen(
     val doneIds by vm.doneSetIds.collectAsState()
     val rest by vm.rest.collectAsState()
     val exercises by vm.exercises.collectAsState()
+    val prEvent by vm.prEvent.collectAsState()
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
 
+    val suggestion by vm.suggestion.collectAsState()
     LaunchedEffect(Unit) { vm.loadActiveIfAny() }
+    LaunchedEffect(suggestion) {
+        suggestion?.let { toast(it); vm.consumeSuggestion() }
+    }
+    LaunchedEffect(prEvent?.id) {
+        if (prEvent != null) {
+            haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+            kotlinx.coroutines.delay(2800)
+            vm.consumePrEvent()
+        }
+    }
+    // Haptic when a running rest hits zero (skip/reset leaves total at 0, so it stays silent).
+    LaunchedEffect(rest.remaining, rest.total) {
+        if (rest.total > 0 && rest.remaining == 0) {
+            haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+        }
+    }
 
     var showPicker by remember { mutableStateOf(false) }
     var confirmFinish by remember { mutableStateOf(false) }
@@ -139,6 +161,7 @@ fun LiveWorkoutScreen(
                         onMoveUp = { vm.moveEntry(entry.id, up = true) },
                         onMoveDown = { vm.moveEntry(entry.id, up = false) },
                         onRemove = { vm.removeEntry(entry.id) },
+                        onCardioChange = { data -> vm.updateCardio(entry.id) { data } },
                     )
                 }
                 item {
@@ -152,6 +175,25 @@ fun LiveWorkoutScreen(
                             modifier = Modifier.padding(top = 8.dp),
                         )
                     }
+                }
+            }
+        }
+
+        // PR celebration overlay (top)
+        androidx.compose.animation.AnimatedVisibility(
+            visible = prEvent != null,
+            modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(horizontal = 14.dp, vertical = 6.dp),
+            enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { -it },
+            exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically { -it },
+        ) {
+            prEvent?.let { ev ->
+                androidx.compose.runtime.key(ev.id) {
+                    PrBanner(
+                        exerciseName = ev.exerciseName,
+                        headline = ev.headline,
+                        displayValue = Format.toDisplay(ev.estimated1RmKg, units),
+                        unitLabel = Format.unitLabel(units),
+                    )
                 }
             }
         }
@@ -202,12 +244,12 @@ fun LiveWorkoutScreen(
         val entry = session?.entries?.firstOrNull { it.id == entryId }
         val set = entry?.strengthSets?.firstOrNull { it.id == setId }
         if (set != null) {
-            ChoiceDialog(
-                title = "Set type",
-                options = SetType.entries,
-                selected = set.setType,
-                label = { it.name },
-                onSelect = { vm.setType(entryId, setId, it) },
+            com.lukr99.workout.ui.components.SetOptionsSheet(
+                set = set,
+                onType = { vm.setType(entryId, setId, it) },
+                onRir = { vm.setRir(entryId, setId, it) },
+                onRpe = { vm.setRpe(entryId, setId, it) },
+                onRemove = { vm.removeSet(entryId, setId) },
                 onDismiss = { optionsFor = null },
             )
         } else optionsFor = null
@@ -247,6 +289,7 @@ private fun EntryCard(
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
     onRemove: () -> Unit,
+    onCardioChange: (com.lukr99.workout.domain.CardioEntryData) -> Unit,
 ) {
     Column(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
@@ -277,6 +320,9 @@ private fun EntryCard(
         }
 
         if (entry.isStrength) {
+            if (entry.strengthSets.isNotEmpty()) {
+                SetColumnHeader(units)
+            }
             entry.strengthSets.forEachIndexed { index, set ->
                 SetRow(
                     index = index,
@@ -294,7 +340,10 @@ private fun EntryCard(
                 Text(" Add set", color = MaterialTheme.colorScheme.primary)
             }
         } else {
-            Text("Cardio entry", style = MaterialTheme.typography.bodyLarge, color = TextMid)
+            com.lukr99.workout.ui.components.CardioEditor(
+                cardio = entry.cardioData ?: com.lukr99.workout.domain.CardioEntryData(workoutEntryId = entry.id),
+                onChange = onCardioChange,
+            )
         }
     }
 }
@@ -314,56 +363,3 @@ private fun AddButton(label: String, onClick: () -> Unit) {
     }
 }
 
-@Composable
-private fun ExercisePicker(exercises: List<Exercise>, onPick: (Exercise) -> Unit) {
-    var query by remember { mutableStateOf("") }
-    val filtered = remember(query, exercises) {
-        if (query.isBlank()) exercises
-        else exercises.filter {
-            it.name.contains(query, true) || it.primaryBodyPart.contains(query, true)
-        }
-    }
-    Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp).padding(bottom = 24.dp)) {
-        Text("Add exercise", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
-        Spacer(Modifier.height(10.dp))
-        Row(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant).padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(Icons.Rounded.Search, null, tint = TextMid, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.size(8.dp))
-            BasicTextField(
-                value = query,
-                onValueChange = { query = it },
-                singleLine = true,
-                modifier = Modifier.weight(1f),
-                textStyle = MaterialTheme.typography.bodyLarge.merge(
-                    androidx.compose.ui.text.TextStyle(color = MaterialTheme.colorScheme.onBackground),
-                ),
-                cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
-                decorationBox = { inner ->
-                    if (query.isEmpty()) Text("Search…", color = TextMid, style = MaterialTheme.typography.bodyLarge)
-                    inner()
-                },
-            )
-        }
-        Spacer(Modifier.height(8.dp))
-        LazyColumn(Modifier.fillMaxWidth().height(360.dp)) {
-            items(filtered, key = { it.id }) { ex ->
-                Row(
-                    Modifier.fillMaxWidth().clickable { onPick(ex) }.padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(ex.name, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onBackground)
-                        Text(ex.bodyPartsSummary, style = MaterialTheme.typography.labelSmall, color = TextMid)
-                    }
-                    Text(
-                        ex.category.name, style = Numbers.copy(fontSize = 11.sp), color = TextMid,
-                    )
-                }
-            }
-        }
-    }
-}
