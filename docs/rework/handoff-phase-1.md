@@ -1,5 +1,8 @@
 # Handoff Prompt — Phase 1: Data core (Room + repository + domain)
 
+> **Status: ✅ COMPLETED & MERGED** on `feature/app-rework` — see [phase-1-report.md](phase-1-report.md).
+> Kept for history.
+
 > Paste the block below as the opening prompt for the next agent. It is self-contained.
 
 ---

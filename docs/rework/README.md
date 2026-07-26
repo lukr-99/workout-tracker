@@ -47,7 +47,10 @@ history → analytics-ready data → export). It did its job. But:
 | [phase-3.5-report.md](phase-3.5-report.md) | Phase 3.5 records/recovery/progression/catalog-sync report and UI APIs |
 | [handoff-phase-1.md](handoff-phase-1.md) | Prompt for the Phase 1 data-core agent (done) |
 | [handoff-phase-2.md](handoff-phase-2.md) | Prompt for the Phase 2 logging-loop UI agent (Claude) |
-| [handoff-codex-phase-3.5.md](handoff-codex-phase-3.5.md) | Parallel non-UI package for Codex: analytics/records/progression/wger sync |
+| [handoff-codex-phase-3.5.md](handoff-codex-phase-3.5.md) | Parallel non-UI package for Codex: analytics/records/progression/wger sync (done) |
+| [phase-2-report.md](phase-2-report.md) | Phase 2 UI implementation + verification report |
+| [handoff-phase-4.md](handoff-phase-4.md) | Prompt for Phase 4 UI/polish (Claude): set-input rework, wire insights/wgerSync, motion |
+| [handoff-codex-phase-4.md](handoff-codex-phase-4.md) | Parallel non-UI package for Codex: Health Connect, backup automation, export v1.2 |
 | [../../tools/README.md](../../tools/README.md) | Phone/ADB omni-tooling for building, installing, and pulling data |
 
 ## Status snapshot
@@ -67,8 +70,9 @@ history → analytics-ready data → export). It did its job. But:
   [phase-2-report.md](phase-2-report.md).
 - [x] **Phase 3.5** — non-UI records, recovery/body-part stats, progression, and wger catalog sync
   (Codex), **merged into `feature/app-rework`**; see [phase-3.5-report.md](phase-3.5-report.md).
-- [ ] **Phase 4** — polish + advanced features. First up (Phase 2 user feedback): rework the set
-  input (REPS/KG labels + touch-friendly editor), add-exercise to past workouts; then wire
-  `AppContainer.insights` (records/recovery/progression) + `AppContainer.wgerSync` into the UI,
-  `BodyHeatmap`, motion polish, cardio logging. See [phase-2-report.md](phase-2-report.md) §6.
+- [ ] **Phase 4** — polish + advanced features. UI/integration (Claude):
+  [handoff-phase-4.md](handoff-phase-4.md) — set-input rework, add-exercise to past workouts, wire
+  `insights`/`wgerSync` (Records, Muscle Recovery, progression), motion, cardio. Parallel non-UI
+  (Codex): [handoff-codex-phase-4.md](handoff-codex-phase-4.md) — Health Connect, backup automation,
+  export v1.2.
 - [ ] Deeper Lyfta capability study → roadmap ([06-lyfta-study.md](06-lyfta-study.md))

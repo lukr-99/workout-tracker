@@ -1,5 +1,8 @@
 # Handoff Prompt — Phase 2: The logging loop + real screens (UI)
 
+> **Status: ✅ COMPLETED** on `feature/app-rework` — see [phase-2-report.md](phase-2-report.md).
+> Kept for history. Follow-ups rolled into [handoff-phase-4.md](handoff-phase-4.md).
+
 > Paste the block below as the opening prompt for the next agent. It is self-contained.
 
 ---

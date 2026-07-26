@@ -1,5 +1,8 @@
 # Handoff Prompt — Phase 3.5 (Codex): Analytics, records, progression & catalog sync services
 
+> **Status: ✅ COMPLETED & MERGED** into `feature/app-rework` — see [phase-3.5-report.md](phase-3.5-report.md).
+> Kept for history.
+
 > A **non-UI** work package for Codex, parallel to Claude's Phase 2 UI work. Everything here is pure
 > `domain/` + `data/` service code with unit tests — **no `ui/` files, no screens.** It extends the
 > Phase 3 data platform you built and produces stable APIs that Phase 2 screens render.
