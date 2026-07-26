@@ -85,15 +85,19 @@ com.lukr99.workout
   quickest (Play Services present on the device) — the plan's screens are map-provider-agnostic behind
   a thin `MapView` component so the provider can be swapped.
 
-## Music — Spotify
+## Music — Spotify (minimal, shared by run + lift)
 
-- **Spotify App Remote SDK**: connect to the installed Spotify app, show current track + art, and
-  play/pause/skip from the `RunMiniPlayer` on the live screen. Requires a Spotify developer client id
-  + redirect URI (registered once) and the Spotify app installed. **No secrets in the repo** — the
-  client id is public-ish but keep it in a git-ignored `spotify.properties`/env, same pattern as
-  signing.
-- **Fallback (if App Remote is too heavy):** a deep-link/`Intent` that just opens Spotify — trivial,
-  no SDK, no auth. Chosen at R4 per the "Spotify depth" decision.
+Deliberately small. A shared `ui/components/MusicMiniControls.kt` backed by
+`data/music/SpotifyController.kt`, used on **both** `LiveRunScreen` **and** `LiveWorkoutScreen`:
+- **Open Spotify** button (always available — a simple `Intent`/deep-link).
+- When Spotify **is connected** (App Remote): show the **current track** + **play/pause · next ·
+  previous**. That's it — no in-app browser/queue/search.
+- App Remote needs a Spotify developer **client id** + redirect URI (registered once) and the Spotify
+  app installed. **No secrets in the repo** — keep the client id in a git-ignored
+  `spotify.properties`/env (same pattern as signing). If App Remote proves fiddly, ship the
+  open-Spotify button alone first and add the transport controls after.
+- Because it's a shared component, wiring it into the existing strength live screen is a tiny add
+  (the lift screen just hosts `MusicMiniControls`).
 
 ## Stats & Health Connect
 

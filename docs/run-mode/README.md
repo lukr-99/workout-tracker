@@ -7,6 +7,23 @@ alongside strength training rather than replacing it.
 
 Developed on branch **`feature/run-mode`** (off `v2.0.0`). Ships as **v2.1.0**.
 
+## Decisions (LOCKED)
+
+1. **App name → `Ember`** (rebrand; keeps the ember dumbbell logo; `applicationId` unchanged). See
+   [../rebrand-candidates.md](../rebrand-candidates.md). Wired in during R0.
+2. **Shell:** the center **`＋ Start` becomes a chooser** (💪 Lift / 🏃 Run). A **`Runs` tab replaces
+   `History`**; **History moves into the Progress tab**. Bar: `Home · Runs · (＋ Start) · Progress ·
+   Settings`.
+3. **Map:** MapLibre Native + Compose, dark vector style; **tiles: Protomaps (PMTiles)** (offline-
+   friendly, keyless). Screens stay provider-agnostic behind a `MapView` component.
+4. **Routing:** **Valhalla** (foot/pedestrian profile + elevation + **map-matching** to snap traces
+   to paths — the most rigid/useful for planning *and* cleaning GPS). GraphHopper is the fallback.
+   Only route *planning*/snapping needs it; live tracking is fully offline.
+5. **Music (Spotify): minimal, and shared with strength workouts.** A small `MusicMiniControls`
+   component: **open Spotify** + (when Spotify is connected) **play/pause · next · previous** + current
+   track. Used on **both** the live-run screen **and** the live strength-workout screen. No full
+   in-app player. Live-run priority remains map + pace + start/pause/resume.
+
 ## Vision / scope
 
 - **Live run:** one-tap start → foreground-service GPS tracking → live map with the growing route,
@@ -22,19 +39,14 @@ Developed on branch **`feature/run-mode`** (off `v2.0.0`). Ships as **v2.1.0**.
 - **Interoperability:** write runs (with route) to **Health Connect**; GPX import/export; runs also
   appear in unified history.
 
-## How it fits the shell (decision needed — recommended option below)
+## Shell (locked)
 
-Today's bar is `Home · History · (＋ Start) · Progress · Settings`. Run mode needs a home. Options:
-
-- **A (recommended): the center `＋ Start` becomes a mode chooser** (💪 *Lift* / 🏃 *Run*), and a
-  **`Runs` tab** replaces `History` in the bar (History folds into Home "recent" + Progress). Bar:
-  `Home · Runs · (＋ Start) · Progress · Settings`. Keeps 5 tabs, makes running first-class, and the
-  central action starts either activity.
-- **B:** add a 6th `Run` tab (denser bar; simplest routing, but 6 items is tight on the label sizes).
-- **C:** Run lives entirely under a card on Home + the center chooser (no dedicated tab).
-
-Recommended **A**. Final call is a design decision (see [architecture.md](architecture.md) and the
-open decisions below).
+Bar becomes `Home · Runs · (＋ Start) · Progress · Settings`:
+- **`＋ Start`** opens a small chooser sheet: **💪 Lift** (existing live workout) or **🏃 Run** (new
+  live run).
+- **`Runs`** is the new tab (recent runs + saved routes + start). It takes History's slot.
+- **History moves into the `Progress` tab** (a History/sessions section alongside the analytics), so
+  no tab is lost and Progress becomes the "look back" hub.
 
 ## Tech stack (recommended — details + alternatives in architecture.md)
 
@@ -42,9 +54,9 @@ open decisions below).
 |--------|-------------|-------------------|
 | Map | **MapLibre Native + Compose** with a dark vector style | Open-source, no per-request billing, great dark styling. Alt: Google Maps Compose (fast, Play-Services-tied). |
 | Tiles | **Protomaps (PMTiles)** or MapTiler free tier | PMTiles = single self-hostable/offline file, no per-tile key. Alt: raster OSM via osmdroid (simplest, less slick). |
-| Routing (snap/plan) | **Valhalla or GraphHopper** (self-host or demo endpoint) | Path snapping + elevation. Alt: Mapbox Directions (token). |
+| Routing (snap/plan) | **Valhalla** (foot profile + elevation + map-matching) | Rigid/flexible for planning *and* snapping GPS traces. Fallback: GraphHopper. |
 | Location | **FusedLocationProvider** + a **foreground service** | Standard for run tracking; battery-aware sampling. |
-| Music | **Spotify App Remote SDK** | In-run mini-player; fallback = deep-link to Spotify. |
+| Music | **Spotify App Remote** — minimal `MusicMiniControls` | open Spotify + play/pause/next/prev when connected; **shared by live-run AND live-lift**. |
 | Persistence | Room (new `runs`, `route_points`, `routes` tables) | Schema **v5** migration; trace as points + encoded polyline. |
 | Health | **Health Connect** `ExerciseSessionRecord` + `ExerciseRoute` | Reuse the existing `data/health` service. |
 
@@ -63,12 +75,9 @@ open decisions below).
   caching, share-run card, home-screen widget.
 - **R6 — Optional/advanced:** BLE/Health-Connect heart rate, segments, ghost/route racing, cadence.
 
-## Open decisions (confirm before/at R0)
+## Decisions — all resolved
 
-1. **Shell integration** — option A / B / C above (recommended **A**).
-2. **Map + tiles provider** — MapLibre+Protomaps (recommended) vs Google Maps Compose (fastest) vs
-   osmdroid (keyless raster). Affects look, keys, cost, offline.
-3. **Routing provider** — self-hosted Valhalla/GraphHopper vs a hosted demo/keyed endpoint (route
-   planning needs one; live run tracking does **not**).
-4. **Spotify depth** — full App Remote mini-player vs simple deep-link launch.
-5. **Rebrand name** — see [../rebrand-candidates.md](../rebrand-candidates.md).
+See the **Decisions (LOCKED)** section at the top. Name = **Ember**; shell = Runs tab + Start chooser,
+History → Progress; map = MapLibre + Protomaps; routing = Valhalla; Spotify = minimal shared controls.
+The only remaining setup choice is **where Valhalla runs** (self-hosted vs a hosted endpoint) — needed
+at **R3** (route planning), not before, so R0–R2 are unblocked.

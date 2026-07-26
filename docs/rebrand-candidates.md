@@ -28,7 +28,16 @@ iron mark, and not read as lifting-only. "Workout Tracker" is a placeholder, not
 - **Strive** — positive, broad, progress-oriented.
 - **Hone** — "hone yourself"; quiet and minimal.
 
-## Recommendation
+## CHOSEN: **Ember**
+
+Decided (personal-use, so Play/trademark collision is irrelevant — optimized purely for meaning): an
+**ember still glows and holds heat — alive, ready to reignite**, the stronger/positive metaphor for a
+training app, and it matches the app's existing **ember accent color** for cohesion. **Cinder** was
+the close runner-up (more distinctive, "a chunk that can still start burning") — trivial to switch to
+if preferred. Wired in during Run-Mode **R0**: `app_name`/label/splash/Settings footer/README; the
+`applicationId` (`com.lukr99.workout`) is unchanged so it upgrades in place.
+
+## Recommendation (original)
 
 Top pick **Forge** (on-brand with the ember/dumbbell mark, covers both activities, distinctive) —
 with **Cinder**, **Tempo**, and **Grit** as strong alternates depending on the vibe you want (warm-

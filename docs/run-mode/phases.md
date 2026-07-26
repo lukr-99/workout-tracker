@@ -7,8 +7,10 @@ agent; R0–R2 are the critical path to "record a real run."
 
 ## R0 — Foundation
 **Goal:** the plumbing + an empty Run screen with a live dark map centered on you.
-- Shell integration per README decision (recommended: center `＋ Start` → Lift/Run chooser; `Runs`
-  tab replaces `History`).
+- **Rebrand to `Ember`**: `app_name`/launcher label/splash title/Settings footer/README (no
+  `applicationId` change).
+- **Shell (locked):** center `＋ Start` → **Lift/Run chooser sheet**; add the **`Runs` tab**; **move
+  History into the `Progress` tab**. Update `ui/App.kt` + `ui/Navigation.kt`.
 - Location permission flow (fine location + notifications), just-in-time with rationale.
 - `data/map` MapView component (chosen provider) rendering a dark basemap; follow current location.
 - Run data model + **Room migration v5** (`runs`, `run_points`, `routes`, `route_points`; `5.json`
@@ -49,12 +51,15 @@ in Health Connect.
 - Saved routes list + reuse; offline tile caching for a route's region.
 **Exit:** plan a route on-device, save it, start a run that follows it and flags going off-route.
 
-## R4 — Spotify
-**Goal:** control music without leaving the run.
-- `SpotifyController` (App Remote): connect, current track + art, **play/pause/skip** from a
-  `RunMiniPlayer` on `LiveRunScreen`; one-time auth; client id in a git-ignored `spotify.properties`.
-- Fallback path: a deep-link that just opens Spotify (if App Remote is deferred).
-**Exit:** during a live run, see the current track and skip/pause it in-app (or one-tap open Spotify).
+## R4 — Spotify (minimal, shared by run + lift)
+**Goal:** control music without leaving the workout.
+- Shared `ui/components/MusicMiniControls.kt` + `data/music/SpotifyController.kt`: an **Open Spotify**
+  button always; when connected (App Remote), **current track + play/pause · next · previous**.
+  One-time auth; client id in a git-ignored `spotify.properties`. No in-app player/search/queue.
+- Host it on **both** `LiveRunScreen` **and** the existing `LiveWorkoutScreen` (strength).
+- Ship the Open-Spotify button first if App Remote is fiddly; add transport controls after.
+**Exit:** during a live run *and* a live lift, see the current track and play/pause/skip it (or one-tap
+open Spotify).
 
 ## R5 — Polish
 - Audio/haptic **split cues** + finish summary voice/haptic; auto-pause tuning; start **countdown**.
