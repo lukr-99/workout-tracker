@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Single-color dumbbell mask for Android themed icons. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M40,51.5h28v5h-28zM35,44h6v20h-6zM28,40h6v28h-6zM67,44h6v20h-6zM74,40h6v28h-6z" />
+</vector>

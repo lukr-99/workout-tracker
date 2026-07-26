@@ -52,6 +52,7 @@ import com.lukr99.workout.ui.screens.LibraryScreen
 import com.lukr99.workout.ui.screens.LiveWorkoutScreen
 import com.lukr99.workout.ui.screens.ProgressDetailScreen
 import com.lukr99.workout.ui.screens.ProgressScreen
+import com.lukr99.workout.ui.screens.PrivacyPolicyScreen
 import com.lukr99.workout.ui.screens.SettingsScreen
 import com.lukr99.workout.ui.screens.TemplateEditorScreen
 import com.lukr99.workout.ui.screens.WorkoutDetailScreen
@@ -117,6 +118,7 @@ fun App(container: AppContainer) {
                         Tab.SETTINGS -> SettingsScreen(
                             vm = settingsVm,
                             onOpenData = { nav.push(Route.DataTransfer) },
+                            onOpenPrivacy = { nav.push(Route.PrivacyPolicy) },
                         )
                     }
                 }
@@ -172,6 +174,7 @@ fun App(container: AppContainer) {
                             DataTransferScreen(vm = dataVm)
                             BackChip(onBack = { nav.pop() }, modifier = Modifier.align(Alignment.TopEnd).padding(12.dp))
                         }
+                        Route.PrivacyPolicy -> PrivacyPolicyScreen(onBack = { nav.pop() })
                     }
                 }
             }

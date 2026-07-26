@@ -5,15 +5,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
@@ -22,6 +25,7 @@ import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -145,11 +149,16 @@ fun LiveWorkoutScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                items(entries, key = { it.id }) { entry ->
+                itemsIndexed(entries, key = { _, entry -> entry.id }) { index, entry ->
                     EntryCard(
                         entry = entry,
                         units = units,
                         doneIds = doneIds,
+                        canGroupWithPrevious = index > 0,
+                        groupedWithPrevious = index > 0 &&
+                            entry.supersetGroup != null &&
+                            entry.supersetGroup == entries[index - 1].supersetGroup,
+                        onToggleSuperset = { vm.toggleSupersetWithPrevious(entry.id) },
                         onReps = { setId, reps -> vm.setReps(entry.id, setId, reps) },
                         onWeight = { setId, kg -> vm.setWeight(entry.id, setId, kg) },
                         onToggleDone = { setId ->
@@ -281,6 +290,9 @@ private fun EntryCard(
     entry: WorkoutEntry,
     units: UnitSystem,
     doneIds: Set<String>,
+    canGroupWithPrevious: Boolean,
+    groupedWithPrevious: Boolean,
+    onToggleSuperset: () -> Unit,
     onReps: (String, Int) -> Unit,
     onWeight: (String, Double) -> Unit,
     onToggleDone: (String) -> Unit,
@@ -291,59 +303,114 @@ private fun EntryCard(
     onRemove: () -> Unit,
     onCardioChange: (com.lukr99.workout.domain.CardioEntryData) -> Unit,
 ) {
-    Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surface).padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+    Row(
+        Modifier.fillMaxWidth().height(IntrinsicSize.Min),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
+        if (entry.supersetGroup != null) {
+            Box(
+                Modifier.width(3.dp).fillMaxHeight()
+                    .clip(RoundedCornerShape(50))
+                    .background(MaterialTheme.colorScheme.primary),
+            )
+            Spacer(Modifier.width(7.dp))
+        }
+        Column(
+            Modifier.weight(1f).clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surface).padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            if (entry.supersetGroup != null) {
                 Text(
-                    entry.exerciseSnapshotName,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
+                    "SUPERSET ${entry.supersetGroup}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 0.8.sp,
                 )
-                if (entry.exerciseSnapshotPrimaryBodyPart.isNotBlank()) {
-                    Spacer(Modifier.height(2.dp))
-                    Tag(entry.exerciseSnapshotPrimaryBodyPart, accent = MaterialTheme.colorScheme.secondary)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        entry.exerciseSnapshotName,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                    if (entry.exerciseSnapshotPrimaryBodyPart.isNotBlank()) {
+                        Spacer(Modifier.height(2.dp))
+                        Tag(
+                            entry.exerciseSnapshotPrimaryBodyPart,
+                            accent = MaterialTheme.colorScheme.secondary,
+                        )
+                    }
+                }
+                if (canGroupWithPrevious) {
+                    IconButton(onClick = onToggleSuperset, modifier = Modifier.size(34.dp)) {
+                        Icon(
+                            Icons.Rounded.Link,
+                            if (groupedWithPrevious) "Ungroup from previous" else "Superset with previous",
+                            tint = if (groupedWithPrevious) MaterialTheme.colorScheme.primary else TextMid,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                }
+                IconButton(onClick = onMoveUp, modifier = Modifier.size(34.dp)) {
+                    Icon(
+                        Icons.Rounded.ArrowUpward,
+                        "Move up",
+                        tint = TextMid,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+                IconButton(onClick = onMoveDown, modifier = Modifier.size(34.dp)) {
+                    Icon(
+                        Icons.Rounded.ArrowDownward,
+                        "Move down",
+                        tint = TextMid,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+                IconButton(onClick = onRemove, modifier = Modifier.size(34.dp)) {
+                    Icon(
+                        Icons.Rounded.Delete,
+                        "Remove exercise",
+                        tint = TextMid,
+                        modifier = Modifier.size(18.dp),
+                    )
                 }
             }
-            IconButton(onClick = onMoveUp, modifier = Modifier.size(34.dp)) {
-                Icon(Icons.Rounded.ArrowUpward, "Move up", tint = TextMid, modifier = Modifier.size(18.dp))
-            }
-            IconButton(onClick = onMoveDown, modifier = Modifier.size(34.dp)) {
-                Icon(Icons.Rounded.ArrowDownward, "Move down", tint = TextMid, modifier = Modifier.size(18.dp))
-            }
-            IconButton(onClick = onRemove, modifier = Modifier.size(34.dp)) {
-                Icon(Icons.Rounded.Delete, "Remove exercise", tint = TextMid, modifier = Modifier.size(18.dp))
-            }
-        }
 
-        if (entry.isStrength) {
-            if (entry.strengthSets.isNotEmpty()) {
-                SetColumnHeader(units)
-            }
-            entry.strengthSets.forEachIndexed { index, set ->
-                SetRow(
-                    index = index,
-                    set = set,
-                    units = units,
-                    done = set.id in doneIds,
-                    onReps = { onReps(set.id, it) },
-                    onWeightKg = { onWeight(set.id, it) },
-                    onToggleDone = { onToggleDone(set.id) },
-                    onOptions = { onOptions(set.id) },
+            if (entry.isStrength) {
+                if (entry.strengthSets.isNotEmpty()) {
+                    SetColumnHeader(units)
+                }
+                entry.strengthSets.forEachIndexed { index, set ->
+                    SetRow(
+                        index = index,
+                        set = set,
+                        units = units,
+                        done = set.id in doneIds,
+                        onReps = { onReps(set.id, it) },
+                        onWeightKg = { onWeight(set.id, it) },
+                        onToggleDone = { onToggleDone(set.id) },
+                        onOptions = { onOptions(set.id) },
+                    )
+                }
+                TextButton(onClick = onAddSet) {
+                    Icon(
+                        Icons.Rounded.Add,
+                        null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Text(" Add set", color = MaterialTheme.colorScheme.primary)
+                }
+            } else {
+                com.lukr99.workout.ui.components.CardioEditor(
+                    cardio = entry.cardioData
+                        ?: com.lukr99.workout.domain.CardioEntryData(workoutEntryId = entry.id),
+                    onChange = onCardioChange,
                 )
             }
-            TextButton(onClick = onAddSet) {
-                Icon(Icons.Rounded.Add, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                Text(" Add set", color = MaterialTheme.colorScheme.primary)
-            }
-        } else {
-            com.lukr99.workout.ui.components.CardioEditor(
-                cardio = entry.cardioData ?: com.lukr99.workout.domain.CardioEntryData(workoutEntryId = entry.id),
-                onChange = onCardioChange,
-            )
         }
     }
 }
