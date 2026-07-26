@@ -52,6 +52,7 @@ history → analytics-ready data → export). It did its job. But:
 | [handoff-phase-4.md](handoff-phase-4.md) | Prompt for Phase 4 UI/polish (Claude): set-input rework, wire insights/wgerSync, motion |
 | [handoff-codex-phase-4.md](handoff-codex-phase-4.md) | Parallel non-UI package for Codex: Health Connect, backup automation, export v1.2 (done) |
 | [handoff-codex-phase-5-release.md](handoff-codex-phase-5-release.md) | Phase 5 release hardening (Codex): Health Connect/backup UI, superset UI, icon/splash, signing, CI |
+| [handoff-bugfix-polish.md](handoff-bugfix-polish.md) | Bug-fix/polish sub-phase: **P0 set-done crash**, navbar centering, exercise search/filter, exercise images |
 | [../../tools/README.md](../../tools/README.md) | Phone/ADB omni-tooling for building, installing, and pulling data |
 
 ## Status snapshot
@@ -82,6 +83,10 @@ history → analytics-ready data → export). It did its job. But:
 - [x] Both Phase 4 branches merged conflict-free (disjoint file sets); verified on the A56:
   `testDebugUnitTest` + `assembleDebug` green, **17/17 `connectedDebugAndroidTest`** (incl. schema
   1→2 migration).
+- [ ] **Bug-fix/polish sub-phase (do first)** — **P0: finishing a set crashes** (FK constraint —
+  non-atomic `saveWorkoutSession` + fire-and-forget `persist()` race; fix = wrap in `inTransaction` +
+  serialize persist), navbar "Start" label centering, exercise search/filter, exercise images.
+  Handoff: [handoff-bugfix-polish.md](handoff-bugfix-polish.md).
 - [ ] **Phase 5 — release hardening (next, Codex)** — wire the Health Connect grant flow + Settings
   backup/health toggles + privacy-policy rationale screen (services are ready, UI not); superset
   grouping UI; icon/splash; minified+signable release build; CI. Handoff:
