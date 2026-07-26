@@ -12,6 +12,7 @@ import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutSessionStatus
 import com.lukr99.workout.domain.records.ExerciseRecords
+import com.lukr99.workout.domain.recovery.RecoverySnapshot
 import com.lukr99.workout.domain.query.WorkoutCriterion
 import com.lukr99.workout.domain.query.WorkoutQuery
 import com.lukr99.workout.domain.query.asFilter
@@ -85,6 +86,7 @@ class ProgressViewModel(
                 overview = overview,
                 weeklyVolume = weekly,
                 exercises = buildExerciseSummaries(sessions),
+                recovery = insights.recovery(),
             )
         }
     }
@@ -159,6 +161,7 @@ data class ProgressUiState(
     val overview: ProgressOverview = ProgressOverview(),
     val weeklyVolume: List<WeeklyVolume> = emptyList(),
     val exercises: List<ExerciseProgressSummary> = emptyList(),
+    val recovery: RecoverySnapshot? = null,
 )
 
 data class ProgressOverview(
