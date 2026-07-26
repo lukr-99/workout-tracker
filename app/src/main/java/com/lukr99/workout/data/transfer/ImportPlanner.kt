@@ -185,6 +185,8 @@ internal object ImportPlanner {
         externalSourceId = existing.externalSourceId ?: incoming.externalSourceId,
         isArchived = existing.isArchived && incoming.isArchived,
         defaultRestSeconds = incoming.defaultRestSeconds ?: existing.defaultRestSeconds,
+        imageUrl = incoming.imageUrl ?: existing.imageUrl,
+        imageAttribution = incoming.imageAttribution ?: existing.imageAttribution,
     )
 
     private fun mergeTemplate(

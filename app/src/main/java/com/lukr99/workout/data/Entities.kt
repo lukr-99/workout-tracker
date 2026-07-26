@@ -39,6 +39,8 @@ data class ExerciseEntity(
     val externalSourceId: String?,
     val isArchived: Boolean,
     val defaultRestSeconds: Int? = null,
+    val imageUrl: String? = null,
+    val imageAttribution: String? = null,
 )
 
 @Entity(

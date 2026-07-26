@@ -249,7 +249,7 @@ class WorkoutRepository(
     fun observeSession(id: String): Flow<WorkoutSession?> =
         dao.observeSession(id).map { it?.toDomain() }
 
-    suspend fun saveWorkoutSession(session: WorkoutSession): WorkoutSession {
+    suspend fun saveWorkoutSession(session: WorkoutSession): WorkoutSession = inTransaction {
         val id = session.id.ifBlank { newId() }
         var normalized = session.copy(
             id = id,
@@ -266,7 +266,7 @@ class WorkoutRepository(
 
         dao.upsertSession(normalized.toEntity())
         replaceSessionChildren(normalized)
-        return getSession(id) ?: normalized
+        getSession(id) ?: normalized
     }
 
     suspend fun deleteWorkoutSession(id: String) = dao.deleteSession(id)
@@ -368,7 +368,7 @@ class WorkoutRepository(
         sessions = dao.getExportableSessions().map { it.toDomain() }.sortedByDescending { it.startedAtUtc },
     )
 
-    /** Restore a bundle into the DB, preserving ids (upsert). Accepts `1.0` and `1.1`. */
+    /** Restore a supported bundle into the DB, preserving ids (upsert). */
     suspend fun importBundle(bundle: ExportBundle) = inTransaction {
         dao.upsertExercises(bundle.exercises.map { it.toEntity() })
         for (template in bundle.templates) saveTemplate(template)
@@ -393,6 +393,8 @@ class WorkoutRepository(
         externalSourceId = externalSourceId,
         isArchived = isArchived,
         defaultRestSeconds = defaultRestSeconds,
+        imageUrl = imageUrl,
+        imageAttribution = imageAttribution,
     )
 
     private fun Exercise.toEntity() = ExerciseEntity(
@@ -407,6 +409,8 @@ class WorkoutRepository(
         externalSourceId = externalSourceId,
         isArchived = isArchived,
         defaultRestSeconds = defaultRestSeconds,
+        imageUrl = imageUrl,
+        imageAttribution = imageAttribution,
     )
 
     private fun TemplateWithExercises.toDomain() = WorkoutTemplate(
@@ -559,6 +563,12 @@ class WorkoutRepository(
         }
 
         filter.category?.let { category -> result = result.filter { it.category == category } }
+        val equipment = filter.equipment.trim()
+        if (equipment.isNotBlank()) {
+            result = result.filter {
+                it.equipment.split(',').any { item -> item.trim().equals(equipment, ignoreCase = true) }
+            }
+        }
         return result.sortedWith(compareBy({ it.category.ordinal }, { it.name })).toList()
     }
 
@@ -572,6 +582,8 @@ class WorkoutRepository(
             .filter { it.isNotBlank() }
             .map { it.trim() }
             .distinctBy { it.lowercase() },
+        imageUrl = imageUrl?.trim()?.ifBlank { null },
+        imageAttribution = imageAttribution?.trim()?.ifBlank { null },
     )
 
     private fun Exercise.addExternalFields(incoming: Exercise): Exercise = copy(
@@ -582,6 +594,8 @@ class WorkoutRepository(
             .distinctBy(String::lowercase),
         equipment = equipment.ifBlank { incoming.equipment },
         notes = notes.ifBlank { incoming.notes },
+        imageUrl = imageUrl ?: incoming.imageUrl,
+        imageAttribution = imageAttribution ?: incoming.imageAttribution,
     )
 
     private fun encodeList(list: List<String>): String = json.encodeToString(stringListSerializer, list)

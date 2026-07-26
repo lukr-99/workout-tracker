@@ -188,6 +188,10 @@ data class WgerExerciseDto(
     @SerialName("muscles_secondary")
     val secondaryMuscles: List<WgerNamedDto> = emptyList(),
     val equipment: List<WgerNamedDto> = emptyList(),
+    val images: List<WgerImageDto> = emptyList(),
+    val license: WgerLicenseDto? = null,
+    @SerialName("license_author")
+    val licenseAuthor: String? = null,
     val translations: List<WgerTranslationDto> = emptyList(),
 ) {
     internal fun toExercise(preferredLanguage: Int): Exercise? {
@@ -207,6 +211,15 @@ data class WgerExerciseDto(
         val description = translation?.descriptionSource
             ?.takeIf(String::isNotBlank)
             ?: translation?.description.orEmpty()
+        val imageUrl = images.firstOrNull(WgerImageDto::isMain)?.image
+            ?: images.firstOrNull()?.image
+        val imageAttribution = imageUrl?.let {
+            listOf("wger", license?.shortName, licenseAuthor)
+                .filterNotNull()
+                .map(String::trim)
+                .filter(String::isNotBlank)
+                .joinToString(" · ")
+        }
 
         return Exercise(
             id = newId(),
@@ -220,9 +233,25 @@ data class WgerExerciseDto(
             notes = description.toPlainText(),
             source = ExerciseSource.Synced,
             externalSourceId = "wger:$externalId",
+            imageUrl = imageUrl,
+            imageAttribution = imageAttribution,
         )
     }
 }
+
+@Serializable
+data class WgerImageDto(
+    val image: String? = null,
+    @SerialName("is_main")
+    val isMain: Boolean = false,
+)
+
+@Serializable
+data class WgerLicenseDto(
+    @SerialName("short_name")
+    val shortName: String = "",
+    val url: String = "",
+)
 
 @Serializable
 data class WgerNamedDto(

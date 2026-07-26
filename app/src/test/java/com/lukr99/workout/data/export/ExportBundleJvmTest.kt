@@ -18,19 +18,21 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * The cross-device contract: our `1.2` bundle round-trips through JSON unchanged, and a hand-crafted
+ * The cross-device contract: our `1.3` bundle round-trips through JSON unchanged, and a hand-crafted
  * `v1.0` export (enums as ints, ISO-8601 timestamps, MAUI computed fields) imports 1:1.
  */
 class ExportBundleJvmTest {
 
     private val bundle = ExportBundle(
         exportedAtUtc = "2024-01-01T10:00:00Z",
-        exportFormatVersion = "1.2",
+        exportFormatVersion = "1.3",
         exercises = listOf(
             Exercise(
                 id = "ex1", name = "Bench", category = ExerciseCategory.Strength,
                 primaryBodyPart = "Chest", secondaryBodyParts = listOf("Shoulders", "Triceps"),
                 equipment = "Barbell", source = ExerciseSource.Seeded, defaultRestSeconds = 120,
+                imageUrl = "https://wger.de/media/bench.png",
+                imageAttribution = "wger · CC-BY-SA 4",
             ),
         ),
         templates = listOf(
@@ -93,6 +95,8 @@ class ExportBundleJvmTest {
         assertEquals(ExerciseSource.Seeded, exercise.source)
         assertEquals(listOf("Shoulders", "Triceps"), exercise.secondaryBodyParts)
         assertEquals(null, exercise.defaultRestSeconds) // additive field defaults on a 1.0 read
+        assertEquals(null, exercise.imageUrl)
+        assertEquals(null, exercise.imageAttribution)
 
         val session = restored.sessions.single()
         assertEquals(WorkoutSessionStatus.Completed, session.status)
@@ -120,8 +124,8 @@ class ExportBundleJvmTest {
 
     @Test
     fun supportsAllPublishedVersions() {
-        assertEquals(setOf("1.0", "1.1", "1.2"), ExportBundle.SUPPORTED_VERSIONS)
-        assertEquals("1.2", ExportBundle.CURRENT_VERSION)
+        assertEquals(setOf("1.0", "1.1", "1.2", "1.3"), ExportBundle.SUPPORTED_VERSIONS)
+        assertEquals("1.3", ExportBundle.CURRENT_VERSION)
     }
 
     private companion object {
