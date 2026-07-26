@@ -81,7 +81,11 @@ fun LiveWorkoutScreen(
     val prEvent by vm.prEvent.collectAsState()
     val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
 
+    val suggestion by vm.suggestion.collectAsState()
     LaunchedEffect(Unit) { vm.loadActiveIfAny() }
+    LaunchedEffect(suggestion) {
+        suggestion?.let { toast(it); vm.consumeSuggestion() }
+    }
     LaunchedEffect(prEvent?.id) {
         if (prEvent != null) {
             haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)

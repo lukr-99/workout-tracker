@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -75,6 +76,42 @@ fun SettingsScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf(60, 90, 120, 150, 180).forEach { secs ->
                     FilterChip(Format.clock(secs), settings.defaultRestSeconds == secs, { vm.setDefaultRest(secs) })
+                }
+            }
+        }
+
+        val syncState by vm.catalogSync.collectAsState()
+        SettingSection("Exercise catalog") {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Sync from wger", color = MaterialTheme.colorScheme.onBackground)
+                    Text(
+                        when (val s = syncState) {
+                            is SettingsViewModel.CatalogSyncState.Running -> "Syncing…"
+                            is SettingsViewModel.CatalogSyncState.Done ->
+                                "Added ${s.summary.added} · updated ${s.summary.updated} · skipped ${s.summary.skipped}"
+                            is SettingsViewModel.CatalogSyncState.Failed -> s.message
+                            else -> "Download the open exercise database"
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (syncState is SettingsViewModel.CatalogSyncState.Failed) MaterialTheme.colorScheme.error else TextMid,
+                    )
+                }
+                if (syncState is SettingsViewModel.CatalogSyncState.Running) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                } else {
+                    Text(
+                        "Sync",
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.clip(RoundedCornerShape(10.dp))
+                            .clickable { vm.syncCatalog() }
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                    )
                 }
             }
         }

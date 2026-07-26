@@ -15,6 +15,8 @@ import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutSessionStatus
 import com.lukr99.workout.domain.newId
+import com.lukr99.workout.domain.progression.DoubleProgression
+import com.lukr99.workout.domain.progression.SuggestionStatus
 import com.lukr99.workout.domain.records.RecordKind
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -58,6 +60,11 @@ class LiveWorkoutViewModel(
     val prEvent: StateFlow<PrEvent?> = prEventState.asStateFlow()
     fun consumePrEvent() { prEventState.value = null }
 
+    /** A one-shot progression rationale to surface (toast) after an exercise is added with a suggestion. */
+    private val suggestionState = MutableStateFlow<String?>(null)
+    val suggestion: StateFlow<String?> = suggestionState.asStateFlow()
+    fun consumeSuggestion() { suggestionState.value = null }
+
     /** Non-archived catalog for the add-exercise picker. */
     val exercises: StateFlow<List<Exercise>> =
         repo.observeExercises().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -84,13 +91,39 @@ class LiveWorkoutViewModel(
 
     fun addExercise(exercise: Exercise) {
         viewModelScope.launch {
-            val prefillSets = lastPerformance(exercise.id)
-            val entry = repo.newEntryForExercise(exercise, sortOrder = draftState.value?.entries?.size ?: 0).let { base ->
-                if (exercise.category == ExerciseCategory.Strength && prefillSets.isNotEmpty()) {
-                    base.copy(strengthSets = prefillSets)
-                } else base
-            }
+            val base = repo.newEntryForExercise(exercise, sortOrder = draftState.value?.entries?.size ?: 0)
+            val entry = if (exercise.category == ExerciseCategory.Strength) {
+                val suggested = suggestedSets(exercise)
+                when {
+                    suggested != null -> base.copy(strengthSets = suggested)
+                    else -> {
+                        val prefill = lastPerformance(exercise.id)
+                        if (prefill.isNotEmpty()) base.copy(strengthSets = prefill) else base
+                    }
+                }
+            } else base
             mutate { it.copy(entries = it.entries + entry.copy(workoutSessionId = it.id)) }
+        }
+    }
+
+    /**
+     * Phase 3.5 `insights.progression` as the pre-filled next sets (default double-progression). Emits
+     * the rationale for a toast. Returns null when there is not enough history to suggest.
+     */
+    private suspend fun suggestedSets(exercise: Exercise): List<StrengthSet>? {
+        if (exercise.id.isBlank()) return null
+        val suggestion = runCatching { insights.progression(exercise.id, DoubleProgression()) }.getOrNull()
+            ?: return null
+        if (suggestion.status != SuggestionStatus.Ready || suggestion.targets.isEmpty()) return null
+        suggestionState.value = suggestion.rationale
+        return suggestion.targets.mapIndexed { i, t ->
+            StrengthSet(
+                id = newId(),
+                setNumber = i + 1,
+                reps = t.reps,
+                weightKg = t.weightKg,
+                setType = t.setType,
+            )
         }
     }
 
