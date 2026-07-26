@@ -54,6 +54,7 @@ import com.lukr99.workout.ui.components.ConfirmDialog
 import com.lukr99.workout.ui.components.ExercisePicker
 import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.LocalToast
+import com.lukr99.workout.ui.components.PrBanner
 import com.lukr99.workout.ui.components.RestTimerBar
 import com.lukr99.workout.ui.components.SetColumnHeader
 import com.lukr99.workout.ui.components.SetRow
@@ -77,8 +78,17 @@ fun LiveWorkoutScreen(
     val doneIds by vm.doneSetIds.collectAsState()
     val rest by vm.rest.collectAsState()
     val exercises by vm.exercises.collectAsState()
+    val prEvent by vm.prEvent.collectAsState()
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
 
     LaunchedEffect(Unit) { vm.loadActiveIfAny() }
+    LaunchedEffect(prEvent?.id) {
+        if (prEvent != null) {
+            haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+            kotlinx.coroutines.delay(2800)
+            vm.consumePrEvent()
+        }
+    }
 
     var showPicker by remember { mutableStateOf(false) }
     var confirmFinish by remember { mutableStateOf(false) }
@@ -154,6 +164,25 @@ fun LiveWorkoutScreen(
                             modifier = Modifier.padding(top = 8.dp),
                         )
                     }
+                }
+            }
+        }
+
+        // PR celebration overlay (top)
+        androidx.compose.animation.AnimatedVisibility(
+            visible = prEvent != null,
+            modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(horizontal = 14.dp, vertical = 6.dp),
+            enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { -it },
+            exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically { -it },
+        ) {
+            prEvent?.let { ev ->
+                androidx.compose.runtime.key(ev.id) {
+                    PrBanner(
+                        exerciseName = ev.exerciseName,
+                        headline = ev.headline,
+                        displayValue = Format.toDisplay(ev.estimated1RmKg, units),
+                        unitLabel = Format.unitLabel(units),
+                    )
                 }
             }
         }

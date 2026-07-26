@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.lukr99.workout.data.AppContainer
 import com.lukr99.workout.data.WorkoutRepository
+import com.lukr99.workout.data.services.WorkoutInsightsService
 import com.lukr99.workout.domain.Estimates
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
@@ -14,6 +15,7 @@ import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutSessionStatus
 import com.lukr99.workout.domain.newId
+import com.lukr99.workout.domain.records.RecordKind
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -33,6 +35,7 @@ import kotlinx.coroutines.launch
 class LiveWorkoutViewModel(
     private val repo: WorkoutRepository,
     private val settings: com.lukr99.workout.settings.SettingsStore,
+    private val insights: WorkoutInsightsService,
 ) : ViewModel() {
 
     /** Live snapshot of the user's default rest, refreshed from DataStore. */
@@ -49,6 +52,11 @@ class LiveWorkoutViewModel(
 
     private val restState = MutableStateFlow(RestState())
     val rest: StateFlow<RestState> = restState.asStateFlow()
+
+    /** Fires when a just-completed set beats a stored record; the screen renders the PR treatment. */
+    private val prEventState = MutableStateFlow<PrEvent?>(null)
+    val prEvent: StateFlow<PrEvent?> = prEventState.asStateFlow()
+    fun consumePrEvent() { prEventState.value = null }
 
     /** Non-archived catalog for the add-exercise picker. */
     val exercises: StateFlow<List<Exercise>> =
@@ -157,6 +165,36 @@ class LiveWorkoutViewModel(
             val restSecs = entry?.let { restSecondsFor(it) } ?: defaultRest
             startRest(restSecs)
             persist()
+            evaluatePr(entryId, setId)
+        }
+    }
+
+    /**
+     * On set-done, ask Phase 3.5 `insights.evaluateSetRecord` whether the entered set beats a stored
+     * record. If so, flag the set as a PR (persisted, so it shows the PR badge everywhere) and emit a
+     * [PrEvent] the screen turns into the count-up + glow + haptic.
+     */
+    private fun evaluatePr(entryId: String, setId: String) {
+        val entry = draftState.value?.entries?.firstOrNull { it.id == entryId } ?: return
+        val set = entry.strengthSets.firstOrNull { it.id == setId } ?: return
+        if (entry.exerciseId.isBlank() || set.isWarmup || set.setType == SetType.Warmup) return
+        if (set.reps <= 0 || set.weightKg <= 0.0) return
+        viewModelScope.launch {
+            val achievement = insights.evaluateSetRecord(entry.exerciseId, set)
+            if (!achievement.isPersonalRecord) return@launch
+            // Flag the set as a PR in the draft (persist so history keeps the badge).
+            mutate {
+                it.copy(entries = it.entries.map { e ->
+                    if (e.id != entryId) e
+                    else e.copy(strengthSets = e.strengthSets.map { s -> if (s.id == setId) s.copy(isPr = true) else s })
+                })
+            }
+            prEventState.value = PrEvent(
+                id = System.nanoTime(),
+                exerciseName = entry.exerciseSnapshotName,
+                estimated1RmKg = Estimates.epley(set.weightKg, set.reps),
+                headline = achievement.headline(),
+            )
         }
     }
 
@@ -270,11 +308,29 @@ class LiveWorkoutViewModel(
         val total: Int = 0,
     )
 
+    /** A new personal record achieved live; consumed by the screen after the celebration plays. */
+    data class PrEvent(
+        val id: Long,
+        val exerciseName: String,
+        val estimated1RmKg: Double,
+        val headline: String,
+    )
+
     companion object {
         fun factory(container: AppContainer): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                LiveWorkoutViewModel(container.repository, container.settings) as T
+                LiveWorkoutViewModel(container.repository, container.settings, container.insights) as T
         }
     }
+}
+
+/** Human summary of the strongest achievement in a PR (e1RM beats heaviest beats volume). */
+private fun com.lukr99.workout.domain.records.RecordAchievements.headline(): String = when {
+    RecordKind.Estimated1Rm in kinds -> "New estimated 1RM"
+    RecordKind.HeaviestSet in kinds -> "Heaviest set ever"
+    repMaxReps.isNotEmpty() -> "New ${repMaxReps.min()}-rep max"
+    RecordKind.SetVolume in kinds -> "Best set volume"
+    RecordKind.SessionVolume in kinds -> "Best session volume"
+    else -> "New personal record"
 }
