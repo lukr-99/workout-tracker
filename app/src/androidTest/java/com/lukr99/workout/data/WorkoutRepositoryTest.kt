@@ -13,6 +13,7 @@ import com.lukr99.workout.domain.CardioEntryData
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.ExerciseFilter
+import com.lukr99.workout.domain.ExerciseSource
 import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.domain.WorkoutSession
@@ -93,6 +94,53 @@ class WorkoutRepositoryTest {
         assertNotNull(archived)
         assertTrue(archived!!.isArchived)
         assertTrue(repo.getExercises(ExerciseFilter(includeArchived = true)).any { it.id == saved.id })
+    }
+
+    @Test
+    fun externalMergeOnlyEnrichesSyncedRowsAndProtectsUserCatalog() = runTest {
+        val custom = repo.saveExercise(
+            Exercise(
+                id = "custom",
+                name = "My Press",
+                primaryBodyPart = "Chest",
+                source = ExerciseSource.Custom,
+                externalSourceId = "wger:protected",
+            ),
+        )
+        val synced = repo.saveExercise(
+            Exercise(
+                id = "synced",
+                name = "Remote Row",
+                primaryBodyPart = "Back",
+                source = ExerciseSource.Synced,
+                externalSourceId = "wger:update",
+                notes = "Keep my note",
+            ),
+        )
+
+        val result = repo.mergeExternalExercisesDetailed(
+            listOf(
+                custom.copy(name = "Overwrite attempt", notes = "Remote"),
+                synced.copy(
+                    name = "Remote rename",
+                    secondaryBodyParts = listOf("Biceps"),
+                    equipment = "Cable",
+                    notes = "Overwrite attempt",
+                ),
+                Exercise(name = "My Press", externalSourceId = "wger:name-collision"),
+                Exercise(name = "New Remote", externalSourceId = "wger:new"),
+            ),
+        )
+
+        assertEquals(1, result.added)
+        assertEquals(1, result.updated)
+        assertEquals(2, result.skipped)
+        assertEquals("My Press", repo.getExercise("custom")!!.name)
+        val updated = repo.getExercise("synced")!!
+        assertEquals("Remote Row", updated.name)
+        assertEquals("Keep my note", updated.notes)
+        assertEquals("Cable", updated.equipment)
+        assertEquals(listOf("Biceps"), updated.secondaryBodyParts)
     }
 
     @Test

@@ -3,6 +3,8 @@ package com.lukr99.workout.data
 import android.content.Context
 import com.lukr99.workout.data.importer.BundleImporter
 import com.lukr99.workout.data.services.WorkoutDataService
+import com.lukr99.workout.data.services.WorkoutInsightsService
+import com.lukr99.workout.data.sync.WgerSyncService
 import com.lukr99.workout.data.transfer.AndroidDocumentGateway
 import com.lukr99.workout.data.transfer.DataTransferService
 import com.lukr99.workout.settings.SettingsStore
@@ -19,6 +21,8 @@ class AppContainer(context: Context) {
         RoomTransactionRunner(db),
     )
     val workoutData: WorkoutDataService by lazy { WorkoutDataService(repository) }
+    val insights: WorkoutInsightsService by lazy { WorkoutInsightsService(repository) }
+    val wgerSync: WgerSyncService by lazy { WgerSyncService(repository) }
     val dataTransfer: DataTransferService by lazy { DataTransferService(repository) }
     val documents: AndroidDocumentGateway by lazy { AndroidDocumentGateway(context) }
     val settings: SettingsStore by lazy { SettingsStore(context) }

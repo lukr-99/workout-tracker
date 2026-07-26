@@ -44,6 +44,7 @@ history → analytics-ready data → export). It did its job. But:
 | [phase-0-report.md](phase-0-report.md) | Phase 0 scaffold review + open decisions |
 | [phase-1-report.md](phase-1-report.md) | Phase 1 data-core implementation + verification report |
 | [phase-3-report.md](phase-3-report.md) | Phase 3 implementation and verification report |
+| [phase-3.5-report.md](phase-3.5-report.md) | Phase 3.5 records/recovery/progression/catalog-sync report and UI APIs |
 | [handoff-phase-1.md](handoff-phase-1.md) | Prompt for the Phase 1 data-core agent (done) |
 | [handoff-phase-2.md](handoff-phase-2.md) | Prompt for the Phase 2 logging-loop UI agent (Claude) |
 | [handoff-codex-phase-3.5.md](handoff-codex-phase-3.5.md) | Parallel non-UI package for Codex: analytics/records/progression/wger sync |
@@ -61,11 +62,13 @@ history → analytics-ready data → export). It did its job. But:
 - [x] **Phase 3** — data services (import/export + creation/query/stats), built by Codex on
   `codex/phase-3-data-services` and **merged into `feature/app-rework`**; see
   [phase-3-report.md](phase-3-report.md) and [07-data-services.md](07-data-services.md)
-- [~] **Phase 3.5** — analytics/records/recovery/progression + wger sync (Codex), non-UI. **Complete
-  and reviewed on `codex/phase-3.5-analytics`** (built on the merged tip; additive, no `ui/` changes);
-  **awaiting merge after Phase 2 lands.** Then wire `AppContainer.insights` / `AppContainer.wgerSync`.
-  See `docs/rework/phase-3.5-report.md` on that branch (lands here on merge).
-- [ ] **Phase 2** — core logging loop UI (in progress on `feature/app-rework`). Handoff:
-  [handoff-phase-2.md](handoff-phase-2.md). Routes Settings → `DataTransferScreen` from Phase 3.
-- [ ] Merge `codex/phase-3.5-analytics` into `feature/app-rework` (after Phase 2)
+- [x] **Phase 2** — core logging loop UI: 5-item shell + central Start, live logging loop, Home /
+  Library / History / Progress / Settings over the Phase 1/3 seams. Verified on-device; see
+  [phase-2-report.md](phase-2-report.md).
+- [x] **Phase 3.5** — non-UI records, recovery/body-part stats, progression, and wger catalog sync
+  (Codex), **merged into `feature/app-rework`**; see [phase-3.5-report.md](phase-3.5-report.md).
+- [ ] **Phase 4** — polish + advanced features. First up (Phase 2 user feedback): rework the set
+  input (REPS/KG labels + touch-friendly editor), add-exercise to past workouts; then wire
+  `AppContainer.insights` (records/recovery/progression) + `AppContainer.wgerSync` into the UI,
+  `BodyHeatmap`, motion polish, cardio logging. See [phase-2-report.md](phase-2-report.md) §6.
 - [ ] Deeper Lyfta capability study → roadmap ([06-lyfta-study.md](06-lyfta-study.md))
