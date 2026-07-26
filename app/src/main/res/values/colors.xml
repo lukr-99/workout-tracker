@@ -3,6 +3,4 @@
     <!-- Mirrors the dark design-system tokens (02-design-system.md). Used by the window theme
          before Compose takes over. -->
     <color name="bg">#0B0D10</color>
-    <color name="ember">#F97316</color>
-    <color name="ic_launcher_background">#0B0D10</color>
 </resources>

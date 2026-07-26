@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,6 +7,26 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
 }
+
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+if (keystorePropertiesFile.isFile) {
+    keystorePropertiesFile.inputStream().use(keystoreProperties::load)
+}
+fun signingValue(property: String, environment: String): String? =
+    keystoreProperties.getProperty(property)?.takeIf(String::isNotBlank)
+        ?: System.getenv(environment)?.takeIf(String::isNotBlank)
+
+val releaseStoreFile = signingValue("storeFile", "KEYSTORE_STORE_FILE")
+val releaseStorePassword = signingValue("storePassword", "KEYSTORE_STORE_PASSWORD")
+val releaseKeyAlias = signingValue("keyAlias", "KEYSTORE_KEY_ALIAS")
+val releaseKeyPassword = signingValue("keyPassword", "KEYSTORE_KEY_PASSWORD")
+val releaseSigningReady = listOf(
+    releaseStoreFile,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword,
+).all { it != null }
 
 android {
     namespace = "com.lukr99.workout"
@@ -19,7 +41,8 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = 1
-        versionName = "0.1.0"
+        // Native rework release line. The frozen MAUI proof-of-concept already used v1.0.0.
+        versionName = "2.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -27,12 +50,27 @@ android {
         ksp { arg("room.schemaLocation", "$projectDir/schemas") }
     }
 
+    signingConfigs {
+        create("release") {
+            if (releaseSigningReady) {
+                storeFile = rootProject.file(checkNotNull(releaseStoreFile))
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         // No debug applicationId suffix: the frozen MAUI 1.0 app ships as
         // `com.lukr99.workouttracker`, so `com.lukr99.workout` already coexists with it, and the
         // tools/build-and-install.ps1 -Launch step targets the un-suffixed id.
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            if (releaseSigningReady) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
@@ -55,6 +93,7 @@ android {
 
 dependencies {
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.core.splashscreen)
 
     // Compose (BOM aligns all Compose artifacts)
     val composeBom = platform(libs.compose.bom)

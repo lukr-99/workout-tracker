@@ -134,7 +134,7 @@ class LiveWorkoutViewModel(
     }
 
     fun removeEntry(entryId: String) = mutate { session ->
-        session.copy(entries = session.entries.filterNot { it.id == entryId })
+        session.copy(entries = normalizeSupersetGroups(session.entries.filterNot { it.id == entryId }))
     }
 
     fun moveEntry(entryId: String, up: Boolean) = mutate { session ->
@@ -144,7 +144,16 @@ class LiveWorkoutViewModel(
         val j = if (up) i - 1 else i + 1
         if (j !in list.indices) return@mutate session
         list.add(j, list.removeAt(i))
-        session.copy(entries = list.mapIndexed { index, e -> e.copy(sortOrder = index) })
+        session.copy(
+            entries = normalizeSupersetGroups(
+                list.mapIndexed { index, e -> e.copy(sortOrder = index) },
+            ),
+        )
+    }
+
+    /** Join/ungroup this exercise with the previous consecutive entry. */
+    fun toggleSupersetWithPrevious(entryId: String) = mutate { session ->
+        session.copy(entries = toggleSupersetBoundary(session.entries, entryId))
     }
 
     fun addSet(entryId: String) = mutate { session ->

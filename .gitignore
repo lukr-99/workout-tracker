@@ -6,6 +6,11 @@
 # dotenv files
 .env
 
+# Android release signing (local/CI secrets only; never commit).
+keystore.properties
+*.keystore
+*.jks
+
 # User-specific files
 *.rsuser
 *.suo

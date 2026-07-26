@@ -26,6 +26,7 @@ sealed interface Route {
     data class WorkoutDetail(val sessionId: String) : Route
     data class ProgressDetail(val exerciseId: String) : Route
     data object DataTransfer : Route
+    data object PrivacyPolicy : Route
 }
 
 /** Holds the selected tab and the overlay back-stack as Compose state. */

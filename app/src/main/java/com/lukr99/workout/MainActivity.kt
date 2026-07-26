@@ -8,6 +8,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.view.WindowCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.lukr99.workout.settings.AppSettings
 import com.lukr99.workout.settings.ThemeMode
 import com.lukr99.workout.ui.App
@@ -21,6 +22,7 @@ import com.lukr99.workout.ui.theme.WorkoutTheme
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val container = (application as WorkoutApp).container
