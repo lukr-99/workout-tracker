@@ -156,11 +156,9 @@ fun WorkoutDetailScreen(
                             Text(" Add set", color = MaterialTheme.colorScheme.primary)
                         }
                     } else {
-                        val cardio = entry.cardioData
-                        Text(
-                            "Cardio · ${Format.duration((cardio?.durationSeconds ?: 0).toLong())}" +
-                                (cardio?.distanceKm?.let { " · ${it}km" } ?: ""),
-                            style = MaterialTheme.typography.bodyLarge, color = TextMid,
+                        com.lukr99.workout.ui.components.CardioEditor(
+                            cardio = entry.cardioData ?: com.lukr99.workout.domain.CardioEntryData(workoutEntryId = entry.id),
+                            onChange = { data -> mutateEntry(entry.id) { it.copy(cardioData = data) } },
                         )
                     }
                 }

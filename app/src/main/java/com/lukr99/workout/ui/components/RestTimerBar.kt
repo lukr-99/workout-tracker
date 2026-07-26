@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui.components
 
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -20,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
@@ -43,7 +45,18 @@ fun RestTimerBar(
         targetValue = if (totalSeconds <= 0) 0f else (remainingSeconds.toFloat() / totalSeconds).coerceIn(0f, 1f),
         label = "restRing",
     )
-    val ring = MaterialTheme.colorScheme.primary
+    // Last-3s pulse: the ring gently breathes as the countdown nears zero.
+    val pulsing = remainingSeconds in 1..3
+    val pulse by androidx.compose.animation.core.rememberInfiniteTransition(label = "restPulse").animateFloat(
+        initialValue = 1f,
+        targetValue = if (pulsing) 1.14f else 1f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+            animation = androidx.compose.animation.core.tween(500),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse,
+        ),
+        label = "restPulseScale",
+    )
+    val ring = if (pulsing) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
     val track = MaterialTheme.colorScheme.outline
 
     Row(
@@ -56,7 +69,9 @@ fun RestTimerBar(
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
-            Canvas(Modifier.size(40.dp)) {
+            Canvas(
+                Modifier.size(40.dp).graphicsLayer { scaleX = pulse; scaleY = pulse },
+            ) {
                 val stroke = 4.dp.toPx()
                 val d = Size(size.width - stroke, size.height - stroke)
                 val topLeft = androidx.compose.ui.geometry.Offset(stroke / 2, stroke / 2)

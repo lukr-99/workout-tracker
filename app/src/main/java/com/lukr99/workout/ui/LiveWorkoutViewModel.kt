@@ -180,6 +180,21 @@ class LiveWorkoutViewModel(
     fun setWeight(entryId: String, setId: String, weightKg: Double) =
         updateSet(entryId, setId) { it.copy(weightKg = weightKg.coerceAtLeast(0.0)) }
 
+    fun setRir(entryId: String, setId: String, rir: Double?) =
+        updateSet(entryId, setId) { it.copy(rir = rir) }
+
+    fun setRpe(entryId: String, setId: String, rpe: Double?) =
+        updateSet(entryId, setId) { it.copy(rpe = rpe) }
+
+    /** Edit a cardio entry's duration/distance/calories in the live draft (persisted on finish). */
+    fun updateCardio(entryId: String, transform: (com.lukr99.workout.domain.CardioEntryData) -> com.lukr99.workout.domain.CardioEntryData) =
+        mutate(persist = false) { session ->
+            session.copy(entries = session.entries.map { entry ->
+                if (entry.id != entryId) entry
+                else entry.copy(cardioData = transform(entry.cardioData ?: com.lukr99.workout.domain.CardioEntryData(workoutEntryId = entry.id)))
+            })
+        }
+
     fun setType(entryId: String, setId: String, type: SetType) = mutate {
         it.copy(entries = it.entries.map { entry ->
             if (entry.id != entryId) entry

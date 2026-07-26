@@ -25,6 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -88,19 +89,33 @@ fun SetRow(
             ) { editingWeight = true }
         }
 
+        val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+        val checkScale by androidx.compose.animation.core.animateFloatAsState(
+            targetValue = if (done) 1f else 0.86f,
+            animationSpec = androidx.compose.animation.core.spring(
+                dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+                stiffness = androidx.compose.animation.core.Spring.StiffnessMedium,
+            ),
+            label = "checkSpring",
+        )
         Box(
             Modifier
                 .size(38.dp)
                 .clip(CircleShape)
                 .background(if (done) Positive.copy(alpha = 0.18f) else MaterialTheme.colorScheme.surface)
-                .clickable(onClick = onToggleDone),
+                .clickable {
+                    if (!done) haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                    onToggleDone()
+                },
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 Icons.Rounded.Check,
                 contentDescription = if (done) "mark set not done" else "mark set done",
                 tint = if (done) Positive else TextMid,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier
+                    .size(20.dp)
+                    .graphicsLayer { scaleX = checkScale; scaleY = checkScale },
             )
         }
     }

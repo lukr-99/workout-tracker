@@ -93,6 +93,12 @@ fun LiveWorkoutScreen(
             vm.consumePrEvent()
         }
     }
+    // Haptic when a running rest hits zero (skip/reset leaves total at 0, so it stays silent).
+    LaunchedEffect(rest.remaining, rest.total) {
+        if (rest.total > 0 && rest.remaining == 0) {
+            haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+        }
+    }
 
     var showPicker by remember { mutableStateOf(false) }
     var confirmFinish by remember { mutableStateOf(false) }
@@ -155,6 +161,7 @@ fun LiveWorkoutScreen(
                         onMoveUp = { vm.moveEntry(entry.id, up = true) },
                         onMoveDown = { vm.moveEntry(entry.id, up = false) },
                         onRemove = { vm.removeEntry(entry.id) },
+                        onCardioChange = { data -> vm.updateCardio(entry.id) { data } },
                     )
                 }
                 item {
@@ -237,12 +244,12 @@ fun LiveWorkoutScreen(
         val entry = session?.entries?.firstOrNull { it.id == entryId }
         val set = entry?.strengthSets?.firstOrNull { it.id == setId }
         if (set != null) {
-            ChoiceDialog(
-                title = "Set type",
-                options = SetType.entries,
-                selected = set.setType,
-                label = { it.name },
-                onSelect = { vm.setType(entryId, setId, it) },
+            com.lukr99.workout.ui.components.SetOptionsSheet(
+                set = set,
+                onType = { vm.setType(entryId, setId, it) },
+                onRir = { vm.setRir(entryId, setId, it) },
+                onRpe = { vm.setRpe(entryId, setId, it) },
+                onRemove = { vm.removeSet(entryId, setId) },
                 onDismiss = { optionsFor = null },
             )
         } else optionsFor = null
@@ -282,6 +289,7 @@ private fun EntryCard(
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
     onRemove: () -> Unit,
+    onCardioChange: (com.lukr99.workout.domain.CardioEntryData) -> Unit,
 ) {
     Column(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
@@ -332,7 +340,10 @@ private fun EntryCard(
                 Text(" Add set", color = MaterialTheme.colorScheme.primary)
             }
         } else {
-            Text("Cardio entry", style = MaterialTheme.typography.bodyLarge, color = TextMid)
+            com.lukr99.workout.ui.components.CardioEditor(
+                cardio = entry.cardioData ?: com.lukr99.workout.domain.CardioEntryData(workoutEntryId = entry.id),
+                onChange = onCardioChange,
+            )
         }
     }
 }
