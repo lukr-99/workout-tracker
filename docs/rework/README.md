@@ -70,9 +70,18 @@ history → analytics-ready data → export). It did its job. But:
   [phase-2-report.md](phase-2-report.md).
 - [x] **Phase 3.5** — non-UI records, recovery/body-part stats, progression, and wger catalog sync
   (Codex), **merged into `feature/app-rework`**; see [phase-3.5-report.md](phase-3.5-report.md).
-- [ ] **Phase 4** — polish + advanced features. UI/integration (Claude):
-  [handoff-phase-4.md](handoff-phase-4.md) — set-input rework, add-exercise to past workouts, wire
-  `insights`/`wgerSync` (Records, Muscle Recovery, progression), motion, cardio. Parallel non-UI
-  (Codex): [handoff-codex-phase-4.md](handoff-codex-phase-4.md) — Health Connect, backup automation,
-  export v1.2.
+- [x] **Phase 4 (UI, Claude)** — touch-first numpad set input + REPS/KG labels, add-exercise to past
+  workouts, Records + Muscle-Recovery/`BodyHeatmap` + progression suggestions + live PR treatment
+  from `insights`, wger sync from Settings, motion/haptics + cardio + RIR/RPE. **Merged into
+  `feature/app-rework`**; see [phase-4-report.md](phase-4-report.md).
+- [x] **Phase 4 (services, Codex)** — Health Connect read/write, WorkManager auto-backup, Room
+  schema **v2** (`sessions.source`/`externalKey`, non-destructive `MIGRATION_1_2`), `ExportBundle`
+  **1.2**, smoothed-e1RM metric. **Merged into `feature/app-rework`**; see
+  [phase-4-services-report.md](phase-4-services-report.md).
+- [x] Both Phase 4 branches merged conflict-free (disjoint file sets); verified on the A56:
+  `testDebugUnitTest` + `assembleDebug` green, **17/17 `connectedDebugAndroidTest`** (incl. schema
+  1→2 migration).
+- [ ] **Release hardening (next)** — wire the Health Connect grant flow + Settings backup/health
+  toggles + privacy-policy rationale screen (services are ready, UI not); superset grouping UI;
+  icons/splash/Play listing/signing/CI. See [phase-4-report.md](phase-4-report.md) §6.
 - [ ] Deeper Lyfta capability study → roadmap ([06-lyfta-study.md](06-lyfta-study.md))

@@ -1,5 +1,9 @@
 # Handoff Prompt — Phase 4 (Codex): Health Connect, backup automation & export v1.2
 
+> **Status: ✅ COMPLETED & MERGED** into `feature/app-rework` — see
+> [phase-4-services-report.md](phase-4-services-report.md). Kept for history. The UI grant/toggle
+> flow for these services is release-hardening work (see README).
+
 > A **non-UI** work package for Codex, parallel to Claude's Phase 4 UI polish. Pure `domain/` +
 > `data/` service code with tests — **no `ui/` files, no screens.** Same model as your Phase 3 / 3.5.
 

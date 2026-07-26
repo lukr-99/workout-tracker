@@ -1,5 +1,9 @@
 # Handoff Prompt — Phase 4: Polish + advanced features (UI/integration)
 
+> **Status: ✅ COMPLETED & MERGED** into `feature/app-rework` — see [phase-4-report.md](phase-4-report.md).
+> Kept for history. Remaining items (superset UI, Health Connect grant flow, store-readiness) moved
+> to the release-hardening backlog in the README.
+
 > Paste the block below as the opening prompt for the next agent. It is self-contained.
 
 ---
