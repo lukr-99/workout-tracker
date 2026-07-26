@@ -81,6 +81,8 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.okhttp)
+    implementation(libs.health.connect.client)
+    implementation(libs.work.runtime.ktx)
 
     // JVM unit tests (domain analytics/estimates + serialization round-trip)
     testImplementation(libs.junit)
@@ -92,4 +94,5 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.room.testing)
     androidTestImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.work.testing)
 }

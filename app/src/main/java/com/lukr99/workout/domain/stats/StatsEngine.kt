@@ -159,6 +159,7 @@ object MetricKeys {
     const val AverageWeightKg = "average_weight_kg"
     const val MaxWeightKg = "max_weight_kg"
     const val BestE1rmKg = "best_e1rm_kg"
+    const val SmoothedE1rmKg = "smoothed_e1rm_kg"
     const val DurationSeconds = "duration_seconds"
     const val TimedWorkSeconds = "timed_work_seconds"
     const val CardioDistanceKm = "cardio_distance_km"
@@ -212,6 +213,7 @@ object BuiltInMetrics {
                 it.strengthSet?.let { set -> Estimates.epley(set.weightKg, set.reps) } ?: 0.0
             } ?: 0.0
         },
+        SmoothedE1rmMetric,
         metric(MetricKeys.DurationSeconds, MetricUnit.Seconds) { points ->
             points.distinctBy { it.session.id }.sumOf { it.session.durationSeconds }.toDouble()
         },
@@ -241,6 +243,34 @@ object BuiltInMetrics {
     ): MetricProvider = object : MetricProvider {
         override val key = key
         override fun calculate(points: List<WorkoutDataPoint>) = MetricValue(block(points), unit)
+    }
+}
+
+/**
+ * Chronological exponentially weighted e1RM trend. Each session contributes its best working-set
+ * estimate so a high-set-count workout cannot dominate the chart.
+ */
+object SmoothedE1rmMetric : MetricProvider {
+    override val key = MetricKeys.SmoothedE1rmKg
+
+    override fun calculate(points: List<WorkoutDataPoint>): MetricValue {
+        val perSession = points
+            .filter { it.strengthSet != null && it.strengthSet.isWarmup != true }
+            .groupBy { it.session.id }
+            .values
+            .mapNotNull { sessionPoints ->
+                val estimate = sessionPoints.maxOfOrNull { point ->
+                    point.strengthSet?.let { Estimates.epley(it.weightKg, it.reps) } ?: 0.0
+                } ?: return@mapNotNull null
+                sessionPoints.first().session.startedAtUtc to estimate
+            }
+            .sortedBy { it.first }
+
+        var smoothed: Double? = null
+        perSession.forEach { (_, estimate) ->
+            smoothed = smoothed?.let { previous -> (0.35 * estimate) + (0.65 * previous) } ?: estimate
+        }
+        return MetricValue(smoothed ?: 0.0, MetricUnit.Kilograms)
     }
 }
 

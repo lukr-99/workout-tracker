@@ -8,6 +8,7 @@ import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.ExerciseSource
 import com.lukr99.workout.domain.SetType
 import com.lukr99.workout.domain.WorkoutSessionStatus
+import com.lukr99.workout.domain.WorkoutSessionSource
 
 /**
  * Room persistence shapes, ported 1:1 from the MAUI `WorkoutTracker.Core/Data/Records.cs`.
@@ -75,7 +76,7 @@ data class TemplateExerciseEntity(
 
 @Entity(
     tableName = "sessions",
-    indices = [Index("templateId"), Index("name"), Index("status")],
+    indices = [Index("templateId"), Index("name"), Index("status"), Index("externalKey")],
 )
 data class SessionEntity(
     @PrimaryKey val id: String,
@@ -89,6 +90,8 @@ data class SessionEntity(
     val notes: String,
     val perceivedEffort: Int? = null,
     val bodyweightKg: Double? = null,
+    val source: WorkoutSessionSource = WorkoutSessionSource.Local,
+    val externalKey: String? = null,
 )
 
 @Entity(

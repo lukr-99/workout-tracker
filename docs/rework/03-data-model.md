@@ -71,7 +71,15 @@ These support roadmap features without breaking the `v1.0.0` shape:
 - `sessions.bodyweightKg: Double? = null` (optional log-time bodyweight)
 - `exercises.defaultRestSeconds: Int? = null`
 
-The `ExportBundle` version bumps to `1.1` when these ship; the importer reads `1.0` and `1.1`.
+The `ExportBundle` version bumped to `1.1` when these shipped.
+
+Phase 4 adds two more session fields, persisted by Room schema 2:
+
+- `sessions.source: WorkoutSessionSource = Local`
+- `sessions.externalKey: String? = null`
+
+They preserve integration provenance and Health Connect round-trip identity. Export format `1.2`
+carries them; the importer reads `1.0`, `1.1`, and `1.2`.
 
 ## Migrations
 
@@ -88,7 +96,7 @@ The `ExportBundle` version bumps to `1.1` when these ship; the importer reads `1
 ```
 {
   "exportedAtUtc": "<ISO-8601>",
-  "exportFormatVersion": "1.1",
+  "exportFormatVersion": "1.2",
   "exercises": [ ... ],
   "templates": [ ... ],
   "sessions": [ { ..., "entries": [ { ..., "strengthSets": [...], "cardioData": {...} } ] } ]

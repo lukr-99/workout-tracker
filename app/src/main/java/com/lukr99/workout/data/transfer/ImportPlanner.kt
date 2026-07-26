@@ -234,6 +234,12 @@ internal object ImportPlanner {
                 .joinToString("\n"),
             perceivedEffort = incoming.perceivedEffort ?: existing.perceivedEffort,
             bodyweightKg = incoming.bodyweightKg ?: existing.bodyweightKg,
+            source = if (existing.externalKey == null && incoming.externalKey != null) {
+                incoming.source
+            } else {
+                existing.source
+            },
+            externalKey = existing.externalKey ?: incoming.externalKey,
             entries = mergedEntries.mapIndexed { index, entry -> entry.copy(sortOrder = index) },
         )
     }

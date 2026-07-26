@@ -262,6 +262,12 @@ Generated_Code/
 # because we have git ;-)
 _UpgradeReport_Files/
 Backup*/
+!app/src/main/java/com/lukr99/workout/data/backup/
+!app/src/main/java/com/lukr99/workout/data/backup/**
+!app/src/test/java/com/lukr99/workout/data/backup/
+!app/src/test/java/com/lukr99/workout/data/backup/**
+!app/src/androidTest/java/com/lukr99/workout/data/backup/
+!app/src/androidTest/java/com/lukr99/workout/data/backup/**
 UpgradeLog*.XML
 UpgradeLog*.htm
 ServiceFabricBackup/

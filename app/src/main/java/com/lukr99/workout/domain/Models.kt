@@ -85,6 +85,9 @@ data class WorkoutSession(
     // Rework-additive (03-data-model.md).
     val perceivedEffort: Int? = null,
     val bodyweightKg: Double? = null,
+    // Export v1.2 / integration provenance. Existing 1.0/1.1 data defaults to local.
+    val source: WorkoutSessionSource = WorkoutSessionSource.Local,
+    val externalKey: String? = null,
     val entries: List<WorkoutEntry> = emptyList(),
 )
 

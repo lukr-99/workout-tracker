@@ -61,6 +61,21 @@ class StatsEngineTest {
         assertEquals(2.0, report.rows.single().metrics.getValue(custom.key).value, 0.0)
     }
 
+    @Test
+    fun smoothedE1rmUsesOneChronologicalBestEstimatePerSession() {
+        val report = StatsEngine().calculate(
+            sessions,
+            StatsRequest(metrics = listOf(MetricKeys.SmoothedE1rmKg)),
+        )
+
+        // Bench 5x100 = 116.67, then squat 5x120 = 140; EWMA alpha 0.35 = 124.83.
+        assertEquals(
+            124.833333,
+            report.rows.single().metrics.getValue(MetricKeys.SmoothedE1rmKg).value,
+            1e-5,
+        )
+    }
+
     private fun session(
         id: String,
         started: Long,

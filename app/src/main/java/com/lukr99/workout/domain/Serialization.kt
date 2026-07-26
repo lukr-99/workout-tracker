@@ -69,5 +69,8 @@ object ExerciseSourceSerializer :
 object WorkoutSessionStatusSerializer :
     OrdinalEnumSerializer<WorkoutSessionStatus>("WorkoutSessionStatus", WorkoutSessionStatus.entries.toTypedArray())
 
+object WorkoutSessionSourceSerializer :
+    OrdinalEnumSerializer<WorkoutSessionSource>("WorkoutSessionSource", WorkoutSessionSource.entries.toTypedArray())
+
 object SetTypeSerializer :
     OrdinalEnumSerializer<SetType>("SetType", SetType.entries.toTypedArray())
