@@ -1,5 +1,10 @@
 # Handoff Prompt — Phase 5 (Codex): Release hardening + Phase-4 service UI
 
+> **Status: ✅ COMPLETED & MERGED** into `feature/app-rework` — see
+> [phase-5-report.md](phase-5-report.md). Kept for history. Play-submission follow-ups →
+> [phase-6-release-checklist.md](phase-6-release-checklist.md).
+
+
 > Paste the block below as the opening prompt for Codex. It is self-contained.
 >
 > **Note on scope:** this package **includes UI work** — a deliberate departure from the earlier

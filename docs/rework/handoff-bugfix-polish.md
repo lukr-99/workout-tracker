@@ -1,5 +1,9 @@
 # Handoff Prompt — Sub-phase: Bug-fix & UX polish (crash + navbar + exercise search/images)
 
+> **Status: ✅ COMPLETED & MERGED** into `feature/app-rework` — see
+> [bugfix-polish-report.md](bugfix-polish-report.md). Kept for history.
+
+
 > Paste the block below as the opening prompt for the agent (Codex — Claude usage is tight). It is
 > self-contained. This sub-phase touches **both `data/` and `ui/`**.
 >

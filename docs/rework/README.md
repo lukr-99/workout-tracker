@@ -52,7 +52,11 @@ history → analytics-ready data → export). It did its job. But:
 | [handoff-phase-4.md](handoff-phase-4.md) | Prompt for Phase 4 UI/polish (Claude): set-input rework, wire insights/wgerSync, motion |
 | [handoff-codex-phase-4.md](handoff-codex-phase-4.md) | Parallel non-UI package for Codex: Health Connect, backup automation, export v1.2 (done) |
 | [handoff-codex-phase-5-release.md](handoff-codex-phase-5-release.md) | Phase 5 release hardening (Codex): Health Connect/backup UI, superset UI, icon/splash, signing, CI |
-| [handoff-bugfix-polish.md](handoff-bugfix-polish.md) | Bug-fix/polish sub-phase: **P0 set-done crash**, navbar centering, exercise search/filter, exercise images |
+| [handoff-bugfix-polish.md](handoff-bugfix-polish.md) | Bug-fix/polish sub-phase: **P0 set-done crash**, navbar centering, exercise search/filter, exercise images (done) |
+| [bugfix-polish-report.md](bugfix-polish-report.md) | Bug-fix/polish implementation + verification report |
+| [phase-5-report.md](phase-5-report.md) | Phase 5 release-hardening implementation report |
+| [release-signing.md](release-signing.md) | How to create your upload keystore + signing config keys |
+| [phase-6-release-checklist.md](phase-6-release-checklist.md) | Play Store submission checklist (user actions vs. agent-doable prep) |
 | [../../tools/README.md](../../tools/README.md) | Phone/ADB omni-tooling for building, installing, and pulling data |
 
 ## Status snapshot
@@ -83,12 +87,26 @@ history → analytics-ready data → export). It did its job. But:
 - [x] Both Phase 4 branches merged conflict-free (disjoint file sets); verified on the A56:
   `testDebugUnitTest` + `assembleDebug` green, **17/17 `connectedDebugAndroidTest`** (incl. schema
   1→2 migration).
-- [ ] **Bug-fix/polish sub-phase (do first)** — **P0: finishing a set crashes** (FK constraint —
-  non-atomic `saveWorkoutSession` + fire-and-forget `persist()` race; fix = wrap in `inTransaction` +
-  serialize persist), navbar "Start" label centering, exercise search/filter, exercise images.
-  Handoff: [handoff-bugfix-polish.md](handoff-bugfix-polish.md).
-- [ ] **Phase 5 — release hardening (next, Codex)** — wire the Health Connect grant flow + Settings
-  backup/health toggles + privacy-policy rationale screen (services are ready, UI not); superset
-  grouping UI; icon/splash; minified+signable release build; CI. Handoff:
-  [handoff-codex-phase-5-release.md](handoff-codex-phase-5-release.md).
-- [ ] Deeper Lyfta capability study → roadmap ([06-lyfta-study.md](06-lyfta-study.md))
+- [x] **Bug-fix/polish sub-phase** — **P0 set-done crash fixed** (`saveWorkoutSession` wrapped in
+  `inTransaction` + mutex'd cancel-and-replace `persist()`, with a concurrency regression test);
+  navbar "Start" centered; debounced exercise search + category/body-part/equipment filter chips;
+  **exercise images** (schema **v3** `imageUrl`/`imageAttribution`, `MIGRATION_2_3`, `ExportBundle`
+  **1.3**, wger-sourced w/ CC attribution, Coil thumbnails + placeholder). Merged; see
+  [bugfix-polish-report.md](bugfix-polish-report.md).
+- [x] **Phase 5 — release hardening** — Health Connect Settings UI (permission flow + import/export
+  + real privacy/rationale screen), auto-backup Settings UI (SAF picker + interval/retention),
+  superset grouping UI, version **2.0.0**, splash + themed adaptive icon, **R8 minified release**,
+  secret-free signing (`keystore.properties`/env, see [release-signing.md](release-signing.md)),
+  compileSdk warning cleared, **GitHub Actions CI**. Merged; see [phase-5-report.md](phase-5-report.md).
+- [x] Both sub-phases merged; verified on the merged tree: `testDebugUnitTest` + `assembleDebug` +
+  **`assembleRelease` (R8)** green, `connectedDebugAndroidTest` green on the A56.
+
+**→ The rework is functionally complete and release-hardened.** Remaining is Play-submission prep
+(mostly user actions): see [phase-6-release-checklist.md](phase-6-release-checklist.md).
+
+- [ ] **Phase 6 — Play Store submission** — user: create/secure upload keystore + signed build, host
+  the privacy policy at an HTTPS URL, Play Console listing + content-rating/data-safety/health forms.
+  Agent-doable prep: store listing copy, privacy-policy page, screenshot set. See
+  [phase-6-release-checklist.md](phase-6-release-checklist.md).
+- [ ] Optional: dogfood with real data (import the captured Lyfta history), deeper Lyfta study
+  ([06-lyfta-study.md](06-lyfta-study.md)).
