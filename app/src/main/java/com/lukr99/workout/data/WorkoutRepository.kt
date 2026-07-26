@@ -1,6 +1,7 @@
 package com.lukr99.workout.data
 
 import com.lukr99.workout.data.export.ExportBundle
+import com.lukr99.workout.data.images.ExerciseNameNormalizer
 import com.lukr99.workout.domain.Analytics
 import com.lukr99.workout.domain.CardioEntryData
 import com.lukr99.workout.domain.DashboardSnapshot
@@ -141,6 +142,30 @@ class WorkoutRepository(
             }
         }
         summary
+    }
+
+    /**
+     * Match every existing row by a conservative normalized name and fill remote artwork only when
+     * it is missing. No user-owned catalog field is changed.
+     */
+    suspend fun backfillMissingExerciseImages(candidates: List<Exercise>): Int = inTransaction {
+        val imagesByName = candidates.asSequence()
+            .filter { !it.imageUrl.isNullOrBlank() }
+            .associateBy { ExerciseNameNormalizer.normalize(it.name) }
+        var filled = 0
+        dao.getAllExercises().forEach { row ->
+            if (!row.imageUrl.isNullOrBlank()) return@forEach
+            val candidate = imagesByName[ExerciseNameNormalizer.normalize(row.name)]
+                ?: return@forEach
+            dao.upsertExercise(
+                row.copy(
+                    imageUrl = candidate.imageUrl,
+                    imageAttribution = candidate.imageAttribution,
+                ),
+            )
+            filled++
+        }
+        filled
     }
 
     /** A fresh entry with the exercise's identity snapshotted onto it (the "snapshot on log" rule). */
@@ -395,6 +420,7 @@ class WorkoutRepository(
         defaultRestSeconds = defaultRestSeconds,
         imageUrl = imageUrl,
         imageAttribution = imageAttribution,
+        localImagePath = localImagePath,
     )
 
     private fun Exercise.toEntity() = ExerciseEntity(
@@ -411,6 +437,7 @@ class WorkoutRepository(
         defaultRestSeconds = defaultRestSeconds,
         imageUrl = imageUrl,
         imageAttribution = imageAttribution,
+        localImagePath = localImagePath,
     )
 
     private fun TemplateWithExercises.toDomain() = WorkoutTemplate(
@@ -584,6 +611,7 @@ class WorkoutRepository(
             .distinctBy { it.lowercase() },
         imageUrl = imageUrl?.trim()?.ifBlank { null },
         imageAttribution = imageAttribution?.trim()?.ifBlank { null },
+        localImagePath = localImagePath?.trim()?.ifBlank { null },
     )
 
     private fun Exercise.addExternalFields(incoming: Exercise): Exercise = copy(

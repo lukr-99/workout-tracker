@@ -35,6 +35,8 @@ data class Exercise(
     // Optional remote/local artwork. Null keeps seeded and custom exercises offline-friendly.
     val imageUrl: String? = null,
     val imageAttribution: String? = null,
+    // Exported as a reference only; the app-private image file remains device-local.
+    val localImagePath: String? = null,
 ) {
     /** Primary + distinct secondaries, joined for display. Derived — not persisted. */
     val bodyPartsSummary: String

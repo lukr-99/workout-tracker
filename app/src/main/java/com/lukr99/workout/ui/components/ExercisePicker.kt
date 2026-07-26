@@ -21,6 +21,7 @@ import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -46,6 +47,7 @@ import kotlinx.coroutines.delay
 fun ExercisePicker(
     exercises: List<Exercise>,
     onPick: (Exercise) -> Unit,
+    onCreate: ((String) -> Unit)? = null,
     title: String = "Add exercise",
 ) {
     var query by remember { mutableStateOf("") }
@@ -152,6 +154,28 @@ fun ExercisePicker(
         }
         Spacer(Modifier.height(8.dp))
         LazyColumn(Modifier.fillMaxWidth().height(360.dp)) {
+            if (filtered.isEmpty()) {
+                item {
+                    Column(
+                        Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            if (query.isBlank()) "No exercises match these filters."
+                            else "No results for “${query.trim()}”.",
+                            color = TextMid,
+                        )
+                        if (onCreate != null) {
+                            TextButton(onClick = { onCreate(query.trim()) }) {
+                                Text(
+                                    if (query.isBlank()) "Create exercise"
+                                    else "Create “${query.trim()}”",
+                                )
+                            }
+                        }
+                    }
+                }
+            }
             items(filtered, key = { it.id }) { ex ->
                 Row(
                     Modifier.fillMaxWidth().clickable { onPick(ex) }.padding(vertical = 12.dp),

@@ -60,7 +60,7 @@ fun LibraryScreen(
     onEditTemplate: (String) -> Unit,
     onNewTemplate: () -> Unit,
     onEditExercise: (String) -> Unit,
-    onNewExercise: () -> Unit,
+    onNewExercise: (String) -> Unit,
     onStartTemplate: (String) -> Unit,
 ) {
     var tab by remember { mutableStateOf(LibTab.Templates) }
@@ -78,7 +78,7 @@ fun LibraryScreen(
             }
             Text("Library", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
             Spacer(Modifier.weight(1f))
-            IconButton(onClick = { if (tab == LibTab.Templates) onNewTemplate() else onNewExercise() }) {
+            IconButton(onClick = { if (tab == LibTab.Templates) onNewTemplate() else onNewExercise("") }) {
                 Icon(Icons.Rounded.Add, "New", tint = MaterialTheme.colorScheme.primary)
             }
         }
@@ -113,6 +113,7 @@ fun LibraryScreen(
                 onEdit = onEditExercise,
                 onArchive = { vm.archiveExercise(it) },
                 onRestore = { vm.restoreExercise(it) },
+                onCreate = onNewExercise,
             )
         }
     }
@@ -172,6 +173,7 @@ private fun CatalogList(
     onEdit: (String) -> Unit,
     onArchive: (String) -> Unit,
     onRestore: (Exercise) -> Unit,
+    onCreate: (String) -> Unit,
 ) {
     val bodyParts = remember(exercises) {
         exercises.flatMap { listOf(it.primaryBodyPart) + it.secondaryBodyParts }
@@ -244,7 +246,17 @@ private fun CatalogList(
         }
         Spacer(Modifier.size(8.dp))
         if (exercises.isEmpty()) {
-            EmptyHint("No matches.")
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                EmptyHint("No matches.")
+                androidx.compose.material3.TextButton(
+                    onClick = { onCreate(searchText.trim()) },
+                ) {
+                    Text(
+                        if (searchText.isBlank()) "Create exercise"
+                        else "Create “${searchText.trim()}”",
+                    )
+                }
+            }
         } else {
             LazyColumn(
                 Modifier.fillMaxWidth(),

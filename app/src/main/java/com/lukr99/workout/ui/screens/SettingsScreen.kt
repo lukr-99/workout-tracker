@@ -259,7 +259,7 @@ fun SettingsScreen(
                             is SettingsViewModel.CatalogSyncState.Running -> "Syncing…"
                             is SettingsViewModel.CatalogSyncState.Done ->
                                 "Added ${state.summary.added} · updated ${state.summary.updated} · " +
-                                    "skipped ${state.summary.skipped}"
+                                    "images ${state.summary.imagesBackfilled} · skipped ${state.summary.skipped}"
                             is SettingsViewModel.CatalogSyncState.Failed -> state.message
                             else -> "Download the open exercise database"
                         },

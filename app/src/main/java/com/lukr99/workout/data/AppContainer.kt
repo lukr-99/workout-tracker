@@ -6,6 +6,9 @@ import com.lukr99.workout.data.backup.BackupScheduler
 import com.lukr99.workout.data.backup.SafBackupGateway
 import com.lukr99.workout.data.health.AndroidHealthConnectGateway
 import com.lukr99.workout.data.health.HealthConnectService
+import com.lukr99.workout.data.images.ExerciseImageResolver
+import com.lukr99.workout.data.images.ExercisePhotoStore
+import com.lukr99.workout.data.images.FreeExerciseImageIndex
 import com.lukr99.workout.data.importer.BundleImporter
 import com.lukr99.workout.data.services.WorkoutDataService
 import com.lukr99.workout.data.services.WorkoutInsightsService
@@ -28,6 +31,10 @@ class AppContainer(context: Context) {
     val workoutData: WorkoutDataService by lazy { WorkoutDataService(repository) }
     val insights: WorkoutInsightsService by lazy { WorkoutInsightsService(repository) }
     val wgerSync: WgerSyncService by lazy { WgerSyncService(repository) }
+    val exerciseImages: ExerciseImageResolver by lazy {
+        ExerciseImageResolver(FreeExerciseImageIndex(context.assets))
+    }
+    val exercisePhotos: ExercisePhotoStore by lazy { ExercisePhotoStore(context.applicationContext) }
     val dataTransfer: DataTransferService by lazy { DataTransferService(repository) }
     val documents: AndroidDocumentGateway by lazy { AndroidDocumentGateway(context) }
     val settings: SettingsStore by lazy { SettingsStore(context) }

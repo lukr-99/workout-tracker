@@ -76,6 +76,7 @@ fun LiveWorkoutScreen(
     vm: LiveWorkoutViewModel,
     units: UnitSystem,
     onClose: () -> Unit,
+    onCreateExercise: (String) -> Unit,
 ) {
     val toast = LocalToast.current
     val draft by vm.draft.collectAsState()
@@ -244,6 +245,10 @@ fun LiveWorkoutScreen(
                     vm.addExercise(it)
                     showPicker = false
                     toast("${it.name} added")
+                },
+                onCreate = {
+                    showPicker = false
+                    onCreateExercise(it)
                 },
             )
         }

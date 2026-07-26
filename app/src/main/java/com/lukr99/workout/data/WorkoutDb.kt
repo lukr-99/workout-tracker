@@ -26,7 +26,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         StrengthSetEntity::class,
         CardioDataEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -39,7 +39,7 @@ abstract class WorkoutDb : RoomDatabase() {
 
         fun build(context: Context): WorkoutDb =
             Room.databaseBuilder(context.applicationContext, WorkoutDb::class.java, DB_NAME)
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 .build()
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -56,6 +56,12 @@ abstract class WorkoutDb : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE exercises ADD COLUMN imageUrl TEXT")
                 db.execSQL("ALTER TABLE exercises ADD COLUMN imageAttribution TEXT")
+            }
+        }
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE exercises ADD COLUMN localImagePath TEXT")
             }
         }
     }

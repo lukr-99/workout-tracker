@@ -63,6 +63,7 @@ fun WorkoutDetailScreen(
     sessionId: String,
     units: UnitSystem,
     onBack: () -> Unit,
+    onCreateExercise: (String) -> Unit,
 ) {
     LaunchedEffect(sessionId) { vm.open(sessionId) }
     val selected by vm.selected.collectAsState()
@@ -208,6 +209,10 @@ fun WorkoutDetailScreen(
                         .copy(workoutSessionId = session.id)
                     draft = session.copy(entries = session.entries + entry)
                     showPicker = false
+                },
+                onCreate = {
+                    showPicker = false
+                    onCreateExercise(it)
                 },
             )
         }

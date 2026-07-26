@@ -63,6 +63,7 @@ class WorkoutFactory(
                 defaultRestSeconds = rest,
                 imageUrl = draft.imageUrl?.trim()?.ifBlank { null },
                 imageAttribution = draft.imageAttribution?.trim()?.ifBlank { null },
+                localImagePath = draft.localImagePath?.trim()?.ifBlank { null },
             ),
             issues = issues,
         )
@@ -333,6 +334,7 @@ data class ExerciseDraft(
     val defaultRestSeconds: Int? = null,
     val imageUrl: String? = null,
     val imageAttribution: String? = null,
+    val localImagePath: String? = null,
 )
 
 data class TemplateDraft(

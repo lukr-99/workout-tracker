@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lukr99.workout.data.AppContainer
 import com.lukr99.workout.ui.components.LocalToast
+import com.lukr99.workout.ui.components.LocalExerciseImageResolver
 import com.lukr99.workout.ui.components.ToastHost
 import com.lukr99.workout.ui.components.rememberToastState
 import com.lukr99.workout.ui.screens.DataTransferScreen
@@ -87,7 +88,10 @@ fun App(container: AppContainer) {
         nav.push(Route.LiveWorkout)
     }
 
-    CompositionLocalProvider(LocalToast provides toast) {
+    CompositionLocalProvider(
+        LocalToast provides toast,
+        LocalExerciseImageResolver provides container.exerciseImages,
+    ) {
         Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             // Peer-tab layer (always mounted so tab state persists behind overlays).
             Column(
@@ -138,6 +142,9 @@ fun App(container: AppContainer) {
                             vm = liveVm,
                             units = settings.units,
                             onClose = { nav.pop() },
+                            onCreateExercise = {
+                                nav.push(Route.ExerciseEditor(null, initialName = it))
+                            },
                         )
                         Route.Library -> LibraryScreen(
                             vm = libraryVm,
@@ -146,7 +153,9 @@ fun App(container: AppContainer) {
                             onEditTemplate = { nav.push(Route.TemplateEditor(it)) },
                             onNewTemplate = { nav.push(Route.TemplateEditor(null)) },
                             onEditExercise = { nav.push(Route.ExerciseEditor(it)) },
-                            onNewExercise = { nav.push(Route.ExerciseEditor(null)) },
+                            onNewExercise = {
+                                nav.push(Route.ExerciseEditor(null, initialName = it))
+                            },
                             onStartTemplate = { startWorkout(it) },
                         )
                         is Route.TemplateEditor -> TemplateEditorScreen(
@@ -157,6 +166,7 @@ fun App(container: AppContainer) {
                         is Route.ExerciseEditor -> ExerciseEditorScreen(
                             vm = libraryVm,
                             exerciseId = overlay.exerciseId,
+                            initialName = overlay.initialName,
                             onDone = { nav.pop() },
                         )
                         is Route.WorkoutDetail -> WorkoutDetailScreen(
@@ -164,6 +174,9 @@ fun App(container: AppContainer) {
                             sessionId = overlay.sessionId,
                             units = settings.units,
                             onBack = { nav.pop() },
+                            onCreateExercise = {
+                                nav.push(Route.ExerciseEditor(null, initialName = it))
+                            },
                         )
                         is Route.ProgressDetail -> ProgressDetailScreen(
                             vm = progressVm,

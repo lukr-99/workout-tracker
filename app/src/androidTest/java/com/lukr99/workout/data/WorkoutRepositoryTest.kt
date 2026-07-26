@@ -153,6 +153,51 @@ class WorkoutRepositoryTest {
     }
 
     @Test
+    fun imageBackfillMatchesNormalizedNamesAndOnlyFillsArtwork() = runTest {
+        val existing = repo.saveExercise(
+            Exercise(
+                id = "seeded",
+                name = "Back Squat",
+                primaryBodyPart = "Legs",
+                equipment = "My rack",
+                notes = "Keep this",
+                source = ExerciseSource.Seeded,
+            ),
+        )
+
+        val filled = repo.backfillMissingExerciseImages(
+            listOf(
+                Exercise(
+                    name = "Barbell Full Squat",
+                    imageUrl = "https://wger.de/media/squat.jpg",
+                    imageAttribution = "wger",
+                ),
+            ),
+        )
+
+        assertEquals(1, filled)
+        val updated = repo.getExercise(existing.id)!!
+        assertEquals("Back Squat", updated.name)
+        assertEquals("My rack", updated.equipment)
+        assertEquals("Keep this", updated.notes)
+        assertEquals("https://wger.de/media/squat.jpg", updated.imageUrl)
+        assertEquals("wger", updated.imageAttribution)
+
+        assertEquals(
+            0,
+            repo.backfillMissingExerciseImages(
+                listOf(
+                    Exercise(
+                        name = "Back Squat",
+                        imageUrl = "https://example.test/replacement.jpg",
+                    ),
+                ),
+            ),
+        )
+        assertEquals("https://wger.de/media/squat.jpg", repo.getExercise(existing.id)!!.imageUrl)
+    }
+
+    @Test
     fun templateToSession_snapshotsAndSurvivesCatalogEdit() = runTest {
         val exercise = repo.saveExercise(Exercise(name = "Back Squat", primaryBodyPart = "Legs"))
         val template = repo.saveTemplate(

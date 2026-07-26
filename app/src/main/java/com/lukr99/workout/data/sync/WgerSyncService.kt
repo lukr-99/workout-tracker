@@ -26,6 +26,10 @@ fun interface ExternalExerciseMerger {
     suspend fun merge(exercises: List<Exercise>): ExternalExerciseMergeSummary
 }
 
+fun interface ExternalExerciseImageBackfiller {
+    suspend fun backfill(exercises: List<Exercise>): Int
+}
+
 fun interface WgerPageSource {
     suspend fun fetchPage(url: String): WgerPage
 }
@@ -69,6 +73,8 @@ class WgerApiClient(
  */
 class WgerSyncService(
     private val merger: ExternalExerciseMerger,
+    private val imageBackfiller: ExternalExerciseImageBackfiller =
+        ExternalExerciseImageBackfiller { 0 },
     private val pageSource: WgerPageSource = WgerApiClient(),
     private val baseUrl: String = DefaultBaseUrl,
 ) {
@@ -78,6 +84,8 @@ class WgerSyncService(
         baseUrl: String = DefaultBaseUrl,
     ) : this(
         merger = ExternalExerciseMerger { repository.mergeExternalExercisesDetailed(it) },
+        imageBackfiller =
+            ExternalExerciseImageBackfiller { repository.backfillMissingExerciseImages(it) },
         pageSource = pageSource,
         baseUrl = baseUrl,
     )
@@ -127,6 +135,7 @@ class WgerSyncService(
         }
 
         val merge = merger.merge(mapped)
+        val imagesBackfilled = imageBackfiller.backfill(mapped)
         return WgerSyncSummary(
             fetched = fetched,
             mapped = mapped.size,
@@ -135,6 +144,7 @@ class WgerSyncService(
             skipped = mappingSkipped + merge.skipped,
             pages = pages,
             warnings = warnings,
+            imagesBackfilled = imagesBackfilled,
         )
     }
 
@@ -145,10 +155,10 @@ class WgerSyncService(
 
 data class WgerSyncOptions(
     val language: Int = 2,
-    val limit: Int = 500,
+    val limit: Int = 2_000,
     val pageSize: Int = 50,
     val offset: Int = 0,
-    val maxPages: Int = 20,
+    val maxPages: Int = 40,
 ) {
     internal fun validate() {
         require(language > 0) { "language must be positive." }
@@ -167,6 +177,7 @@ data class WgerSyncSummary(
     val skipped: Int,
     val pages: Int,
     val warnings: List<String>,
+    val imagesBackfilled: Int = 0,
 ) {
     val changed: Int get() = added + updated
 }

@@ -1,5 +1,8 @@
 package com.lukr99.workout.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,12 +14,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.CameraAlt
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -27,31 +35,41 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.lukr99.workout.data.images.PhotoCaptureTarget
+import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
+import com.lukr99.workout.domain.ExerciseSource
 import com.lukr99.workout.domain.creation.ExerciseDraft
+import com.lukr99.workout.domain.newId
 import com.lukr99.workout.ui.LibraryViewModel
 import com.lukr99.workout.ui.components.ExerciseThumbnail
 import com.lukr99.workout.ui.components.FilterChip
 import com.lukr99.workout.ui.components.LocalToast
+import com.lukr99.workout.ui.components.resolvedExerciseImage
 
 /** Create or edit a custom exercise. Routes writes through the Phase 3 creation service (validated). */
 @Composable
 fun ExerciseEditorScreen(
     vm: LibraryViewModel,
     exerciseId: String?,
+    initialName: String = "",
     onDone: () -> Unit,
 ) {
     val toast = LocalToast.current
     val exercises by vm.exercises.collectAsState()
     val existing = remember(exerciseId, exercises) { exercises.firstOrNull { it.id == exerciseId } }
 
-    var seeded by remember { mutableStateOf(false) }
-    var name by remember { mutableStateOf("") }
+    val editorExerciseId = remember(exerciseId) { exerciseId ?: newId() }
+    var seeded by remember(exerciseId) { mutableStateOf(false) }
+    var name by remember(exerciseId, initialName) { mutableStateOf(initialName) }
     var category by remember { mutableStateOf(ExerciseCategory.Strength) }
     var bodyPart by remember { mutableStateOf("") }
     var equipment by remember { mutableStateOf("") }
     var rest by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
+    var localImagePath by remember { mutableStateOf<String?>(null) }
+    var removedPhotoPath by remember { mutableStateOf<String?>(null) }
+    var pendingCapture by remember { mutableStateOf<PhotoCaptureTarget?>(null) }
 
     if (existing != null && !seeded) {
         name = existing.name
@@ -60,8 +78,49 @@ fun ExerciseEditorScreen(
         equipment = existing.equipment
         rest = existing.defaultRestSeconds?.toString().orEmpty()
         notes = existing.notes
+        localImagePath = existing.localImagePath
         seeded = true
     }
+
+    val photoPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia(),
+    ) { uri ->
+        if (uri != null) {
+            vm.importExercisePhoto(editorExerciseId, uri) { result ->
+                result.onSuccess {
+                    localImagePath = it
+                    removedPhotoPath = null
+                }
+                    .onFailure { toast(it.message ?: "Could not copy the selected photo") }
+            }
+        }
+    }
+    val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { saved ->
+        val target = pendingCapture
+        pendingCapture = null
+        if (saved && target != null) {
+            vm.commitCapturedPhoto(editorExerciseId, target) { result ->
+                result.onSuccess {
+                    localImagePath = it
+                    removedPhotoPath = null
+                }
+                    .onFailure { toast(it.message ?: "Could not save the camera photo") }
+            }
+        } else {
+            vm.discardPhotoCapture(target)
+        }
+    }
+    val previewExercise = (existing ?: Exercise(
+        id = editorExerciseId,
+        source = ExerciseSource.Custom,
+    )).copy(
+        name = name,
+        category = category,
+        primaryBodyPart = bodyPart,
+        equipment = equipment,
+        localImagePath = localImagePath,
+    )
+    val resolvedImage = resolvedExerciseImage(previewExercise)
 
     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
         Row(
@@ -78,17 +137,67 @@ fun ExerciseEditorScreen(
         }
 
         Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            existing?.let { exercise ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    ExerciseThumbnail(exercise, size = 64.dp)
-                    if (!exercise.imageAttribution.isNullOrBlank()) {
-                        Spacer(Modifier.size(12.dp))
-                        Text(
-                            exercise.imageAttribution,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+            Text(
+                "Exercise image",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                ExerciseThumbnail(previewExercise, size = 80.dp)
+                Spacer(Modifier.size(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        when {
+                            !localImagePath.isNullOrBlank() -> "Personal photo"
+                            resolvedImage?.attribution != null -> resolvedImage.attribution
+                            resolvedImage != null -> "Exercise image"
+                            else -> "Body-part placeholder"
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (!localImagePath.isNullOrBlank()) {
+                        TextButton(onClick = {
+                            removedPhotoPath = localImagePath
+                            localImagePath = null
+                        }) {
+                            Icon(Icons.Rounded.Delete, null)
+                            Spacer(Modifier.size(6.dp))
+                            Text("Remove")
+                        }
                     }
+                }
+            }
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedButton(
+                    onClick = {
+                        vm.createPhotoCaptureTarget()
+                            .onSuccess {
+                                pendingCapture = it
+                                camera.launch(it.uri)
+                            }
+                            .onFailure { toast(it.message ?: "Could not open the camera") }
+                    },
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Icon(Icons.Rounded.CameraAlt, null)
+                    Spacer(Modifier.size(6.dp))
+                    Text("Take photo")
+                }
+                OutlinedButton(
+                    onClick = {
+                        photoPicker.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                        )
+                    },
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Icon(Icons.Rounded.PhotoLibrary, null)
+                    Spacer(Modifier.size(6.dp))
+                    Text("Choose")
                 }
             }
             OutlinedTextField(name, { name = it }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
@@ -111,7 +220,7 @@ fun ExerciseEditorScreen(
                 onClick = {
                     vm.saveExercise(
                         ExerciseDraft(
-                            id = exerciseId.orEmpty(),
+                            id = editorExerciseId,
                             name = name,
                             category = category,
                             primaryBodyPart = bodyPart,
@@ -123,9 +232,11 @@ fun ExerciseEditorScreen(
                             isArchived = existing?.isArchived ?: false,
                             imageUrl = existing?.imageUrl,
                             imageAttribution = existing?.imageAttribution,
+                            localImagePath = localImagePath,
                         ),
                     ) { result ->
                         if (result.isValid) {
+                            vm.removeExercisePhoto(removedPhotoPath)
                             toast(if (exerciseId == null) "Exercise created" else "Exercise saved")
                             onDone()
                         } else {

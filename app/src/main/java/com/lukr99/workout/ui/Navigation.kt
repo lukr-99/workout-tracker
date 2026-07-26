@@ -22,7 +22,7 @@ sealed interface Route {
     data object LiveWorkout : Route
     data object Library : Route
     data class TemplateEditor(val templateId: String?) : Route
-    data class ExerciseEditor(val exerciseId: String?) : Route
+    data class ExerciseEditor(val exerciseId: String?, val initialName: String = "") : Route
     data class WorkoutDetail(val sessionId: String) : Route
     data class ProgressDetail(val exerciseId: String) : Route
     data object DataTransfer : Route

@@ -18,6 +18,10 @@ class WgerSyncServiceTest {
                 merged += it
                 ExternalExerciseMergeSummary(added = 1, updated = 1, skipped = 0)
             },
+            imageBackfiller = ExternalExerciseImageBackfiller {
+                assertEquals(2, it.size)
+                1
+            },
             pageSource = WgerPageSource { url ->
                 pages += url
                 if (pages.size == 1) {
@@ -39,6 +43,7 @@ class WgerSyncServiceTest {
         assertEquals(1, result.added)
         assertEquals(1, result.updated)
         assertEquals(1, result.skipped)
+        assertEquals(1, result.imagesBackfilled)
         assertEquals(listOf("wger:uuid-1", "wger:uuid-2"), merged.map(Exercise::externalSourceId))
         assertEquals("Chest", merged.first().primaryBodyPart)
         assertEquals(listOf("Triceps"), merged.first().secondaryBodyParts)

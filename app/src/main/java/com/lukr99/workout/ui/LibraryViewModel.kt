@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.lukr99.workout.data.AppContainer
 import com.lukr99.workout.data.WorkoutRepository
+import com.lukr99.workout.data.images.ExercisePhotoStore
+import com.lukr99.workout.data.images.PhotoCaptureTarget
 import com.lukr99.workout.data.services.WorkoutDataService
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
@@ -13,6 +15,7 @@ import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.domain.creation.CreationResult
 import com.lukr99.workout.domain.creation.ExerciseDraft
 import com.lukr99.workout.domain.creation.TemplateDraft
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,6 +33,7 @@ import kotlinx.coroutines.launch
 class LibraryViewModel(
     private val repo: WorkoutRepository,
     private val data: WorkoutDataService,
+    private val photos: ExercisePhotoStore,
 ) : ViewModel() {
 
     private val filterState = MutableStateFlow(ExerciseFilter())
@@ -52,6 +56,44 @@ class LibraryViewModel(
         viewModelScope.launch { onResult(data.createExercise(draft)) }
     }
 
+    fun createPhotoCaptureTarget(): Result<PhotoCaptureTarget> =
+        runCatching(photos::createCaptureTarget)
+
+    fun commitCapturedPhoto(
+        exerciseId: String,
+        target: PhotoCaptureTarget,
+        onResult: (Result<String>) -> Unit,
+    ) {
+        viewModelScope.launch {
+            onResult(runCatching {
+                kotlinx.coroutines.withContext(Dispatchers.IO) {
+                    photos.commitCapture(exerciseId, target.temporaryPath)
+                }
+            })
+        }
+    }
+
+    fun importExercisePhoto(
+        exerciseId: String,
+        uri: android.net.Uri,
+        onResult: (Result<String>) -> Unit,
+    ) {
+        viewModelScope.launch {
+            onResult(runCatching {
+                kotlinx.coroutines.withContext(Dispatchers.IO) {
+                    photos.importPhoto(exerciseId, uri)
+                }
+            })
+        }
+    }
+
+    fun discardPhotoCapture(target: PhotoCaptureTarget?) =
+        photos.discardCapture(target?.temporaryPath)
+
+    fun removeExercisePhoto(path: String?) {
+        viewModelScope.launch(Dispatchers.IO) { photos.removePhoto(path) }
+    }
+
     fun archiveExercise(id: String) = viewModelScope.launch { repo.archiveExercise(id) }.let { }
 
     fun restoreExercise(exercise: Exercise) =
@@ -67,7 +109,11 @@ class LibraryViewModel(
         fun factory(container: AppContainer): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                LibraryViewModel(container.repository, container.workoutData) as T
+                LibraryViewModel(
+                    container.repository,
+                    container.workoutData,
+                    container.exercisePhotos,
+                ) as T
         }
     }
 }

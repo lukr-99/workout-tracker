@@ -27,7 +27,7 @@ class WorkoutMigrationTest {
     }
 
     @Test
-    fun migratesSchemaOneFixtureToSchemaThree() {
+    fun migratesSchemaOneFixtureToSchemaFour() {
         helper.createDatabase(DatabaseName, 1).apply {
             execSQL(
                 """
@@ -54,7 +54,11 @@ class WorkoutMigrationTest {
             ApplicationProvider.getApplicationContext(),
             WorkoutDb::class.java,
             DatabaseName,
-        ).addMigrations(WorkoutDb.MIGRATION_1_2, WorkoutDb.MIGRATION_2_3)
+        ).addMigrations(
+            WorkoutDb.MIGRATION_1_2,
+            WorkoutDb.MIGRATION_2_3,
+            WorkoutDb.MIGRATION_3_4,
+        )
             .allowMainThreadQueries()
             .build()
         try {
@@ -73,12 +77,54 @@ class WorkoutMigrationTest {
                 assertEquals(true, cursor.isNull(1))
             }
             database.query(
-                "SELECT imageUrl, imageAttribution FROM exercises WHERE id = 'fixture'",
+                "SELECT imageUrl, imageAttribution, localImagePath FROM exercises WHERE id = 'fixture'",
                 null,
             ).use { cursor ->
                 cursor.moveToFirst()
                 assertEquals(true, cursor.isNull(0))
                 assertEquals(true, cursor.isNull(1))
+                assertEquals(true, cursor.isNull(2))
+            }
+        } finally {
+            database.close()
+        }
+    }
+
+    @Test
+    fun migratesSchemaThreePhotoFieldWithoutChangingExistingArtwork() {
+        helper.createDatabase(DatabaseName, 3).apply {
+            execSQL(
+                """
+                INSERT INTO exercises (
+                    id, name, category, primaryBodyPart, secondaryBodyPartsJson,
+                    equipment, notes, source, externalSourceId, isArchived, defaultRestSeconds,
+                    imageUrl, imageAttribution
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """.trimIndent(),
+                arrayOf(
+                    "fixture", "Fixture Lift", 0, "Back", "[]", "", "", 2, null, 0, 90,
+                    "https://example.test/lift.jpg", "Fixture attribution",
+                ),
+            )
+            close()
+        }
+
+        val database = Room.databaseBuilder(
+            ApplicationProvider.getApplicationContext(),
+            WorkoutDb::class.java,
+            DatabaseName,
+        ).addMigrations(WorkoutDb.MIGRATION_3_4)
+            .allowMainThreadQueries()
+            .build()
+        try {
+            database.query(
+                "SELECT imageUrl, imageAttribution, localImagePath FROM exercises WHERE id = 'fixture'",
+                null,
+            ).use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("https://example.test/lift.jpg", cursor.getString(0))
+                assertEquals("Fixture attribution", cursor.getString(1))
+                assertEquals(true, cursor.isNull(2))
             }
         } finally {
             database.close()
@@ -86,6 +132,6 @@ class WorkoutMigrationTest {
     }
 
     private companion object {
-        const val DatabaseName = "phase-3-5-migration-test"
+        const val DatabaseName = "exercise-images-migration-test"
     }
 }

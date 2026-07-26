@@ -3,4 +3,7 @@
     <cache-path
         name="shared_exports"
         path="shared-exports/" />
+    <cache-path
+        name="exercise_photo_captures"
+        path="exercise-photo-captures/" />
 </paths>

@@ -187,6 +187,7 @@ internal object ImportPlanner {
         defaultRestSeconds = incoming.defaultRestSeconds ?: existing.defaultRestSeconds,
         imageUrl = incoming.imageUrl ?: existing.imageUrl,
         imageAttribution = incoming.imageAttribution ?: existing.imageAttribution,
+        localImagePath = incoming.localImagePath ?: existing.localImagePath,
     )
 
     private fun mergeTemplate(

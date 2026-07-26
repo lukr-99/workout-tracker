@@ -41,6 +41,7 @@ data class ExerciseEntity(
     val defaultRestSeconds: Int? = null,
     val imageUrl: String? = null,
     val imageAttribution: String? = null,
+    val localImagePath: String? = null,
 )
 
 @Entity(
