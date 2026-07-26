@@ -110,10 +110,11 @@ superseded).
 - [x] **Real data imported** — the captured Lyfta history (19 sessions · 468 sets · 35 new exercises)
   imported in-app via Settings → Data → Import; verified rendering in Progress (19 workouts, ~0.2M kg,
   Muscle-Recovery map) with no crash.
-- [ ] **Exercise images (next)** — wger backfill for existing/imported exercises + bundled open
-  dataset (`free-exercise-db`) + **personal photo attach** & easy custom machine-specific exercise
-  creation (schema v4). Handoff: [handoff-codex-exercise-images.md](handoff-codex-exercise-images.md).
-- [ ] **Final phase — cutover** (after images) — remove the `.NET MAUI` C# app, promote
-  `feature/app-rework` → `main` (**`--ff-only`**), cut `release/2.0` + tag `v2.0.0`; keep
-  `feature/app-rework` (noted for future deletion). MAUI POC stays on `release/1.0`/`v1.0.0`. Plan:
-  [final-phase-cutover.md](final-phase-cutover.md).
+- [x] **Exercise images** — `ExerciseImageResolver` (user photo → wger → bundled `free-exercise-db`
+  index → placeholder), wger backfill for seeded/imported exercises, personal photo attach + easy
+  custom machine-specific exercise creation; schema **v4** (`localImagePath`, `MIGRATION_3_4`),
+  `ExportBundle` **1.4**. Merged; see [exercise-images-report.md](exercise-images-report.md).
+- [x] **Final cutover DONE** — `.NET MAUI` C# app removed; `feature/app-rework` promoted to `main`
+  (`--ff-only`); **tag `v2.0.0`** + branch **`release/2.0`** cut. MAUI POC preserved on
+  `release/1.0` / `v1.0.0`. `feature/app-rework` kept (noted for future deletion). The **native
+  Kotlin app on `main` is now canonical.**
