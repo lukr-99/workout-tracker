@@ -1,41 +1,54 @@
 # Workout Tracker
 
-Android-first workout tracking app built with `.NET MAUI` and `C#`.
+A native **Android** workout tracker built with **Kotlin + Jetpack Compose + Room** (MVVM,
+offline-first, on-device). This is a personal-use app.
 
-## Current scope
+> **History:** v1 was a `.NET MAUI` / C# proof-of-concept. It's preserved on the **`release/1.0`**
+> branch and tag **`v1.0.0`**. v2 is this ground-up native Kotlin rewrite (tag `v2.0.0`). The full
+> migration story, architecture, and design system live in [`docs/rework/`](docs/rework/README.md).
 
-- Offline-first workout logging
-- Reusable workout templates
-- Live workout sessions with a timer
-- Strength and cardio entries
-- Searchable exercise catalog with custom exercises
-- Workout history and detail views
-- CSV and JSON export for a future desktop manager
-- Analytics-ready data model for later charts and progression views
+## Features
 
-## Solution layout
+- 5-item shell with a central **Start** action; fast live logging (touch numpad, REPS/KG, set types,
+  RIR/RPE, timed sets, supersets, rest timer)
+- Reusable templates; searchable/filterable exercise catalog with custom exercises and **photos**
+  (your own, plus wger / free-exercise-db imagery)
+- Full history with after-the-fact editing
+- **Progress**: per-exercise e1RM/volume charts, **records/PRs**, and a **muscle-recovery** body map
+- Import/export (portable JSON + CSV; **Lyfta CSV importer**), **Health Connect** sync, and scheduled
+  automatic backup
+- Minimal-dark design with an ember accent
 
-- `WorkoutTracker.App`: Android MAUI app, navigation, pages, and viewmodels
-- `WorkoutTracker.Core`: domain models, SQLite repository, export, and sync services
-- `WorkoutTracker.Tests`: repository-focused tests
+## Project layout
 
-## Current status
+- `app/` — the Android app
+  - `data/` — Room entities/DAO/db, repository (the only IO boundary), import/export, services
+    (Health Connect, backup, wger sync, images)
+  - `domain/` — pure Kotlin (no Android imports): analytics, records, recovery, progression, estimates
+  - `ui/` — Compose: `App.kt` shell, per-area ViewModels, one-file-per-screen, reusable `components/`
+- `docs/rework/` — architecture, data model, design system, feature roadmap, phase reports
+- `tools/` — PowerShell helpers for building/installing and pulling data off a USB-connected phone
 
-The app is in a functional v0.1 foundation state:
+## Build, install, run (personal)
 
-- the core data layer persists workouts locally with SQLite
-- the main screens and flows are wired end to end
-- export works through JSON and CSV generation
-- history and exercise progression queries are available for future graphs
-
-## Run and verify
+Requires JDK 17 and the Android SDK (platform 35, build-tools 35). The Gradle wrapper fetches Gradle.
 
 ```powershell
-dotnet build WorkoutTracker.App\WorkoutTracker.App.csproj -f net9.0-android
-dotnet test WorkoutTracker.Tests\WorkoutTracker.Tests.csproj
+.\tools\build-and-install.ps1 -Launch
 ```
+
+Or with Gradle directly:
+
+```powershell
+.\gradlew.bat assembleDebug
+.\gradlew.bat testDebugUnitTest
+.\gradlew.bat connectedDebugAndroidTest   # on a connected device
+```
+
+A minified, self-signed **release** build is available if wanted — see
+[`docs/rework/release-signing.md`](docs/rework/release-signing.md) — but nothing requires it.
 
 ## Documentation
 
-- `docs/decisions.md`
-- `docs/roadmap.md`
+- [`docs/rework/README.md`](docs/rework/README.md) — the rework index (architecture, design, phases)
+- `docs/decisions.md`, `docs/roadmap.md` — **historical**, describe the v1 MAUI POC
