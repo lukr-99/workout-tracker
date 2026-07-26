@@ -19,6 +19,7 @@ import com.lukr99.workout.domain.progression.DoubleProgression
 import com.lukr99.workout.domain.progression.SuggestionStatus
 import com.lukr99.workout.domain.records.RecordKind
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -27,6 +28,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * The live logging loop (Phase 2's highest-priority screen). Holds an in-memory working draft of the
@@ -70,6 +73,9 @@ class LiveWorkoutViewModel(
         repo.observeExercises().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private var restJob: Job? = null
+    private val persistMutex = Mutex()
+    private var persistJob: Job? = null
+    private var finalizing = false
 
     /** Ensure a live session exists (resumes an existing one) and load it into the draft. */
     fun startOrResume(templateId: String? = null) {
@@ -273,27 +279,52 @@ class LiveWorkoutViewModel(
 
     fun finish(onDone: () -> Unit) {
         val session = draftState.value ?: return onDone()
+        if (finalizing) return
+        finalizing = true
         viewModelScope.launch {
-            val now = System.currentTimeMillis()
-            repo.saveWorkoutSession(
-                session.copy(
-                    status = WorkoutSessionStatus.Completed,
-                    endedAtUtc = now,
-                    completedDateUtc = now,
-                    entries = session.entries.filter { it.strengthSets.isNotEmpty() || it.cardioData != null },
-                ),
-            )
-            clear()
-            onDone()
+            try {
+                val now = System.currentTimeMillis()
+                persistJob?.cancelAndJoin()
+                persistMutex.withLock {
+                    repo.saveWorkoutSession(
+                        session.copy(
+                            status = WorkoutSessionStatus.Completed,
+                            endedAtUtc = now,
+                            completedDateUtc = now,
+                            entries = session.entries.filter {
+                                it.strengthSets.isNotEmpty() || it.cardioData != null
+                            },
+                        ),
+                    )
+                }
+                clear()
+                onDone()
+            } finally {
+                finalizing = false
+            }
         }
     }
 
     fun discard(onDone: () -> Unit) {
         val session = draftState.value ?: return onDone()
+        if (finalizing) return
+        finalizing = true
         viewModelScope.launch {
-            repo.saveWorkoutSession(session.copy(status = WorkoutSessionStatus.Discarded, endedAtUtc = System.currentTimeMillis()))
-            clear()
-            onDone()
+            try {
+                persistJob?.cancelAndJoin()
+                persistMutex.withLock {
+                    repo.saveWorkoutSession(
+                        session.copy(
+                            status = WorkoutSessionStatus.Discarded,
+                            endedAtUtc = System.currentTimeMillis(),
+                        ),
+                    )
+                }
+                clear()
+                onDone()
+            } finally {
+                finalizing = false
+            }
         }
     }
 
@@ -341,13 +372,18 @@ class LiveWorkoutViewModel(
     }
 
     /**
-     * Fire-and-forget flush of the working draft. Ids are assigned client-side and the repository
-     * preserves non-blank ids, so we deliberately do NOT read the result back — that would clobber
-     * any reps/weight the user typed while the save was in flight.
+     * Cancel-and-replace flush of the working draft. Only one repository write can run at a time,
+     * and a newer snapshot supersedes a stale save that is queued or in flight. Ids are assigned
+     * client-side and the repository preserves non-blank ids, so we deliberately do NOT read the
+     * result back; that would clobber reps/weight typed while the save was in flight.
      */
     private fun persist() {
+        if (finalizing) return
         val session = draftState.value ?: return
-        viewModelScope.launch { repo.saveWorkoutSession(session) }
+        persistJob?.cancel()
+        persistJob = viewModelScope.launch {
+            persistMutex.withLock { repo.saveWorkoutSession(session) }
+        }
     }
 
     data class RestState(

@@ -61,6 +61,8 @@ class WorkoutFactory(
                 externalSourceId = draft.externalSourceId?.trim()?.ifBlank { null },
                 isArchived = draft.isArchived,
                 defaultRestSeconds = rest,
+                imageUrl = draft.imageUrl?.trim()?.ifBlank { null },
+                imageAttribution = draft.imageAttribution?.trim()?.ifBlank { null },
             ),
             issues = issues,
         )
@@ -329,6 +331,8 @@ data class ExerciseDraft(
     val externalSourceId: String? = null,
     val isArchived: Boolean = false,
     val defaultRestSeconds: Int? = null,
+    val imageUrl: String? = null,
+    val imageAttribution: String? = null,
 )
 
 data class TemplateDraft(

@@ -32,6 +32,9 @@ data class Exercise(
     val isArchived: Boolean = false,
     // Rework-additive (03-data-model.md).
     val defaultRestSeconds: Int? = null,
+    // Optional remote/local artwork. Null keeps seeded and custom exercises offline-friendly.
+    val imageUrl: String? = null,
+    val imageAttribution: String? = null,
 ) {
     /** Primary + distinct secondaries, joined for display. Derived — not persisted. */
     val bodyPartsSummary: String
@@ -46,6 +49,7 @@ data class ExerciseFilter(
     val searchText: String = "",
     val bodyPart: String = "",
     val category: ExerciseCategory? = null,
+    val equipment: String = "",
     val includeArchived: Boolean = false,
 )
 

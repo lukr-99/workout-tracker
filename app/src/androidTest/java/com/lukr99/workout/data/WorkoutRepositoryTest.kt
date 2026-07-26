@@ -20,6 +20,10 @@ import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutSessionStatus
 import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.domain.WorkoutTemplateExercise
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -77,6 +81,7 @@ class WorkoutRepositoryTest {
             repo.getExercises(ExerciseFilter(searchText = "bench")).single().name,
         )
         assertEquals(2, repo.getExercises(ExerciseFilter(bodyPart = "Chest")).size) // Bench + Incline
+        assertTrue(repo.getExercises(ExerciseFilter(equipment = "Barbell")).isNotEmpty())
 
         // Ordering: Strength (category 0) before Cardio (category 1).
         val all = repo.getExercises(ExerciseFilter(includeArchived = true))
@@ -126,6 +131,8 @@ class WorkoutRepositoryTest {
                     secondaryBodyParts = listOf("Biceps"),
                     equipment = "Cable",
                     notes = "Overwrite attempt",
+                    imageUrl = "https://wger.de/media/remote-row.png",
+                    imageAttribution = "wger · CC-BY-SA 4",
                 ),
                 Exercise(name = "My Press", externalSourceId = "wger:name-collision"),
                 Exercise(name = "New Remote", externalSourceId = "wger:new"),
@@ -141,6 +148,8 @@ class WorkoutRepositoryTest {
         assertEquals("Keep my note", updated.notes)
         assertEquals("Cable", updated.equipment)
         assertEquals(listOf("Biceps"), updated.secondaryBodyParts)
+        assertEquals("https://wger.de/media/remote-row.png", updated.imageUrl)
+        assertEquals("wger · CC-BY-SA 4", updated.imageAttribution)
     }
 
     @Test
@@ -205,6 +214,46 @@ class WorkoutRepositoryTest {
         assertEquals(1, rowCount("entries"))
         assertEquals(0, rowCount("strength_sets"))
         assertEquals(1, rowCount("cardio_data"))
+    }
+
+    @Test
+    fun concurrentSessionSaves_areAtomicAndLeaveAConsistentGraph() = runTest {
+        val original = repo.saveWorkoutSession(completedSessionWithChildren())
+        val strengthOnly = original.copy(
+            entries = original.entries.filter { it.entryType == ExerciseCategory.Strength },
+        )
+        val cardioOnly = original.copy(
+            entries = original.entries.filter { it.entryType == ExerciseCategory.Cardio },
+        )
+
+        coroutineScope {
+            listOf(strengthOnly, cardioOnly).map { session ->
+                async(Dispatchers.Default) { repo.saveWorkoutSession(session) }
+            }.awaitAll()
+        }
+
+        val saved = repo.getSession(original.id)!!
+        val savedIds = saved.entries.map { it.id }.toSet()
+        assertTrue(
+            savedIds == strengthOnly.entries.map { it.id }.toSet() ||
+                savedIds == cardioOnly.entries.map { it.id }.toSet(),
+        )
+        assertEquals(saved.entries.size, rowCount("entries"))
+        assertEquals(saved.entries.sumOf { it.strengthSets.size }, rowCount("strength_sets"))
+        assertEquals(saved.entries.count { it.cardioData != null }, rowCount("cardio_data"))
+        val orphanedSets = db.query(
+            SimpleSQLiteQuery(
+                """
+                SELECT COUNT(*) FROM strength_sets AS sets
+                LEFT JOIN entries ON entries.id = sets.workoutEntryId
+                WHERE entries.id IS NULL
+                """.trimIndent(),
+            ),
+        ).use { cursor ->
+            cursor.moveToFirst()
+            cursor.getInt(0)
+        }
+        assertEquals(0, orphanedSets)
     }
 
     @Test

@@ -12,9 +12,9 @@ import kotlinx.serialization.Serializable
  * `domain/` models (which serialize enums as Int ordinals and timestamps as ISO-8601 — matching the
  * `v1.0` wire format).
  *
- * **Version 1.1** — the rework's additive fields (03-data-model.md) now ship. The reader
- * ([BundleImporter]) accepts `1.0` **and** `1.1` and ignores unknown fields, so older exports and
- * any future desktop tool interoperate.
+ * **Version 1.3** adds optional exercise image references and attribution. The reader accepts all
+ * earlier published versions and ignores unknown fields, so older exports and future tools
+ * interoperate.
  */
 @Serializable
 data class ExportBundle(
@@ -25,7 +25,7 @@ data class ExportBundle(
     val sessions: List<WorkoutSession> = emptyList(),
 ) {
     companion object {
-        const val CURRENT_VERSION = "1.2"
-        val SUPPORTED_VERSIONS = setOf("1.0", "1.1", "1.2")
+        const val CURRENT_VERSION = "1.3"
+        val SUPPORTED_VERSIONS = setOf("1.0", "1.1", "1.2", "1.3")
     }
 }

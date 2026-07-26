@@ -27,7 +27,7 @@ class WorkoutMigrationTest {
     }
 
     @Test
-    fun migratesSchemaOneFixtureToSchemaTwo() {
+    fun migratesSchemaOneFixtureToSchemaThree() {
         helper.createDatabase(DatabaseName, 1).apply {
             execSQL(
                 """
@@ -54,7 +54,9 @@ class WorkoutMigrationTest {
             ApplicationProvider.getApplicationContext(),
             WorkoutDb::class.java,
             DatabaseName,
-        ).addMigrations(WorkoutDb.MIGRATION_1_2).allowMainThreadQueries().build()
+        ).addMigrations(WorkoutDb.MIGRATION_1_2, WorkoutDb.MIGRATION_2_3)
+            .allowMainThreadQueries()
+            .build()
         try {
             database.query("SELECT name, defaultRestSeconds FROM exercises WHERE id = 'fixture'", null)
                 .use { cursor ->
@@ -68,6 +70,14 @@ class WorkoutMigrationTest {
             ).use { cursor ->
                 cursor.moveToFirst()
                 assertEquals(0, cursor.getInt(0))
+                assertEquals(true, cursor.isNull(1))
+            }
+            database.query(
+                "SELECT imageUrl, imageAttribution FROM exercises WHERE id = 'fixture'",
+                null,
+            ).use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(true, cursor.isNull(0))
                 assertEquals(true, cursor.isNull(1))
             }
         } finally {

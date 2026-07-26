@@ -44,6 +44,8 @@ class WgerSyncServiceTest {
         assertEquals(listOf("Triceps"), merged.first().secondaryBodyParts)
         assertEquals("Barbell", merged.first().equipment)
         assertEquals("Use control & breathe.", merged.first().notes)
+        assertEquals("https://wger.de/media/bench.png", merged.first().imageUrl)
+        assertEquals("wger · CC-BY-SA 4 · Test Author", merged.first().imageAttribution)
     }
 
     @Test
@@ -76,6 +78,9 @@ class WgerSyncServiceTest {
                 "muscles": [{"id": 4, "name": "Chest", "name_en": "Chest"}],
                 "muscles_secondary": [{"id": 5, "name": "Triceps"}],
                 "equipment": [{"id": 1, "name": "Barbell"}],
+                "images": [{"image": "https://wger.de/media/bench.png", "is_main": true}],
+                "license": {"short_name": "CC-BY-SA 4", "url": "https://creativecommons.org/licenses/by-sa/4.0/"},
+                "license_author": "Test Author",
                 "translations": [{"language": 2, "name": "Bench press"}],
                 "future_field": {"is_safe": true}
               }]
@@ -86,6 +91,7 @@ class WgerSyncServiceTest {
         val mapped = page.results.single().toExercise(preferredLanguage = 2)!!
         assertEquals("Bench press", mapped.name)
         assertEquals("wger:payload-id", mapped.externalSourceId)
+        assertEquals("https://wger.de/media/bench.png", mapped.imageUrl)
     }
 
     private fun validRemote(id: String, name: String) = WgerExerciseDto(
@@ -94,6 +100,9 @@ class WgerSyncServiceTest {
         muscles = listOf(WgerNamedDto(name = "Chest")),
         secondaryMuscles = listOf(WgerNamedDto(name = "Triceps")),
         equipment = listOf(WgerNamedDto(name = "Barbell")),
+        images = listOf(WgerImageDto(image = "https://wger.de/media/bench.png", isMain = true)),
+        license = WgerLicenseDto(shortName = "CC-BY-SA 4"),
+        licenseAuthor = "Test Author",
         translations = listOf(
             WgerTranslationDto(
                 language = 2,

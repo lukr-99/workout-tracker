@@ -14,17 +14,19 @@ import com.lukr99.workout.domain.creation.CreationResult
 import com.lukr99.workout.domain.creation.ExerciseDraft
 import com.lukr99.workout.domain.creation.TemplateDraft
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** Library surface state — the exercise catalog (searchable/filterable) and workout templates. */
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 class LibraryViewModel(
     private val repo: WorkoutRepository,
     private val data: WorkoutDataService,
@@ -34,7 +36,7 @@ class LibraryViewModel(
     val filter: StateFlow<ExerciseFilter> = filterState.asStateFlow()
 
     val exercises: StateFlow<List<Exercise>> =
-        filterState.flatMapLatest { repo.observeExercises(it) }
+        filterState.debounce(250).flatMapLatest { repo.observeExercises(it) }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val templates: StateFlow<List<WorkoutTemplate>> =
@@ -43,6 +45,7 @@ class LibraryViewModel(
     fun setSearch(text: String) = filterState.update { it.copy(searchText = text) }
     fun setBodyPart(part: String) = filterState.update { it.copy(bodyPart = part) }
     fun setCategory(category: ExerciseCategory?) = filterState.update { it.copy(category = category) }
+    fun setEquipment(equipment: String) = filterState.update { it.copy(equipment = equipment) }
     fun setIncludeArchived(include: Boolean) = filterState.update { it.copy(includeArchived = include) }
 
     fun saveExercise(draft: ExerciseDraft, onResult: (CreationResult<Exercise>) -> Unit = {}) {

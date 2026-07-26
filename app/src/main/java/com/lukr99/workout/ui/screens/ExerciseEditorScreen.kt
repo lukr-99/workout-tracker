@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.creation.ExerciseDraft
 import com.lukr99.workout.ui.LibraryViewModel
+import com.lukr99.workout.ui.components.ExerciseThumbnail
 import com.lukr99.workout.ui.components.FilterChip
 import com.lukr99.workout.ui.components.LocalToast
 
@@ -77,6 +78,19 @@ fun ExerciseEditorScreen(
         }
 
         Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            existing?.let { exercise ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    ExerciseThumbnail(exercise, size = 64.dp)
+                    if (!exercise.imageAttribution.isNullOrBlank()) {
+                        Spacer(Modifier.size(12.dp))
+                        Text(
+                            exercise.imageAttribution,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
             OutlinedTextField(name, { name = it }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip("Strength", category == ExerciseCategory.Strength, { category = ExerciseCategory.Strength })
@@ -104,6 +118,11 @@ fun ExerciseEditorScreen(
                             equipment = equipment,
                             notes = notes,
                             defaultRestSeconds = rest.toIntOrNull(),
+                            source = existing?.source ?: com.lukr99.workout.domain.ExerciseSource.Custom,
+                            externalSourceId = existing?.externalSourceId,
+                            isArchived = existing?.isArchived ?: false,
+                            imageUrl = existing?.imageUrl,
+                            imageAttribution = existing?.imageAttribution,
                         ),
                     ) { result ->
                         if (result.isValid) {

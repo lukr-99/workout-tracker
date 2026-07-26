@@ -44,6 +44,7 @@ import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.LibraryViewModel
 import com.lukr99.workout.ui.components.EmptyHint
+import com.lukr99.workout.ui.components.ExerciseThumbnail
 import com.lukr99.workout.ui.components.FilterChip
 import com.lukr99.workout.ui.components.Tag
 import com.lukr99.workout.ui.theme.TextMid
@@ -102,10 +103,12 @@ fun LibraryScreen(
                 searchText = filter.searchText,
                 selectedBodyPart = filter.bodyPart,
                 selectedCategory = filter.category,
+                selectedEquipment = filter.equipment,
                 includeArchived = filter.includeArchived,
                 onSearch = vm::setSearch,
                 onBodyPart = vm::setBodyPart,
                 onCategory = vm::setCategory,
+                onEquipment = vm::setEquipment,
                 onIncludeArchived = vm::setIncludeArchived,
                 onEdit = onEditExercise,
                 onArchive = { vm.archiveExercise(it) },
@@ -159,17 +162,24 @@ private fun CatalogList(
     searchText: String,
     selectedBodyPart: String,
     selectedCategory: ExerciseCategory?,
+    selectedEquipment: String,
     includeArchived: Boolean,
     onSearch: (String) -> Unit,
     onBodyPart: (String) -> Unit,
     onCategory: (ExerciseCategory?) -> Unit,
+    onEquipment: (String) -> Unit,
     onIncludeArchived: (Boolean) -> Unit,
     onEdit: (String) -> Unit,
     onArchive: (String) -> Unit,
     onRestore: (Exercise) -> Unit,
 ) {
     val bodyParts = remember(exercises) {
-        exercises.map { it.primaryBodyPart }.filter { it.isNotBlank() }.distinct().sorted()
+        exercises.flatMap { listOf(it.primaryBodyPart) + it.secondaryBodyParts }
+            .filter(String::isNotBlank).distinctBy(String::lowercase).sorted()
+    }
+    val equipmentOptions = remember(exercises) {
+        exercises.flatMap { it.equipment.split(',') }.map(String::trim)
+            .filter(String::isNotBlank).distinctBy(String::lowercase).sorted()
     }
     Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp)) {
         Spacer(Modifier.size(8.dp))
@@ -198,9 +208,13 @@ private fun CatalogList(
             Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            FilterChip("All", selectedCategory == null && selectedBodyPart.isBlank(), {
-                onCategory(null); onBodyPart("")
-            })
+            FilterChip(
+                "All",
+                selectedCategory == null && selectedBodyPart.isBlank() && selectedEquipment.isBlank(),
+                {
+                    onCategory(null); onBodyPart(""); onEquipment("")
+                },
+            )
             FilterChip("Strength", selectedCategory == ExerciseCategory.Strength, {
                 onCategory(if (selectedCategory == ExerciseCategory.Strength) null else ExerciseCategory.Strength)
             })
@@ -213,6 +227,20 @@ private fun CatalogList(
                 })
             }
             FilterChip("Archived", includeArchived, { onIncludeArchived(!includeArchived) })
+        }
+        if (equipmentOptions.isNotEmpty()) {
+            Spacer(Modifier.size(8.dp))
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                FilterChip("Any equipment", selectedEquipment.isBlank(), { onEquipment("") })
+                equipmentOptions.forEach { item ->
+                    FilterChip(item, selectedEquipment.equals(item, true), {
+                        onEquipment(if (selectedEquipment.equals(item, true)) "" else item)
+                    })
+                }
+            }
         }
         Spacer(Modifier.size(8.dp))
         if (exercises.isEmpty()) {
@@ -230,6 +258,8 @@ private fun CatalogList(
                             .clickable { onEdit(ex.id) }.padding(horizontal = 14.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        ExerciseThumbnail(ex)
+                        Spacer(Modifier.size(10.dp))
                         Column(Modifier.weight(1f)) {
                             Text(
                                 ex.name, style = MaterialTheme.typography.titleMedium,
