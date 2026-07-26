@@ -39,14 +39,19 @@ MAUI POC stays preserved forever on `release/1.0` + tag `v1.0.0` (and in history
 7. **Branch cleanup (confirm first):** optionally delete `feature/app-rework` once `main` carries
    everything (local + remote). Keep `release/1.0` and both tags.
 
-## Decisions to confirm before running
+## Decisions (locked by the user)
 
-- **Keep or delete `feature/app-rework`** after promotion? (Recommend: keep briefly, delete once
-  you've used `main` for a bit.)
-- **`--ff-only` vs `--no-ff`** merge into `main` (recommend `--ff-only` — linear, and `main` is a
-  strict ancestor).
-- The frozen MAUI code stays only on `release/1.0` + `v1.0.0`. Confirm that's the intended archive
-  (no copy kept on `main`).
+- **Merge into `main` is `--ff-only`** — linear history (`main` is a strict ancestor of
+  `feature/app-rework`).
+- **Keep `feature/app-rework`** after promotion — **but note it for future deletion** once `main` has
+  been used for a while (it will be fully contained in `main`).
+- The frozen MAUI code stays only on `release/1.0` + `v1.0.0` (that's the archive; no copy on `main`).
+
+## Sequencing
+
+Run the cutover **after** the exercise-images feature
+([handoff-codex-exercise-images.md](handoff-codex-exercise-images.md)) is merged and verified — that's
+the last planned feature before cutover.
 
 ## Not in scope (personal use)
 

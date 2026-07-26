@@ -56,7 +56,9 @@ history → analytics-ready data → export). It did its job. But:
 | [bugfix-polish-report.md](bugfix-polish-report.md) | Bug-fix/polish implementation + verification report |
 | [phase-5-report.md](phase-5-report.md) | Phase 5 release-hardening implementation report |
 | [release-signing.md](release-signing.md) | How to create your upload keystore + signing config keys |
-| [phase-6-release-checklist.md](phase-6-release-checklist.md) | Play Store submission checklist (user actions vs. agent-doable prep) |
+| [handoff-codex-exercise-images.md](handoff-codex-exercise-images.md) | Exercise images: wger backfill + open dataset + personal photos / custom machine exercises |
+| [final-phase-cutover.md](final-phase-cutover.md) | Final cutover: remove C# app, promote to `main` + `release/2.0` |
+| [phase-6-release-checklist.md](phase-6-release-checklist.md) | Play Store submission checklist (SUPERSEDED — personal use) |
 | [../../tools/README.md](../../tools/README.md) | Phone/ADB omni-tooling for building, installing, and pulling data |
 
 ## Status snapshot
@@ -108,8 +110,10 @@ superseded).
 - [x] **Real data imported** — the captured Lyfta history (19 sessions · 468 sets · 35 new exercises)
   imported in-app via Settings → Data → Import; verified rendering in Progress (19 workouts, ~0.2M kg,
   Muscle-Recovery map) with no crash.
-- [ ] **Final phase — cutover** — remove the `.NET MAUI` C# app, promote `feature/app-rework` to
-  `main`, cut `release/2.0` + tag `v2.0.0` (MAUI POC stays on `release/1.0`/`v1.0.0`). Plan:
+- [ ] **Exercise images (next)** — wger backfill for existing/imported exercises + bundled open
+  dataset (`free-exercise-db`) + **personal photo attach** & easy custom machine-specific exercise
+  creation (schema v4). Handoff: [handoff-codex-exercise-images.md](handoff-codex-exercise-images.md).
+- [ ] **Final phase — cutover** (after images) — remove the `.NET MAUI` C# app, promote
+  `feature/app-rework` → `main` (**`--ff-only`**), cut `release/2.0` + tag `v2.0.0`; keep
+  `feature/app-rework` (noted for future deletion). MAUI POC stays on `release/1.0`/`v1.0.0`. Plan:
   [final-phase-cutover.md](final-phase-cutover.md).
-- [ ] Optional: more exercise images (wger backfill + open image dataset + personal photo attach);
-  deeper Lyfta study ([06-lyfta-study.md](06-lyfta-study.md)).
