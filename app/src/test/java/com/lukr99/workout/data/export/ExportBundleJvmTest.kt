@@ -12,20 +12,25 @@ import com.lukr99.workout.domain.WorkoutSessionSource
 import com.lukr99.workout.domain.WorkoutSessionStatus
 import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.domain.WorkoutTemplateExercise
+import com.lukr99.workout.domain.run.Route
+import com.lukr99.workout.domain.run.RoutePoint
+import com.lukr99.workout.domain.run.Run
+import com.lukr99.workout.domain.run.RunSource
+import com.lukr99.workout.domain.run.TracePoint
 import java.time.Instant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * The cross-device contract: our `1.4` bundle round-trips through JSON unchanged, and a hand-crafted
+ * The cross-device contract: our `1.5` bundle round-trips through JSON unchanged, and a hand-crafted
  * `v1.0` export (enums as ints, ISO-8601 timestamps, MAUI computed fields) imports 1:1.
  */
 class ExportBundleJvmTest {
 
     private val bundle = ExportBundle(
         exportedAtUtc = "2024-01-01T10:00:00Z",
-        exportFormatVersion = "1.4",
+        exportFormatVersion = "1.5",
         exercises = listOf(
             Exercise(
                 id = "ex1", name = "Bench", category = ExerciseCategory.Strength,
@@ -64,6 +69,28 @@ class ExportBundleJvmTest {
                         entryType = ExerciseCategory.Cardio,
                         cardioData = CardioEntryData(workoutEntryId = "e2", durationSeconds = 1200, distanceKm = 6.4),
                     ),
+                ),
+            ),
+        ),
+        runs = listOf(
+            Run(
+                id = "run1", startedAtUtc = 1_700_000_000_000L, durationSeconds = 1800,
+                movingSeconds = 1750, distanceMeters = 5000.0, avgPaceSecPerKm = 360.0,
+                elevationGainM = 42.0, calories = 320.0, avgHr = 154, source = RunSource.Local,
+                encodedPolyline = "_p~iF~ps|U_ulLnnqC", notes = "morning loop",
+                trace = listOf(
+                    TracePoint(t = 0, lat = 50.08, lon = 14.42, elevationM = 200.0, accuracyM = 5.0),
+                    TracePoint(t = 1000, lat = 50.081, lon = 14.421, speedMps = 3.1, hrBpm = 150),
+                ),
+            ),
+        ),
+        routes = listOf(
+            Route(
+                id = "route1", name = "River loop", distanceMeters = 5000.0, elevationGainM = 40.0,
+                encodedPolyline = "_p~iF~ps|U", createdAtUtc = 1_700_000_000_000L,
+                points = listOf(
+                    RoutePoint(seq = 0, lat = 50.08, lon = 14.42, elevationM = 200.0),
+                    RoutePoint(seq = 1, lat = 50.081, lon = 14.421),
                 ),
             ),
         ),
@@ -126,8 +153,16 @@ class ExportBundleJvmTest {
 
     @Test
     fun supportsAllPublishedVersions() {
-        assertEquals(setOf("1.0", "1.1", "1.2", "1.3", "1.4"), ExportBundle.SUPPORTED_VERSIONS)
-        assertEquals("1.4", ExportBundle.CURRENT_VERSION)
+        assertEquals(setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5"), ExportBundle.SUPPORTED_VERSIONS)
+        assertEquals("1.5", ExportBundle.CURRENT_VERSION)
+    }
+
+    @Test
+    fun reads_preRunExport_defaultsRunsAndRoutesEmpty() {
+        // A 1.4 (pre-Run-Mode) export has no runs/routes arrays; they must default empty, not fail.
+        val restored = JsonExporter.fromJson(V10_JSON)
+        assertTrue(restored.runs.isEmpty())
+        assertTrue(restored.routes.isEmpty())
     }
 
     private companion object {

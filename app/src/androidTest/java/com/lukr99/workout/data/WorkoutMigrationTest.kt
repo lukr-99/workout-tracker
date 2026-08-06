@@ -27,7 +27,7 @@ class WorkoutMigrationTest {
     }
 
     @Test
-    fun migratesSchemaOneFixtureToSchemaFour() {
+    fun migratesSchemaOneFixtureToLatest() {
         helper.createDatabase(DatabaseName, 1).apply {
             execSQL(
                 """
@@ -58,6 +58,7 @@ class WorkoutMigrationTest {
             WorkoutDb.MIGRATION_1_2,
             WorkoutDb.MIGRATION_2_3,
             WorkoutDb.MIGRATION_3_4,
+            WorkoutDb.MIGRATION_4_5,
         )
             .allowMainThreadQueries()
             .build()
@@ -113,7 +114,7 @@ class WorkoutMigrationTest {
             ApplicationProvider.getApplicationContext(),
             WorkoutDb::class.java,
             DatabaseName,
-        ).addMigrations(WorkoutDb.MIGRATION_3_4)
+        ).addMigrations(WorkoutDb.MIGRATION_3_4, WorkoutDb.MIGRATION_4_5)
             .allowMainThreadQueries()
             .build()
         try {
@@ -125,6 +126,84 @@ class WorkoutMigrationTest {
                 assertEquals("https://example.test/lift.jpg", cursor.getString(0))
                 assertEquals("Fixture attribution", cursor.getString(1))
                 assertEquals(true, cursor.isNull(2))
+            }
+        } finally {
+            database.close()
+        }
+    }
+
+    @Test
+    fun migratesSchemaFourToFiveAddingRunTablesNonDestructively() {
+        // A v4 database with existing strength history.
+        helper.createDatabase(DatabaseName, 4).apply {
+            execSQL(
+                """
+                INSERT INTO exercises (
+                    id, name, category, primaryBodyPart, secondaryBodyPartsJson,
+                    equipment, notes, source, externalSourceId, isArchived, defaultRestSeconds
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """.trimIndent(),
+                arrayOf("fixture", "Fixture Lift", 0, "Back", "[]", "", "", 2, null, 0, 90),
+            )
+            execSQL(
+                """
+                INSERT INTO sessions (
+                    id, templateId, name, status, startedAtUtc, endedAtUtc, completedDateUtc,
+                    durationSeconds, notes, perceivedEffort, bodyweightKg, source, externalKey
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """.trimIndent(),
+                arrayOf("session", null, "Fixture Workout", 1, 1000, 2000, 2000, 1, "", null, null, 0, null),
+            )
+            close()
+        }
+
+        // Validate the migrated schema against the checked-in 5.json (schema identity).
+        helper.runMigrationsAndValidate(DatabaseName, 5, true, WorkoutDb.MIGRATION_4_5)
+
+        val database = Room.databaseBuilder(
+            ApplicationProvider.getApplicationContext(),
+            WorkoutDb::class.java,
+            DatabaseName,
+        ).addMigrations(
+            WorkoutDb.MIGRATION_1_2,
+            WorkoutDb.MIGRATION_2_3,
+            WorkoutDb.MIGRATION_3_4,
+            WorkoutDb.MIGRATION_4_5,
+        )
+            .allowMainThreadQueries()
+            .build()
+        try {
+            val support = database.openHelper.writableDatabase
+            // Pre-existing strength history is untouched.
+            support.query("SELECT name FROM exercises WHERE id = 'fixture'").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("Fixture Lift", cursor.getString(0))
+            }
+
+            // The four new run tables exist and accept rows.
+            support.execSQL(
+                """
+                INSERT INTO runs (
+                    id, sessionId, startedAtUtc, durationSeconds, movingSeconds, distanceMeters,
+                    avgPaceSecPerKm, elevationGainM, calories, avgHr, source, externalKey,
+                    encodedPolyline, routeId, notes
+                ) VALUES ('r1', NULL, 1000, 600, 590, 2000.0, 300.0, 12.0, NULL, NULL, 0, NULL, 'abc', NULL, '')
+                """.trimIndent(),
+            )
+            support.execSQL(
+                "INSERT INTO run_points (runId, t, lat, lon, elevationM, speedMps, hrBpm, accuracyM) " +
+                    "VALUES ('r1', 0, 50.0, 14.0, 200.0, 3.3, 150, 5.0)",
+            )
+            support.query("SELECT COUNT(*) FROM run_points WHERE runId = 'r1'").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(1, cursor.getInt(0))
+            }
+
+            // Child points cascade with their run (FK ON DELETE CASCADE).
+            support.execSQL("DELETE FROM runs WHERE id = 'r1'")
+            support.query("SELECT COUNT(*) FROM run_points WHERE runId = 'r1'").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
             }
         } finally {
             database.close()

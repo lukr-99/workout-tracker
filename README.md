@@ -1,7 +1,8 @@
-# Workout Tracker
+# Ember
 
-A native **Android** workout tracker built with **Kotlin + Jetpack Compose + Room** (MVVM,
-offline-first, on-device). This is a personal-use app.
+**Ember** is a native **Android** fitness app built with **Kotlin + Jetpack Compose + Room** (MVVM,
+offline-first, on-device): strength training plus a Strava-style **Run Mode** (live GPS runs with a
+dark map, pace/splits, routes). This is a personal-use app.
 
 > **History:** v1 was a `.NET MAUI` / C# proof-of-concept. It's preserved on the **`release/1.0`**
 > branch and tag **`v1.0.0`**. v2 is this ground-up native Kotlin rewrite (tag `v2.0.0`). The full

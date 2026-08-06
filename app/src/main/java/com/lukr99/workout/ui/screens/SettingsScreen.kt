@@ -290,7 +290,7 @@ fun SettingsScreen(
         )
 
         Text(
-            "Workout Tracker · 2.0.0",
+            "Ember · 2.0.0",
             style = MaterialTheme.typography.labelSmall,
             color = TextMid,
             modifier = Modifier.padding(start = 4.dp),

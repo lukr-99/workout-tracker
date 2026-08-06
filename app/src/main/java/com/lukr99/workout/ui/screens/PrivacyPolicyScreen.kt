@@ -47,14 +47,14 @@ fun PrivacyPolicyScreen(
             }
             ScreenHeader(
                 if (permissionRationale) "Health permissions" else "Privacy policy",
-                if (permissionRationale) "Why Workout Tracker requests access" else "Your data stays under your control",
+                if (permissionRationale) "Why Ember requests access" else "Your data stays under your control",
                 modifier = Modifier.weight(1f),
             )
         }
 
         PolicySection("Health data we use") {
             Text(
-                "With your permission, Workout Tracker reads exercise sessions and weight records " +
+                "With your permission, Ember reads exercise sessions and weight records " +
                     "from Health Connect. It can write completed workout sessions and the bodyweight " +
                     "recorded with those sessions.",
             )
@@ -71,7 +71,7 @@ fun PrivacyPolicyScreen(
         PolicySection("Storage and sharing") {
             Text(
                 "Workout data is stored in the app on this device. Health data is exchanged directly " +
-                    "with Health Connect; Workout Tracker does not sell health data. Automatic backups " +
+                    "with Health Connect; Ember does not sell health data. Automatic backups " +
                     "are off by default and only write to a folder you select.",
             )
         }
@@ -79,7 +79,7 @@ fun PrivacyPolicyScreen(
         PolicySection("Your choices") {
             Text(
                 "Health Connect access is optional. You can review or revoke permissions in Health " +
-                    "Connect at any time, keep using Workout Tracker without connecting it, and disable " +
+                    "Connect at any time, keep using Ember without connecting it, and disable " +
                     "automatic backup from Settings.",
             )
         }

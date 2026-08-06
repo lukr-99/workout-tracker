@@ -124,6 +124,9 @@ dependencies {
     implementation(libs.health.connect.client)
     implementation(libs.work.runtime.ktx)
 
+    // Maps (Run Mode) — MapLibre Native, isolated behind ui/run/components/MapView.kt.
+    implementation(libs.maplibre.android)
+
     // JVM unit tests (domain analytics/estimates + serialization round-trip)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

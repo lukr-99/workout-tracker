@@ -51,6 +51,15 @@ object Format {
 
     fun duration(totalSeconds: Long): String = Units.formatDuration(totalSeconds)
 
+    /** Distance in km/mi with a unit suffix, e.g. "5.2 km" / "3.2 mi". Storage stays metres. */
+    fun distance(meters: Double, units: UnitSystem): String {
+        return if (units == UnitSystem.Imperial) {
+            "%.2f mi".format(meters / 1_609.344)
+        } else {
+            "%.2f km".format(meters / 1_000.0)
+        }
+    }
+
     fun clock(seconds: Int): String {
         val s = seconds.coerceAtLeast(0)
         return "%d:%02d".format(s / 60, s % 60)

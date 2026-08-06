@@ -21,6 +21,9 @@ okhttp = "4.12.0"
 healthConnect = "1.1.0-alpha11"
 work = "2.9.1"
 coil = "2.7.0"
+# MapLibre Native (Android) — the locked map engine for Run Mode. Keyless dark vector basemap;
+# tiles come from a Protomaps/PMTiles-backed style URL (see data/map/MapStyle.kt).
+maplibre = "11.5.2"
 junit = "4.13.2"
 androidxTestCore = "1.6.1"
 androidxTestRunner = "1.6.2"
@@ -60,6 +63,9 @@ health-connect-client = { module = "androidx.health.connect:connect-client", ver
 work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
 work-testing = { module = "androidx.work:work-testing", version.ref = "work" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
+
+# Maps (Run Mode) — MapLibre Native Android + its Compose interop via AndroidView.
+maplibre-android = { module = "org.maplibre.gl:android-sdk", version.ref = "maplibre" }
 
 # Async
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }

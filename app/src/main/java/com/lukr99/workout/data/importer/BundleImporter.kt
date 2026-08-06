@@ -14,7 +14,7 @@ import com.lukr99.workout.data.transfer.TransferIssueSeverity
 /**
  * Reads our own `ExportBundle` JSON back into the store (round-trip / restore-from-backup).
  *
- * Accepts `exportFormatVersion` `1.0` through `1.3`; unknown fields are ignored by
+ * Accepts `exportFormatVersion` `1.0` through `1.5`; unknown fields are ignored by
  * [JsonExporter]. Ids
  * are preserved so a restore is idempotent and cross-device merges keep stable identity. The Lyfta
  * CSV importer is a separate, later concern — see [LyftaCsvImporter].

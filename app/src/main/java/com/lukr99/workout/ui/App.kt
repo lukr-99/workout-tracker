@@ -31,7 +31,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,25 +46,29 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lukr99.workout.data.AppContainer
 import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.LocalExerciseImageResolver
+import com.lukr99.workout.ui.components.StartChooserSheet
 import com.lukr99.workout.ui.components.ToastHost
 import com.lukr99.workout.ui.components.rememberToastState
+import com.lukr99.workout.ui.run.LiveRunScreen
+import com.lukr99.workout.ui.run.RunViewModel
+import com.lukr99.workout.ui.run.RunsScreen
 import com.lukr99.workout.ui.screens.DataTransferScreen
 import com.lukr99.workout.ui.screens.ExerciseEditorScreen
-import com.lukr99.workout.ui.screens.HistoryScreen
 import com.lukr99.workout.ui.screens.HomeScreen
 import com.lukr99.workout.ui.screens.LibraryScreen
 import com.lukr99.workout.ui.screens.LiveWorkoutScreen
 import com.lukr99.workout.ui.screens.ProgressDetailScreen
-import com.lukr99.workout.ui.screens.ProgressScreen
+import com.lukr99.workout.ui.screens.ProgressHubScreen
 import com.lukr99.workout.ui.screens.PrivacyPolicyScreen
 import com.lukr99.workout.ui.screens.SettingsScreen
 import com.lukr99.workout.ui.screens.TemplateEditorScreen
 import com.lukr99.workout.ui.screens.WorkoutDetailScreen
 
 /**
- * App root. The decided 5-item shell — `Home · History · (＋ Start) · Progress · Settings` — with the
- * center ember Start action starting/resuming the live workout (not a peer tab). Peer tabs cross-fade;
- * full-screen flows layer over them through a manual back-stack ([Navigator]). See 02-design-system.md.
+ * App root. The 5-item shell — `Home · Runs · (＋ Start) · Progress · Settings` — with the center
+ * ember Start action opening a Lift/Run chooser (or resuming a live lift), not a peer tab. History
+ * lives under the Progress tab now. Peer tabs cross-fade; full-screen flows layer over them through a
+ * manual back-stack ([Navigator]). See 02-design-system.md and docs/run-mode.
  */
 @Composable
 fun App(container: AppContainer) {
@@ -75,6 +81,7 @@ fun App(container: AppContainer) {
     val settingsVm: SettingsViewModel = viewModel(factory = SettingsViewModel.factory(container))
     val libraryVm: LibraryViewModel = viewModel(factory = LibraryViewModel.factory(container))
     val liveVm: LiveWorkoutViewModel = viewModel(factory = LiveWorkoutViewModel.factory(container))
+    val runVm: RunViewModel = viewModel(factory = RunViewModel.factory(container))
     val dataVm: DataTransferViewModel = viewModel(
         factory = DataTransferViewModel.factory(container.dataTransfer, container.documents),
     )
@@ -82,10 +89,21 @@ fun App(container: AppContainer) {
     val settings by settingsVm.settings.collectAsState()
     val activeSession by homeVm.activeSession.collectAsState()
     val overlay = nav.top
+    var chooserOpen by remember { mutableStateOf(false) }
 
     fun startWorkout(templateId: String? = null) {
         liveVm.startOrResume(templateId)
         nav.push(Route.LiveWorkout)
+    }
+
+    fun startRun() {
+        nav.push(Route.LiveRun)
+    }
+
+    // The center ＋ opens the Lift/Run chooser for a fresh start; when a lift is already live it
+    // resumes that session directly (the ▶ affordance), preserving the prior behaviour.
+    fun onCenterAction() {
+        if (activeSession != null) startWorkout() else chooserOpen = true
     }
 
     CompositionLocalProvider(
@@ -110,15 +128,18 @@ fun App(container: AppContainer) {
                             onOpenLibrary = { nav.push(Route.Library) },
                             onOpenSession = { nav.push(Route.WorkoutDetail(it)) },
                         )
-                        Tab.HISTORY -> HistoryScreen(
-                            vm = historyVm,
+                        Tab.RUNS -> RunsScreen(
+                            vm = runVm,
                             units = settings.units,
-                            onOpen = { nav.push(Route.WorkoutDetail(it)) },
+                            onStartRun = { startRun() },
+                            onOpenRun = { /* run detail arrives in R2 */ },
                         )
-                        Tab.PROGRESS -> ProgressScreen(
-                            vm = progressVm,
+                        Tab.PROGRESS -> ProgressHubScreen(
+                            progressVm = progressVm,
+                            historyVm = historyVm,
                             units = settings.units,
                             onOpenExercise = { nav.push(Route.ProgressDetail(it)) },
+                            onOpenSession = { nav.push(Route.WorkoutDetail(it)) },
                         )
                         Tab.SETTINGS -> SettingsScreen(
                             vm = settingsVm,
@@ -145,6 +166,10 @@ fun App(container: AppContainer) {
                             onCreateExercise = {
                                 nav.push(Route.ExerciseEditor(null, initialName = it))
                             },
+                        )
+                        Route.LiveRun -> LiveRunScreen(
+                            units = settings.units,
+                            onClose = { nav.pop() },
                         )
                         Route.Library -> LibraryScreen(
                             vm = libraryVm,
@@ -199,10 +224,18 @@ fun App(container: AppContainer) {
                     current = nav.tab.value,
                     resumeMode = activeSession != null,
                     onSelect = { nav.switch(it) },
-                    onStart = { startWorkout() },
+                    onStart = { onCenterAction() },
                     modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
                         .windowInsetsPadding(WindowInsets.systemBars)
                         .padding(start = 14.dp, end = 14.dp, bottom = 16.dp),
+                )
+            }
+
+            if (chooserOpen) {
+                StartChooserSheet(
+                    onLift = { chooserOpen = false; startWorkout() },
+                    onRun = { chooserOpen = false; startRun() },
+                    onDismiss = { chooserOpen = false },
                 )
             }
 
@@ -250,7 +283,7 @@ private fun FloatingNav(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             NavItem(Tab.HOME, current, Modifier.weight(1f)) { onSelect(Tab.HOME) }
-            NavItem(Tab.HISTORY, current, Modifier.weight(1f)) { onSelect(Tab.HISTORY) }
+            NavItem(Tab.RUNS, current, Modifier.weight(1f)) { onSelect(Tab.RUNS) }
             StartAction(resumeMode, onStart, Modifier.weight(1f))
             NavItem(Tab.PROGRESS, current, Modifier.weight(1f)) { onSelect(Tab.PROGRESS) }
             NavItem(Tab.SETTINGS, current, Modifier.weight(1f)) { onSelect(Tab.SETTINGS) }

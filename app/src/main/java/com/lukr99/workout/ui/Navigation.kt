@@ -1,18 +1,21 @@
 package com.lukr99.workout.ui
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.DirectionsRun
 import androidx.compose.material.icons.rounded.BarChart
-import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.vector.ImageVector
 
-/** The four peer tabs of the decided 5-item shell (the center Start action is not a tab). */
+/**
+ * The four peer tabs of the 5-item shell (the center Start action is not a tab). Run Mode (v2.1)
+ * reshuffled the slots: `Runs` takes History's old slot and History moved into `Progress`.
+ */
 enum class Tab(val label: String, val icon: ImageVector) {
     HOME("Home", Icons.Rounded.Home),
-    HISTORY("History", Icons.Rounded.History),
+    RUNS("Runs", Icons.AutoMirrored.Rounded.DirectionsRun),
     PROGRESS("Progress", Icons.Rounded.BarChart),
     SETTINGS("Settings", Icons.Rounded.Settings),
 }
@@ -20,6 +23,8 @@ enum class Tab(val label: String, val icon: ImageVector) {
 /** Full-screen flows layered over the tabs (a simple manual back-stack, ring-set style). */
 sealed interface Route {
     data object LiveWorkout : Route
+    /** Live-run flow (R0: a stubbed dark map that follows your location; recording lands in R1). */
+    data object LiveRun : Route
     data object Library : Route
     data class TemplateEditor(val templateId: String?) : Route
     data class ExerciseEditor(val exerciseId: String?, val initialName: String = "") : Route
