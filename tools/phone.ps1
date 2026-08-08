@@ -10,9 +10,14 @@
     apps [filter]           List third-party (user-installed) packages, optionally filtered.
     find <fragment>         Find installed package ids matching a name fragment (e.g. 'lyfta').
     screenshot [outPath]    Grab a PNG screenshot to outPath (default: .\import\screen-<ts>.png).
+    tap <x> <y>             Tap at device pixel (x,y). Coordinates are the real screen, not scaled.
+    swipe <x1> <y1> <x2> <y2> [ms]   Swipe/drag (default 250 ms) — e.g. to scroll.
+    key <keycode>           Send a key event (e.g. BACK, HOME, ENTER, or a numeric code).
     logcat [tagFilter]      Stream logcat, optionally grep-filtered (Ctrl+C to stop).
     install <apk>           adb install -r <apk>.
     launch <package>        Launch an app by package id.
+    seed-route [name] [meters] [bearing]   Seed a synthetic saved route (debug RunDevReceiver).
+    dump                    Log Run Mode DB counts and print them (RUNMODE_DUMP runs=.. routes=..).
     pull-lyfta              Pull Lyfta's exported CSV(s) off the phone (delegates to pull-lyfta.ps1).
 
   Examples:
@@ -84,6 +89,47 @@ switch ($Command.ToLower()) {
         & $adb pull $remote $out | Out-Null
         & $adb shell rm -f $remote
         Write-Host "Saved $out" -ForegroundColor Green
+    }
+
+    "tap" {
+        Assert-Device -Adb $adb
+        if (-not $Args -or $Args.Count -lt 2) { throw "Usage: phone.ps1 tap <x> <y>" }
+        & $adb shell input tap $Args[0] $Args[1]
+    }
+
+    "swipe" {
+        Assert-Device -Adb $adb
+        if (-not $Args -or $Args.Count -lt 4) { throw "Usage: phone.ps1 swipe <x1> <y1> <x2> <y2> [ms]" }
+        $ms = if ($Args.Count -ge 5) { $Args[4] } else { "250" }
+        & $adb shell input swipe $Args[0] $Args[1] $Args[2] $Args[3] $ms
+    }
+
+    "key" {
+        Assert-Device -Adb $adb
+        if (-not $Args) { throw "Usage: phone.ps1 key <keycode>  (e.g. BACK, HOME, or a number)" }
+        $code = $Args[0]
+        if ($code -notmatch '^[0-9]+$') { $code = "KEYCODE_$($code.ToUpper())" }
+        & $adb shell input keyevent $code
+    }
+
+    "seed-route" {
+        Assert-Device -Adb $adb
+        $name = if ($Args.Count -ge 1) { $Args[0] } else { "Dev route" }
+        $meters = if ($Args.Count -ge 2) { $Args[1] } else { "1000" }
+        $bearing = if ($Args.Count -ge 3) { $Args[2] } else { "0" }
+        & $adb shell am broadcast -a com.lukr99.workout.DEV_SEED_ROUTE -n com.lukr99.workout/.data.location.RunDevReceiver `
+            --es name "$name" --ei meters $meters --ed bearing $bearing | Out-Null
+        Write-Host "Seeded route '$name' ($meters m)." -ForegroundColor Green
+    }
+
+    "dump" {
+        Assert-Device -Adb $adb
+        & $adb logcat -c
+        & $adb shell am broadcast -a com.lukr99.workout.DEV_DUMP -n com.lukr99.workout/.data.location.RunDevReceiver | Out-Null
+        Start-Sleep -Milliseconds 700
+        $line = (& $adb logcat -d -s RunDev:D) -split "`r?`n" | Where-Object { $_ -match "RUNMODE_DUMP" } | Select-Object -Last 1
+        if ($line) { Write-Host ($line -replace '.*RUNMODE_DUMP', 'RUNMODE_DUMP') -ForegroundColor Green }
+        else { Write-Host "No dump captured (is a debug build installed?)." -ForegroundColor Yellow }
     }
 
     "logcat" {

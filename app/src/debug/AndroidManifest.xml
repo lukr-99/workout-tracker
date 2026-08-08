@@ -12,5 +12,15 @@
                 <action android:name="com.lukr99.workout.SIM_RUN" />
             </intent-filter>
         </receiver>
+        <!-- Headless Run Mode seed/inspect for automated verification (debug only). -->
+        <receiver
+            android:name=".data.location.RunDevReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.lukr99.workout.DEV_SEED_ROUTE" />
+                <action android:name="com.lukr99.workout.DEV_DUMP" />
+                <action android:name="com.lukr99.workout.DEV_CLEAR" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>
