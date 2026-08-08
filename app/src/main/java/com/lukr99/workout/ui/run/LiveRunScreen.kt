@@ -89,7 +89,7 @@ fun LiveRunScreen(
         ActivityResultContracts.RequestMultiplePermissions(),
     ) { result ->
         locationGranted = result[Manifest.permission.ACCESS_FINE_LOCATION] == true || hasFineLocation()
-        if (locationGranted && state.phase == RunTracker.Phase.Idle) countdown = 3
+        if (locationGranted && !state.isActive) countdown = 3
     }
 
     fun requestPermissions() {
@@ -115,7 +115,9 @@ fun LiveRunScreen(
         }
     }
 
-    val idle = state.phase == RunTracker.Phase.Idle
+    // Anything that isn't actively recording/paused (Idle, or a just-finished run) shows the Start
+    // affordance rather than dead recording controls.
+    val idle = !state.isActive
 
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         RunMap(

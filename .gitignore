@@ -26,6 +26,9 @@ mono_crash.*
 
 # Build results
 [Dd]ebug/
+# …but app/src/debug is the debug SOURCE set (RunSimReceiver etc.), not build output — keep it.
+!app/src/debug/
+!app/src/debug/**
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug-only additions. The GPS route simulator receiver (RunSimReceiver) is exported so an adb
+  broadcast can trigger a synthetic run; it exists only in debug builds and is never shipped.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <receiver
+            android:name=".data.location.RunSimReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.lukr99.workout.SIM_RUN" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

@@ -90,6 +90,8 @@ fun App(container: AppContainer) {
 
     val settings by settingsVm.settings.collectAsState()
     val activeSession by homeVm.activeSession.collectAsState()
+    val liveRunState by liveRunVm.state.collectAsState()
+    val runActive = liveRunState.isActive
     val overlay = nav.top
     var chooserOpen by remember { mutableStateOf(false) }
 
@@ -102,10 +104,14 @@ fun App(container: AppContainer) {
         nav.push(Route.LiveRun)
     }
 
-    // The center ＋ opens the Lift/Run chooser for a fresh start; when a lift is already live it
-    // resumes that session directly (the ▶ affordance), preserving the prior behaviour.
+    // The center action: a live **run** takes priority and reopens the run screen; otherwise a live
+    // lift resumes; otherwise the ＋ opens the Lift/Run chooser for a fresh start.
     fun onCenterAction() {
-        if (activeSession != null) startWorkout() else chooserOpen = true
+        when {
+            runActive -> nav.push(Route.LiveRun)
+            activeSession != null -> startWorkout()
+            else -> chooserOpen = true
+        }
     }
 
     CompositionLocalProvider(
@@ -225,7 +231,7 @@ fun App(container: AppContainer) {
             if (overlay == null) {
                 FloatingNav(
                     current = nav.tab.value,
-                    resumeMode = activeSession != null,
+                    resumeMode = runActive || activeSession != null,
                     onSelect = { nav.switch(it) },
                     onStart = { onCenterAction() },
                     modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()

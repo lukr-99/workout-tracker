@@ -5,15 +5,17 @@ import com.lukr99.workout.data.run.RunRepository
 import com.lukr99.workout.domain.newId
 import com.lukr99.workout.domain.run.LiveRunState
 import com.lukr99.workout.domain.run.Pace
+import com.lukr99.workout.domain.run.Polyline
 import com.lukr99.workout.domain.run.Run
 import com.lukr99.workout.domain.run.RunSample
 import com.lukr99.workout.domain.run.RunSource
 import com.lukr99.workout.domain.run.RunTracker
 import com.lukr99.workout.domain.run.TracePoint
 import java.io.File
+import java.util.concurrent.Executors
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,7 +41,10 @@ class RunSessionController(
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
     private val tracker = RunTracker()
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    // Single-threaded so crash-buffer writes/deletes execute in submission order — the latest trace
+    // always wins (a FIFO guarantee Dispatchers.IO does not give).
+    private val bufferDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+    private val scope = CoroutineScope(SupervisorJob() + bufferDispatcher)
     private val bufferMutex = Mutex()
     private val bufferFile = File(appContext.filesDir, BUFFER_FILE)
     private val json = Json { ignoreUnknownKeys = true }
@@ -97,27 +102,37 @@ class RunSessionController(
 
     /**
      * Finish + persist the run, returning it. Idempotent: a second call (e.g. notification STOP racing
-     * the on-screen Finish) returns the already-saved run without saving twice.
+     * the on-screen Finish) returns the already-saved run without saving twice. Afterwards the
+     * controller resets to [RunTracker.Phase.Idle] so re-entering the live screen starts fresh instead
+     * of showing the stale finished run.
      */
     suspend fun finish(): Run {
         lastFinished?.let { return it }
         tracker.finish(clock())
-        val run = tracker.toRun(runId.ifEmpty { newId() })
+        val bare = tracker.toRun(runId.ifEmpty { newId() })
+        // Carry the encoded polyline on the returned run too, so callers get the same object that's
+        // stored (the repository would otherwise encode it only into its own copy).
+        val run = if (bare.trace.isNotEmpty()) {
+            bare.copy(encodedPolyline = Polyline.encodeTrace(bare.trace))
+        } else {
+            bare
+        }
         if (run.trace.isNotEmpty()) repository.saveRun(run)
         lastFinished = run
+        runId = ""
         clearBuffer()
+        tracker.reset()
         publish()
         return run
     }
 
-    /** Abandon the active run without saving (and clear the buffer). */
+    /** Abandon the active run without saving (and clear the buffer); resets to a clean idle state. */
     fun discard() {
         lastFinished = null
         runId = ""
         clearBuffer()
-        tracker.finish(clock())
-        _state.value = LiveRunState()
-        _trace.value = emptyList()
+        tracker.reset()
+        publish()
     }
 
     /**

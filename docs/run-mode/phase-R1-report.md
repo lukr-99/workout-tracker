@@ -79,6 +79,41 @@ and rendered in the hub.
 - One 0.00 km test run was saved on the device during verification; it's deletable once R2 adds run
   detail/delete.
 
+## Fixes after owner testing (2nd pass)
+
+Real-device use turned up three bugs, all fixed + covered by the new harness:
+
+1. **Stale re-entry** — the singleton controller wasn't reset after `finish()`, so reopening the Run
+   screen showed a dead *"31 s, can't pause/finish"* state. `finish()`/`discard()` now reset the
+   tracker to Idle, and the screen treats any non-active state as "Start". (Asserted by
+   `RunSessionControllerTest.recordsAndSavesRun`: phase == Idle after finish.)
+2. **Center "Resume" opened a phantom lift** — with a live run, the center action now resumes the
+   **run** (priority over a stale lift session), then a live lift, then the chooser.
+3. **Under-capture** — the 3 m min-move gate at ~1 s sampling dropped every fix slower than ~3 m/s
+   (≈5:30/km), so ordinary jogging under-counted distance. Lowered to **1.5 m** (captures anything
+   above ~1.5 m/s; at-rest jitter still handled by the gate + auto-pause).
+
+## Test harness (no more vision-driven checking)
+
+Two repeatable tools replace driving the app by hand:
+
+- **`RunSessionControllerTest`** (instrumented, 3 cases) — drives the full GPS→tracker→controller→
+  repository→Room path with a **synthetic route + injected clock** and asserts distance, points,
+  pace, idle-reset, discard, and crash-buffer recovery. Fully automatic; runs in CI.
+- **`RunSimReceiver`** (debug builds only) + **`tools/run-sim.ps1`** — a **GPS route simulator**: one
+  command replays a synthetic run straight through the live controller (a 10-min run plays in ~5 s):
+  ```
+  .\tools\run-sim.ps1 -Meters 1000 -Seconds 300 -Bearing 45
+  ```
+  Verified on the A56 — the hub then shows real captured runs (`1.00 km · 5:00 · 5:00/km` and
+  `0.50 km · 2:30 · 5:00/km`), confirming capture + distance/pace + save end-to-end without going
+  outside:
+
+  ![simulated runs](r1-screens/hub-simulated.png)
+
+  (Send with the explicit component — `-a … -n …/.data.location.RunSimReceiver`; action-only
+  broadcasts to a manifest receiver are blocked by Android's background limits. The script does this.)
+
 ## Handed to R2
 Runs now persist with full traces + encoded polylines. R2 builds the run **detail** screen (map,
 split table, pace/elevation charts, delete), `RunStats` (weekly distance, pace trend, PRs), a Running

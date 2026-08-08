@@ -20,8 +20,13 @@ class RunTracker(private val config: Config = Config()) {
     data class Config(
         /** Reject samples less accurate than this (metres); GPS fixes worse than this are noise. */
         val minAccuracyM: Double = 30.0,
-        /** Ignore moves smaller than this between fixes (metres) — stationary GPS wander. */
-        val minMoveMeters: Double = 3.0,
+        /**
+         * Ignore moves smaller than this between fixes (metres) — stationary GPS wander. Kept small
+         * so ordinary jogging captures: at a ~1 s sample interval a 3 m gate would drop every fix
+         * slower than ~3 m/s (≈5:30/km), under-counting normal runs. 1.5 m captures anything above
+         * ~1.5 m/s while still rejecting at-rest jitter (which auto-pause also covers).
+         */
+        val minMoveMeters: Double = 1.5,
         /** At/below this speed (m/s) the run auto-pauses (moving clock stops). ~2.2 km/h. */
         val autoPauseEnterMps: Double = 0.6,
         /** Must exceed this speed (m/s) to leave auto-pause — hysteresis avoids flapping. ~3.2 km/h. */
@@ -146,6 +151,19 @@ class RunTracker(private val config: Config = Config()) {
             phase = Phase.Recording
             lastClockMs = nowMs
         }
+    }
+
+    /** Return to a clean [Phase.Idle] (after a run is finished + saved) so the next entry starts fresh. */
+    fun reset() {
+        startedAtUtc = 0L
+        phase = Phase.Idle
+        points.clear()
+        distanceMeters = 0.0
+        elapsedMs = 0L
+        movingMs = 0L
+        autoPaused = false
+        lastClockMs = 0L
+        lastAccepted = null
     }
 
     /** Finish the run at [nowMs]; the snapshot/[toRun] then reflect final totals. */
