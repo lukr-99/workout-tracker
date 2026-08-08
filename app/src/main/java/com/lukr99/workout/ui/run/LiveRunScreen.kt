@@ -153,36 +153,32 @@ fun LiveRunScreen(
             )
         }
 
-        if (locationGranted) {
-            CircleIconButton(
-                Icons.Rounded.MyLocation, "Recenter",
-                Modifier.align(Alignment.CenterEnd).padding(end = 16.dp),
-            ) { recenterSignal++ }
+        // Right-edge side stack: the small music button above the recenter control.
+        Column(
+            Modifier.align(Alignment.CenterEnd).padding(end = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            MusicMiniControls()
+            if (locationGranted) {
+                CircleIconButton(Icons.Rounded.MyLocation, "Recenter", Modifier) { recenterSignal++ }
+            }
         }
 
-        // Bottom: the shared music control sits just above the run controls.
-        Column(
-            Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            if (locationGranted) {
-                MusicMiniControls(Modifier.fillMaxWidth())
-                androidx.compose.foundation.layout.Spacer(Modifier.height(12.dp))
-            }
-            Box(Modifier.fillMaxWidth()) {
-                when {
-                    !locationGranted -> LocationRationale(::requestPermissions, Modifier.fillMaxWidth())
-                    idle -> StartButton(Modifier.align(Alignment.Center)) {
-                        if (hasFineLocation()) countdown = 3 else requestPermissions()
-                    }
-                    else -> RecordingControls(
-                        paused = state.phase == RunTracker.Phase.Paused,
-                        onPause = vm::pause,
-                        onResume = vm::resume,
-                        onFinish = { confirmingFinish = true },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+        // Bottom controls.
+        Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(20.dp)) {
+            when {
+                !locationGranted -> LocationRationale(::requestPermissions, Modifier.fillMaxWidth())
+                idle -> StartButton(Modifier.align(Alignment.Center)) {
+                    if (hasFineLocation()) countdown = 3 else requestPermissions()
                 }
+                else -> RecordingControls(
+                    paused = state.phase == RunTracker.Phase.Paused,
+                    onPause = vm::pause,
+                    onResume = vm::resume,
+                    onFinish = { confirmingFinish = true },
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
         }
 

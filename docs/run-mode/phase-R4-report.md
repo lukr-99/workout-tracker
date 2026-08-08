@@ -17,10 +17,10 @@ changes**. Additive; strength + R0–R3 untouched.
   Open button shows. `AppContainer.spotify` holds it; manifest `<queries>` resolves the Spotify
   package for the launch intent.
 - **`ui/components/MusicMiniControls`** — one composable, provided app-wide via `LocalSpotify`. It
-  `connect()`s while shown and renders either the **current track + transport row** (when connected) or
-  a single **Open Spotify** button (otherwise).
-- **Hosted on both live screens** — `LiveRunScreen` (a bar just above the run controls) and the strength
-  `LiveWorkoutScreen` (top of the exercise list). Same component, same controller.
+  `connect()`s while shown and is a **small side button**: a single round **♪ note** button (→ Open
+  Spotify) by default, or a compact previous · play/pause · next row when an App Remote is connected.
+- **Hosted on both live screens** — `LiveRunScreen` (right edge, above the recenter control) and the
+  strength `LiveWorkoutScreen` (top bar, beside **Finish**). Same component, same controller.
 - **Secrets hygiene** — `spotify.properties` is git-ignored, ready for the client id / redirect URI.
 
 ## On-device verification (A56)
@@ -29,8 +29,9 @@ changes**. Additive; strength + R0–R3 untouched.
 |---|---|
 | ![run](r4-screens/run-open-spotify.png) | ![lift](r4-screens/lift-open-spotify.png) |
 
-The **Open Spotify** control renders on both live screens; tapping it foregrounds Spotify (or the
-store if it isn't installed). Unit tests green; `assembleDebug` builds.
+A small round **♪ note** button renders on both live screens (run: right edge above recenter; lift:
+top bar by Finish); tapping it foregrounds Spotify (or the store if it isn't installed). Unit tests
+green; `assembleDebug` builds.
 
 ## To enable transport controls (App Remote) — a pure drop-in
 The transport UI is already built; enabling it needs the Spotify SDK + a client id, which only the

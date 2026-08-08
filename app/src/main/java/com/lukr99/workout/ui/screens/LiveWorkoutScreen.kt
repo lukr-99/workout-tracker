@@ -138,6 +138,8 @@ fun LiveWorkoutScreen(
                         color = TextMid,
                     )
                 }
+                MusicMiniControls()
+                Spacer(Modifier.width(4.dp))
                 TextButton(onClick = { confirmFinish = true }) {
                     Text("Finish", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                 }
@@ -151,7 +153,6 @@ fun LiveWorkoutScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                item { MusicMiniControls(Modifier.fillMaxWidth()) }
                 itemsIndexed(entries, key = { _, entry -> entry.id }) { index, entry ->
                     EntryCard(
                         entry = entry,
