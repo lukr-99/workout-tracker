@@ -51,6 +51,8 @@ import com.lukr99.workout.ui.components.ToastHost
 import com.lukr99.workout.ui.components.rememberToastState
 import com.lukr99.workout.ui.run.LiveRunScreen
 import com.lukr99.workout.ui.run.LiveRunViewModel
+import com.lukr99.workout.ui.run.RoutePlannerScreen
+import com.lukr99.workout.ui.run.RoutePlannerViewModel
 import com.lukr99.workout.ui.run.RunDetailScreen
 import com.lukr99.workout.ui.run.RunViewModel
 import com.lukr99.workout.ui.run.RunsScreen
@@ -85,6 +87,7 @@ fun App(container: AppContainer) {
     val liveVm: LiveWorkoutViewModel = viewModel(factory = LiveWorkoutViewModel.factory(container))
     val runVm: RunViewModel = viewModel(factory = RunViewModel.factory(container))
     val liveRunVm: LiveRunViewModel = viewModel(factory = LiveRunViewModel.factory())
+    val routePlannerVm: RoutePlannerViewModel = viewModel(factory = RoutePlannerViewModel.factory())
     val dataVm: DataTransferViewModel = viewModel(
         factory = DataTransferViewModel.factory(container.dataTransfer, container.documents),
     )
@@ -146,6 +149,7 @@ fun App(container: AppContainer) {
                             units = settings.units,
                             onStartRun = { startRun() },
                             onOpenRun = { nav.push(Route.RunDetail(it)) },
+                            onPlanRoute = { nav.push(Route.RoutePlanner) },
                         )
                         Tab.PROGRESS -> ProgressHubScreen(
                             progressVm = progressVm,
@@ -189,6 +193,11 @@ fun App(container: AppContainer) {
                         is Route.RunDetail -> RunDetailScreen(
                             vm = runVm,
                             runId = overlay.runId,
+                            units = settings.units,
+                            onBack = { nav.pop() },
+                        )
+                        Route.RoutePlanner -> RoutePlannerScreen(
+                            vm = routePlannerVm,
                             units = settings.units,
                             onBack = { nav.pop() },
                         )

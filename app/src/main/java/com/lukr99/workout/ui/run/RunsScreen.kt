@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.DirectionsRun
+import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -45,8 +46,10 @@ fun RunsScreen(
     units: UnitSystem,
     onStartRun: () -> Unit,
     onOpenRun: (String) -> Unit,
+    onPlanRoute: () -> Unit,
 ) {
     val runs by vm.runs.collectAsState()
+    val routes by vm.routes.collectAsState()
 
     LazyColumn(
         Modifier.fillMaxWidth(),
@@ -55,6 +58,18 @@ fun RunsScreen(
     ) {
         item { ScreenHeader("Runs", "Track a run outdoors") }
         item { StartRunButton(onStartRun) }
+        item { PlanRouteButton(onPlanRoute) }
+
+        if (routes.isNotEmpty()) {
+            item {
+                Text(
+                    "Saved routes",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+            }
+            items(routes, key = { "route-${it.id}" }) { route -> RouteRow(route, units) }
+        }
 
         item {
             Text(
@@ -68,6 +83,50 @@ fun RunsScreen(
         } else {
             items(runs, key = { it.id }) { run -> RunRow(run, units) { onOpenRun(run.id) } }
         }
+    }
+}
+
+@Composable
+private fun PlanRouteButton(onPlanRoute: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .clickable(onClick = onPlanRoute)
+            .padding(horizontal = 18.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Icon(
+            Icons.Rounded.Map, null,
+            tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp),
+        )
+        Text(
+            "Plan a route",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+    }
+}
+
+@Composable
+private fun RouteRow(route: com.lukr99.workout.domain.run.Route, units: UnitSystem) {
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.surface).padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            route.name.ifBlank { "Route" },
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            Format.distance(route.distanceMeters, units),
+            style = MaterialTheme.typography.labelLarge,
+            color = TextMid,
+        )
     }
 }
 

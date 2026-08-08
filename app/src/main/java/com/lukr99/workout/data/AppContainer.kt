@@ -11,6 +11,8 @@ import com.lukr99.workout.data.images.ExercisePhotoStore
 import com.lukr99.workout.data.images.FreeExerciseImageIndex
 import com.lukr99.workout.data.importer.BundleImporter
 import com.lukr99.workout.data.location.RunSessionController
+import com.lukr99.workout.data.routing.OsrmRoutingClient
+import com.lukr99.workout.data.routing.RoutingClient
 import com.lukr99.workout.data.run.RunRepository
 import com.lukr99.workout.data.services.WorkoutDataService
 import com.lukr99.workout.data.services.WorkoutInsightsService
@@ -37,6 +39,9 @@ class AppContainer(context: Context) {
     val runSessionController: RunSessionController by lazy {
         RunSessionController(context.applicationContext, runRepository)
     }
+
+    /** Route snapping for the planner (R3) — keyless OSRM by default; the only routing IO boundary. */
+    val routingClient: RoutingClient by lazy { OsrmRoutingClient() }
     val workoutData: WorkoutDataService by lazy { WorkoutDataService(repository) }
     val insights: WorkoutInsightsService by lazy { WorkoutInsightsService(repository) }
     val wgerSync: WgerSyncService by lazy { WgerSyncService(repository) }

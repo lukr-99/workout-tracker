@@ -26,6 +26,7 @@ sealed interface Route {
     /** Live-run flow (R0: a stubbed dark map that follows your location; recording lands in R1). */
     data object LiveRun : Route
     data class RunDetail(val runId: String) : Route
+    data object RoutePlanner : Route
     data object Library : Route
     data class TemplateEditor(val templateId: String?) : Route
     data class ExerciseEditor(val exerciseId: String?, val initialName: String = "") : Route

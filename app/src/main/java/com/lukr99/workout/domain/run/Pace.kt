@@ -42,6 +42,17 @@ object Pace {
         return total
     }
 
+    /** Total path length of a `(lat, lon)` polyline, in metres. */
+    fun pathDistanceMeters(points: List<Pair<Double, Double>>): Double {
+        var total = 0.0
+        for (i in 1 until points.size) {
+            total += haversineMeters(
+                points[i - 1].first, points[i - 1].second, points[i].first, points[i].second,
+            )
+        }
+        return total
+    }
+
     /** Metres per second over a distance/duration. `0.0` when duration is non-positive. */
     fun speedMps(distanceMeters: Double, durationSeconds: Double): Double =
         if (durationSeconds > 0) distanceMeters / durationSeconds else 0.0

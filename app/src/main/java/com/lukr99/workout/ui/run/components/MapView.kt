@@ -23,11 +23,13 @@ import org.maplibre.android.location.modes.RenderMode
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
+import org.maplibre.android.style.layers.CircleLayer
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.Property
 import org.maplibre.android.style.layers.PropertyFactory
 import org.maplibre.android.style.sources.GeoJsonSource
 import org.maplibre.geojson.Feature
+import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
 
@@ -53,12 +55,15 @@ fun RunMap(
     tracePoints: List<Pair<Double, Double>> = emptyList(),
     traceColor: Int = DEFAULT_EMBER,
     fitTrace: Boolean = false,
+    waypoints: List<Pair<Double, Double>> = emptyList(),
+    onMapTap: ((Double, Double) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
     // Holds the async-created map/style so effects can act on them once ready.
     val holder = remember { MapHolder(traceColor, fitTrace) }
+    holder.onTap = onMapTap
 
     val mapView = remember {
         MapLibre.getInstance(context)
@@ -66,6 +71,10 @@ fun RunMap(
             onCreate(null)
             getMapAsync { map ->
                 holder.map = map
+                map.addOnMapClickListener { latLng ->
+                    holder.onTap?.invoke(latLng.latitude, latLng.longitude)
+                    holder.onTap != null
+                }
                 map.setStyle(Style.Builder().fromUri(styleUrl)) { style ->
                     holder.onStyleReady(style, context, userLocationEnabled)
                 }
@@ -103,6 +112,11 @@ fun RunMap(
         holder.updateTrace(tracePoints)
     }
 
+    // Redraw planner waypoint markers.
+    LaunchedEffect(waypoints) {
+        holder.updateWaypoints(waypoints)
+    }
+
     // Recenter/follow when asked.
     LaunchedEffect(recenterSignal) {
         if (recenterSignal > 0) holder.recenter()
@@ -115,8 +129,10 @@ fun RunMap(
 private class MapHolder(private val traceColor: Int, private val fitTrace: Boolean) {
     var map: MapLibreMap? = null
     var style: Style? = null
+    var onTap: ((Double, Double) -> Unit)? = null
     private var locationActive = false
     private var pendingTrace: List<Pair<Double, Double>> = emptyList()
+    private var pendingWaypoints: List<Pair<Double, Double>> = emptyList()
 
     fun onStyleReady(style: Style, context: android.content.Context, enableLocation: Boolean) {
         this.style = style
@@ -129,8 +145,28 @@ private class MapHolder(private val traceColor: Int, private val fitTrace: Boole
                 PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
             ),
         )
+        style.addSource(GeoJsonSource(WAYPOINT_SOURCE))
+        style.addLayer(
+            CircleLayer(WAYPOINT_LAYER, WAYPOINT_SOURCE).withProperties(
+                PropertyFactory.circleColor(traceColor),
+                PropertyFactory.circleRadius(6f),
+                PropertyFactory.circleStrokeColor(-0x1), // white
+                PropertyFactory.circleStrokeWidth(2f),
+            ),
+        )
         if (pendingTrace.isNotEmpty()) updateTrace(pendingTrace)
+        if (pendingWaypoints.isNotEmpty()) updateWaypoints(pendingWaypoints)
         if (enableLocation) enableLocation(context)
+    }
+
+    fun updateWaypoints(points: List<Pair<Double, Double>>) {
+        pendingWaypoints = points
+        val source = style?.getSourceAs<GeoJsonSource>(WAYPOINT_SOURCE) ?: return
+        source.setGeoJson(
+            FeatureCollection.fromFeatures(
+                points.map { Feature.fromGeometry(Point.fromLngLat(it.second, it.first)) },
+            ),
+        )
     }
 
     @SuppressLint("MissingPermission")
@@ -189,6 +225,8 @@ private class MapHolder(private val traceColor: Int, private val fitTrace: Boole
     companion object {
         private const val TRACE_SOURCE = "run-trace-src"
         private const val TRACE_LAYER = "run-trace-layer"
+        private const val WAYPOINT_SOURCE = "run-waypoint-src"
+        private const val WAYPOINT_LAYER = "run-waypoint-layer"
         private const val FIT_PADDING_PX = 90
         private const val FeatureCollectionEmpty = "{\"type\":\"FeatureCollection\",\"features\":[]}"
     }
