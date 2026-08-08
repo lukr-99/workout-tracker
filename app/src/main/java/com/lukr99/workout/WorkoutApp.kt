@@ -22,5 +22,7 @@ class WorkoutApp : Application() {
         super.onCreate()
         container = AppContainer(this)
         appScope.launch { container.repository.ensureSeeded() }
+        // Salvage a run whose process was killed mid-recording (crash buffer → saved run).
+        appScope.launch { container.runSessionController.recoverIfNeeded() }
     }
 }

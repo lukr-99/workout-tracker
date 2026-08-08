@@ -56,6 +56,13 @@
                 <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
             </intent-filter>
         </activity-alias>
+        <!-- Run Mode (v2.1) live-run GPS service. `location` type keeps sampling with the screen
+             off; not exported — only the app starts it. -->
+        <service
+            android:name=".data.location.LocationService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.files"

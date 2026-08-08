@@ -50,6 +50,7 @@ import com.lukr99.workout.ui.components.StartChooserSheet
 import com.lukr99.workout.ui.components.ToastHost
 import com.lukr99.workout.ui.components.rememberToastState
 import com.lukr99.workout.ui.run.LiveRunScreen
+import com.lukr99.workout.ui.run.LiveRunViewModel
 import com.lukr99.workout.ui.run.RunViewModel
 import com.lukr99.workout.ui.run.RunsScreen
 import com.lukr99.workout.ui.screens.DataTransferScreen
@@ -82,6 +83,7 @@ fun App(container: AppContainer) {
     val libraryVm: LibraryViewModel = viewModel(factory = LibraryViewModel.factory(container))
     val liveVm: LiveWorkoutViewModel = viewModel(factory = LiveWorkoutViewModel.factory(container))
     val runVm: RunViewModel = viewModel(factory = RunViewModel.factory(container))
+    val liveRunVm: LiveRunViewModel = viewModel(factory = LiveRunViewModel.factory())
     val dataVm: DataTransferViewModel = viewModel(
         factory = DataTransferViewModel.factory(container.dataTransfer, container.documents),
     )
@@ -168,6 +170,7 @@ fun App(container: AppContainer) {
                             },
                         )
                         Route.LiveRun -> LiveRunScreen(
+                            vm = liveRunVm,
                             units = settings.units,
                             onClose = { nav.pop() },
                         )

@@ -22,17 +22,26 @@ import org.maplibre.android.location.modes.RenderMode
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
+import org.maplibre.android.style.layers.LineLayer
+import org.maplibre.android.style.layers.Property
+import org.maplibre.android.style.layers.PropertyFactory
+import org.maplibre.android.style.sources.GeoJsonSource
+import org.maplibre.geojson.Feature
+import org.maplibre.geojson.LineString
+import org.maplibre.geojson.Point
 
 /**
  * Provider-agnostic map surface for Run Mode. The **only** place screens touch a map SDK — every run
  * screen (live, detail, planner) renders through here, so the map provider (currently MapLibre) or
  * tile source ([MapStyle]) can be swapped without touching UI code.
  *
- * R0 responsibility: render the dark vector basemap and, once fine-location is granted, show the
- * user's location (blue dot) and **follow** it. Recording the trace polyline arrives in R1.
+ * Renders the dark vector basemap, the user's location (blue dot, follows while granted), and the
+ * **growing ember trace polyline** ([tracePoints]) for a live or completed run.
  *
  * @param userLocationEnabled true once `ACCESS_FINE_LOCATION` is granted — gates the location layer.
  * @param recenterSignal increment to snap the camera back to a location-tracking follow mode.
+ * @param tracePoints ordered `(lat, lon)` of the run trace; drawn as an ember line that grows live.
+ * @param traceColor ARGB colour for the trace line (the theme's ember by default).
  */
 @Composable
 fun RunMap(
@@ -40,12 +49,14 @@ fun RunMap(
     modifier: Modifier = Modifier,
     styleUrl: String = MapStyle.DARK_VECTOR_STYLE_URL,
     recenterSignal: Int = 0,
+    tracePoints: List<Pair<Double, Double>> = emptyList(),
+    traceColor: Int = DEFAULT_EMBER,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
     // Holds the async-created map/style so effects can act on them once ready.
-    val holder = remember { MapHolder() }
+    val holder = remember { MapHolder(traceColor) }
 
     val mapView = remember {
         MapLibre.getInstance(context)
@@ -54,8 +65,7 @@ fun RunMap(
             getMapAsync { map ->
                 holder.map = map
                 map.setStyle(Style.Builder().fromUri(styleUrl)) { style ->
-                    holder.style = style
-                    if (userLocationEnabled) holder.enableLocation(context)
+                    holder.onStyleReady(style, context, userLocationEnabled)
                 }
             }
         }
@@ -86,6 +96,11 @@ fun RunMap(
         if (userLocationEnabled) holder.enableLocation(context)
     }
 
+    // Redraw the trace polyline as it grows.
+    LaunchedEffect(tracePoints) {
+        holder.updateTrace(tracePoints)
+    }
+
     // Recenter/follow when asked.
     LaunchedEffect(recenterSignal) {
         if (recenterSignal > 0) holder.recenter()
@@ -95,10 +110,26 @@ fun RunMap(
 }
 
 /** Mutable async holder — the map and style arrive after `getMapAsync` / `setStyle` callbacks. */
-private class MapHolder {
+private class MapHolder(private val traceColor: Int) {
     var map: MapLibreMap? = null
     var style: Style? = null
     private var locationActive = false
+    private var pendingTrace: List<Pair<Double, Double>> = emptyList()
+
+    fun onStyleReady(style: Style, context: android.content.Context, enableLocation: Boolean) {
+        this.style = style
+        style.addSource(GeoJsonSource(TRACE_SOURCE))
+        style.addLayer(
+            LineLayer(TRACE_LAYER, TRACE_SOURCE).withProperties(
+                PropertyFactory.lineColor(traceColor),
+                PropertyFactory.lineWidth(5.5f),
+                PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
+                PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
+            ),
+        )
+        if (pendingTrace.isNotEmpty()) updateTrace(pendingTrace)
+        if (enableLocation) enableLocation(context)
+    }
 
     @SuppressLint("MissingPermission")
     fun enableLocation(context: android.content.Context) {
@@ -124,10 +155,29 @@ private class MapHolder {
         }
     }
 
+    fun updateTrace(points: List<Pair<Double, Double>>) {
+        pendingTrace = points
+        val source = style?.getSourceAs<GeoJsonSource>(TRACE_SOURCE) ?: return
+        if (points.size < 2) {
+            source.setGeoJson(FeatureCollectionEmpty)
+            return
+        }
+        val line = LineString.fromLngLats(points.map { Point.fromLngLat(it.second, it.first) })
+        source.setGeoJson(Feature.fromGeometry(line))
+    }
+
     fun recenter() {
         val component = map?.locationComponent ?: return
         if (!locationActive) return
         component.cameraMode = CameraMode.TRACKING
         component.zoomWhileTracking(MapStyle.FOLLOW_ZOOM)
     }
+
+    companion object {
+        private const val TRACE_SOURCE = "run-trace-src"
+        private const val TRACE_LAYER = "run-trace-layer"
+        private const val FeatureCollectionEmpty = "{\"type\":\"FeatureCollection\",\"features\":[]}"
+    }
 }
+
+private const val DEFAULT_EMBER = 0xFFE8622C.toInt()

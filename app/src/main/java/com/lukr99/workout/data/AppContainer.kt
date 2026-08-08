@@ -10,6 +10,7 @@ import com.lukr99.workout.data.images.ExerciseImageResolver
 import com.lukr99.workout.data.images.ExercisePhotoStore
 import com.lukr99.workout.data.images.FreeExerciseImageIndex
 import com.lukr99.workout.data.importer.BundleImporter
+import com.lukr99.workout.data.location.RunSessionController
 import com.lukr99.workout.data.run.RunRepository
 import com.lukr99.workout.data.services.WorkoutDataService
 import com.lukr99.workout.data.services.WorkoutInsightsService
@@ -31,6 +32,11 @@ class AppContainer(context: Context) {
     )
     /** Run Mode persistence (v5 tables). Additive — lazily built so strength flows are unaffected. */
     val runRepository: RunRepository by lazy { RunRepository(db.runDao()) }
+
+    /** Process-wide live-run brain + crash-buffer persistence (R1). One instance per process. */
+    val runSessionController: RunSessionController by lazy {
+        RunSessionController(context.applicationContext, runRepository)
+    }
     val workoutData: WorkoutDataService by lazy { WorkoutDataService(repository) }
     val insights: WorkoutInsightsService by lazy { WorkoutInsightsService(repository) }
     val wgerSync: WgerSyncService by lazy { WgerSyncService(repository) }
