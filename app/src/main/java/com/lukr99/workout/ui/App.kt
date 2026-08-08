@@ -93,6 +93,10 @@ fun App(container: AppContainer) {
     val activeSession by homeVm.activeSession.collectAsState()
     val liveRunState by liveRunVm.state.collectAsState()
     val runActive = liveRunState.isActive
+    // An in-progress lift only counts as "resume-able" once it has content; an empty 0-exercise
+    // session (e.g. one started then abandoned) shouldn't keep the centre action stuck on Resume.
+    val hasResumableLift = activeSession?.entries?.isNotEmpty() == true
+    val resumeMode = runActive || hasResumableLift
     val overlay = nav.top
     var chooserOpen by remember { mutableStateOf(false) }
 
@@ -105,12 +109,12 @@ fun App(container: AppContainer) {
         nav.push(Route.LiveRun)
     }
 
-    // The center action: a live **run** takes priority and reopens the run screen; otherwise a live
-    // lift resumes; otherwise the ＋ opens the Lift/Run chooser for a fresh start.
+    // The center action: a live **run** takes priority and reopens the run screen; otherwise a
+    // non-empty live lift resumes; otherwise the ＋ opens the Lift/Run chooser for a fresh start.
     fun onCenterAction() {
         when {
             runActive -> nav.push(Route.LiveRun)
-            activeSession != null -> startWorkout()
+            hasResumableLift -> startWorkout()
             else -> chooserOpen = true
         }
     }
@@ -239,7 +243,7 @@ fun App(container: AppContainer) {
             if (overlay == null) {
                 FloatingNav(
                     current = nav.tab.value,
-                    resumeMode = runActive || activeSession != null,
+                    resumeMode = resumeMode,
                     onSelect = { nav.switch(it) },
                     onStart = { onCenterAction() },
                     modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
