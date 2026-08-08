@@ -11,8 +11,10 @@ import com.lukr99.workout.data.images.ExercisePhotoStore
 import com.lukr99.workout.data.images.FreeExerciseImageIndex
 import com.lukr99.workout.data.importer.BundleImporter
 import com.lukr99.workout.data.location.RunSessionController
+import com.lukr99.workout.data.map.OfflineTileCache
 import com.lukr99.workout.data.music.SpotifyController
 import com.lukr99.workout.data.music.StubSpotifyController
+import com.lukr99.workout.data.run.ShareCardRenderer
 import com.lukr99.workout.data.routing.OsrmRoutingClient
 import com.lukr99.workout.data.routing.RoutingClient
 import com.lukr99.workout.data.run.RunRepository
@@ -44,6 +46,12 @@ class AppContainer(context: Context) {
 
     /** Route snapping for the planner (R3) — keyless OSRM by default; the only routing IO boundary. */
     val routingClient: RoutingClient by lazy { OsrmRoutingClient() }
+
+    /** Renders a run to a shareable image (R5 share-run card). */
+    val shareCardRenderer: ShareCardRenderer by lazy { ShareCardRenderer(context) }
+
+    /** Offline map-tile caching for a route/recent region (R5; closes the deferred R3 slice). */
+    val offlineTileCache: OfflineTileCache by lazy { OfflineTileCache(context) }
 
     /**
      * Music control (R4), shared by the live run + lift screens. Ships as the Open-Spotify-only

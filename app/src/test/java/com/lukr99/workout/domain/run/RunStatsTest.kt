@@ -47,6 +47,37 @@ class RunStatsTest {
     private fun daysAgo(days: Long, now: Long): Long = now - days * 24 * 3600 * 1000
 
     @Test
+    fun summarize_firstRunEverAwardsNoHollowRecords() {
+        val now = Instant.parse("2026-08-08T10:00:00Z").toEpochMilli()
+        val only = straightRun("first", now, 5_000.0, 1_500)
+        val summary = RunStats.summarize(only, listOf(only))
+        // A lone run trivially "holds" every record — don't call them out.
+        assertTrue(summary.newRecords.isEmpty())
+        assertEquals(only.movingSeconds, summary.movingSeconds)
+    }
+
+    @Test
+    fun summarize_flagsRecordsTheNewRunActuallyBeat() {
+        val now = Instant.parse("2026-08-08T10:00:00Z").toEpochMilli()
+        val old = straightRun("old", daysAgo(10, now), 5_000.0, 1_800) // 6:00/km, 5 km
+        val faster = straightRun("new", now, 6_000.0, 1_500)           // 5:00/km, longer + faster
+        val summary = RunStats.summarize(faster, listOf(old, faster))
+        // The new run is longest, has the best avg pace, and owns the fastest 1k/5k windows.
+        assertTrue(RunStats.PrKind.LongestRun in summary.newRecords)
+        assertTrue(RunStats.PrKind.BestAvgPace in summary.newRecords)
+        assertTrue(RunStats.PrKind.Fastest5k in summary.newRecords)
+    }
+
+    @Test
+    fun summarize_awardsNothingWhenTheRunBeatsNoRecord() {
+        val now = Instant.parse("2026-08-08T10:00:00Z").toEpochMilli()
+        val best = straightRun("best", daysAgo(10, now), 10_000.0, 2_400) // 4:00/km, 10 km
+        val slowShort = straightRun("new", now, 2_000.0, 720)             // 6:00/km, 2 km — beats nothing
+        val summary = RunStats.summarize(slowShort, listOf(best, slowShort))
+        assertTrue(summary.newRecords.isEmpty())
+    }
+
+    @Test
     fun totalsSumAndWeightPace() {
         val now = Instant.parse("2026-08-08T10:00:00Z").toEpochMilli()
         val runs = listOf(

@@ -191,6 +191,47 @@ object RunStats {
         )
     }
 
+    /** A record a just-finished run newly set — surfaced as a badge in the finish summary. */
+    enum class PrKind { Fastest1k, Fastest5k, Fastest10k, FastestHalf, LongestRun, MostElevation, BestAvgPace }
+
+    /** Post-run summary shown after finishing: the run's headline metrics + any records it just set. */
+    data class RunSummary(
+        val distanceMeters: Double,
+        val movingSeconds: Long,
+        val avgPaceSecPerKm: Double,
+        val elevationGainM: Double,
+        val newRecords: List<PrKind>,
+    )
+
+    /**
+     * Summarise [newRun] against the whole run set (which **must already include** [newRun], with all
+     * traces loaded). A record counts as *newly set* when the corresponding all-time record now belongs
+     * to [newRun] — so ties with an older run don't steal the badge. Pure: it just diffs
+     * [personalRecords] over the full set by run id, which keeps the "best" logic in one place.
+     */
+    fun summarize(newRun: Run, allRuns: List<Run>): RunSummary {
+        val prs = personalRecords(allRuns)
+        val badges = buildList {
+            if (prs.fastest1k?.runId == newRun.id) add(PrKind.Fastest1k)
+            if (prs.fastest5k?.runId == newRun.id) add(PrKind.Fastest5k)
+            if (prs.fastest10k?.runId == newRun.id) add(PrKind.Fastest10k)
+            if (prs.fastestHalf?.runId == newRun.id) add(PrKind.FastestHalf)
+            if (prs.longestRun?.runId == newRun.id) add(PrKind.LongestRun)
+            if (prs.mostElevation?.runId == newRun.id) add(PrKind.MostElevation)
+            if (prs.bestAvgPace?.runId == newRun.id) add(PrKind.BestAvgPace)
+        }
+        // A run alone in the set trivially "holds" every record; only call them out once there's a
+        // field to beat, so a user's very first run isn't a wall of hollow PRs.
+        val records = if (allRuns.size <= 1) emptyList() else badges
+        return RunSummary(
+            distanceMeters = newRun.distanceMeters,
+            movingSeconds = newRun.movingSeconds,
+            avgPaceSecPerKm = newRun.avgPaceSecPerKm,
+            elevationGainM = newRun.elevationGainM,
+            newRecords = records,
+        )
+    }
+
     /**
      * Minimum time (ms) to cover [target] continuous metres anywhere in [points], or null if the trace
      * is shorter than [target]. A forward two-pointer over cumulative distance with linear time

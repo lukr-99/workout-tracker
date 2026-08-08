@@ -20,7 +20,10 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Map
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -32,14 +35,17 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.lukr99.workout.domain.run.Pace
+import kotlinx.coroutines.launch
 import com.lukr99.workout.domain.run.TracePoint
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.components.ChartPoint
@@ -67,6 +73,13 @@ fun RunDetailScreen(
     val routeName by vm.detailRouteName.collectAsState()
     var editing by remember { mutableStateOf(false) }
     var confirmingDelete by remember { mutableStateOf(false) }
+    var shareMenu by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    fun launchShare(intent: android.content.Intent) {
+        runCatching { context.startActivity(android.content.Intent.createChooser(intent, "Share run")) }
+    }
 
     LaunchedEffect(runId) { vm.openRun(runId) }
 
@@ -93,8 +106,35 @@ fun RunDetailScreen(
                 modifier = Modifier.fillMaxSize(),
             )
             RoundIcon(Icons.AutoMirrored.Rounded.ArrowBack, "Back", Modifier.align(Alignment.TopStart).padding(12.dp)) { onBack() }
-            RoundIcon(Icons.Rounded.Delete, "Delete run", Modifier.align(Alignment.TopEnd).padding(12.dp)) {
-                confirmingDelete = true
+            Row(
+                Modifier.align(Alignment.TopEnd).padding(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Box {
+                    RoundIcon(Icons.Rounded.Share, "Share run", Modifier) { shareMenu = true }
+                    DropdownMenu(expanded = shareMenu, onDismissRequest = { shareMenu = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Share image") },
+                            onClick = {
+                                shareMenu = false
+                                scope.launch {
+                                    runCatching { vm.shareCardIntent(runId, units == UnitSystem.Imperial) }
+                                        .onSuccess { launchShare(it) }
+                                }
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Export GPX") },
+                            onClick = {
+                                shareMenu = false
+                                scope.launch {
+                                    runCatching { vm.gpxShareIntent(runId) }.onSuccess { launchShare(it) }
+                                }
+                            },
+                        )
+                    }
+                }
+                RoundIcon(Icons.Rounded.Delete, "Delete run", Modifier) { confirmingDelete = true }
             }
         }
 

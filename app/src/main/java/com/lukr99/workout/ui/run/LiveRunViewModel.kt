@@ -14,6 +14,7 @@ import com.lukr99.workout.data.run.RunRepository
 import com.lukr99.workout.domain.run.LiveRunState
 import com.lukr99.workout.domain.run.Polyline
 import com.lukr99.workout.domain.run.Run
+import com.lukr99.workout.domain.run.RunStats
 import com.lukr99.workout.domain.run.TracePoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -70,13 +71,27 @@ class LiveRunViewModel(
     fun pause() = controller.pause()
     fun resume() = controller.resume()
 
-    /** Finish + persist; the service tears itself down when it sees the finished state. */
-    suspend fun finish(): Run {
+    /**
+     * Finish + persist; the service tears itself down when it sees the finished state. Returns the
+     * saved run plus a [RunStats.RunSummary] (headline metrics + any records it just set) for the
+     * post-run summary sheet.
+     */
+    suspend fun finish(): RunStats.RunSummary {
         val run = controller.finish()
         // Best-effort mirror to Health Connect (idempotent; no-op without permission). Never blocks
         // or fails the save — the run is already persisted locally by the controller.
         runCatching { healthConnect.exportRuns(listOf(run)) }
-        return run
+        // The run is already saved, so getRunsWithTraces includes it — diff for new PRs.
+        return runCatching { RunStats.summarize(run, repo.getRunsWithTraces()) }
+            .getOrDefault(
+                RunStats.RunSummary(
+                    distanceMeters = run.distanceMeters,
+                    movingSeconds = run.movingSeconds,
+                    avgPaceSecPerKm = run.avgPaceSecPerKm,
+                    elevationGainM = run.elevationGainM,
+                    newRecords = emptyList(),
+                ),
+            )
     }
 
     /** Abandon without saving; the controller's idle state makes the service tear itself down. */
