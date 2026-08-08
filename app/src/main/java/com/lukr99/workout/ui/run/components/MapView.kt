@@ -15,6 +15,7 @@ import com.lukr99.workout.data.map.MapStyle
 import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
+import org.maplibre.android.geometry.LatLngBounds
 import org.maplibre.android.location.LocationComponentActivationOptions
 import org.maplibre.android.location.engine.LocationEngineDefault
 import org.maplibre.android.location.modes.CameraMode
@@ -51,12 +52,13 @@ fun RunMap(
     recenterSignal: Int = 0,
     tracePoints: List<Pair<Double, Double>> = emptyList(),
     traceColor: Int = DEFAULT_EMBER,
+    fitTrace: Boolean = false,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
     // Holds the async-created map/style so effects can act on them once ready.
-    val holder = remember { MapHolder(traceColor) }
+    val holder = remember { MapHolder(traceColor, fitTrace) }
 
     val mapView = remember {
         MapLibre.getInstance(context)
@@ -110,7 +112,7 @@ fun RunMap(
 }
 
 /** Mutable async holder — the map and style arrive after `getMapAsync` / `setStyle` callbacks. */
-private class MapHolder(private val traceColor: Int) {
+private class MapHolder(private val traceColor: Int, private val fitTrace: Boolean) {
     var map: MapLibreMap? = null
     var style: Style? = null
     private var locationActive = false
@@ -164,6 +166,17 @@ private class MapHolder(private val traceColor: Int) {
         }
         val line = LineString.fromLngLats(points.map { Point.fromLngLat(it.second, it.first) })
         source.setGeoJson(Feature.fromGeometry(line))
+        if (fitTrace) fitCameraTo(points)
+    }
+
+    /** Frame the whole trace (run detail): fit the camera to the polyline's bounds with padding. */
+    private fun fitCameraTo(points: List<Pair<Double, Double>>) {
+        val map = map ?: return
+        val builder = LatLngBounds.Builder()
+        points.forEach { builder.include(LatLng(it.first, it.second)) }
+        runCatching {
+            map.moveCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), FIT_PADDING_PX))
+        }
     }
 
     fun recenter() {
@@ -176,6 +189,7 @@ private class MapHolder(private val traceColor: Int) {
     companion object {
         private const val TRACE_SOURCE = "run-trace-src"
         private const val TRACE_LAYER = "run-trace-layer"
+        private const val FIT_PADDING_PX = 90
         private const val FeatureCollectionEmpty = "{\"type\":\"FeatureCollection\",\"features\":[]}"
     }
 }

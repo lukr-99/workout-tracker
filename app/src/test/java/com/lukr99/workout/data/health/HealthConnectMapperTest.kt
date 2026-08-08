@@ -67,4 +67,35 @@ class HealthConnectMapperTest {
         assertEquals("health-connect:provider:provider-id", draft.externalKey)
         assertEquals(3_600, draft.entries.single().cardio?.durationSeconds)
     }
+
+    @Test
+    fun runMapsToRunningRecordWithRouteAndDistanceIdempotently() {
+        val run = com.lukr99.workout.domain.run.Run(
+            id = "run-1",
+            startedAtUtc = 10_000,
+            durationSeconds = 300,
+            movingSeconds = 300,
+            distanceMeters = 1_000.0,
+            calories = 80.0,
+            notes = "Lunch loop",
+            trace = listOf(
+                com.lukr99.workout.domain.run.TracePoint(t = 0, lat = 50.0, lon = 14.0, elevationM = 200.0),
+                com.lukr99.workout.domain.run.TracePoint(t = 300_000, lat = 50.009, lon = 14.0, elevationM = 210.0),
+            ),
+        )
+
+        val first = HealthConnectMapper.runToHealthRecord(run)
+        val second = HealthConnectMapper.runToHealthRecord(run)
+
+        assertEquals(first.clientRecordId, second.clientRecordId) // idempotent
+        assertTrue(first.clientRecordId!!.startsWith("workout-tracker:run:"))
+        assertEquals(ExerciseSessionRecord.EXERCISE_TYPE_RUNNING, first.exerciseType)
+        assertEquals(1_000.0, first.distanceMeters!!, 0.001)
+        assertEquals(80.0, first.totalEnergyKcal!!, 0.001)
+        assertEquals(2, first.route.size)
+        // Route point times are absolute (start + offset).
+        assertEquals(10_000, first.route.first().timeUtcMillis)
+        assertEquals(310_000, first.route.last().timeUtcMillis)
+        assertEquals(310_000, first.endTimeUtcMillis)
+    }
 }

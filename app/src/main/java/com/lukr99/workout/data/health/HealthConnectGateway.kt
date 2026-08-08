@@ -11,6 +11,18 @@ internal data class HealthWorkoutRecord(
     val endTimeUtcMillis: Long,
     val exerciseType: Int,
     val bodyweightKg: Double? = null,
+    /** Run-only extras (R2): total distance, energy, and the GPS route for an ExerciseRoute. */
+    val distanceMeters: Double? = null,
+    val totalEnergyKcal: Double? = null,
+    val route: List<HealthRoutePoint> = emptyList(),
+)
+
+/** One point of a run's GPS route written as a Health Connect `ExerciseRoute.Location`. */
+internal data class HealthRoutePoint(
+    val timeUtcMillis: Long,
+    val lat: Double,
+    val lon: Double,
+    val altitudeM: Double? = null,
 )
 
 enum class HealthConnectAvailability {

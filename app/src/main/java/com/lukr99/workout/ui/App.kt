@@ -51,6 +51,7 @@ import com.lukr99.workout.ui.components.ToastHost
 import com.lukr99.workout.ui.components.rememberToastState
 import com.lukr99.workout.ui.run.LiveRunScreen
 import com.lukr99.workout.ui.run.LiveRunViewModel
+import com.lukr99.workout.ui.run.RunDetailScreen
 import com.lukr99.workout.ui.run.RunViewModel
 import com.lukr99.workout.ui.run.RunsScreen
 import com.lukr99.workout.ui.screens.DataTransferScreen
@@ -140,11 +141,12 @@ fun App(container: AppContainer) {
                             vm = runVm,
                             units = settings.units,
                             onStartRun = { startRun() },
-                            onOpenRun = { /* run detail arrives in R2 */ },
+                            onOpenRun = { nav.push(Route.RunDetail(it)) },
                         )
                         Tab.PROGRESS -> ProgressHubScreen(
                             progressVm = progressVm,
                             historyVm = historyVm,
+                            runVm = runVm,
                             units = settings.units,
                             onOpenExercise = { nav.push(Route.ProgressDetail(it)) },
                             onOpenSession = { nav.push(Route.WorkoutDetail(it)) },
@@ -179,6 +181,12 @@ fun App(container: AppContainer) {
                             vm = liveRunVm,
                             units = settings.units,
                             onClose = { nav.pop() },
+                        )
+                        is Route.RunDetail -> RunDetailScreen(
+                            vm = runVm,
+                            runId = overlay.runId,
+                            units = settings.units,
+                            onBack = { nav.pop() },
                         )
                         Route.Library -> LibraryScreen(
                             vm = libraryVm,

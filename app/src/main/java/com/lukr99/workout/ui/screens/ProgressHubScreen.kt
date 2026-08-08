@@ -25,48 +25,55 @@ import androidx.compose.ui.unit.dp
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.HistoryViewModel
 import com.lukr99.workout.ui.ProgressViewModel
+import com.lukr99.workout.ui.run.RunViewModel
+import com.lukr99.workout.ui.run.RunningProgressSection
 import com.lukr99.workout.ui.theme.TextMid
 
+/** The three panes of the look-back hub. */
+private enum class HubPane { Progress, Running, History }
+
 /**
- * The "look back" hub (Run Mode shell change): Progress analytics **and** the workout History,
- * switched by a segmented control, now that History is no longer its own tab. Both panes reuse the
- * existing [ProgressScreen] / [HistoryScreen] unchanged, so their behaviour (search, drill-in to
- * [WorkoutDetailScreen]) is preserved exactly.
+ * The "look back" hub (Run Mode shell change): strength **Progress**, the new **Running** analytics,
+ * and the workout **History**, switched by a segmented control now that History is no longer its own
+ * tab. The Progress/History panes reuse the existing [ProgressScreen] / [HistoryScreen] unchanged;
+ * Running renders [RunningProgressSection] (R2).
  */
 @Composable
 fun ProgressHubScreen(
     progressVm: ProgressViewModel,
     historyVm: HistoryViewModel,
+    runVm: RunViewModel,
     units: UnitSystem,
     onOpenExercise: (String) -> Unit,
     onOpenSession: (String) -> Unit,
 ) {
-    var showHistory by remember { mutableStateOf(false) }
+    var pane by remember { mutableStateOf(HubPane.Progress) }
 
     Column(Modifier.fillMaxWidth()) {
         SegmentedToggle(
-            showHistory = showHistory,
-            onSelect = { showHistory = it },
+            pane = pane,
+            onSelect = { pane = it },
             modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
         )
-        if (showHistory) {
-            HistoryScreen(vm = historyVm, units = units, onOpen = onOpenSession)
-        } else {
-            ProgressScreen(vm = progressVm, units = units, onOpenExercise = onOpenExercise)
+        when (pane) {
+            HubPane.Progress -> ProgressScreen(vm = progressVm, units = units, onOpenExercise = onOpenExercise)
+            HubPane.Running -> RunningProgressSection(vm = runVm, units = units)
+            HubPane.History -> HistoryScreen(vm = historyVm, units = units, onOpen = onOpenSession)
         }
     }
 }
 
 @Composable
-private fun SegmentedToggle(showHistory: Boolean, onSelect: (Boolean) -> Unit, modifier: Modifier = Modifier) {
+private fun SegmentedToggle(pane: HubPane, onSelect: (HubPane) -> Unit, modifier: Modifier = Modifier) {
     Row(
         modifier.clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Segment("Progress", selected = !showHistory, modifier = Modifier.weight(1f)) { onSelect(false) }
-        Segment("History", selected = showHistory, modifier = Modifier.weight(1f)) { onSelect(true) }
+        Segment("Progress", selected = pane == HubPane.Progress, modifier = Modifier.weight(1f)) { onSelect(HubPane.Progress) }
+        Segment("Running", selected = pane == HubPane.Running, modifier = Modifier.weight(1f)) { onSelect(HubPane.Running) }
+        Segment("History", selected = pane == HubPane.History, modifier = Modifier.weight(1f)) { onSelect(HubPane.History) }
     }
 }
 

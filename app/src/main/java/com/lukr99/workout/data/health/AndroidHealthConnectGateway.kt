@@ -3,12 +3,17 @@ package com.lukr99.workout.data.health
 import android.content.Context
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
+import androidx.health.connect.client.records.DistanceRecord
+import androidx.health.connect.client.records.ExerciseRoute
 import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.health.connect.client.records.Record
+import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
 import androidx.health.connect.client.records.WeightRecord
 import androidx.health.connect.client.records.metadata.Metadata
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
+import androidx.health.connect.client.units.Energy
+import androidx.health.connect.client.units.Length
 import androidx.health.connect.client.units.Mass
 import java.time.Instant
 import java.time.ZoneOffset
@@ -93,6 +98,8 @@ internal class AndroidHealthConnectGateway(context: Context) : HealthConnectGate
                 buildList<Record> {
                     add(record.toHealthConnectRecord())
                     record.toWeightRecord()?.let(::add)
+                    record.toDistanceRecord()?.let(::add)
+                    record.toEnergyRecord()?.let(::add)
                 }
             },
         )
@@ -130,7 +137,45 @@ private fun HealthWorkoutRecord.toHealthConnectRecord() = ExerciseSessionRecord(
     title = title,
     notes = notes.takeIf(String::isNotBlank),
     metadata = healthMetadata(clientRecordId),
+    exerciseRoute = route.takeIf { it.isNotEmpty() }?.let { points ->
+        ExerciseRoute(
+            points.map {
+                ExerciseRoute.Location(
+                    time = Instant.ofEpochMilli(it.timeUtcMillis),
+                    latitude = it.lat,
+                    longitude = it.lon,
+                    altitude = it.altitudeM?.let(Length::meters),
+                )
+            },
+        )
+    },
 )
+
+private fun HealthWorkoutRecord.toDistanceRecord(): DistanceRecord? = distanceMeters
+    ?.takeIf { it > 0 }
+    ?.let { meters ->
+        DistanceRecord(
+            startTime = Instant.ofEpochMilli(startTimeUtcMillis),
+            startZoneOffset = ZoneOffset.UTC,
+            endTime = Instant.ofEpochMilli(endTimeUtcMillis),
+            endZoneOffset = ZoneOffset.UTC,
+            distance = Length.meters(meters),
+            metadata = healthMetadata(clientRecordId?.let { "$it:distance" }),
+        )
+    }
+
+private fun HealthWorkoutRecord.toEnergyRecord(): TotalCaloriesBurnedRecord? = totalEnergyKcal
+    ?.takeIf { it > 0 }
+    ?.let { kcal ->
+        TotalCaloriesBurnedRecord(
+            startTime = Instant.ofEpochMilli(startTimeUtcMillis),
+            startZoneOffset = ZoneOffset.UTC,
+            endTime = Instant.ofEpochMilli(endTimeUtcMillis),
+            endZoneOffset = ZoneOffset.UTC,
+            energy = Energy.kilocalories(kcal),
+            metadata = healthMetadata(clientRecordId?.let { "$it:energy" }),
+        )
+    }
 
 private fun HealthWorkoutRecord.toWeightRecord(): WeightRecord? = bodyweightKg
     ?.takeIf { it > 0 }

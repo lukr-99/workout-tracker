@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.lukr99.workout.WorkoutApp
+import com.lukr99.workout.data.health.HealthConnectService
 import com.lukr99.workout.data.location.LocationService
 import com.lukr99.workout.data.location.RunSessionController
 import com.lukr99.workout.domain.run.LiveRunState
@@ -24,6 +25,7 @@ import kotlinx.coroutines.flow.StateFlow
 class LiveRunViewModel(
     application: Application,
     private val controller: RunSessionController,
+    private val healthConnect: HealthConnectService,
 ) : AndroidViewModel(application) {
 
     val state: StateFlow<LiveRunState> = controller.state
@@ -38,7 +40,13 @@ class LiveRunViewModel(
     fun resume() = controller.resume()
 
     /** Finish + persist; the service tears itself down when it sees the finished state. */
-    suspend fun finish(): Run = controller.finish()
+    suspend fun finish(): Run {
+        val run = controller.finish()
+        // Best-effort mirror to Health Connect (idempotent; no-op without permission). Never blocks
+        // or fails the save — the run is already persisted locally by the controller.
+        runCatching { healthConnect.exportRuns(listOf(run)) }
+        return run
+    }
 
     /** Abandon without saving; the controller's idle state makes the service tear itself down. */
     fun discard() = controller.discard()
@@ -48,7 +56,7 @@ class LiveRunViewModel(
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
                 val app = extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as WorkoutApp
-                return LiveRunViewModel(app, app.container.runSessionController) as T
+                return LiveRunViewModel(app, app.container.runSessionController, app.container.healthConnect) as T
             }
         }
     }

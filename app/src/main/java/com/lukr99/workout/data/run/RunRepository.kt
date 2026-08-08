@@ -27,6 +27,11 @@ class RunRepository(private val dao: RunDao) {
 
     suspend fun countRuns(): Int = dao.countRuns()
 
+    /** All runs with their full traces loaded — for stats/PRs that need sub-run windows. */
+    suspend fun getRunsWithTraces(): List<Run> = dao.getAllRuns().map { row ->
+        row.toDomain(dao.getRunPoints(row.id).map { it.toDomain() })
+    }
+
     /** A run with its full raw trace loaded — for detail, editing, or GPX export. */
     suspend fun getRun(id: String): Run? {
         val row = dao.getRun(id) ?: return null
@@ -45,6 +50,9 @@ class RunRepository(private val dao: RunDao) {
             dao.upsertRunPoints(run.trace.map { it.toEntity(run.id) })
         }
     }
+
+    /** Edit a run's notes/title in place (no trace rewrite). */
+    suspend fun updateRunNotes(id: String, notes: String) = dao.updateNotes(id, notes)
 
     /** Cascade removes the trace. */
     suspend fun deleteRun(id: String) = dao.deleteRun(id)

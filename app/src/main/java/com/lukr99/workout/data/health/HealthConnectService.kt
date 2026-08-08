@@ -15,6 +15,8 @@ import com.lukr99.workout.domain.creation.EntryDraft
 import com.lukr99.workout.domain.creation.ExerciseDraft
 import com.lukr99.workout.domain.creation.SessionDraft
 import com.lukr99.workout.domain.creation.WorkoutFactory
+import com.lukr99.workout.domain.run.Run
+import com.lukr99.workout.domain.run.RunSource
 import java.security.MessageDigest
 import java.time.Duration
 import java.time.Instant
@@ -44,6 +46,28 @@ class HealthConnectService internal constructor(
         val skipped = completed.size - exportable.size
         gateway.writeExerciseSessions(exportable.map(HealthConnectMapper::toHealthRecord))
         return HealthConnectSyncSummary(exported = exportable.size, skipped = skipped)
+    }
+
+    /**
+     * Write runs to Health Connect as Running [ExerciseSessionRecord]s with an ExerciseRoute +
+     * distance/energy (R2). Idempotent by the run's stable id (Health Connect upserts on
+     * `clientRecordId`), so re-exporting the same run updates rather than duplicates. Runs imported
+     * *from* Health Connect are skipped to avoid an echo.
+     */
+    suspend fun exportRuns(runs: List<Run>): HealthConnectSyncSummary {
+        if (availability() != HealthConnectAvailability.Available) {
+            return HealthConnectSyncSummary(unsupported = 1)
+        }
+        if (!hasPermissions()) return HealthConnectSyncSummary(skipped = 1)
+
+        val exportable = runs.filter { it.source != RunSource.HealthConnect }
+        if (exportable.isEmpty()) return HealthConnectSyncSummary(skipped = runs.size)
+        // Best-effort: distance/energy/route need their own grants; a missing one must never fail a
+        // saved run. If the write throws (e.g. route permission not granted) report it as skipped.
+        return runCatching {
+            gateway.writeExerciseSessions(exportable.map(HealthConnectMapper::runToHealthRecord))
+            HealthConnectSyncSummary(exported = exportable.size, skipped = runs.size - exportable.size)
+        }.getOrElse { HealthConnectSyncSummary(skipped = runs.size) }
     }
 
     suspend fun importSessions(
@@ -96,6 +120,7 @@ class HealthConnectService internal constructor(
 
     companion object {
         internal const val ClientRecordPrefix = "workout-tracker:"
+        internal const val ClientRunPrefix = "workout-tracker:run:"
     }
 }
 
@@ -107,6 +132,30 @@ data class HealthConnectSyncSummary(
 )
 
 internal object HealthConnectMapper {
+    /** Map a run to a Running exercise record with its route + distance/energy. */
+    fun runToHealthRecord(run: Run): HealthWorkoutRecord {
+        val end = (run.startedAtUtc + run.durationSeconds.coerceAtLeast(1) * 1_000)
+            .coerceAtLeast(run.startedAtUtc + 1)
+        return HealthWorkoutRecord(
+            clientRecordId = HealthConnectService.ClientRunPrefix + run.id,
+            title = run.notes.ifBlank { "Run" },
+            notes = run.notes,
+            startTimeUtcMillis = run.startedAtUtc,
+            endTimeUtcMillis = end,
+            exerciseType = ExerciseSessionRecord.EXERCISE_TYPE_RUNNING,
+            distanceMeters = run.distanceMeters.takeIf { it > 0 },
+            totalEnergyKcal = run.calories?.takeIf { it > 0 },
+            route = run.trace.map {
+                HealthRoutePoint(
+                    timeUtcMillis = run.startedAtUtc + it.t,
+                    lat = it.lat,
+                    lon = it.lon,
+                    altitudeM = it.elevationM,
+                )
+            },
+        )
+    }
+
     fun toHealthRecord(session: WorkoutSession): HealthWorkoutRecord {
         val end = session.endedAtUtc
             ?: (session.startedAtUtc + session.durationSeconds.coerceAtLeast(1) * 1_000)

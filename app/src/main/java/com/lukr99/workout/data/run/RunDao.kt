@@ -29,6 +29,10 @@ interface RunDao {
     @Upsert
     suspend fun upsertRun(run: RunEntity)
 
+    /** Edit just the notes/title without rewriting the trace. */
+    @Query("UPDATE runs SET notes = :notes WHERE id = :id")
+    suspend fun updateNotes(id: String, notes: String)
+
     @Query("SELECT * FROM run_points WHERE runId = :runId ORDER BY t")
     suspend fun getRunPoints(runId: String): List<RunPointEntity>
 
