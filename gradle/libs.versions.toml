@@ -13,7 +13,10 @@ navigationCompose = "2.8.5"
 room = "2.6.1"
 ksp = "2.0.21-1.0.28"
 coroutines = "1.8.1"
-datastore = "1.1.1"
+# 1.1.7 ships 16 KB-page-aligned native libs (libdatastore_shared_counter.so); 1.1.1 did not.
+datastore = "1.1.7"
+# Pinned (normally transitive via compose ui-graphics) to a 16 KB-aligned build of libandroidx.graphics.path.so.
+graphicsPath = "1.0.1"
 serialization = "1.7.3"
 okhttp = "4.12.0"
 # Later 1.1 builds require compileSdk 36 / newer AGP. alpha11 is the newest 1.1 artifact compatible
@@ -22,8 +25,9 @@ healthConnect = "1.1.0-alpha11"
 work = "2.9.1"
 coil = "2.7.0"
 # MapLibre Native (Android) — the locked map engine for Run Mode. Keyless dark vector basemap;
-# tiles come from a Protomaps/PMTiles-backed style URL (see data/map/MapStyle.kt).
-maplibre = "11.5.2"
+# tiles come from a Protomaps/PMTiles-backed style URL (see data/map/MapStyle.kt). 11.8.0+ ships
+# 16 KB-page-aligned native libs; pinned to the latest 11.x (11.13.5) to keep the offline API stable.
+maplibre = "11.13.5"
 junit = "4.13.2"
 androidxTestCore = "1.6.1"
 androidxTestRunner = "1.6.2"
@@ -55,6 +59,8 @@ room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
 
 # Settings storage
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
+# Explicit pin so the 16 KB-aligned native lib wins over Compose's transitive version.
+androidx-graphics-path = { module = "androidx.graphics:graphics-path", version.ref = "graphicsPath" }
 
 # JSON export/import contract
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
