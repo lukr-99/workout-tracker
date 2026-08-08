@@ -141,6 +141,9 @@ class LocationService : Service() {
         runCatching {
             locationEngine.requestLocationUpdates(request, locationCallback, Looper.getMainLooper())
         }
+        // Seed immediately with the last known fix so the run has a start anchor (and the map
+        // centres) even before the first live update arrives — important indoors / cold GPS.
+        runCatching { locationEngine.getLastLocation(locationCallback) }
         engine = locationEngine
     }
 

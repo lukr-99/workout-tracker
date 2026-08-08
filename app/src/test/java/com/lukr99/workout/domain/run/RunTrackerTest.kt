@@ -49,6 +49,21 @@ class RunTrackerTest {
     }
 
     @Test
+    fun firstFixAnchorsEvenWhenInaccurate() {
+        val t = RunTracker()
+        t.start(base)
+        // Indoors the only fix may be a coarse network location (100 m). It must still anchor the run
+        // so a run always has a start point; the gate applies only to later fixes.
+        val accepted = t.onSample(RunSample(base, 50.0, 14.0, accuracyM = 100.0))
+        assertTrue(accepted)
+        assertEquals(1, t.snapshot().pointCount)
+        // A second, still-inaccurate fix is rejected (won't inflate distance).
+        val second = t.onSample(RunSample(base + 5_000, north(50.0, 100.0), 14.0, accuracyM = 100.0))
+        assertFalse(second)
+        assertEquals(0.0, t.snapshot().distanceMeters, 0.001)
+    }
+
+    @Test
     fun movingTimeExcludesManualPause() {
         val t = RunTracker()
         t.start(base)

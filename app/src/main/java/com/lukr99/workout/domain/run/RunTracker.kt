@@ -83,8 +83,6 @@ class RunTracker(private val config: Config = Config()) {
         if (phase != Phase.Recording) return false
         tick(sample.timeMs)
 
-        if (sample.accuracyM != null && sample.accuracyM > config.minAccuracyM) return false
-
         val prev = lastAccepted
         val t = sample.timeMs - startedAtUtc
         val point = TracePoint(
@@ -96,11 +94,16 @@ class RunTracker(private val config: Config = Config()) {
             accuracyM = sample.accuracyM,
         )
 
+        // The first fix always anchors the run (so a run always has a start point + the map centres),
+        // even if the only fix available is a coarse network one. The accuracy gate then rejects
+        // poor *subsequent* fixes so GPS jitter can't inflate the distance/trace.
         if (prev == null) {
             points += point
             lastAccepted = point
             return true
         }
+
+        if (sample.accuracyM != null && sample.accuracyM > config.minAccuracyM) return false
 
         val moved = Pace.haversineMeters(prev.lat, prev.lon, point.lat, point.lon)
         if (moved < config.minMoveMeters) {
