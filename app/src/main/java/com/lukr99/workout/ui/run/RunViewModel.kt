@@ -34,6 +34,10 @@ class RunViewModel(private val repo: RunRepository) : ViewModel() {
     private val _detail = MutableStateFlow<Run?>(null)
     val detail: StateFlow<Run?> = _detail.asStateFlow()
 
+    private val _detailRouteName = MutableStateFlow<String?>(null)
+    /** Name of the saved route a run was started from (a reference mention only), or null. */
+    val detailRouteName: StateFlow<String?> = _detailRouteName.asStateFlow()
+
     init {
         // Recompute the Progress running stats whenever the run set changes (loads traces for PRs).
         viewModelScope.launch {
@@ -52,13 +56,18 @@ class RunViewModel(private val repo: RunRepository) : ViewModel() {
         )
     }
 
-    /** Load a run with its trace for the detail screen. */
+    /** Load a run with its trace for the detail screen (plus its linked route name, if any). */
     fun openRun(id: String) {
-        viewModelScope.launch { _detail.value = repo.getRun(id) }
+        viewModelScope.launch {
+            val run = repo.getRun(id)
+            _detail.value = run
+            _detailRouteName.value = run?.routeId?.let { repo.getRoute(it)?.name?.ifBlank { "Route" } }
+        }
     }
 
     fun clearDetail() {
         _detail.value = null
+        _detailRouteName.value = null
     }
 
     fun updateNotes(id: String, notes: String) {

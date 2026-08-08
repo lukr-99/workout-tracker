@@ -33,18 +33,21 @@ class RunSimReceiver : BroadcastReceiver() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override fun onReceive(context: Context, intent: Intent) {
-        val controller = (context.applicationContext as WorkoutApp).container.runSessionController
+        val container = (context.applicationContext as WorkoutApp).container
+        val controller = container.runSessionController
         val lat = intent.getDoubleExtra("lat", 50.0876)
         val lon = intent.getDoubleExtra("lon", 14.4207)
         val meters = intent.getIntExtra("meters", 1000).coerceAtLeast(1)
         val seconds = intent.getIntExtra("seconds", 300).coerceAtLeast(1)
         val bearingDeg = intent.getDoubleExtra("bearing", 0.0)
+        val useRoute = intent.getBooleanExtra("useRoute", false)
 
-        android.util.Log.d(TAG, "onReceive meters=$meters seconds=$seconds bearing=$bearingDeg")
+        android.util.Log.d(TAG, "onReceive meters=$meters seconds=$seconds bearing=$bearingDeg useRoute=$useRoute")
         val pending = goAsync()
         scope.launch {
             try {
-                val run = simulate(controller, lat, lon, meters, seconds, bearingDeg)
+                val routeId = if (useRoute) container.runRepository.getRoutes().firstOrNull()?.id else null
+                val run = simulate(controller, lat, lon, meters, seconds, bearingDeg, routeId)
                 android.util.Log.d(TAG, "sim finished dist=${run.distanceMeters} points=${run.trace.size}")
             } catch (t: Throwable) {
                 android.util.Log.e(TAG, "sim failed", t)
@@ -61,9 +64,11 @@ class RunSimReceiver : BroadcastReceiver() {
         meters: Int,
         seconds: Int,
         bearingDeg: Double,
+        routeId: String?,
     ): com.lukr99.workout.domain.run.Run {
         controller.discard() // clear any prior/finished state
         controller.start()
+        controller.armRoute(routeId) // link this run to a saved route (verification of start-from-route)
 
         val stepMeters = meters.toDouble() / STEPS
         val stepMs = (seconds * 1000L) / STEPS

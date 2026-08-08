@@ -47,6 +47,7 @@ fun RunsScreen(
     onStartRun: () -> Unit,
     onOpenRun: (String) -> Unit,
     onPlanRoute: () -> Unit,
+    onStartRoute: (String) -> Unit,
 ) {
     val runs by vm.runs.collectAsState()
     val routes by vm.routes.collectAsState()
@@ -68,7 +69,9 @@ fun RunsScreen(
                     color = MaterialTheme.colorScheme.onBackground,
                 )
             }
-            items(routes, key = { "route-${it.id}" }) { route -> RouteRow(route, units) }
+            items(routes, key = { "route-${it.id}" }) { route ->
+                RouteRow(route, units) { onStartRoute(route.id) }
+            }
         }
 
         item {
@@ -110,18 +113,20 @@ private fun PlanRouteButton(onPlanRoute: () -> Unit) {
 }
 
 @Composable
-private fun RouteRow(route: com.lukr99.workout.domain.run.Route, units: UnitSystem) {
+private fun RouteRow(route: com.lukr99.workout.domain.run.Route, units: UnitSystem, onStart: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
-            .background(MaterialTheme.colorScheme.surface).padding(14.dp),
+            .background(MaterialTheme.colorScheme.surface).clickable(onClick = onStart).padding(14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            route.name.ifBlank { "Route" },
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.weight(1f),
-        )
+        Column(Modifier.weight(1f)) {
+            Text(
+                route.name.ifBlank { "Route" },
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Text("Tap to run this route", style = MaterialTheme.typography.labelSmall, color = TextMid)
+        }
         Text(
             Format.distance(route.distanceMeters, units),
             style = MaterialTheme.typography.labelLarge,

@@ -52,6 +52,14 @@ class RunSessionController(
     private var runId: String = ""
     private var lastFinished: Run? = null
 
+    /** Optional saved route this run was started from — recorded on the run, never enforced. */
+    private var pendingRouteId: String? = null
+
+    /** Arm (or clear) the saved route the next run links to. Set before [start]. */
+    fun armRoute(routeId: String?) {
+        pendingRouteId = routeId
+    }
+
     private val _state = MutableStateFlow(LiveRunState())
     val state: StateFlow<LiveRunState> = _state.asStateFlow()
 
@@ -109,7 +117,7 @@ class RunSessionController(
     suspend fun finish(): Run {
         lastFinished?.let { return it }
         tracker.finish(clock())
-        val bare = tracker.toRun(runId.ifEmpty { newId() })
+        val bare = tracker.toRun(runId.ifEmpty { newId() }).copy(routeId = pendingRouteId)
         // Carry the encoded polyline on the returned run too, so callers get the same object that's
         // stored (the repository would otherwise encode it only into its own copy).
         val run = if (bare.trace.isNotEmpty()) {
@@ -120,6 +128,7 @@ class RunSessionController(
         if (run.trace.isNotEmpty()) repository.saveRun(run)
         lastFinished = run
         runId = ""
+        pendingRouteId = null
         clearBuffer()
         tracker.reset()
         publish()
@@ -130,6 +139,7 @@ class RunSessionController(
     fun discard() {
         lastFinished = null
         runId = ""
+        pendingRouteId = null
         clearBuffer()
         tracker.reset()
         publish()

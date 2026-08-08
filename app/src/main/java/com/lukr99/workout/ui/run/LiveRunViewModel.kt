@@ -6,13 +6,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.lukr99.workout.WorkoutApp
+import androidx.lifecycle.viewModelScope
 import com.lukr99.workout.data.health.HealthConnectService
 import com.lukr99.workout.data.location.LocationService
 import com.lukr99.workout.data.location.RunSessionController
+import com.lukr99.workout.data.run.RunRepository
 import com.lukr99.workout.domain.run.LiveRunState
+import com.lukr99.workout.domain.run.Polyline
 import com.lukr99.workout.domain.run.Run
 import com.lukr99.workout.domain.run.TracePoint
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 /**
  * Live-run screen state + intents. A thin seam over [RunSessionController]: it re-exposes the
@@ -26,10 +32,35 @@ class LiveRunViewModel(
     application: Application,
     private val controller: RunSessionController,
     private val healthConnect: HealthConnectService,
+    private val repo: RunRepository,
 ) : AndroidViewModel(application) {
 
     val state: StateFlow<LiveRunState> = controller.state
     val trace: StateFlow<List<TracePoint>> = controller.trace
+
+    private val _plannedRoute = MutableStateFlow<List<Pair<Double, Double>>>(emptyList())
+    /** Faint reference line when a run was started from a saved route (empty otherwise). */
+    val plannedRoute: StateFlow<List<Pair<Double, Double>>> = _plannedRoute.asStateFlow()
+
+    /**
+     * Arm the next run with a saved route (or clear it). The route is only ever a **reference** — the
+     * run records its own trace and is never forced onto the route. Call before showing the run screen.
+     */
+    fun prepareRoute(routeId: String?) {
+        if (routeId == null) {
+            _plannedRoute.value = emptyList()
+            controller.armRoute(null)
+            return
+        }
+        viewModelScope.launch {
+            val route = repo.getRoute(routeId)
+            _plannedRoute.value = route?.let { r ->
+                r.points.takeIf { it.isNotEmpty() }?.map { it.lat to it.lon }
+                    ?: Polyline.decode(r.encodedPolyline)
+            } ?: emptyList()
+            controller.armRoute(routeId)
+        }
+    }
 
     /** Begin recording — spins up the foreground service, which promotes + starts the tracker. */
     fun start() {
@@ -56,7 +87,12 @@ class LiveRunViewModel(
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
                 val app = extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as WorkoutApp
-                return LiveRunViewModel(app, app.container.runSessionController, app.container.healthConnect) as T
+                return LiveRunViewModel(
+                    app,
+                    app.container.runSessionController,
+                    app.container.healthConnect,
+                    app.container.runRepository,
+                ) as T
             }
         }
     }

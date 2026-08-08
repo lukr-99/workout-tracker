@@ -56,6 +56,7 @@ fun RunMap(
     traceColor: Int = DEFAULT_EMBER,
     fitTrace: Boolean = false,
     waypoints: List<Pair<Double, Double>> = emptyList(),
+    plannedRoute: List<Pair<Double, Double>> = emptyList(),
     onMapTap: ((Double, Double) -> Unit)? = null,
 ) {
     val context = LocalContext.current
@@ -117,6 +118,11 @@ fun RunMap(
         holder.updateWaypoints(waypoints)
     }
 
+    // Redraw the faint planned-route underlay (start-a-run-from-route).
+    LaunchedEffect(plannedRoute) {
+        holder.updatePlanned(plannedRoute)
+    }
+
     // Recenter/follow when asked.
     LaunchedEffect(recenterSignal) {
         if (recenterSignal > 0) holder.recenter()
@@ -133,9 +139,22 @@ private class MapHolder(private val traceColor: Int, private val fitTrace: Boole
     private var locationActive = false
     private var pendingTrace: List<Pair<Double, Double>> = emptyList()
     private var pendingWaypoints: List<Pair<Double, Double>> = emptyList()
+    private var pendingPlanned: List<Pair<Double, Double>> = emptyList()
 
     fun onStyleReady(style: Style, context: android.content.Context, enableLocation: Boolean) {
         this.style = style
+        // Planned-route underlay first, so the live trace + waypoints draw over it.
+        style.addSource(GeoJsonSource(PLANNED_SOURCE))
+        style.addLayer(
+            LineLayer(PLANNED_LAYER, PLANNED_SOURCE).withProperties(
+                PropertyFactory.lineColor(traceColor),
+                PropertyFactory.lineWidth(4f),
+                PropertyFactory.lineOpacity(0.35f),
+                PropertyFactory.lineDasharray(arrayOf(2f, 2f)),
+                PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
+                PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
+            ),
+        )
         style.addSource(GeoJsonSource(TRACE_SOURCE))
         style.addLayer(
             LineLayer(TRACE_LAYER, TRACE_SOURCE).withProperties(
@@ -154,9 +173,21 @@ private class MapHolder(private val traceColor: Int, private val fitTrace: Boole
                 PropertyFactory.circleStrokeWidth(2f),
             ),
         )
+        if (pendingPlanned.isNotEmpty()) updatePlanned(pendingPlanned)
         if (pendingTrace.isNotEmpty()) updateTrace(pendingTrace)
         if (pendingWaypoints.isNotEmpty()) updateWaypoints(pendingWaypoints)
         if (enableLocation) enableLocation(context)
+    }
+
+    fun updatePlanned(points: List<Pair<Double, Double>>) {
+        pendingPlanned = points
+        val source = style?.getSourceAs<GeoJsonSource>(PLANNED_SOURCE) ?: return
+        if (points.size < 2) {
+            source.setGeoJson(FeatureCollectionEmpty)
+            return
+        }
+        val line = LineString.fromLngLats(points.map { Point.fromLngLat(it.second, it.first) })
+        source.setGeoJson(Feature.fromGeometry(line))
     }
 
     fun updateWaypoints(points: List<Pair<Double, Double>>) {
@@ -223,6 +254,8 @@ private class MapHolder(private val traceColor: Int, private val fitTrace: Boole
     }
 
     companion object {
+        private const val PLANNED_SOURCE = "run-planned-src"
+        private const val PLANNED_LAYER = "run-planned-layer"
         private const val TRACE_SOURCE = "run-trace-src"
         private const val TRACE_LAYER = "run-trace-layer"
         private const val WAYPOINT_SOURCE = "run-waypoint-src"

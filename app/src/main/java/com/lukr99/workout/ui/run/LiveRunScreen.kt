@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.lukr99.workout.domain.run.LiveRunState
 import com.lukr99.workout.domain.run.Pace
+import com.lukr99.workout.domain.run.RouteDeviation
 import com.lukr99.workout.domain.run.RunTracker
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.components.Format
@@ -74,6 +75,7 @@ fun LiveRunScreen(
     val scope = rememberCoroutineScope()
     val state by vm.state.collectAsState()
     val trace by vm.trace.collectAsState()
+    val planned by vm.plannedRoute.collectAsState()
     val emberColor = MaterialTheme.colorScheme.primary
 
     fun hasFineLocation(): Boolean =
@@ -119,12 +121,21 @@ fun LiveRunScreen(
     // affordance rather than dead recording controls.
     val idle = !state.isActive
 
+    // Off-route distance (informational only — a planned route never constrains the run).
+    val offRouteMeters = remember(state.lastLat, state.lastLon, planned) {
+        val lat = state.lastLat
+        val lon = state.lastLon
+        if (planned.isEmpty() || lat == null || lon == null) null
+        else RouteDeviation.distanceToRouteMeters(lat, lon, planned)
+    }
+
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         RunMap(
             userLocationEnabled = locationGranted,
             recenterSignal = recenterSignal,
             tracePoints = trace.map { it.lat to it.lon },
             traceColor = emberColor.toArgb(),
+            plannedRoute = planned,
             modifier = Modifier.fillMaxSize(),
         )
 
@@ -135,6 +146,7 @@ fun LiveRunScreen(
             MetricsPanel(
                 state = state,
                 units = units,
+                offRouteMeters = offRouteMeters,
                 modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp, start = 64.dp, end = 16.dp),
             )
         }
@@ -201,7 +213,7 @@ fun LiveRunScreen(
 }
 
 @Composable
-private fun MetricsPanel(state: LiveRunState, units: UnitSystem, modifier: Modifier) {
+private fun MetricsPanel(state: LiveRunState, units: UnitSystem, offRouteMeters: Double?, modifier: Modifier) {
     Column(
         modifier.clip(RoundedCornerShape(18.dp))
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f))
@@ -217,6 +229,16 @@ private fun MetricsPanel(state: LiveRunState, units: UnitSystem, modifier: Modif
             Metric("Time", Pace.formatDuration(state.movingSeconds))
             Metric("Pace", paceLabel(state.avgPaceSecPerKm, units))
             Metric("Elev", "${state.elevationGainM.toInt()} m")
+        }
+        // Off-route is a gentle heads-up only — never a warning, never blocking.
+        if (offRouteMeters != null && offRouteMeters > OFF_ROUTE_THRESHOLD_M) {
+            Text(
+                "${offRouteMeters.toInt()} m off route",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(top = 6.dp),
+            )
         }
         if (state.autoPaused) {
             Text(
@@ -237,6 +259,9 @@ private fun Metric(label: String, value: String) {
         Text(value, color = MaterialTheme.colorScheme.onSurface, fontSize = 18.sp, fontWeight = FontWeight.Bold)
     }
 }
+
+/** Only surface an off-route hint once you're clearly off the line — never for GPS wobble. */
+private const val OFF_ROUTE_THRESHOLD_M = 35.0
 
 private fun paceLabel(secPerKm: Double, units: UnitSystem): String {
     val perUnit = if (units == UnitSystem.Imperial) Pace.paceSecPerMile(secPerKm) else secPerKm

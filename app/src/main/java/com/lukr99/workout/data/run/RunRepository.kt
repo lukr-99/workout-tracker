@@ -62,6 +62,9 @@ class RunRepository(private val dao: RunDao) {
     fun observeRoutes(): Flow<List<Route>> =
         dao.observeRoutes().map { rows -> rows.map { it.toDomain() } }
 
+    /** Saved route summaries (no points loaded), newest first. */
+    suspend fun getRoutes(): List<Route> = dao.getAllRoutes().map { it.toDomain() }
+
     suspend fun getRoute(id: String): Route? {
         val row = dao.getRoute(id) ?: return null
         val points = dao.getRoutePoints(id).map { it.toDomain() }

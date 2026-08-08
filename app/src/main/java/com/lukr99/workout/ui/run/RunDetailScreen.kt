@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -63,6 +64,7 @@ fun RunDetailScreen(
     onBack: () -> Unit,
 ) {
     val run by vm.detail.collectAsState()
+    val routeName by vm.detailRouteName.collectAsState()
     var editing by remember { mutableStateOf(false) }
     var confirmingDelete by remember { mutableStateOf(false) }
 
@@ -111,6 +113,23 @@ fun RunDetailScreen(
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    routeName?.let { name ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(top = 4.dp),
+                        ) {
+                            Icon(
+                                Icons.Rounded.Map, null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(15.dp),
+                            )
+                            Text(
+                                "  Planned route · $name",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
                 }
                 RoundIcon(Icons.Rounded.Edit, "Edit notes", Modifier, surface = true) { editing = true }
             }

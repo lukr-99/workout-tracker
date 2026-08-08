@@ -109,6 +109,12 @@ fun App(container: AppContainer) {
     }
 
     fun startRun() {
+        liveRunVm.prepareRoute(null)
+        nav.push(Route.LiveRun)
+    }
+
+    fun startRunFromRoute(routeId: String) {
+        liveRunVm.prepareRoute(routeId)
         nav.push(Route.LiveRun)
     }
 
@@ -150,6 +156,7 @@ fun App(container: AppContainer) {
                             onStartRun = { startRun() },
                             onOpenRun = { nav.push(Route.RunDetail(it)) },
                             onPlanRoute = { nav.push(Route.RoutePlanner) },
+                            onStartRoute = { startRunFromRoute(it) },
                         )
                         Tab.PROGRESS -> ProgressHubScreen(
                             progressVm = progressVm,

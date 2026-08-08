@@ -15,7 +15,8 @@ param(
     [double]$Lon = 14.4207,
     [int]$Meters = 1000,
     [int]$Seconds = 300,
-    [double]$Bearing = 0.0
+    [double]$Bearing = 0.0,
+    [switch]$UseRoute  # link the simulated run to the newest saved route (start-from-route test)
 )
 . "$PSScriptRoot\common.ps1"
 $adb = Get-Adb
@@ -24,6 +25,8 @@ Assert-Device -Adb $adb
 Write-Host "Simulating a $Meters m run over $Seconds s (bearing $Bearing) from $Lat,$Lon ..." -ForegroundColor Cyan
 # Explicit component (-n): action-only broadcasts to a manifest receiver are blocked by Android's
 # background-broadcast limits, so target the receiver directly.
+$useRouteArg = if ($UseRoute) { "true" } else { "false" }
 & $adb shell am broadcast -a com.lukr99.workout.SIM_RUN -n com.lukr99.workout/.data.location.RunSimReceiver `
-    --ed lat $Lat --ed lon $Lon --ei meters $Meters --ei seconds $Seconds --ed bearing $Bearing
+    --ed lat $Lat --ed lon $Lon --ei meters $Meters --ei seconds $Seconds --ed bearing $Bearing `
+    --ez useRoute $useRouteArg
 Write-Host "Sent. Watch the Run screen, or open Runs to see the saved run (logcat tag: RunSim)." -ForegroundColor Green
