@@ -24,6 +24,8 @@
 
     <queries>
         <package android:name="com.google.android.apps.healthdata" />
+        <!-- Run Mode (R4): resolve the Spotify launch intent for the Open-Spotify action. -->
+        <package android:name="com.spotify.music" />
     </queries>
 
     <application

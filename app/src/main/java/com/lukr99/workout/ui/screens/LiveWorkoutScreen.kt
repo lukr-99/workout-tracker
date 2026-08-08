@@ -60,6 +60,7 @@ import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.PrBanner
 import com.lukr99.workout.ui.components.RestTimerBar
+import com.lukr99.workout.ui.components.MusicMiniControls
 import com.lukr99.workout.ui.components.SetColumnHeader
 import com.lukr99.workout.ui.components.SetRow
 import com.lukr99.workout.ui.components.Tag
@@ -150,6 +151,7 @@ fun LiveWorkoutScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                item { MusicMiniControls(Modifier.fillMaxWidth()) }
                 itemsIndexed(entries, key = { _, entry -> entry.id }) { index, entry ->
                     EntryCard(
                         entry = entry,

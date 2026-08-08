@@ -514,6 +514,8 @@ build/
 app/build/
 # Local SDK/JDK pointers — machine-specific, never commit
 local.properties
+# Spotify App Remote client id / redirect URI (R4) — secrets, never commit
+spotify.properties
 # Kotlin/Gradle scratch
 .kotlin/
 *.hprof

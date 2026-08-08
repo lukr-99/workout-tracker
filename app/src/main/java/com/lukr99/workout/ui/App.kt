@@ -46,6 +46,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lukr99.workout.data.AppContainer
 import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.LocalExerciseImageResolver
+import com.lukr99.workout.ui.components.LocalSpotify
 import com.lukr99.workout.ui.components.StartChooserSheet
 import com.lukr99.workout.ui.components.ToastHost
 import com.lukr99.workout.ui.components.rememberToastState
@@ -131,6 +132,7 @@ fun App(container: AppContainer) {
     CompositionLocalProvider(
         LocalToast provides toast,
         LocalExerciseImageResolver provides container.exerciseImages,
+        LocalSpotify provides container.spotify,
     ) {
         Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             // Peer-tab layer (always mounted so tab state persists behind overlays).

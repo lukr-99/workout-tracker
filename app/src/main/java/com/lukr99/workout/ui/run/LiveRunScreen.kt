@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -53,6 +54,7 @@ import com.lukr99.workout.domain.run.RouteDeviation
 import com.lukr99.workout.domain.run.RunTracker
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.components.Format
+import com.lukr99.workout.ui.components.MusicMiniControls
 import com.lukr99.workout.ui.run.components.RunMap
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -158,20 +160,29 @@ fun LiveRunScreen(
             ) { recenterSignal++ }
         }
 
-        // Bottom controls.
-        Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(20.dp)) {
-            when {
-                !locationGranted -> LocationRationale(::requestPermissions, Modifier.fillMaxWidth())
-                idle -> StartButton(Modifier.align(Alignment.Center)) {
-                    if (hasFineLocation()) countdown = 3 else requestPermissions()
+        // Bottom: the shared music control sits just above the run controls.
+        Column(
+            Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            if (locationGranted) {
+                MusicMiniControls(Modifier.fillMaxWidth())
+                androidx.compose.foundation.layout.Spacer(Modifier.height(12.dp))
+            }
+            Box(Modifier.fillMaxWidth()) {
+                when {
+                    !locationGranted -> LocationRationale(::requestPermissions, Modifier.fillMaxWidth())
+                    idle -> StartButton(Modifier.align(Alignment.Center)) {
+                        if (hasFineLocation()) countdown = 3 else requestPermissions()
+                    }
+                    else -> RecordingControls(
+                        paused = state.phase == RunTracker.Phase.Paused,
+                        onPause = vm::pause,
+                        onResume = vm::resume,
+                        onFinish = { confirmingFinish = true },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
-                else -> RecordingControls(
-                    paused = state.phase == RunTracker.Phase.Paused,
-                    onPause = vm::pause,
-                    onResume = vm::resume,
-                    onFinish = { confirmingFinish = true },
-                    modifier = Modifier.fillMaxWidth(),
-                )
             }
         }
 

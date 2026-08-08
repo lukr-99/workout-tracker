@@ -11,6 +11,8 @@ import com.lukr99.workout.data.images.ExercisePhotoStore
 import com.lukr99.workout.data.images.FreeExerciseImageIndex
 import com.lukr99.workout.data.importer.BundleImporter
 import com.lukr99.workout.data.location.RunSessionController
+import com.lukr99.workout.data.music.SpotifyController
+import com.lukr99.workout.data.music.StubSpotifyController
 import com.lukr99.workout.data.routing.OsrmRoutingClient
 import com.lukr99.workout.data.routing.RoutingClient
 import com.lukr99.workout.data.run.RunRepository
@@ -42,6 +44,13 @@ class AppContainer(context: Context) {
 
     /** Route snapping for the planner (R3) — keyless OSRM by default; the only routing IO boundary. */
     val routingClient: RoutingClient by lazy { OsrmRoutingClient() }
+
+    /**
+     * Music control (R4), shared by the live run + lift screens. Ships as the Open-Spotify-only
+     * [StubSpotifyController]; swap for an App Remote implementation to enable transport (see
+     * docs/run-mode/handoff-R4.md).
+     */
+    val spotify: SpotifyController = StubSpotifyController
     val workoutData: WorkoutDataService by lazy { WorkoutDataService(repository) }
     val insights: WorkoutInsightsService by lazy { WorkoutInsightsService(repository) }
     val wgerSync: WgerSyncService by lazy { WgerSyncService(repository) }
