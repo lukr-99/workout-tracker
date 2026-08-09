@@ -53,3 +53,8 @@ A minified, self-signed **release** build is available if wanted — see
 
 - [`docs/rework/README.md`](docs/rework/README.md) — the rework index (architecture, design, phases)
 - `docs/decisions.md`, `docs/roadmap.md` — **historical**, describe the v1 MAUI POC
+
+
+## License
+
+[PolyForm Noncommercial 1.0.0](LICENSE.md) — free for personal and non-commercial use; selling or other commercial use requires permission.
