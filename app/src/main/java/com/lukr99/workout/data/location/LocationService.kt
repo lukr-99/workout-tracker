@@ -12,6 +12,7 @@ import android.location.Location
 import android.os.Build
 import android.os.IBinder
 import android.os.Looper
+import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import com.lukr99.workout.MainActivity
@@ -53,6 +54,7 @@ class LocationService : Service() {
     private lateinit var controller: RunSessionController
     private lateinit var notifications: NotificationManager
     private var engine: LocationEngine? = null
+    private var wakeLock: PowerManager.WakeLock? = null
 
     private val locationCallback = object : LocationEngineCallback<LocationEngineResult> {
         override fun onSuccess(result: LocationEngineResult) {
@@ -93,6 +95,7 @@ class LocationService : Service() {
         // Promote to foreground immediately (must happen within a few seconds of startForegroundService).
         startForegroundWith(controller.state.value)
         controller.start()
+        acquireWakeLock()
         startLocationUpdates()
 
         tickerJob?.cancel()
@@ -124,10 +127,33 @@ class LocationService : Service() {
 
     private fun tearDown() {
         stopLocationUpdates()
+        releaseWakeLock()
         tickerJob?.cancel()
         watcherJob?.cancel()
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         stopSelf()
+    }
+
+    /**
+     * Hold a partial wake lock for the life of the run. The `location` foreground-service type keeps
+     * us *allowed* to sample with the screen off, but on a dozing device the CPU can still suspend
+     * between fixes — starving both the location callbacks and the 1 Hz ticker, which is what makes a
+     * backgrounded run record in sparse bursts with straight lines across the gaps. Keeping the CPU
+     * awake while recording gives a continuous, live trace. A generous safety timeout guarantees the
+     * lock can never outlive a run even if teardown is somehow missed.
+     */
+    private fun acquireWakeLock() {
+        if (wakeLock?.isHeld == true) return
+        val power = getSystemService(POWER_SERVICE) as PowerManager
+        wakeLock = power.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG).apply {
+            setReferenceCounted(false)
+            runCatching { acquire(WAKE_LOCK_TIMEOUT_MS) }
+        }
+    }
+
+    private fun releaseWakeLock() {
+        wakeLock?.let { lock -> runCatching { if (lock.isHeld) lock.release() } }
+        wakeLock = null
     }
 
     @Suppress("MissingPermission") // Started only after ACCESS_FINE_LOCATION is granted.
@@ -154,6 +180,7 @@ class LocationService : Service() {
 
     override fun onDestroy() {
         stopLocationUpdates()
+        releaseWakeLock()
         tickerJob?.cancel()
         watcherJob?.cancel()
         super.onDestroy()
@@ -239,6 +266,9 @@ class LocationService : Service() {
         private const val NOTIFICATION_ID = 4201
         private const val UPDATE_INTERVAL_MS = 1_000L
         private const val FASTEST_INTERVAL_MS = 1_000L
+        private const val WAKE_LOCK_TAG = "ember:run-tracking"
+        // Safety net only — a run should never run this long; the lock is released on finish/stop.
+        private const val WAKE_LOCK_TIMEOUT_MS = 6L * 60L * 60L * 1_000L
 
         fun start(context: Context) = send(context, ACTION_START)
         fun stop(context: Context) = send(context, ACTION_STOP)

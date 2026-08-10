@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 import com.lukr99.workout.domain.run.RunSource
 
 /**
- * Room persistence shapes for Run Mode (schema **v5**, additive + non-destructive) — the running
+ * Room persistence shapes for Run Mode (schema **v6**, additive + non-destructive) — the running
  * counterpart to strength's [com.lukr99.workout.data.Entities]. These are an implementation detail
  * behind [RunRepository]; the app's vocabulary is `domain/run`, which the repository maps to/from.
  *
@@ -61,6 +61,8 @@ data class RunPointEntity(
     val speedMps: Double?,
     val hrBpm: Int?,
     val accuracyM: Double?,
+    /** True when this point starts a new segment after a manual pause (see `TracePoint.segmentStart`). */
+    val segmentStart: Boolean = false,
 )
 
 @Entity(

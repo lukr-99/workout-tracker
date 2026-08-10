@@ -11,6 +11,7 @@ import android.graphics.Typeface
 import androidx.core.content.FileProvider
 import com.lukr99.workout.domain.run.Pace
 import com.lukr99.workout.domain.run.Run
+import com.lukr99.workout.domain.run.RunTrace
 import java.io.File
 import kotlin.math.cos
 import kotlinx.coroutines.Dispatchers
@@ -80,11 +81,17 @@ class ShareCardRenderer(
         val offX = MARGIN + (area - drawW) / 2f
         val offY = top + (area * 0.72f - drawH) / 2f
 
+        // Break the drawn line at manual-pause boundaries (moveTo, not lineTo) so a paused-and-walked
+        // stretch shows as a gap — the same projection is shared so every segment lines up.
         val path = Path()
-        xy.forEachIndexed { i, (x, y) ->
-            val px = offX + ((x - minX) * scale).toFloat()
-            val py = offY + drawH - ((y - minY) * scale).toFloat() // flip Y
-            if (i == 0) path.moveTo(px, py) else path.lineTo(px, py)
+        RunTrace.segments(run.trace).forEach { segment ->
+            segment.forEachIndexed { i, tp ->
+                val x = (tp.lon - pts[0].second) * mPerLon
+                val y = (tp.lat - pts[0].first) * 110_540.0
+                val px = offX + ((x - minX) * scale).toFloat()
+                val py = offY + drawH - ((y - minY) * scale).toFloat() // flip Y
+                if (i == 0) path.moveTo(px, py) else path.lineTo(px, py)
+            }
         }
         val line = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = EMBER

@@ -78,6 +78,46 @@ class RunTrackerTest {
     }
 
     @Test
+    fun manualPauseThenWalkThenResumeNeitherConnectsNorCountsTheGap() {
+        val t = RunTracker()
+        t.start(base)
+        var lat = 50.0
+        val lon = 14.0
+        // Run 500 m (a fix every 100 m / 30 s).
+        t.onSample(RunSample(base, lat, lon, accuracyM = 5.0, speedMps = 3.0))
+        for (i in 1..5) {
+            lat = north(lat, 100.0)
+            t.onSample(RunSample(base + i * 30_000L, lat, lon, accuracyM = 5.0, speedMps = 3.0))
+        }
+        assertEquals(500.0, t.snapshot().distanceMeters, 2.0)
+
+        // Manually pause, then walk 300 m during the pause. A fix arriving while paused must not record.
+        t.pause(base + 150_000)
+        assertFalse(t.onSample(RunSample(base + 200_000, north(lat, 150.0), lon, accuracyM = 5.0, speedMps = 1.0)))
+        val walkedTo = north(lat, 300.0)
+        t.resume(base + 300_000)
+
+        // First fix after resume anchors a fresh segment at the walked-to point — the 300 m gap is
+        // dropped from the distance and the trace breaks rather than drawing across it.
+        assertTrue(t.onSample(RunSample(base + 300_000, walkedTo, lon, accuracyM = 5.0, speedMps = 3.0)))
+        assertEquals(500.0, t.snapshot().distanceMeters, 2.0)
+
+        // Keep running 200 m in the new segment.
+        var lat2 = walkedTo
+        for (i in 1..2) {
+            lat2 = north(lat2, 100.0)
+            t.onSample(RunSample(base + 300_000 + i * 30_000L, lat2, lon, accuracyM = 5.0, speedMps = 3.0))
+        }
+        assertEquals(700.0, t.snapshot().distanceMeters, 3.0) // 500 + 200, the walked 300 m excluded
+
+        val trace = t.trace()
+        assertEquals(1, trace.count { it.segmentStart })     // exactly one break
+        assertFalse(trace.first().segmentStart)              // never the very first point
+        assertEquals(2, RunTrace.segments(trace).size)       // drawn as two disconnected lines
+        assertEquals(700.0, Pace.traceDistanceMeters(trace), 3.0) // break-aware distance agrees
+    }
+
+    @Test
     fun autoPauseStopsMovingButNotElapsed() {
         val t = RunTracker(RunTracker.Config(autoPauseEnterMps = 0.6, autoPauseExitMps = 0.9))
         t.start(base)

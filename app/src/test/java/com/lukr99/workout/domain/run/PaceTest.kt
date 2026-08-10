@@ -46,6 +46,18 @@ class PaceTest {
     }
 
     @Test
+    fun traceDistance_skipsPausedGapAtSegmentBreak() {
+        // 1 km, then the runner paused and walked 5 km before resuming (marked as a new segment), then
+        // 1 km more. The 5 km walked gap must not count and the trace splits into two segments.
+        val segA = straightTrace(totalM = 1000.0, stepM = 500.0, speedMps = 10.0 / 3.0)
+        val resume = TracePoint(t = 1_000_000L, lat = 0.0, lon = lonForMeters(6000.0), segmentStart = true)
+        val segB = (1..2).map { TracePoint(t = 1_000_000L + it * 1000L, lat = 0.0, lon = lonForMeters(6000.0 + it * 500.0)) }
+        val trace = segA + resume + segB
+        assertEquals(2000.0, Pace.traceDistanceMeters(trace), 1.0) // 1000 + 1000, the 5 km gap excluded
+        assertEquals(2, RunTrace.segments(trace).size)
+    }
+
+    @Test
     fun splits_exactMultipleHasNoRemainder() {
         // 3 km at 5:00/km (3.333 m/s) → three full 1 km splits of 300 s each.
         val trace = straightTrace(totalM = 3000.0, stepM = 500.0, speedMps = 10.0 / 3.0)

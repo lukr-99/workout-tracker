@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.MyLocation
+import androidx.compose.material.icons.rounded.Navigation
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -35,6 +36,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -55,6 +58,7 @@ import com.lukr99.workout.domain.run.LiveRunState
 import com.lukr99.workout.domain.run.Pace
 import com.lukr99.workout.domain.run.RouteDeviation
 import com.lukr99.workout.domain.run.RunStats
+import com.lukr99.workout.domain.run.RunTrace
 import com.lukr99.workout.domain.run.RunTracker
 import com.lukr99.workout.domain.run.SplitCue
 import com.lukr99.workout.settings.UnitSystem
@@ -92,6 +96,10 @@ fun LiveRunScreen(
 
     var locationGranted by remember { mutableStateOf(hasFineLocation()) }
     var recenterSignal by remember { mutableIntStateOf(0) }
+    var compassSignal by remember { mutableIntStateOf(0) }
+    // Default matches the map's initial follow mode (locked to heading). The compass button flips it.
+    var headingFollow by remember { mutableStateOf(true) }
+    var mapBearing by remember { mutableFloatStateOf(0f) }
     var countdown by remember { mutableStateOf<Int?>(null) }
     var confirmingFinish by remember { mutableStateOf(false) }
     var finishSummary by remember { mutableStateOf<RunStats.RunSummary?>(null) }
@@ -166,13 +174,16 @@ fun LiveRunScreen(
         RunMap(
             userLocationEnabled = locationGranted,
             recenterSignal = recenterSignal,
-            tracePoints = trace.map { it.lat to it.lon },
+            compassSignal = compassSignal,
+            headingFollow = headingFollow,
+            traceSegments = RunTrace.segments(trace).map { seg -> seg.map { it.lat to it.lon } },
             traceColor = emberColor.toArgb(),
             plannedRoute = planned,
+            onBearingChanged = { mapBearing = it },
             modifier = Modifier.fillMaxSize(),
         )
 
-        CircleIconButton(Icons.Rounded.Close, "Close", Modifier.align(Alignment.TopStart).padding(12.dp), onClose)
+        CircleIconButton(Icons.Rounded.Close, "Close", Modifier.align(Alignment.TopStart).padding(12.dp)) { onClose() }
 
         // Live metrics panel (top) once recording.
         if (!idle) {
@@ -192,7 +203,23 @@ fun LiveRunScreen(
         ) {
             MusicMiniControls()
             if (locationGranted) {
-                CircleIconButton(Icons.Rounded.MyLocation, "Recenter", Modifier) { recenterSignal++ }
+                // Compass toggle: one tap locks the map to the phone's heading (road ahead up), the
+                // next taps back to north-up. Ember tint means it's currently locked to your heading;
+                // the needle always points to true north. Grouped with recenter/music, off the stats.
+                CircleIconButton(
+                    Icons.Rounded.Navigation,
+                    if (headingFollow) "Face north" else "Lock to heading",
+                    Modifier,
+                    iconRotation = -mapBearing,
+                    tint = if (headingFollow) emberColor else MaterialTheme.colorScheme.onSurface,
+                ) {
+                    headingFollow = !headingFollow
+                    compassSignal++
+                }
+                CircleIconButton(Icons.Rounded.MyLocation, "Recenter", Modifier) {
+                    headingFollow = true
+                    recenterSignal++
+                }
             }
         }
 
@@ -514,6 +541,8 @@ private fun CircleIconButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     contentDescription: String,
     modifier: Modifier,
+    iconRotation: Float = 0f,
+    tint: Color = MaterialTheme.colorScheme.onSurface,
     onClick: () -> Unit,
 ) {
     Box(
@@ -522,7 +551,12 @@ private fun CircleIconButton(
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, contentDescription, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(22.dp))
+        Icon(
+            icon,
+            contentDescription,
+            tint = tint,
+            modifier = Modifier.size(22.dp).rotate(iconRotation),
+        )
     }
 }
 

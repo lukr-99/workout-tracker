@@ -36,7 +36,7 @@ import com.lukr99.workout.data.run.RunPointEntity
         RouteEntity::class,
         RoutePointEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -51,7 +51,7 @@ abstract class WorkoutDb : RoomDatabase() {
 
         fun build(context: Context): WorkoutDb =
             Room.databaseBuilder(context.applicationContext, WorkoutDb::class.java, DB_NAME)
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                 .build()
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -107,6 +107,20 @@ abstract class WorkoutDb : RoomDatabase() {
                     "CREATE TABLE IF NOT EXISTS `route_points` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `routeId` TEXT NOT NULL, `seq` INTEGER NOT NULL, `lat` REAL NOT NULL, `lon` REAL NOT NULL, `elevationM` REAL, FOREIGN KEY(`routeId`) REFERENCES `routes`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
                 )
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_route_points_routeId` ON `route_points` (`routeId`)")
+            }
+        }
+
+        /**
+         * v6 — Run Mode segment breaks (additive, non-destructive): adds `run_points.segmentStart`, a
+         * flag marking the first point after a manual pause so a paused-and-walked stretch neither
+         * connects on the map nor counts toward distance. Existing points default to `0` (false), i.e.
+         * a single continuous segment — identical to their pre-v6 behaviour.
+         */
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE run_points ADD COLUMN segmentStart INTEGER NOT NULL DEFAULT 0",
+                )
             }
         }
     }

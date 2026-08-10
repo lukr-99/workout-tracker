@@ -46,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.lukr99.workout.domain.run.Pace
 import kotlinx.coroutines.launch
+import com.lukr99.workout.domain.run.RunTrace
 import com.lukr99.workout.domain.run.TracePoint
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.components.ChartPoint
@@ -100,7 +101,7 @@ fun RunDetailScreen(
         Box(Modifier.fillMaxWidth().height(280.dp)) {
             RunMap(
                 userLocationEnabled = false,
-                tracePoints = current.trace.map { it.lat to it.lon },
+                traceSegments = RunTrace.segments(current.trace).map { seg -> seg.map { it.lat to it.lon } },
                 traceColor = emberArgb,
                 fitTrace = true,
                 modifier = Modifier.fillMaxSize(),
@@ -283,7 +284,7 @@ private fun elevationChart(trace: List<TracePoint>): List<ChartPoint> {
     var cum = 0.0
     val series = ArrayList<Pair<Double, Double>>(withElev.size)
     for (i in withElev.indices) {
-        if (i > 0) {
+        if (i > 0 && !withElev[i].segmentStart) {
             cum += Pace.haversineMeters(
                 withElev[i - 1].lat, withElev[i - 1].lon, withElev[i].lat, withElev[i].lon,
             )

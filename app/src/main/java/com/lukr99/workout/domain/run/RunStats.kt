@@ -242,9 +242,14 @@ object RunStats {
         if (n < 2 || target <= 0) return null
         val cum = DoubleArray(n)
         for (i in 1 until n) {
-            cum[i] = cum[i - 1] + Pace.haversineMeters(
-                points[i - 1].lat, points[i - 1].lon, points[i].lat, points[i].lon,
-            )
+            // A leg into a segment start is a paused-and-walked gap — it adds no distance, so a
+            // best-effort window can't be padded by (or straddle) a pause.
+            val leg = if (points[i].segmentStart) {
+                0.0
+            } else {
+                Pace.haversineMeters(points[i - 1].lat, points[i - 1].lon, points[i].lat, points[i].lon)
+            }
+            cum[i] = cum[i - 1] + leg
         }
         if (cum[n - 1] < target) return null
 

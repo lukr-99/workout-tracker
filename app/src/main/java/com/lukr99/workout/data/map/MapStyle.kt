@@ -17,6 +17,10 @@ object MapStyle {
     /** Keyless dark vector style (Protomaps/PMTiles-backed via OpenFreeMap). */
     const val DARK_VECTOR_STYLE_URL: String = "https://tiles.openfreemap.org/styles/dark"
 
-    /** Default camera zoom when we first center on the runner. */
-    const val FOLLOW_ZOOM: Double = 15.5
+    /**
+     * Camera zoom while following the runner. Deliberately close (street-level) so the road and the
+     * ember trace right around you are legible mid-run — the common ask is "let me see the path I'm
+     * actually on", not the whole city. Pinch still overrides it; the recenter button restores it.
+     */
+    const val FOLLOW_ZOOM: Double = 16.8
 }

@@ -52,6 +52,13 @@ class RunTracker(private val config: Config = Config()) {
     private var lastClockMs = 0L
     private var lastAccepted: TracePoint? = null
 
+    /**
+     * Armed by a manual [resume] so the next accepted fix anchors a **fresh segment**: the distance
+     * walked during the pause is dropped and the map trace breaks instead of drawing a line across the
+     * gap. Cleared once that anchor point is laid down.
+     */
+    private var pendingSegmentBreak = false
+
     /** Begin recording at wall-clock [nowMs]. Resets all state. */
     fun start(nowMs: Long) {
         startedAtUtc = nowMs
@@ -63,6 +70,7 @@ class RunTracker(private val config: Config = Config()) {
         autoPaused = false
         lastClockMs = nowMs
         lastAccepted = null
+        pendingSegmentBreak = false
     }
 
     /**
@@ -89,6 +97,7 @@ class RunTracker(private val config: Config = Config()) {
         tick(sample.timeMs)
 
         val prev = lastAccepted
+        val breakHere = pendingSegmentBreak
         val t = sample.timeMs - startedAtUtc
         val point = TracePoint(
             t = t,
@@ -97,14 +106,18 @@ class RunTracker(private val config: Config = Config()) {
             elevationM = sample.elevationM,
             speedMps = sample.speedMps,
             accuracyM = sample.accuracyM,
+            segmentStart = breakHere,
         )
 
-        // The first fix always anchors the run (so a run always has a start point + the map centres),
-        // even if the only fix available is a coarse network one. The accuracy gate then rejects
-        // poor *subsequent* fixes so GPS jitter can't inflate the distance/trace.
-        if (prev == null) {
+        // Anchor a new segment without growing the distance when this is the very first fix (so a run
+        // always has a start point + the map centres, even from a coarse network fix) or the first fix
+        // after a manual pause. In the resume case the pre-pause → post-resume displacement is
+        // deliberately dropped: a walked pause must neither join the drawn path nor add to the total.
+        // The accuracy gate below still rejects poor *mid-segment* fixes so GPS jitter can't inflate it.
+        if (prev == null || breakHere) {
             points += point
             lastAccepted = point
+            pendingSegmentBreak = false
             return true
         }
 
@@ -145,11 +158,17 @@ class RunTracker(private val config: Config = Config()) {
         if (phase == Phase.Recording) phase = Phase.Paused
     }
 
-    /** Resume from a manual pause; the paused gap is not counted. */
+    /**
+     * Resume from a manual pause. The paused stretch counts toward neither time nor distance, and the
+     * trace **breaks**: the next accepted fix starts a fresh segment (see [pendingSegmentBreak]) so
+     * walking somewhere during the pause never draws a line across the gap or inflates the kilometres.
+     */
     fun resume(nowMs: Long) {
         if (phase == Phase.Paused) {
             phase = Phase.Recording
             lastClockMs = nowMs
+            pendingSegmentBreak = true
+            autoPaused = false
         }
     }
 

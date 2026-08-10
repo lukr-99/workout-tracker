@@ -31,6 +31,7 @@ import org.maplibre.android.style.sources.GeoJsonSource
 import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.LineString
+import org.maplibre.geojson.MultiLineString
 import org.maplibre.geojson.Point
 
 /**
@@ -39,11 +40,13 @@ import org.maplibre.geojson.Point
  * tile source ([MapStyle]) can be swapped without touching UI code.
  *
  * Renders the dark vector basemap, the user's location (blue dot, follows while granted), and the
- * **growing ember trace polyline** ([tracePoints]) for a live or completed run.
+ * **growing ember trace polyline** ([traceSegments], one line per pause-separated segment) for a
+ * live or completed run.
  *
  * @param userLocationEnabled true once `ACCESS_FINE_LOCATION` is granted — gates the location layer.
- * @param recenterSignal increment to snap the camera back to a location-tracking follow mode.
- * @param tracePoints ordered `(lat, lon)` of the run trace; drawn as an ember line that grows live.
+ * @param recenterSignal increment to snap the camera back to the heading-follow mode + close zoom.
+ * @param traceSegments the run trace split into continuous segments (`(lat, lon)` each); drawn as an
+ *   ember line per segment so a manual pause breaks the line instead of joining across the gap.
  * @param traceColor ARGB colour for the trace line (the theme's ember by default).
  */
 @Composable
@@ -52,12 +55,15 @@ fun RunMap(
     modifier: Modifier = Modifier,
     styleUrl: String = MapStyle.DARK_VECTOR_STYLE_URL,
     recenterSignal: Int = 0,
-    tracePoints: List<Pair<Double, Double>> = emptyList(),
+    compassSignal: Int = 0,
+    headingFollow: Boolean = true,
+    traceSegments: List<List<Pair<Double, Double>>> = emptyList(),
     traceColor: Int = DEFAULT_EMBER,
     fitTrace: Boolean = false,
     waypoints: List<Pair<Double, Double>> = emptyList(),
     plannedRoute: List<Pair<Double, Double>> = emptyList(),
     onMapTap: ((Double, Double) -> Unit)? = null,
+    onBearingChanged: (Float) -> Unit = {},
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -65,6 +71,7 @@ fun RunMap(
     // Holds the async-created map/style so effects can act on them once ready.
     val holder = remember { MapHolder(traceColor, fitTrace) }
     holder.onTap = onMapTap
+    holder.onBearing = onBearingChanged
 
     val mapView = remember {
         MapLibre.getInstance(context)
@@ -72,6 +79,12 @@ fun RunMap(
             onCreate(null)
             getMapAsync { map ->
                 holder.map = map
+                // We draw our own compass button in the run controls (grouped with recenter/music),
+                // so hide MapLibre's built-in overlay — it otherwise sits under the live stats panel.
+                map.uiSettings.isCompassEnabled = false
+                map.addOnCameraMoveListener {
+                    holder.onBearing?.invoke(map.cameraPosition.bearing.toFloat())
+                }
                 map.addOnMapClickListener { latLng ->
                     holder.onTap?.invoke(latLng.latitude, latLng.longitude)
                     holder.onTap != null
@@ -108,9 +121,9 @@ fun RunMap(
         if (userLocationEnabled) holder.enableLocation(context)
     }
 
-    // Redraw the trace polyline as it grows.
-    LaunchedEffect(tracePoints) {
-        holder.updateTrace(tracePoints)
+    // Redraw the trace polyline as it grows (one line per continuous segment).
+    LaunchedEffect(traceSegments) {
+        holder.updateTrace(traceSegments)
     }
 
     // Redraw planner waypoint markers.
@@ -123,9 +136,14 @@ fun RunMap(
         holder.updatePlanned(plannedRoute)
     }
 
-    // Recenter/follow when asked.
+    // Recenter (re-center on the runner + close zoom), respecting the current north-up/heading choice.
     LaunchedEffect(recenterSignal) {
-        if (recenterSignal > 0) holder.recenter()
+        if (recenterSignal > 0) holder.applyFollow(headingFollow, zoom = true)
+    }
+
+    // Compass toggle: flip between north-up and locking the map to the phone's heading, no re-zoom.
+    LaunchedEffect(compassSignal) {
+        if (compassSignal > 0) holder.applyFollow(headingFollow, zoom = false)
     }
 
     AndroidView(factory = { mapView }, modifier = modifier)
@@ -136,8 +154,9 @@ private class MapHolder(private val traceColor: Int, private val fitTrace: Boole
     var map: MapLibreMap? = null
     var style: Style? = null
     var onTap: ((Double, Double) -> Unit)? = null
+    var onBearing: ((Float) -> Unit)? = null
     private var locationActive = false
-    private var pendingTrace: List<Pair<Double, Double>> = emptyList()
+    private var pendingTrace: List<List<Pair<Double, Double>>> = emptyList()
     private var pendingWaypoints: List<Pair<Double, Double>> = emptyList()
     private var pendingPlanned: List<Pair<Double, Double>> = emptyList()
 
@@ -215,7 +234,10 @@ private class MapHolder(private val traceColor: Int, private val fitTrace: Boole
             locationActive = true
         }
         component.isLocationComponentEnabled = true
-        component.cameraMode = CameraMode.TRACKING
+        // Follow the runner *and* rotate the map to the direction they're facing (heading up), so the
+        // road ahead is always at the top — the "follow where I'm facing" ask. COMPASS render keeps the
+        // location puck's heading arrow. A pinch/rotate gesture disengages this; recenter re-arms it.
+        component.cameraMode = CameraMode.TRACKING_COMPASS
         component.renderMode = RenderMode.COMPASS
         component.lastKnownLocation?.let {
             map.moveCamera(
@@ -224,16 +246,20 @@ private class MapHolder(private val traceColor: Int, private val fitTrace: Boole
         }
     }
 
-    fun updateTrace(points: List<Pair<Double, Double>>) {
-        pendingTrace = points
+    fun updateTrace(segments: List<List<Pair<Double, Double>>>) {
+        pendingTrace = segments
         val source = style?.getSourceAs<GeoJsonSource>(TRACE_SOURCE) ?: return
-        if (points.size < 2) {
+        // One LineString per continuous segment; a manual pause splits the trace so the paused-and-
+        // walked stretch reads as a gap rather than a straight line joining the two ends.
+        val lines = segments
+            .filter { it.size >= 2 }
+            .map { seg -> LineString.fromLngLats(seg.map { Point.fromLngLat(it.second, it.first) }) }
+        if (lines.isEmpty()) {
             source.setGeoJson(FeatureCollectionEmpty)
             return
         }
-        val line = LineString.fromLngLats(points.map { Point.fromLngLat(it.second, it.first) })
-        source.setGeoJson(Feature.fromGeometry(line))
-        if (fitTrace) fitCameraTo(points)
+        source.setGeoJson(Feature.fromGeometry(MultiLineString.fromLineStrings(lines)))
+        if (fitTrace) fitCameraTo(segments.flatten())
     }
 
     /** Frame the whole trace (run detail): fit the camera to the polyline's bounds with padding. */
@@ -246,11 +272,22 @@ private class MapHolder(private val traceColor: Int, private val fitTrace: Boole
         }
     }
 
-    fun recenter() {
-        val component = map?.locationComponent ?: return
+    /**
+     * Set how the camera follows the runner. [follow] `true` locks the map to the phone's heading
+     * (rotates so the road ahead is up); `false` keeps it north-up. [zoom] `true` also snaps to the
+     * close follow zoom (used by the recenter button; the compass toggle leaves zoom alone).
+     */
+    fun applyFollow(follow: Boolean, zoom: Boolean) {
+        val map = map ?: return
+        val component = map.locationComponent
         if (!locationActive) return
-        component.cameraMode = CameraMode.TRACKING
-        component.zoomWhileTracking(MapStyle.FOLLOW_ZOOM)
+        if (follow) {
+            component.cameraMode = CameraMode.TRACKING_COMPASS
+        } else {
+            component.cameraMode = CameraMode.TRACKING
+            map.animateCamera(CameraUpdateFactory.bearingTo(0.0))
+        }
+        if (zoom) component.zoomWhileTracking(MapStyle.FOLLOW_ZOOM)
     }
 
     companion object {

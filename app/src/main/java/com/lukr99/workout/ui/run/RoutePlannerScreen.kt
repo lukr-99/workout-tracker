@@ -61,7 +61,7 @@ fun RoutePlannerScreen(
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         RunMap(
             userLocationEnabled = true,
-            tracePoints = snapped?.points?.map { it.lat to it.lon } ?: emptyList(),
+            traceSegments = snapped?.points?.map { it.lat to it.lon }?.let { listOf(it) } ?: emptyList(),
             traceColor = ember,
             waypoints = waypoints.map { it.lat to it.lon },
             onMapTap = { lat, lon -> vm.addWaypoint(lat, lon) },

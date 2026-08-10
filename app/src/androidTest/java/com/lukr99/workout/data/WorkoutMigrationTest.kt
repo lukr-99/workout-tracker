@@ -210,6 +210,65 @@ class WorkoutMigrationTest {
         }
     }
 
+    @Test
+    fun migratesSchemaFiveToSixAddingRunPointSegmentBreakColumn() {
+        // A v5 database with a run and one trace point (pre-segment-break schema).
+        helper.createDatabase(DatabaseName, 5).apply {
+            execSQL(
+                """
+                INSERT INTO runs (
+                    id, sessionId, startedAtUtc, durationSeconds, movingSeconds, distanceMeters,
+                    avgPaceSecPerKm, elevationGainM, calories, avgHr, source, externalKey,
+                    encodedPolyline, routeId, notes
+                ) VALUES ('r1', NULL, 1000, 600, 590, 2000.0, 300.0, 12.0, NULL, NULL, 0, NULL, 'abc', NULL, '')
+                """.trimIndent(),
+            )
+            execSQL(
+                "INSERT INTO run_points (runId, t, lat, lon, elevationM, speedMps, hrBpm, accuracyM) " +
+                    "VALUES ('r1', 0, 50.0, 14.0, 200.0, 3.3, 150, 5.0)",
+            )
+            close()
+        }
+
+        // Validate the migrated schema against the checked-in 6.json (schema identity).
+        helper.runMigrationsAndValidate(DatabaseName, 6, true, WorkoutDb.MIGRATION_5_6)
+
+        val database = Room.databaseBuilder(
+            ApplicationProvider.getApplicationContext(),
+            WorkoutDb::class.java,
+            DatabaseName,
+        ).addMigrations(
+            WorkoutDb.MIGRATION_1_2,
+            WorkoutDb.MIGRATION_2_3,
+            WorkoutDb.MIGRATION_3_4,
+            WorkoutDb.MIGRATION_4_5,
+            WorkoutDb.MIGRATION_5_6,
+        )
+            .allowMainThreadQueries()
+            .build()
+        try {
+            val support = database.openHelper.writableDatabase
+            // The pre-existing point survives and defaults to segmentStart = 0 (a connected point).
+            support.query("SELECT segmentStart FROM run_points WHERE runId = 'r1'").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+            }
+            // A new point can carry the break flag (1 = starts a fresh segment after a manual pause).
+            support.execSQL(
+                "INSERT INTO run_points (runId, t, lat, lon, elevationM, speedMps, hrBpm, accuracyM, segmentStart) " +
+                    "VALUES ('r1', 1000, 50.01, 14.0, NULL, 3.3, NULL, 5.0, 1)",
+            )
+            support.query(
+                "SELECT COUNT(*) FROM run_points WHERE runId = 'r1' AND segmentStart = 1",
+            ).use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(1, cursor.getInt(0))
+            }
+        } finally {
+            database.close()
+        }
+    }
+
     private companion object {
         const val DatabaseName = "exercise-images-migration-test"
     }

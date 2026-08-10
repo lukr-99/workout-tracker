@@ -135,12 +135,12 @@ private fun Run.toEntity() = RunEntity(
 
 private fun RunPointEntity.toDomain() = TracePoint(
     t = t, lat = lat, lon = lon, elevationM = elevationM,
-    speedMps = speedMps, hrBpm = hrBpm, accuracyM = accuracyM,
+    speedMps = speedMps, hrBpm = hrBpm, accuracyM = accuracyM, segmentStart = segmentStart,
 )
 
 private fun TracePoint.toEntity(runId: String) = RunPointEntity(
     runId = runId, t = t, lat = lat, lon = lon, elevationM = elevationM,
-    speedMps = speedMps, hrBpm = hrBpm, accuracyM = accuracyM,
+    speedMps = speedMps, hrBpm = hrBpm, accuracyM = accuracyM, segmentStart = segmentStart,
 )
 
 private fun RouteEntity.toDomain(points: List<RoutePoint> = emptyList()) = Route(

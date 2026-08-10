@@ -12,6 +12,10 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <!-- A partial wake lock keeps the CPU alive while a run records so GPS fixes and the 1 Hz clock
+         keep arriving with the screen off / device dozing (see LocationService). Held only for the
+         duration of an active run, released the moment it finishes. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <uses-permission android:name="android.permission.health.READ_EXERCISE" />
     <uses-permission android:name="android.permission.health.WRITE_EXERCISE" />

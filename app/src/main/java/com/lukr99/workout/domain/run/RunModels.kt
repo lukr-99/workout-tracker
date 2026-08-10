@@ -31,6 +31,14 @@ data class TracePoint(
     val speedMps: Double? = null,
     val hrBpm: Int? = null,
     val accuracyM: Double? = null,
+    /**
+     * True when this point **begins a new trace segment** — a manual pause (e.g. walking around an
+     * obstacle) separates it from the previous point. The leg *into* a segment start is never drawn as
+     * a connecting line nor counted toward distance, so a paused walk neither joins the route on the
+     * map nor inflates the kilometres. Defaults false (a normal, connected point), keeping the
+     * `@Serializable` wire/export shape backward-compatible.
+     */
+    val segmentStart: Boolean = false,
 )
 
 /** A single km/mi split with the pace held over it. Derived by [Pace.splits] — never persisted raw. */

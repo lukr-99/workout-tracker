@@ -31,10 +31,14 @@ object Pace {
         return EARTH_RADIUS_M * 2 * atan2(sqrt(a), sqrt(1 - a))
     }
 
-    /** Total path length of a trace, in metres. */
+    /**
+     * Total path length of a trace, in metres. A leg *into* a [TracePoint.segmentStart] point is a
+     * paused-and-walked gap, so it contributes nothing — the distance stays continuous across breaks.
+     */
     fun traceDistanceMeters(points: List<TracePoint>): Double {
         var total = 0.0
         for (i in 1 until points.size) {
+            if (points[i].segmentStart) continue
             total += haversineMeters(
                 points[i - 1].lat, points[i - 1].lon, points[i].lat, points[i].lon,
             )
@@ -108,7 +112,8 @@ object Pace {
         for (i in 1 until points.size) {
             val a = points[i - 1]
             val b = points[i]
-            val seg = haversineMeters(a.lat, a.lon, b.lat, b.lon)
+            // A leg into a segment start is a paused-and-walked gap: no distance, no split time.
+            val seg = if (b.segmentStart) 0.0 else haversineMeters(a.lat, a.lon, b.lat, b.lon)
             if (seg <= 0.0) continue
             val segStart = cumDist
             val segEnd = cumDist + seg
