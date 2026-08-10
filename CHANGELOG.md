@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 
 The format is inspired by Keep a Changelog, and this project currently uses simple semantic app versions for local releases.
 
+## [2.2.0] - 2026-08-10
+
+Run Mode reliability & map pass. First `2.x` entry recorded here; the `2.0`–`2.1` native-rewrite line
+(Run Mode R0–R5) landed ahead of this changelog and is documented under `docs/run-mode/`.
+
+### Fixed
+
+- **Background & locked-screen tracking**: a partial wake lock now keeps the CPU awake for the duration of
+  a run, so GPS fixes and the live clock keep flowing while the app is backgrounded or the phone is locked
+  — instead of arriving in sparse bursts that showed up as skipped, straight-line paths.
+- **Paused-and-walked segments no longer connect or count**: pausing, walking somewhere (traffic, a
+  crossing), then resuming no longer joins the two ends on the map or adds the walked distance to your
+  total. The trace breaks at each manual resume; distance, splits, and personal-record windows all skip
+  the gap. Persisted via a new `run_points.segmentStart` flag (DB schema **v6**, additive migration).
+- **Runs & routes are now in backups and exports**: the JSON export and the automatic backup only ever
+  wrote strength data — runs and saved routes were silently omitted, so a restore couldn't bring them
+  back. Both directions now round-trip Run Mode data (runs with their full traces, including pause
+  breaks, plus saved routes). Existing backups made before this fix do **not** contain runs.
+
+### Changed
+
+- **Live map view**: the camera follows your heading (rotates so the road ahead is up) at a closer,
+  street-level zoom, so the route you're on is legible mid-run. The recenter button re-arms both.
+- **Live-run compass**: moved out from under the stats panel into the right-edge control group (next to
+  the recenter and music buttons), and made a toggle — one tap locks the map to the phone's heading
+  (road ahead up), the next returns it to north-up. The needle always points to true north; an ember
+  tint means it's currently locked to your heading.
+
 ## [1.0.0] - 2026-07-25
 
 ### Milestone
