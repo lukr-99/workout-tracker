@@ -4,6 +4,8 @@ import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.domain.query.WorkoutQuery
+import com.lukr99.workout.domain.run.Route
+import com.lukr99.workout.domain.run.Run
 import java.time.ZoneId
 
 enum class DataFormat(
@@ -41,6 +43,8 @@ data class JsonExportOptions(
     val includeTemplates: Boolean = true,
     val includeUnreferencedExercises: Boolean = true,
     val includeDiscardedSessions: Boolean = false,
+    /** Include Run Mode data (runs with traces + saved routes) in the bundle. */
+    val includeRuns: Boolean = true,
     val fileName: String = "workout-backup.json",
 )
 
@@ -130,6 +134,10 @@ data class ImportPlan(
     val exercises: List<PlannedExercise> = emptyList(),
     val templates: List<PlannedTemplate> = emptyList(),
     val sessions: List<PlannedSession> = emptyList(),
+    /** Runs to insert (those whose id isn't already present); restored as-is with their traces. */
+    val runs: List<Run> = emptyList(),
+    /** Saved routes to insert (those whose id isn't already present). */
+    val routes: List<Route> = emptyList(),
     val issues: List<TransferIssue> = emptyList(),
     val sourceLabel: String? = null,
 )
@@ -152,6 +160,8 @@ data class ImportSummary(
     val matchedExercises: Int = 0,
     val templates: Int = 0,
     val setCount: Int = 0,
+    val insertedRuns: Int = 0,
+    val insertedRoutes: Int = 0,
     val dateFromUtc: Long? = null,
     val dateToUtc: Long? = null,
     val metadata: Map<String, String> = emptyMap(),
@@ -166,6 +176,8 @@ data class ImportCommitResult(
     val insertedSessions: Int,
     val changedSessions: Int,
     val skippedSessions: Int,
+    val insertedRuns: Int = 0,
+    val insertedRoutes: Int = 0,
     val issues: List<TransferIssue>,
 )
 
@@ -182,6 +194,8 @@ data class ImportedPayload(
     val exercises: List<Exercise> = emptyList(),
     val templates: List<WorkoutTemplate> = emptyList(),
     val sessions: List<WorkoutSession> = emptyList(),
+    val runs: List<Run> = emptyList(),
+    val routes: List<Route> = emptyList(),
     val issues: List<TransferIssue> = emptyList(),
     val sourceRows: Int = 0,
     val sourceLabel: String? = null,
@@ -192,6 +206,9 @@ data class ImportContext(
     val exercises: List<Exercise>,
     val templates: List<WorkoutTemplate>,
     val sessions: List<WorkoutSession>,
+    /** Ids of runs/routes already in the store, so a restore only inserts the ones that are missing. */
+    val existingRunIds: Set<String> = emptySet(),
+    val existingRouteIds: Set<String> = emptySet(),
 )
 
 interface TextDataImporter {

@@ -6,6 +6,9 @@ import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutSessionStatus
+import com.lukr99.workout.domain.run.Route
+import com.lukr99.workout.domain.run.Run
+import com.lukr99.workout.domain.run.TracePoint
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
@@ -50,6 +53,42 @@ class ImportPlannerTest {
             planned.value.entries.single().strengthSets.single().id,
         )
         assertEquals(planned.value.id, planned.value.entries.single().workoutSessionId)
+    }
+
+    @Test
+    fun runsAndRoutes_insertOnlyTheOnesNotAlreadyPresent() {
+        val preview = ImportPlanner.plan(
+            ImportedPayload(
+                DataFormat.WorkoutJson,
+                runs = listOf(
+                    Run(id = "r-existing", distanceMeters = 1000.0),
+                    Run(
+                        id = "r-new",
+                        distanceMeters = 2000.0,
+                        trace = listOf(TracePoint(0, 50.0, 14.0), TracePoint(1000, 50.01, 14.0)),
+                    ),
+                ),
+                routes = listOf(
+                    Route(id = "route-existing", name = "Home loop"),
+                    Route(id = "route-new", name = "River"),
+                ),
+            ),
+            ImportContext(
+                exercises = emptyList(),
+                templates = emptyList(),
+                sessions = emptyList(),
+                existingRunIds = setOf("r-existing"),
+                existingRouteIds = setOf("route-existing"),
+            ),
+            ImportOptions(),
+        )
+
+        assertEquals(listOf("r-new"), preview.plan.runs.map { it.id })
+        assertEquals(listOf("route-new"), preview.plan.routes.map { it.id })
+        assertEquals(1, preview.summary.insertedRuns)
+        assertEquals(1, preview.summary.insertedRoutes)
+        // The restored run keeps its full trace so the map redraws after a restore.
+        assertEquals(2, preview.plan.runs.single().trace.size)
     }
 
     private fun session(id: String, exerciseId: String): WorkoutSession {

@@ -126,6 +126,13 @@ fun DataTransferScreen(
                             "${preview.summary.skippedSessions} duplicates",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    if (preview.summary.insertedRuns > 0 || preview.summary.insertedRoutes > 0) {
+                        Text(
+                            "${preview.summary.insertedRuns} runs · " +
+                                "${preview.summary.insertedRoutes} routes",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     preview.plan.issues.take(8).forEach { issue ->
                         Text(
                             "• ${issue.message}",
@@ -147,8 +154,13 @@ fun DataTransferScreen(
             }
         }
         state.commitResult?.let { result ->
+            val runsNote = if (result.insertedRuns > 0 || result.insertedRoutes > 0) {
+                " · ${result.insertedRuns} runs · ${result.insertedRoutes} routes"
+            } else {
+                ""
+            }
             Text(
-                "Imported ${result.insertedSessions} sessions; " +
+                "Imported ${result.insertedSessions} sessions$runsNote; " +
                     "${result.skippedSessions} duplicates skipped.",
                 color = MaterialTheme.colorScheme.primary,
             )

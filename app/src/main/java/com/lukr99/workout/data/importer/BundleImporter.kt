@@ -93,6 +93,8 @@ internal object BundleTextImporter : TextDataImporter {
             exercises = bundle.exercises,
             templates = bundle.templates,
             sessions = bundle.sessions,
+            runs = bundle.runs,
+            routes = bundle.routes,
             sourceLabel = sourceLabel,
             metadata = mapOf("exportFormatVersion" to bundle.exportFormatVersion),
         )

@@ -6,6 +6,7 @@ import com.lukr99.workout.data.export.ExportBundle
 import com.lukr99.workout.data.export.JsonExporter
 import com.lukr99.workout.data.importer.BundleTextImporter
 import com.lukr99.workout.data.importer.LyftaCsvImporter
+import com.lukr99.workout.data.run.RunRepository
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutTemplate
@@ -14,9 +15,14 @@ import com.lukr99.workout.domain.query.WorkoutQueryEngine
 /**
  * High-level Phase 3 API: detect -> parse -> preview -> plan -> atomic commit, plus selective
  * JSON/CSV exports. UI, command-line tools, and future sync adapters can all use the same service.
+ *
+ * Owns both the strength [repository] and the Run Mode [runRepository] so a bundle is the *whole*
+ * store — exports carry runs + routes (with traces), and a restore puts them back. (This is the seam
+ * the automatic backup writes through, so backups include runs too.)
  */
 class DataTransferService(
     private val repository: WorkoutRepository,
+    private val runRepository: RunRepository,
     importers: Iterable<TextDataImporter> = listOf(BundleTextImporter, LyftaCsvImporter),
 ) {
     private val importers = importers.toList()
@@ -32,6 +38,8 @@ class DataTransferService(
             ),
             templates = repository.getTemplates(),
             sessions = repository.getSessions(includeDiscarded = true),
+            existingRunIds = runRepository.getRuns().mapTo(mutableSetOf()) { it.id },
+            existingRouteIds = runRepository.getRoutes().mapTo(mutableSetOf()) { it.id },
         )
         val candidates = options.formatHint?.let { hint ->
             importers.filter { it.format == hint }
@@ -115,6 +123,12 @@ class DataTransferService(
                 }
             }
         }
+
+        // Runs/routes live in their own tables (RunRepository); restore them after the strength commit.
+        // Routes first so a run's routeId reference resolves to an already-present route.
+        preview.plan.routes.forEach { runRepository.saveRoute(it) }
+        preview.plan.runs.forEach { runRepository.saveRun(it) }
+
         return ImportCommitResult(
             format = preview.plan.format,
             insertedExercises = insertedExercises,
@@ -124,6 +138,8 @@ class DataTransferService(
             insertedSessions = insertedSessions,
             changedSessions = changedSessions,
             skippedSessions = skippedSessions,
+            insertedRuns = preview.plan.runs.size,
+            insertedRoutes = preview.plan.routes.size,
             issues = preview.plan.issues,
         )
     }
@@ -142,17 +158,23 @@ class DataTransferService(
             else -> allExercises.filter { it.id in referencedIds }
         }
         val templates = if (options.includeTemplates) repository.getTemplates() else emptyList()
+        // Run Mode data is part of the store: full runs (with traces) + saved routes go in the bundle,
+        // so both a manual export and the automatic backup capture them.
+        val runs = if (options.includeRuns) runRepository.exportRuns() else emptyList()
+        val routes = if (options.includeRuns) runRepository.exportRoutes() else emptyList()
         val bundle = ExportBundle(
             exercises = exercises,
             templates = templates,
             sessions = sessions.sortedByDescending(WorkoutSession::startedAtUtc),
+            runs = runs,
+            routes = routes,
         )
         return ExportArtifact(
             fileName = options.fileName.ensureExtension("json"),
             mimeType = DataFormat.WorkoutJson.mimeType,
             format = DataFormat.WorkoutJson,
             text = JsonExporter.toJson(bundle),
-            recordCount = sessions.size,
+            recordCount = sessions.size + runs.size,
         )
     }
 

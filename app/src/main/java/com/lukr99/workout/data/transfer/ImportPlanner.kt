@@ -22,6 +22,10 @@ internal object ImportPlanner {
         val templates = planTemplates(payload.templates, context.templates, options, exerciseRemap)
         val remappedSessions = payload.sessions.map { session -> session.remapExerciseIds(exerciseRemap) }
         val sessions = planSessions(remappedSessions, context.sessions, options)
+        // Runs/routes carry stable ids and no cross-references to remap, so a restore just inserts the
+        // ones not already present (idempotent) — keeping any run/route already on this device untouched.
+        val runs = payload.runs.filter { it.id !in context.existingRunIds }
+        val routes = payload.routes.filter { it.id !in context.existingRouteIds }
         val summary = ImportSummary(
             sourceRows = payload.sourceRows,
             parsedSessions = payload.sessions.size,
@@ -41,6 +45,8 @@ internal object ImportPlanner {
                 session.entries.sumOf { it.strengthSets.size } +
                     session.entries.count { it.cardioData != null }
             },
+            insertedRuns = runs.size,
+            insertedRoutes = routes.size,
             dateFromUtc = payload.sessions.minOfOrNull(WorkoutSession::startedAtUtc),
             dateToUtc = payload.sessions.maxOfOrNull(WorkoutSession::startedAtUtc),
             metadata = payload.metadata,
@@ -51,6 +57,8 @@ internal object ImportPlanner {
                 exercises = exercises,
                 templates = templates,
                 sessions = sessions,
+                runs = runs,
+                routes = routes,
                 issues = payload.issues,
                 sourceLabel = payload.sourceLabel,
             ),

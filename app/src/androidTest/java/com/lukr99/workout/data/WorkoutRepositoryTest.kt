@@ -7,8 +7,13 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.lukr99.workout.data.export.JsonExporter
+import com.lukr99.workout.data.run.RunRepository
 import com.lukr99.workout.data.transfer.DataTransferService
 import com.lukr99.workout.data.transfer.ImportOptions
+import com.lukr99.workout.domain.run.Route
+import com.lukr99.workout.domain.run.RoutePoint
+import com.lukr99.workout.domain.run.Run
+import com.lukr99.workout.domain.run.TracePoint
 import com.lukr99.workout.domain.CardioEntryData
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
@@ -334,9 +339,66 @@ class WorkoutRepositoryTest {
     }
 
     @Test
+    fun runsAndRoutes_surviveExportImportIntoFreshDatabase() = runTest {
+        val runRepo = RunRepository(db.runDao())
+        runRepo.saveRoute(
+            Route(
+                id = "route1", name = "River loop",
+                points = listOf(RoutePoint(0, 50.08, 14.42), RoutePoint(1, 50.081, 14.421)),
+            ),
+        )
+        runRepo.saveRun(
+            Run(
+                id = "run1", startedAtUtc = 1_700_000_000_000L, durationSeconds = 600,
+                movingSeconds = 590, distanceMeters = 1000.0,
+                trace = listOf(
+                    TracePoint(t = 0, lat = 50.08, lon = 14.42),
+                    // A manual-pause break must round-trip through the bundle too.
+                    TracePoint(t = 300_000, lat = 50.10, lon = 14.42, segmentStart = true),
+                    TracePoint(t = 360_000, lat = 50.101, lon = 14.42),
+                ),
+            ),
+        )
+        val service = DataTransferService(repo, runRepo)
+        val json = service.exportJson().text
+
+        val freshDb = Room.inMemoryDatabaseBuilder(
+            ApplicationProvider.getApplicationContext(), WorkoutDb::class.java,
+        ).allowMainThreadQueries().build()
+        try {
+            val freshRunRepo = RunRepository(freshDb.runDao())
+            val freshService = DataTransferService(
+                WorkoutRepository(freshDb.workoutDao(), RoomTransactionRunner(freshDb)),
+                freshRunRepo,
+            )
+            val preview = freshService.previewImport(json, "workout-backup.json")
+            assertTrue(preview.canCommit)
+            assertEquals(1, preview.summary.insertedRuns)
+            assertEquals(1, preview.summary.insertedRoutes)
+
+            val result = freshService.commitImport(preview)
+            assertEquals(1, result.insertedRuns)
+            assertEquals(1, result.insertedRoutes)
+
+            val restored = freshRunRepo.getRun("run1")
+            assertNotNull(restored)
+            assertEquals(3, restored!!.trace.size)
+            assertTrue("segment break must survive the round-trip", restored.trace[1].segmentStart)
+            assertEquals(1, freshRunRepo.getRoutes().size)
+
+            // Re-importing the same bundle is idempotent (ids already present → nothing new).
+            val second = freshService.previewImport(json, "workout-backup.json")
+            assertEquals(0, second.summary.insertedRuns)
+            assertEquals(0, second.summary.insertedRoutes)
+        } finally {
+            freshDb.close()
+        }
+    }
+
+    @Test
     fun lyftaPreviewCommit_isAtomicAndIdempotent() = runTest {
         repo.ensureSeeded()
-        val service = DataTransferService(repo)
+        val service = DataTransferService(repo, RunRepository(db.runDao()))
         val testContext = InstrumentationRegistry.getInstrumentation().context
         val csv = testContext.assets.open("lyfta-sample.csv").bufferedReader().use { it.readText() }
 

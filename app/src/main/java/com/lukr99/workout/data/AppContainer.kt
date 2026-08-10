@@ -66,7 +66,7 @@ class AppContainer(context: Context) {
         ExerciseImageResolver(FreeExerciseImageIndex(context.assets))
     }
     val exercisePhotos: ExercisePhotoStore by lazy { ExercisePhotoStore(context.applicationContext) }
-    val dataTransfer: DataTransferService by lazy { DataTransferService(repository) }
+    val dataTransfer: DataTransferService by lazy { DataTransferService(repository, runRepository) }
     val documents: AndroidDocumentGateway by lazy { AndroidDocumentGateway(context) }
     val settings: SettingsStore by lazy { SettingsStore(context) }
     val healthConnect: HealthConnectService by lazy {
