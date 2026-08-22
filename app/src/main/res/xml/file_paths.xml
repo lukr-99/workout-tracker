@@ -6,4 +6,8 @@
     <cache-path
         name="exercise_photo_captures"
         path="exercise-photo-captures/" />
+    <!-- Downloaded update APK handed to the system installer (see AppUpdater). -->
+    <cache-path
+        name="updates"
+        path="updates/" />
 </paths>

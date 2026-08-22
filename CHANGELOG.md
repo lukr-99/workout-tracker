@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is inspired by Keep a Changelog, and this project currently uses simple semantic app versions for local releases.
 
+## [2.3.0] - 2026-08-22
+
+### Added
+
+- **In-app updater**: Settings → *Updates* now checks GitHub Releases for a newer build and, when one
+  is available, downloads its APK and hands it to the system installer. No third-party dependencies
+  (`HttpURLConnection` + `org.json`). In-place installs require the release APK to be signed with the
+  same key as the installed build, so the first release APK is installed manually; thereafter it
+  upgrades in place. Adds the `REQUEST_INSTALL_PACKAGES` permission and a FileProvider `updates/` path.
+
 ## [2.2.0] - 2026-08-10
 
 Run Mode reliability & map pass. First `2.x` entry recorded here; the `2.0`–`2.1` native-rewrite line

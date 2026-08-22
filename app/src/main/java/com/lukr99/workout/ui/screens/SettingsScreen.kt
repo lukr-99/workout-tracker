@@ -17,15 +17,21 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,6 +44,9 @@ import com.lukr99.workout.settings.ThemeMode
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.SettingsViewModel
 import com.lukr99.workout.ui.components.FilterChip
+import com.lukr99.workout.update.AppRelease
+import com.lukr99.workout.update.AppUpdater
+import kotlinx.coroutines.launch
 import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.ScreenHeader
@@ -289,11 +298,95 @@ fun SettingsScreen(
             onClick = onOpenData,
         )
 
+        val updater = remember { AppUpdater(context, owner = "lukr-99", repo = "workout-tracker") }
+        UpdateSection(updater)
+
         Text(
-            "Ember · 2.0.0",
+            "Ember · ${updater.currentVersion}",
             style = MaterialTheme.typography.labelSmall,
             color = TextMid,
             modifier = Modifier.padding(start = 4.dp),
+        )
+    }
+}
+
+/** GitHub-Releases self-update: check, then download & hand off to the system installer. */
+@Composable
+private fun UpdateSection(updater: AppUpdater) {
+    val scope = rememberCoroutineScope()
+    var status by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    var pending by remember { mutableStateOf<AppRelease?>(null) }
+
+    SettingSection("Updates") {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("App version", color = MaterialTheme.colorScheme.onBackground)
+                Text(
+                    status.ifBlank { "v${updater.currentVersion}" },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextMid,
+                )
+            }
+            if (busy) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(22.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            } else {
+                SettingsAction("Check") {
+                    busy = true
+                    status = "Checking for updates…"
+                    scope.launch {
+                        val release = runCatching { updater.check() }.getOrNull()
+                        busy = false
+                        if (release != null) {
+                            pending = release
+                            status = "Update available: v${release.versionName}"
+                        } else {
+                            status = "You're on the latest version."
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    val release = pending
+    if (release != null) {
+        AlertDialog(
+            onDismissRequest = { if (!busy) pending = null },
+            confirmButton = {
+                TextButton(
+                    enabled = !busy,
+                    onClick = {
+                        busy = true
+                        status = "Downloading v${release.versionName}…"
+                        scope.launch {
+                            val apk = runCatching { updater.download(release) }.getOrNull()
+                            busy = false
+                            if (apk != null) {
+                                pending = null
+                                status = "Launching installer…"
+                                runCatching { updater.install(apk) }
+                                    .onFailure { status = "Couldn't start the installer." }
+                            } else {
+                                status = "Download failed — try again later."
+                            }
+                        }
+                    },
+                ) { Text("Download & install") }
+            },
+            dismissButton = { TextButton(enabled = !busy, onClick = { pending = null }) { Text("Later") } },
+            title = { Text("Workout Tracker v${release.versionName}") },
+            text = {
+                Text(
+                    release.notes.ifBlank { "A new version is available." }.take(600),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextMid,
+                )
+            },
         )
     }
 }

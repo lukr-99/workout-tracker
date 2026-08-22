@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Side-load a downloaded update APK from the in-app updater (see AppUpdater). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- Run Mode (v2.1): live GPS runs. Fine location for tracking; notifications for the R1
          foreground-service run notification. Foreground-service (+location type) is declared ahead
