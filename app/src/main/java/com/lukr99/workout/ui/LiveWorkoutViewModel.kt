@@ -82,14 +82,34 @@ class LiveWorkoutViewModel(
         viewModelScope.launch {
             val session = repo.createWorkoutSession(templateId = templateId)
             draftState.value = session
-            doneSetIdsState.value = emptySet()
+            doneSetIdsState.value = doneIdsFrom(session)
         }
     }
 
     fun loadActiveIfAny() {
         if (draftState.value != null) return
-        viewModelScope.launch { repo.getActiveSession()?.let { draftState.value = it } }
+        viewModelScope.launch {
+            repo.getActiveSession()?.let {
+                draftState.value = it
+                doneSetIdsState.value = doneIdsFrom(it)
+            }
+        }
     }
+
+    /**
+     * Rebuild the done-set overlay from a persisted draft. Completion is stored as [StrengthSet
+     * .performedAtUtc], so a resumed session (after backgrounding or process death) shows the same
+     * checkmarks it had.
+     */
+    private fun doneIdsFrom(session: WorkoutSession?): Set<String> =
+        session?.entries.orEmpty()
+            .flatMap { it.strengthSets }
+            .filter { it.performedAtUtc != null }
+            .map { it.id }
+            .toSet()
+
+    /** Flush the working draft to the repository — called when the live screen is left/backgrounded. */
+    fun flush() = persist()
 
     // --- Structural edits ----------------------------------------------------------------------
 
@@ -219,17 +239,21 @@ class LiveWorkoutViewModel(
         })
     }
 
-    /** Mark/unmark a set done. Marking done persists the draft and starts the rest timer. */
+    /** Mark/unmark a set done. Both directions persist the draft; marking done starts the rest timer. */
     fun toggleSetDone(entryId: String, setId: String) {
         val currentlyDone = setId in doneSetIdsState.value
         doneSetIdsState.update { if (currentlyDone) it - setId else it + setId }
+        // Stamp completion onto the set itself so the checkmark (and the typed reps/weight) survive
+        // leaving the screen or the OS reclaiming the process — doneSetIds alone is in-memory only.
+        val stamp = if (currentlyDone) null else System.currentTimeMillis()
+        updateSet(entryId, setId) { it.copy(performedAtUtc = stamp) }
         if (!currentlyDone) {
             val entry = draftState.value?.entries?.firstOrNull { it.id == entryId }
             val restSecs = entry?.let { restSecondsFor(it) } ?: defaultRest
             startRest(restSecs)
-            persist()
             evaluatePr(entryId, setId)
         }
+        persist()
     }
 
     /**

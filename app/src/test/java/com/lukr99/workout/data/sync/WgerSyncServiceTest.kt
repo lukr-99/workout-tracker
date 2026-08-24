@@ -99,6 +99,21 @@ class WgerSyncServiceTest {
         assertEquals("https://wger.de/media/bench.png", mapped.imageUrl)
     }
 
+    @Test
+    fun resolvesSiteRelativeImagePathAgainstBaseUrl() {
+        val dto = validRemote("rel-1", "Row").copy(
+            images = listOf(WgerImageDto(image = "/media/exercise-images/row.png", isMain = true)),
+        )
+        val mapped = dto.toExercise(preferredLanguage = 2, baseUrl = "https://wger.de/")!!
+        assertEquals("https://wger.de/media/exercise-images/row.png", mapped.imageUrl)
+    }
+
+    @Test
+    fun leavesAbsoluteImageUrlUnchanged() {
+        val mapped = validRemote("abs-1", "Press").toExercise(preferredLanguage = 2, baseUrl = "https://wger.de/")!!
+        assertEquals("https://wger.de/media/bench.png", mapped.imageUrl)
+    }
+
     private fun validRemote(id: String, name: String) = WgerExerciseDto(
         uuid = id,
         category = WgerNamedDto(name = "Strength"),

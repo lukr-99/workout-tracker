@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 The format is inspired by Keep a Changelog, and this project currently uses simple semantic app versions for local releases.
 
+## [2.4.0] - 2026-08-24
+
+### Fixed
+
+- **Live logging**: a completed ("done") set now persists via the set's `performedAtUtc`, so its
+  checkmark — and any reps/weight typed just before — survive leaving the screen or the OS reclaiming
+  the process. The draft is also flushed when the app is backgrounded.
+- **Exercise picker**: the catalog list now owns its scroll gesture, so a fling no longer drags the
+  bottom sheet closed mid-scroll without a selection.
+- **Run + lift**: when a run and a lift are both live, the centre action asks which to resume instead
+  of always reopening the run (the lift was previously unreachable).
+- **PR celebration**: the personal-record banner is now opaque, elevated, sits clear of the top bar,
+  and stays visible longer.
+- **Exercise art / sync**: broader image matching for imported/custom names (singularised-token
+  fallback), and wger sync now resolves site-relative image URLs to absolute.
+
+### Added
+
+- **Shareable workout postcard**: a past workout can be shared as a branded image summarising volume,
+  sets, exercises, time and any personal records (Workout detail → Share).
+
 ## [2.3.0] - 2026-08-22
 
 ### Added

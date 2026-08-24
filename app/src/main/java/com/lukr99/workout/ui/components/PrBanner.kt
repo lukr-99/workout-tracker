@@ -21,6 +21,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -45,9 +46,13 @@ fun PrBanner(
     Row(
         modifier
             .fillMaxWidth()
+            .shadow(12.dp, RoundedCornerShape(16.dp))
             .clip(RoundedCornerShape(16.dp))
-            .background(Positive.copy(alpha = 0.16f))
-            .border(1.dp, Positive.copy(alpha = 0.55f), RoundedCornerShape(16.dp))
+            // Opaque surface first, then a positive wash — the old 16%-alpha-only fill was nearly
+            // invisible over the app background.
+            .background(MaterialTheme.colorScheme.surface)
+            .background(Positive.copy(alpha = 0.18f))
+            .border(1.5.dp, Positive.copy(alpha = 0.75f), RoundedCornerShape(16.dp))
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),

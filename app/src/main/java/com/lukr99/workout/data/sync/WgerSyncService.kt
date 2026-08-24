@@ -112,7 +112,7 @@ class WgerSyncService(
             pages++
             for (remote in page.results.take(options.limit - fetched)) {
                 fetched++
-                val exercise = remote.toExercise(options.language)
+                val exercise = remote.toExercise(options.language, baseUrl)
                 if (exercise == null) {
                     mappingSkipped++
                     warnings += "Skipped wger exercise ${remote.uuid ?: remote.id ?: "unknown"}: no usable id/name."
@@ -205,7 +205,7 @@ data class WgerExerciseDto(
     val licenseAuthor: String? = null,
     val translations: List<WgerTranslationDto> = emptyList(),
 ) {
-    internal fun toExercise(preferredLanguage: Int): Exercise? {
+    internal fun toExercise(preferredLanguage: Int, baseUrl: String = ""): Exercise? {
         val externalId = uuid?.trim()?.takeIf(String::isNotBlank)
             ?: id?.toString()
             ?: return null
@@ -222,8 +222,13 @@ data class WgerExerciseDto(
         val description = translation?.descriptionSource
             ?.takeIf(String::isNotBlank)
             ?: translation?.description.orEmpty()
-        val imageUrl = images.firstOrNull(WgerImageDto::isMain)?.image
+        val rawImageUrl = images.firstOrNull(WgerImageDto::isMain)?.image
             ?: images.firstOrNull()?.image
+        // wger's exerciseinfo endpoint usually returns absolute image URLs, but self-hosted/older
+        // instances hand back a site-relative path ("/media/…") that Coil cannot load — make it absolute.
+        val imageUrl = rawImageUrl?.trim()?.takeIf(String::isNotBlank)?.let { url ->
+            if (url.startsWith("/") && baseUrl.isNotBlank()) baseUrl.trimEnd('/') + url else url
+        }
         val imageAttribution = imageUrl?.let {
             listOf("wger", license?.shortName, licenseAuthor)
                 .filterNotNull()

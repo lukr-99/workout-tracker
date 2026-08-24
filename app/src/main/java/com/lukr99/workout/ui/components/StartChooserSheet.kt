@@ -60,6 +60,38 @@ fun StartChooserSheet(
     }
 }
 
+/**
+ * Shown when a **run and a lift are both live** — the single center action can't route to both, so it
+ * asks which to reopen. Mirrors [StartChooserSheet]'s style; navigation stays in `App`.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ResumeChooserSheet(
+    onLift: () -> Unit,
+    onRun: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Text(
+                "Resume",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            ChooserRow(Icons.Rounded.FitnessCenter, "Lift", "Back to your live workout", onLift)
+            ChooserRow(Icons.AutoMirrored.Rounded.DirectionsRun, "Run", "Back to your live run", onRun)
+        }
+    }
+}
+
 @Composable
 private fun ChooserRow(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
     Row(

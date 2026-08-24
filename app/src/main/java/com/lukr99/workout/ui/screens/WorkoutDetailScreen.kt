@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -54,6 +55,7 @@ import com.lukr99.workout.ui.components.Tag
 import com.lukr99.workout.ui.components.ValueCell
 import com.lukr99.workout.ui.theme.Numbers
 import com.lukr99.workout.ui.theme.TextMid
+import kotlinx.coroutines.launch
 
 /** Drill-in for a past session with full edit-after-the-fact (persists via saveWorkoutSession). */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,6 +71,9 @@ fun WorkoutDetailScreen(
     val selected by vm.selected.collectAsState()
     val exercises by vm.exercises.collectAsState()
     var showPicker by remember { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val shareRenderer = remember(context) { com.lukr99.workout.data.WorkoutShareCardRenderer(context) }
 
     var draft by remember(sessionId) { mutableStateOf<WorkoutSession?>(null) }
     var seeded by remember(sessionId) { mutableStateOf(false) }
@@ -107,6 +112,18 @@ fun WorkoutDetailScreen(
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
                 )
                 Text(Format.fullDate(session.completedDateUtc ?: session.startedAtUtc), style = MaterialTheme.typography.labelSmall, color = TextMid)
+            }
+            IconButton(onClick = {
+                scope.launch {
+                    runCatching { shareRenderer.shareIntent(session, units == UnitSystem.Imperial) }
+                        .onSuccess { intent ->
+                            runCatching {
+                                context.startActivity(android.content.Intent.createChooser(intent, "Share workout"))
+                            }
+                        }
+                }
+            }) {
+                Icon(Icons.Rounded.Share, "Share workout", tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             TextButton(onClick = { vm.save(session) { onBack() } }) {
                 Text("Save", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)

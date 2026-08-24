@@ -89,13 +89,23 @@ fun LiveWorkoutScreen(
 
     val suggestion by vm.suggestion.collectAsState()
     LaunchedEffect(Unit) { vm.loadActiveIfAny() }
+    // Flush the working draft when the app is backgrounded, so unsaved reps/weight survive if the OS
+    // reclaims the process while a live session is open.
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) vm.flush()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
     LaunchedEffect(suggestion) {
         suggestion?.let { toast(it); vm.consumeSuggestion() }
     }
     LaunchedEffect(prEvent?.id) {
         if (prEvent != null) {
             haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
-            kotlinx.coroutines.delay(2800)
+            kotlinx.coroutines.delay(4000)
             vm.consumePrEvent()
         }
     }
@@ -195,7 +205,9 @@ fun LiveWorkoutScreen(
         // PR celebration overlay (top)
         androidx.compose.animation.AnimatedVisibility(
             visible = prEvent != null,
-            modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(horizontal = 14.dp, vertical = 6.dp),
+            // Sit below the top bar (title/Finish) so the celebration isn't occluded by — or fighting
+            // the app-level toast for — the very top of the screen.
+            modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(start = 14.dp, end = 14.dp, top = 60.dp),
             enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { -it },
             exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically { -it },
         ) {

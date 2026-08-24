@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -87,7 +88,9 @@ fun ExercisePicker(
                 (category == null || exercise.category == category)
         }
     }
-    Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp).padding(bottom = 24.dp)) {
+    // Fill (most of) the sheet so the list below can own the vertical drag with weight(1f); a fixed
+    // list height let a fling reach the ModalBottomSheet's drag-to-dismiss and close the picker mid-scroll.
+    Column(Modifier.fillMaxWidth().fillMaxHeight(0.9f).padding(horizontal = 18.dp).padding(bottom = 24.dp)) {
         Text(title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
         Spacer(Modifier.height(10.dp))
         Row(
@@ -153,7 +156,7 @@ fun ExercisePicker(
             }
         }
         Spacer(Modifier.height(8.dp))
-        LazyColumn(Modifier.fillMaxWidth().height(360.dp)) {
+        LazyColumn(Modifier.fillMaxWidth().weight(1f)) {
             if (filtered.isEmpty()) {
                 item {
                     Column(

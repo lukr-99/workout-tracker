@@ -47,6 +47,7 @@ import com.lukr99.workout.data.AppContainer
 import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.LocalExerciseImageResolver
 import com.lukr99.workout.ui.components.LocalSpotify
+import com.lukr99.workout.ui.components.ResumeChooserSheet
 import com.lukr99.workout.ui.components.StartChooserSheet
 import com.lukr99.workout.ui.components.ToastHost
 import com.lukr99.workout.ui.components.rememberToastState
@@ -103,6 +104,7 @@ fun App(container: AppContainer) {
     val resumeMode = runActive || hasResumableLift
     val overlay = nav.top
     var chooserOpen by remember { mutableStateOf(false) }
+    var resumeChooserOpen by remember { mutableStateOf(false) }
 
     fun startWorkout(templateId: String? = null) {
         liveVm.startOrResume(templateId)
@@ -119,10 +121,11 @@ fun App(container: AppContainer) {
         nav.push(Route.LiveRun)
     }
 
-    // The center action: a live **run** takes priority and reopens the run screen; otherwise a
-    // non-empty live lift resumes; otherwise the ＋ opens the Lift/Run chooser for a fresh start.
+    // The center action: when a run **and** a lift are both live it can't route to both, so it asks
+    // which to reopen; otherwise the live one resumes; otherwise the ＋ opens the Lift/Run chooser.
     fun onCenterAction() {
         when {
+            runActive && hasResumableLift -> resumeChooserOpen = true
             runActive -> nav.push(Route.LiveRun)
             hasResumableLift -> startWorkout()
             else -> chooserOpen = true
@@ -189,7 +192,7 @@ fun App(container: AppContainer) {
                         Route.LiveWorkout -> LiveWorkoutScreen(
                             vm = liveVm,
                             units = settings.units,
-                            onClose = { nav.pop() },
+                            onClose = { liveVm.flush(); nav.pop() },
                             onCreateExercise = {
                                 nav.push(Route.ExerciseEditor(null, initialName = it))
                             },
@@ -275,6 +278,14 @@ fun App(container: AppContainer) {
                     onLift = { chooserOpen = false; startWorkout() },
                     onRun = { chooserOpen = false; startRun() },
                     onDismiss = { chooserOpen = false },
+                )
+            }
+
+            if (resumeChooserOpen) {
+                ResumeChooserSheet(
+                    onLift = { resumeChooserOpen = false; startWorkout() },
+                    onRun = { resumeChooserOpen = false; nav.push(Route.LiveRun) },
+                    onDismiss = { resumeChooserOpen = false },
                 )
             }
 
