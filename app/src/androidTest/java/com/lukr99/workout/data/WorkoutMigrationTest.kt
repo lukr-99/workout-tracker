@@ -59,6 +59,7 @@ class WorkoutMigrationTest {
             WorkoutDb.MIGRATION_2_3,
             WorkoutDb.MIGRATION_3_4,
             WorkoutDb.MIGRATION_4_5,
+            WorkoutDb.MIGRATION_5_6,
         )
             .allowMainThreadQueries()
             .build()
@@ -114,7 +115,11 @@ class WorkoutMigrationTest {
             ApplicationProvider.getApplicationContext(),
             WorkoutDb::class.java,
             DatabaseName,
-        ).addMigrations(WorkoutDb.MIGRATION_3_4, WorkoutDb.MIGRATION_4_5)
+        ).addMigrations(
+            WorkoutDb.MIGRATION_3_4,
+            WorkoutDb.MIGRATION_4_5,
+            WorkoutDb.MIGRATION_5_6,
+        )
             .allowMainThreadQueries()
             .build()
         try {
@@ -169,6 +174,7 @@ class WorkoutMigrationTest {
             WorkoutDb.MIGRATION_2_3,
             WorkoutDb.MIGRATION_3_4,
             WorkoutDb.MIGRATION_4_5,
+            WorkoutDb.MIGRATION_5_6,
         )
             .allowMainThreadQueries()
             .build()
