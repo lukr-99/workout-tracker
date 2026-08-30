@@ -74,3 +74,9 @@ object WorkoutSessionSourceSerializer :
 
 object SetTypeSerializer :
     OrdinalEnumSerializer<SetType>("SetType", SetType.entries.toTypedArray())
+
+object SetTagSerializer :
+    OrdinalEnumSerializer<SetTag>("SetTag", SetTag.entries.toTypedArray())
+
+object WeightDisplayUnitSerializer :
+    OrdinalEnumSerializer<WeightDisplayUnit>("WeightDisplayUnit", WeightDisplayUnit.entries.toTypedArray())

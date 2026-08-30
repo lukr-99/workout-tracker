@@ -512,6 +512,7 @@ tools/env-local.md
 .gradle/
 build/
 app/build/
+dist/
 # Local SDK/JDK pointers — machine-specific, never commit
 local.properties
 # Spotify App Remote client id / redirect URI (R4) — secrets, never commit

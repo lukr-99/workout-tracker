@@ -4,6 +4,7 @@ import androidx.room.TypeConverter
 import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.ExerciseSource
 import com.lukr99.workout.domain.SetType
+import com.lukr99.workout.domain.WeightDisplayUnit
 import com.lukr99.workout.domain.WorkoutSessionStatus
 import com.lukr99.workout.domain.WorkoutSessionSource
 import com.lukr99.workout.domain.run.RunSource
@@ -32,6 +33,10 @@ class Converters {
 
     @TypeConverter fun setTypeToInt(v: SetType): Int = v.ordinal
     @TypeConverter fun intToSetType(v: Int): SetType = SetType.entries[v]
+
+    @TypeConverter fun weightDisplayUnitToInt(v: WeightDisplayUnit?): Int? = v?.ordinal
+    @TypeConverter fun intToWeightDisplayUnit(v: Int?): WeightDisplayUnit? =
+        v?.let { WeightDisplayUnit.entries.getOrNull(it) }
 
     @TypeConverter fun runSourceToInt(v: RunSource): Int = v.ordinal
     @TypeConverter fun intToRunSource(v: Int): RunSource = RunSource.entries[v]

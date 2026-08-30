@@ -2,12 +2,14 @@ package com.lukr99.workout.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -42,20 +44,25 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.lukr99.workout.domain.StrengthSet
+import com.lukr99.workout.domain.WeightDisplayUnit
 import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.newId
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.HistoryViewModel
+import com.lukr99.workout.ui.statsSummary
 import com.lukr99.workout.ui.components.ConfirmDialog
 import com.lukr99.workout.ui.components.ExercisePicker
 import com.lukr99.workout.ui.components.Format
+import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.SetColumnHeader
+import com.lukr99.workout.ui.components.SetTagChips
 import com.lukr99.workout.ui.components.Tag
 import com.lukr99.workout.ui.components.ValueCell
 import com.lukr99.workout.ui.theme.Numbers
 import com.lukr99.workout.ui.theme.TextMid
 import kotlinx.coroutines.launch
+import androidx.compose.ui.graphics.asImageBitmap
 
 /** Drill-in for a past session with full edit-after-the-fact (persists via saveWorkoutSession). */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -72,8 +79,11 @@ fun WorkoutDetailScreen(
     val exercises by vm.exercises.collectAsState()
     var showPicker by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
+    val toast = LocalToast.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     val shareRenderer = remember(context) { com.lukr99.workout.data.WorkoutShareCardRenderer(context) }
+    var preparedShare by remember { mutableStateOf<com.lukr99.workout.data.WorkoutShareCardRenderer.PreparedShare?>(null) }
+    var preparingShare by remember { mutableStateOf(false) }
 
     var draft by remember(sessionId) { mutableStateOf<WorkoutSession?>(null) }
     var seeded by remember(sessionId) { mutableStateOf(false) }
@@ -115,15 +125,18 @@ fun WorkoutDetailScreen(
             }
             IconButton(onClick = {
                 scope.launch {
-                    runCatching { shareRenderer.shareIntent(session, units == UnitSystem.Imperial) }
-                        .onSuccess { intent ->
-                            runCatching {
-                                context.startActivity(android.content.Intent.createChooser(intent, "Share workout"))
-                            }
-                        }
+                    preparingShare = true
+                    runCatching { shareRenderer.prepare(session, units == UnitSystem.Imperial) }
+                        .onSuccess { preparedShare = it }
+                        .onFailure { toast("Could not prepare the share image") }
+                    preparingShare = false
                 }
-            }) {
-                Icon(Icons.Rounded.Share, "Share workout", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }, enabled = !preparingShare) {
+                Icon(
+                    Icons.Rounded.Share,
+                    if (preparingShare) "Preparing share preview" else "Preview and share workout",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             TextButton(onClick = { vm.save(session) { onBack() } }) {
                 Text("Save", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
@@ -136,6 +149,7 @@ fun WorkoutDetailScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             items(session.entries, key = { it.id }) { entry ->
+                val entryUnits = Format.entryUnits(entry.weightUnitOverride, units)
                 Column(
                     Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
                         .background(MaterialTheme.colorScheme.surface).padding(12.dp),
@@ -147,6 +161,27 @@ fun WorkoutDetailScreen(
                             if (entry.exerciseSnapshotPrimaryBodyPart.isNotBlank()) {
                                 Tag(entry.exerciseSnapshotPrimaryBodyPart, accent = MaterialTheme.colorScheme.secondary)
                             }
+                            Text(
+                                entry.statsSummary(entryUnits, includeUnperformed = true),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextMid,
+                            )
+                        }
+                        if (entry.isStrength) {
+                            TextButton(onClick = {
+                                mutateEntry(entry.id) { current ->
+                                    val currentUnits = Format.entryUnits(current.weightUnitOverride, units)
+                                    current.copy(
+                                        weightUnitOverride = if (currentUnits == UnitSystem.Imperial) {
+                                            WeightDisplayUnit.Kilograms
+                                        } else {
+                                            WeightDisplayUnit.Pounds
+                                        },
+                                    )
+                                }
+                            }) {
+                                Text(Format.unitLabel(entryUnits).uppercase(), fontWeight = FontWeight.Bold)
+                            }
                         }
                         IconButton(onClick = { draft = session.copy(entries = session.entries.filterNot { it.id == entry.id }) }) {
                             Icon(Icons.Rounded.Delete, "Remove exercise", tint = TextMid, modifier = Modifier.size(18.dp))
@@ -154,11 +189,11 @@ fun WorkoutDetailScreen(
                     }
                     if (entry.isStrength) {
                         if (entry.strengthSets.isNotEmpty()) {
-                            SetColumnHeader(units)
+                            SetColumnHeader(entryUnits)
                         }
                         entry.strengthSets.forEachIndexed { i, set ->
                             EditSetRow(
-                                index = i, set = set, units = units,
+                                index = i, set = set, units = entryUnits,
                                 onReps = { reps -> mutateEntry(entry.id) { e -> e.copy(strengthSets = e.strengthSets.map { if (it.id == set.id) it.copy(reps = reps) else it }) } },
                                 onWeight = { kg -> mutateEntry(entry.id) { e -> e.copy(strengthSets = e.strengthSets.map { if (it.id == set.id) it.copy(weightKg = kg) else it }) } },
                                 onRemove = { mutateEntry(entry.id) { e -> e.copy(strengthSets = e.strengthSets.filterNot { it.id == set.id }) } },
@@ -235,6 +270,44 @@ fun WorkoutDetailScreen(
         }
     }
 
+    preparedShare?.let { preview ->
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ModalBottomSheet(
+            onDismissRequest = { preparedShare = null },
+            sheetState = sheetState,
+            containerColor = MaterialTheme.colorScheme.surface,
+        ) {
+            Column(
+                Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                Text("Share preview", style = MaterialTheme.typography.titleLarge)
+                Text("This exact image will be shared.", color = TextMid)
+                Image(
+                    bitmap = preview.bitmap.asImageBitmap(),
+                    contentDescription = "Workout share image preview",
+                    modifier = Modifier.fillMaxWidth().aspectRatio(1080f / 1350f)
+                        .clip(RoundedCornerShape(16.dp)),
+                )
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = {
+                        preparedShare = null
+                    }) { Text("Cancel") }
+                    TextButton(onClick = {
+                        runCatching {
+                            context.startActivity(
+                                android.content.Intent.createChooser(preview.intent, "Share workout"),
+                            )
+                        }.onFailure { toast("Could not open the share sheet") }
+                    }) {
+                        Icon(Icons.Rounded.Share, null, modifier = Modifier.size(18.dp))
+                        Text(" Share")
+                    }
+                }
+            }
+        }
+    }
+
     if (confirmDelete) {
         ConfirmDialog(
             title = "Delete workout?",
@@ -283,6 +356,7 @@ private fun EditSetRow(
             Icon(Icons.Rounded.Delete, "Remove set", tint = TextMid, modifier = Modifier.size(16.dp))
         }
     }
+    SetTagChips(set, Modifier.fillMaxWidth().padding(start = 48.dp, top = 3.dp))
 
     when (editingWeight) {
         false -> com.lukr99.workout.ui.components.NumberPadSheet(

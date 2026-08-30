@@ -32,7 +32,20 @@ dark map, pace/splits, routes). This is a personal-use app.
 
 ## Build, install, run (personal)
 
-Requires JDK 17 and the Android SDK (platform 35, build-tools 35). The Gradle wrapper fetches Gradle.
+For a non-programmer on Windows, create a self-contained phone installer:
+
+```powershell
+.\tools\make-phone-installer.ps1
+```
+
+Send the resulting `dist/Ember-Phone-Installer-v*.zip`. The recipient extracts it, connects an
+unlocked phone with USB debugging enabled, and double-clicks **Install Ember.cmd**. The guided
+installer downloads Google's Android platform tools, installs or upgrades Ember without clearing
+compatible app data, and opens it. Android requires USB debugging for computer-driven installs;
+the included `README.txt` walks through that one-time phone setting.
+
+Building from source requires JDK 17 and the Android SDK (platform 35, build-tools 35). The Gradle
+wrapper fetches Gradle.
 
 ```powershell
 .\tools\build-and-install.ps1 -Launch

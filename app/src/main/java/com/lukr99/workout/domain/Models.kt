@@ -110,6 +110,12 @@ data class WorkoutEntry(
     val notes: String = "",
     // Rework-additive (03-data-model.md).
     val supersetGroup: Int? = null,
+    // Per-exercise logging lifecycle and display preference (storage stays metric).
+    val weightUnitOverride: WeightDisplayUnit? = null,
+    @Serializable(with = InstantMillisSerializer::class)
+    val startedAtUtc: Long? = null,
+    @Serializable(with = InstantMillisSerializer::class)
+    val completedAtUtc: Long? = null,
     val strengthSets: List<StrengthSet> = emptyList(),
     val cardioData: CardioEntryData? = null,
 ) {
@@ -133,7 +139,23 @@ data class StrengthSet(
     val isPr: Boolean = false,
     val durationSeconds: Int? = null,
     val setType: SetType = SetType.Normal,
+    /** Combinable tags. Empty means a legacy [setType] value has not been upgraded yet. */
+    val tags: Set<SetTag> = emptySet(),
 )
+
+/** Includes the legacy exclusive type so older workouts display exactly as they did before v1.6. */
+val StrengthSet.effectiveTags: Set<SetTag>
+    get() = if (tags.isNotEmpty()) tags else buildSet {
+        if (isWarmup) add(SetTag.Warmup)
+        when (setType) {
+            SetType.Normal -> Unit
+            SetType.Warmup -> add(SetTag.Warmup)
+            SetType.Drop -> add(SetTag.Drop)
+            SetType.Failure -> add(SetTag.ToFailure)
+            SetType.Negative -> add(SetTag.Negative)
+            SetType.BackOff -> add(SetTag.BackOff)
+        }
+    }
 
 @Serializable
 data class CardioEntryData(

@@ -7,6 +7,7 @@ import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.domain.newId
+import com.lukr99.workout.domain.effectiveTags
 import java.security.MessageDigest
 import java.util.Locale
 
@@ -267,6 +268,9 @@ internal object ImportPlanner {
             notes = listOf(existing.notes, incoming.notes).filter(String::isNotBlank).distinct()
                 .joinToString("\n"),
             supersetGroup = incoming.supersetGroup ?: existing.supersetGroup,
+            weightUnitOverride = incoming.weightUnitOverride ?: existing.weightUnitOverride,
+            startedAtUtc = listOfNotNull(existing.startedAtUtc, incoming.startedAtUtc).minOrNull(),
+            completedAtUtc = listOfNotNull(existing.completedAtUtc, incoming.completedAtUtc).maxOrNull(),
             strengthSets = sets.mapIndexed { index, set -> set.copy(setNumber = index + 1) },
             cardioData = mergeCardio(existing.cardioData, incoming.cardioData, existing.id),
         )
@@ -334,6 +338,7 @@ internal object ImportPlanner {
         durationSeconds ?: 0,
         setType.ordinal,
         isWarmup,
+        effectiveTags.sortedBy { it.ordinal }.joinToString(".") { it.ordinal.toString() },
     ).joinToString(":")
 
     private fun String.normalizeKey(): String = lowercase()
@@ -357,6 +362,7 @@ object SessionFingerprint {
                     append('@').append(String.format(Locale.ROOT, "%.6f", set.weightKg))
                     append('/').append(set.durationSeconds ?: 0)
                     append('/').append(set.setType.ordinal)
+                    append('/').append(set.effectiveTags.sortedBy { it.ordinal }.joinToString(".") { it.ordinal.toString() })
                 }
                 entry.cardioData?.let {
                     append(":c").append(it.durationSeconds)

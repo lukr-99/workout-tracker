@@ -94,6 +94,7 @@ enum class CsvColumn(val header: String) {
     CardioDurationSeconds("Cardio Duration Seconds"),
     Calories("Calories"),
     Notes("Notes"),
+    SetTags("Set Tags"),
 }
 
 enum class TransferIssueSeverity { Info, Warning, Error }

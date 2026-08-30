@@ -7,9 +7,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -29,8 +32,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.lukr99.workout.domain.SetType
+import com.lukr99.workout.domain.SetTag
 import com.lukr99.workout.domain.StrengthSet
+import com.lukr99.workout.domain.effectiveTags
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.theme.Numbers
 import com.lukr99.workout.ui.theme.Positive
@@ -119,6 +123,7 @@ fun SetRow(
             )
         }
     }
+    SetTagChips(set, Modifier.fillMaxWidth().padding(start = 48.dp, top = 3.dp))
     if (previousHint != null) {
         Text(
             previousHint,
@@ -146,6 +151,33 @@ fun SetRow(
             onDismiss = { editingWeight = null },
         )
         null -> Unit
+    }
+}
+
+/** Small, horizontally scrollable chips so combined tags remain visible outside the edit sheet. */
+@Composable
+fun SetTagChips(set: StrengthSet, modifier: Modifier = Modifier) {
+    val visibleTags = buildList {
+        if (set.isPr) add("PR" to Positive)
+        set.effectiveTags.forEach { tag ->
+            add(tag.label to when (tag) {
+                SetTag.Warmup -> Warning
+                SetTag.Failed -> MaterialTheme.colorScheme.error
+                SetTag.ToFailure -> MaterialTheme.colorScheme.primary
+                else -> MaterialTheme.colorScheme.secondary
+            })
+        }
+    }
+    if (visibleTags.isEmpty()) return
+    LazyRow(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+        items(visibleTags) { (label, tint) ->
+            Box(
+                Modifier.clip(RoundedCornerShape(50)).background(tint.copy(alpha = 0.13f))
+                    .padding(horizontal = 7.dp, vertical = 2.dp),
+            ) {
+                Text(label.uppercase(), style = MaterialTheme.typography.labelSmall, color = tint)
+            }
+        }
     }
 }
 
@@ -187,9 +219,10 @@ private fun ColumnLabel(text: String, modifier: Modifier) {
 private fun SetBadge(index: Int, set: StrengthSet, onClick: () -> Unit) {
     val (label, tint) = when {
         set.isPr -> "PR" to Positive
-        set.isWarmup || set.setType == SetType.Warmup -> "W" to Warning
-        set.setType == SetType.Drop -> "D" to MaterialTheme.colorScheme.secondary
-        set.setType == SetType.Failure -> "F" to MaterialTheme.colorScheme.error
+        SetTag.Failed in set.effectiveTags -> "!" to MaterialTheme.colorScheme.error
+        set.isWarmup || SetTag.Warmup in set.effectiveTags -> "W" to Warning
+        SetTag.ToFailure in set.effectiveTags -> "TF" to MaterialTheme.colorScheme.primary
+        SetTag.Drop in set.effectiveTags -> "D" to MaterialTheme.colorScheme.secondary
         else -> "${index + 1}" to TextMid
     }
     Box(

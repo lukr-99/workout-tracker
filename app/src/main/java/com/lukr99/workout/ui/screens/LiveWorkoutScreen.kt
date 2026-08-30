@@ -25,8 +25,11 @@ import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.ExpandLess
+import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Link
-import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,12 +51,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.lukr99.workout.domain.Exercise
-import com.lukr99.workout.domain.SetType
 import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.LiveWorkoutViewModel
-import com.lukr99.workout.ui.components.ChoiceDialog
+import com.lukr99.workout.ui.stats
+import com.lukr99.workout.ui.statsSummary
 import com.lukr99.workout.ui.components.ConfirmDialog
 import com.lukr99.workout.ui.components.ExercisePicker
 import com.lukr99.workout.ui.components.Format
@@ -64,7 +66,6 @@ import com.lukr99.workout.ui.components.MusicMiniControls
 import com.lukr99.workout.ui.components.SetColumnHeader
 import com.lukr99.workout.ui.components.SetRow
 import com.lukr99.workout.ui.components.Tag
-import com.lukr99.workout.ui.theme.Numbers
 import com.lukr99.workout.ui.theme.TextMid
 
 /**
@@ -120,6 +121,15 @@ fun LiveWorkoutScreen(
     var confirmFinish by remember { mutableStateOf(false) }
     var confirmDiscard by remember { mutableStateOf(false) }
     var optionsFor by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var expandedFinishedEntries by remember { mutableStateOf(emptySet<String>()) }
+    var editingSuperset by remember { mutableStateOf<Int?>(null) }
+    var nowUtcMillis by remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(1_000)
+            nowUtcMillis = System.currentTimeMillis()
+        }
+    }
 
     val session = draft
     Box(Modifier.fillMaxSize()) {
@@ -156,6 +166,8 @@ fun LiveWorkoutScreen(
             }
 
             val entries = session?.entries.orEmpty()
+            val supersetMembers = entries.filter { it.supersetGroup != null }
+                .groupBy { checkNotNull(it.supersetGroup) }
             LazyColumn(
                 Modifier.weight(1f).fillMaxWidth(),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(
@@ -172,7 +184,28 @@ fun LiveWorkoutScreen(
                         groupedWithPrevious = index > 0 &&
                             entry.supersetGroup != null &&
                             entry.supersetGroup == entries[index - 1].supersetGroup,
+                        supersetPosition = entry.supersetGroup?.let { group ->
+                            supersetMembers[group].orEmpty().indexOfFirst { it.id == entry.id } + 1
+                        },
+                        supersetSize = entry.supersetGroup?.let { supersetMembers[it].orEmpty().size } ?: 0,
+                        collapsed = entry.completedAtUtc != null && entry.id !in expandedFinishedEntries,
+                        nowUtcMillis = nowUtcMillis,
                         onToggleSuperset = { vm.toggleSupersetWithPrevious(entry.id) },
+                        onEditSuperset = { entry.supersetGroup?.let { editingSuperset = it } },
+                        onToggleCollapsed = {
+                            expandedFinishedEntries = if (entry.id in expandedFinishedEntries) {
+                                expandedFinishedEntries - entry.id
+                            } else {
+                                expandedFinishedEntries + entry.id
+                            }
+                        },
+                        onToggleWeightUnit = { vm.toggleEntryWeightUnit(entry.id, units) },
+                        onStart = { vm.startEntry(entry.id) },
+                        onFinish = {
+                            expandedFinishedEntries = expandedFinishedEntries - entry.id
+                            vm.finishEntry(entry.id)
+                        },
+                        onReopen = { vm.reopenEntry(entry.id) },
                         onReps = { setId, reps -> vm.setReps(entry.id, setId, reps) },
                         onWeight = { setId, kg -> vm.setWeight(entry.id, setId, kg) },
                         onToggleDone = { setId ->
@@ -275,13 +308,25 @@ fun LiveWorkoutScreen(
         if (set != null) {
             com.lukr99.workout.ui.components.SetOptionsSheet(
                 set = set,
-                onType = { vm.setType(entryId, setId, it) },
+                onToggleTag = { vm.toggleSetTag(entryId, setId, it) },
                 onRir = { vm.setRir(entryId, setId, it) },
                 onRpe = { vm.setRpe(entryId, setId, it) },
                 onRemove = { vm.removeSet(entryId, setId) },
                 onDismiss = { optionsFor = null },
             )
         } else optionsFor = null
+    }
+
+    editingSuperset?.let { groupId ->
+        SupersetEditorSheet(
+            groupId = groupId,
+            entries = session?.entries.orEmpty(),
+            onAddBefore = { vm.extendSuperset(groupId, before = true); editingSuperset = null },
+            onAddAfter = { vm.extendSuperset(groupId, before = false); editingSuperset = null },
+            onRemoveEntry = { vm.removeFromSuperset(it); editingSuperset = null },
+            onUngroup = { vm.ungroupSuperset(groupId); editingSuperset = null },
+            onDismiss = { editingSuperset = null },
+        )
     }
 
     if (confirmFinish) {
@@ -312,7 +357,17 @@ private fun EntryCard(
     doneIds: Set<String>,
     canGroupWithPrevious: Boolean,
     groupedWithPrevious: Boolean,
+    supersetPosition: Int?,
+    supersetSize: Int,
+    collapsed: Boolean,
+    nowUtcMillis: Long,
     onToggleSuperset: () -> Unit,
+    onEditSuperset: () -> Unit,
+    onToggleCollapsed: () -> Unit,
+    onToggleWeightUnit: () -> Unit,
+    onStart: () -> Unit,
+    onFinish: () -> Unit,
+    onReopen: () -> Unit,
     onReps: (String, Int) -> Unit,
     onWeight: (String, Double) -> Unit,
     onToggleDone: (String) -> Unit,
@@ -323,6 +378,8 @@ private fun EntryCard(
     onRemove: () -> Unit,
     onCardioChange: (com.lukr99.workout.domain.CardioEntryData) -> Unit,
 ) {
+    val entryUnits = Format.entryUnits(entry.weightUnitOverride, units)
+    val stats = entry.stats(nowUtcMillis)
     Row(
         Modifier.fillMaxWidth().height(IntrinsicSize.Min),
     ) {
@@ -340,13 +397,22 @@ private fun EntryCard(
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             if (entry.supersetGroup != null) {
-                Text(
-                    "SUPERSET ${entry.supersetGroup}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 0.8.sp,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "SUPERSET · ${supersetPosition ?: 1} OF $supersetSize",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.8.sp,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (supersetPosition == 1) {
+                        TextButton(onClick = onEditSuperset) {
+                            Icon(Icons.Rounded.Edit, null, modifier = Modifier.size(14.dp))
+                            Text(" Edit")
+                        }
+                    }
+                }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
@@ -360,6 +426,29 @@ private fun EntryCard(
                         Tag(
                             entry.exerciseSnapshotPrimaryBodyPart,
                             accent = MaterialTheme.colorScheme.secondary,
+                        )
+                    }
+                    Text(
+                        when {
+                            entry.completedAtUtc != null -> "Finished · ${Format.duration(stats.durationSeconds ?: 0)}"
+                            entry.startedAtUtc != null -> "In progress · ${Format.duration(stats.durationSeconds ?: 0)}"
+                            else -> "Not started"
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (entry.completedAtUtc != null) MaterialTheme.colorScheme.primary else TextMid,
+                    )
+                }
+                if (entry.isStrength) {
+                    TextButton(onClick = onToggleWeightUnit) {
+                        Text(Format.unitLabel(entryUnits).uppercase(), fontWeight = FontWeight.Bold)
+                    }
+                }
+                if (entry.completedAtUtc != null) {
+                    IconButton(onClick = onToggleCollapsed, modifier = Modifier.size(34.dp)) {
+                        Icon(
+                            if (collapsed) Icons.Rounded.ExpandMore else Icons.Rounded.ExpandLess,
+                            if (collapsed) "Expand finished exercise" else "Collapse finished exercise",
+                            tint = TextMid,
                         )
                     }
                 }
@@ -399,15 +488,28 @@ private fun EntryCard(
                 }
             }
 
-            if (entry.isStrength) {
+            if (collapsed) {
+                Text(
+                    entry.statsSummary(entryUnits, nowUtcMillis),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                stats.bestSet?.let { best ->
+                    Text(
+                        "Best set ${best.reps} × ${Format.weightWithUnit(best.weightKg, entryUnits)}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TextMid,
+                    )
+                }
+            } else if (entry.isStrength) {
                 if (entry.strengthSets.isNotEmpty()) {
-                    SetColumnHeader(units)
+                    SetColumnHeader(entryUnits)
                 }
                 entry.strengthSets.forEachIndexed { index, set ->
                     SetRow(
                         index = index,
                         set = set,
-                        units = units,
+                        units = entryUnits,
                         done = set.id in doneIds,
                         onReps = { onReps(set.id, it) },
                         onWeightKg = { onWeight(set.id, it) },
@@ -431,6 +533,70 @@ private fun EntryCard(
                     onChange = onCardioChange,
                 )
             }
+            if (!collapsed) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    when {
+                        entry.completedAtUtc != null -> TextButton(onClick = onReopen) {
+                            Text("Reopen exercise")
+                        }
+                        entry.startedAtUtc == null -> TextButton(onClick = onStart) {
+                            Icon(Icons.Rounded.PlayArrow, null, modifier = Modifier.size(18.dp))
+                            Text(" Start exercise")
+                        }
+                        else -> TextButton(onClick = onFinish) {
+                            Text("Finish exercise", fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SupersetEditorSheet(
+    groupId: Int,
+    entries: List<WorkoutEntry>,
+    onAddBefore: () -> Unit,
+    onAddAfter: () -> Unit,
+    onRemoveEntry: (String) -> Unit,
+    onUngroup: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val positions = entries.indices.filter { entries[it].supersetGroup == groupId }
+    val members = positions.map(entries::get)
+    val canAddBefore = positions.firstOrNull()?.let { it > 0 && entries[it - 1].supersetGroup == null } == true
+    val canAddAfter = positions.lastOrNull()?.let { it < entries.lastIndex && entries[it + 1].supersetGroup == null } == true
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text("Edit superset", style = MaterialTheme.typography.titleLarge)
+            Text("Exercises stay together and are performed as one round.", color = TextMid)
+            members.forEachIndexed { index, entry ->
+                Row(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant).padding(start = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("${index + 1}. ${entry.exerciseSnapshotName}", modifier = Modifier.weight(1f))
+                    TextButton(onClick = { onRemoveEntry(entry.id) }) { Text("Remove") }
+                }
+            }
+            if (canAddBefore) TextButton(onClick = onAddBefore) {
+                Text("+ Add ${entries[positions.first() - 1].exerciseSnapshotName} before")
+            }
+            if (canAddAfter) TextButton(onClick = onAddAfter) {
+                Text("+ Add ${entries[positions.last() + 1].exerciseSnapshotName} after")
+            }
+            TextButton(onClick = onUngroup) { Text("Ungroup superset", color = MaterialTheme.colorScheme.error) }
         }
     }
 }

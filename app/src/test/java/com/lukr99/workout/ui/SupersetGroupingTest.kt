@@ -49,6 +49,22 @@ class SupersetGroupingTest {
         )
     }
 
+    @Test
+    fun editorCanExtendRemoveAndClearAGroup() {
+        val grouped = entries("a", "b", "c", "d", "e").mapIndexed { index, entry ->
+            entry.copy(supersetGroup = 7.takeIf { index in 1..3 })
+        }
+
+        val extended = extendSupersetGroup(grouped, groupId = 7, before = true)
+        assertEquals(listOf(7, 7, 7, 7, null), extended.map(WorkoutEntry::supersetGroup))
+
+        val removed = removeFromSupersetGroup(extended, entryId = "b")
+        assertEquals(listOf(null, null, 7, 7, null), removed.map(WorkoutEntry::supersetGroup))
+
+        val cleared = clearSupersetGroup(extended, groupId = 7)
+        assertEquals(listOf(null, null, null, null, null), cleared.map(WorkoutEntry::supersetGroup))
+    }
+
     private fun entries(vararg ids: String): List<WorkoutEntry> =
         ids.mapIndexed { index, id -> WorkoutEntry(id = id, sortOrder = index) }
 }

@@ -14,7 +14,7 @@ import kotlinx.serialization.Serializable
  * `domain/` models (which serialize enums as Int ordinals and timestamps as ISO-8601 — matching the
  * `v1.0` wire format).
  *
- * **Version 1.5** adds Run Mode: `runs` and `routes` arrays (each carrying its full trace/points).
+ * **Version 1.6** adds combinable set tags plus per-exercise unit and timing metadata.
  * Older exports omit them (they default empty), and the reader accepts all earlier published
  * versions and ignores unknown fields, so older exports and future tools interoperate.
  */
@@ -29,7 +29,7 @@ data class ExportBundle(
     val routes: List<Route> = emptyList(),
 ) {
     companion object {
-        const val CURRENT_VERSION = "1.5"
-        val SUPPORTED_VERSIONS = setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5")
+        const val CURRENT_VERSION = "1.6"
+        val SUPPORTED_VERSIONS = setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6")
     }
 }

@@ -10,11 +10,14 @@ import com.lukr99.workout.domain.Estimates
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.SetType
+import com.lukr99.workout.domain.SetTag
 import com.lukr99.workout.domain.StrengthSet
+import com.lukr99.workout.domain.WeightDisplayUnit
 import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutSessionStatus
 import com.lukr99.workout.domain.newId
+import com.lukr99.workout.domain.effectiveTags
 import com.lukr99.workout.domain.progression.DoubleProgression
 import com.lukr99.workout.domain.progression.SuggestionStatus
 import com.lukr99.workout.domain.records.RecordKind
@@ -176,6 +179,62 @@ class LiveWorkoutViewModel(
         session.copy(entries = toggleSupersetBoundary(session.entries, entryId))
     }
 
+    fun ungroupSuperset(groupId: Int) = mutate { session ->
+        session.copy(entries = clearSupersetGroup(session.entries, groupId))
+    }
+
+    fun removeFromSuperset(entryId: String) = mutate { session ->
+        session.copy(entries = removeFromSupersetGroup(session.entries, entryId))
+    }
+
+    fun extendSuperset(groupId: Int, before: Boolean) = mutate { session ->
+        session.copy(entries = extendSupersetGroup(session.entries, groupId, before))
+    }
+
+    fun toggleEntryWeightUnit(entryId: String, fallback: com.lukr99.workout.settings.UnitSystem) = mutate {
+        it.copy(entries = it.entries.map { entry ->
+            if (entry.id != entryId) entry else {
+                val currentlyPounds = when (entry.weightUnitOverride) {
+                    WeightDisplayUnit.Pounds -> true
+                    WeightDisplayUnit.Kilograms -> false
+                    null -> fallback == com.lukr99.workout.settings.UnitSystem.Imperial
+                }
+                entry.copy(
+                    weightUnitOverride = if (currentlyPounds) {
+                        WeightDisplayUnit.Kilograms
+                    } else {
+                        WeightDisplayUnit.Pounds
+                    },
+                )
+            }
+        })
+    }
+
+    fun startEntry(entryId: String) = mutate { session ->
+        val now = System.currentTimeMillis()
+        session.copy(entries = session.entries.map { entry ->
+            if (entry.id == entryId && entry.startedAtUtc == null) entry.copy(startedAtUtc = now) else entry
+        })
+    }
+
+    fun finishEntry(entryId: String) = mutate { session ->
+        val now = System.currentTimeMillis()
+        session.copy(entries = session.entries.map { entry ->
+            if (entry.id != entryId) entry else entry.copy(
+                startedAtUtc = entry.startedAtUtc
+                    ?: entry.strengthSets.mapNotNull(StrengthSet::performedAtUtc).minOrNull()
+                    ?: now,
+                completedAtUtc = now,
+            )
+        })
+    }
+
+    fun reopenEntry(entryId: String) = mutate { session ->
+        session.copy(entries = session.entries.map { entry ->
+            if (entry.id == entryId) entry.copy(completedAtUtc = null) else entry
+        })
+    }
+
     fun addSet(entryId: String) = mutate { session ->
         session.copy(entries = session.entries.map { entry ->
             if (entry.id != entryId) return@map entry
@@ -230,11 +289,21 @@ class LiveWorkoutViewModel(
             })
         }
 
-    fun setType(entryId: String, setId: String, type: SetType) = mutate {
+    /** Toggle one tag without disturbing the others; the legacy single type stays export-friendly. */
+    fun toggleSetTag(entryId: String, setId: String, tag: SetTag) = mutate {
         it.copy(entries = it.entries.map { entry ->
             if (entry.id != entryId) entry
-            else entry.copy(strengthSets = entry.strengthSets.map { s ->
-                if (s.id == setId) s.copy(setType = type, isWarmup = type == SetType.Warmup) else s
+            else entry.copy(strengthSets = entry.strengthSets.map { set ->
+                if (set.id != setId) set else {
+                    val tags = set.effectiveTags.toMutableSet().apply {
+                        if (!add(tag)) remove(tag)
+                    }.toSet()
+                    set.copy(
+                        tags = tags,
+                        isWarmup = SetTag.Warmup in tags,
+                        setType = legacyType(tags),
+                    )
+                }
             })
         })
     }
@@ -246,7 +315,16 @@ class LiveWorkoutViewModel(
         // Stamp completion onto the set itself so the checkmark (and the typed reps/weight) survive
         // leaving the screen or the OS reclaiming the process — doneSetIds alone is in-memory only.
         val stamp = if (currentlyDone) null else System.currentTimeMillis()
-        updateSet(entryId, setId) { it.copy(performedAtUtc = stamp) }
+        mutate(persist = false) { session ->
+            session.copy(entries = session.entries.map { entry ->
+                if (entry.id != entryId) entry else entry.copy(
+                    startedAtUtc = if (!currentlyDone) entry.startedAtUtc ?: stamp else entry.startedAtUtc,
+                    strengthSets = entry.strengthSets.map { set ->
+                        if (set.id == setId) set.copy(performedAtUtc = stamp) else set
+                    },
+                )
+            })
+        }
         if (!currentlyDone) {
             val entry = draftState.value?.entries?.firstOrNull { it.id == entryId }
             val restSecs = entry?.let { restSecondsFor(it) } ?: defaultRest
@@ -264,7 +342,7 @@ class LiveWorkoutViewModel(
     private fun evaluatePr(entryId: String, setId: String) {
         val entry = draftState.value?.entries?.firstOrNull { it.id == entryId } ?: return
         val set = entry.strengthSets.firstOrNull { it.id == setId } ?: return
-        if (entry.exerciseId.isBlank() || set.isWarmup || set.setType == SetType.Warmup) return
+        if (entry.exerciseId.isBlank() || set.isWarmup || SetTag.Warmup in set.effectiveTags) return
         if (set.reps <= 0 || set.weightKg <= 0.0) return
         viewModelScope.launch {
             val achievement = insights.evaluateSetRecord(entry.exerciseId, set)
@@ -326,6 +404,13 @@ class LiveWorkoutViewModel(
                             completedDateUtc = now,
                             entries = session.entries.filter {
                                 it.strengthSets.isNotEmpty() || it.cardioData != null
+                            }.map { entry ->
+                                entry.copy(
+                                    startedAtUtc = entry.startedAtUtc
+                                        ?: entry.strengthSets.mapNotNull(StrengthSet::performedAtUtc).minOrNull()
+                                        ?: now,
+                                    completedAtUtc = entry.completedAtUtc ?: now,
+                                )
                             },
                         ),
                     )
@@ -387,6 +472,7 @@ class LiveWorkoutViewModel(
                 weightKg = s.weightKg,
                 isWarmup = s.isWarmup,
                 setType = s.setType,
+                tags = s.tags,
             )
         }
     }
@@ -440,6 +526,15 @@ class LiveWorkoutViewModel(
                 LiveWorkoutViewModel(container.repository, container.settings, container.insights) as T
         }
     }
+}
+
+private fun legacyType(tags: Set<SetTag>): SetType = when {
+    SetTag.Warmup in tags -> SetType.Warmup
+    SetTag.Drop in tags -> SetType.Drop
+    SetTag.ToFailure in tags -> SetType.Failure
+    SetTag.Negative in tags -> SetType.Negative
+    SetTag.BackOff in tags -> SetType.BackOff
+    else -> SetType.Normal
 }
 
 /** Human summary of the strongest achievement in a PR (e1RM beats heaviest beats volume). */

@@ -7,6 +7,7 @@ import com.lukr99.workout.data.transfer.ExportArtifact
 import com.lukr99.workout.data.transfer.WeightUnit
 import com.lukr99.workout.domain.Units
 import com.lukr99.workout.domain.WorkoutSession
+import com.lukr99.workout.domain.effectiveTags
 import com.lukr99.workout.domain.query.WorkoutDataPoint
 import com.lukr99.workout.domain.query.WorkoutQueryEngine
 import java.time.Instant
@@ -80,6 +81,7 @@ object CsvExporter {
             CsvColumn.SupersetGroup -> entry?.supersetGroup?.toString().orEmpty()
             CsvColumn.SetNumber -> set?.setNumber?.toString().orEmpty()
             CsvColumn.SetType -> set?.setType?.name.orEmpty()
+            CsvColumn.SetTags -> set?.effectiveTags?.sortedBy { it.ordinal }?.joinToString("|") { it.name }.orEmpty()
             CsvColumn.IsWarmup -> set?.isWarmup?.toString().orEmpty()
             CsvColumn.IsPr -> set?.isPr?.toString().orEmpty()
             CsvColumn.Reps -> set?.reps?.toString().orEmpty()

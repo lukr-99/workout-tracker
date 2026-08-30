@@ -1,6 +1,7 @@
 package com.lukr99.workout.ui.components
 
 import com.lukr99.workout.domain.Units
+import com.lukr99.workout.domain.WeightDisplayUnit
 import com.lukr99.workout.settings.UnitSystem
 import java.time.Instant
 import java.time.LocalDate
@@ -21,6 +22,12 @@ object Format {
     private val shortDayFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())
 
     fun unitLabel(units: UnitSystem): String = if (units == UnitSystem.Imperial) "lb" else "kg"
+
+    fun entryUnits(override: WeightDisplayUnit?, fallback: UnitSystem): UnitSystem = when (override) {
+        WeightDisplayUnit.Kilograms -> UnitSystem.Metric
+        WeightDisplayUnit.Pounds -> UnitSystem.Imperial
+        null -> fallback
+    }
 
     /** Convert a stored-kg weight into the display unit and round for display (no unit suffix). */
     fun weight(kg: Double, units: UnitSystem): String {

@@ -60,6 +60,7 @@ class WorkoutMigrationTest {
             WorkoutDb.MIGRATION_3_4,
             WorkoutDb.MIGRATION_4_5,
             WorkoutDb.MIGRATION_5_6,
+            WorkoutDb.MIGRATION_6_7,
         )
             .allowMainThreadQueries()
             .build()
@@ -119,6 +120,7 @@ class WorkoutMigrationTest {
             WorkoutDb.MIGRATION_3_4,
             WorkoutDb.MIGRATION_4_5,
             WorkoutDb.MIGRATION_5_6,
+            WorkoutDb.MIGRATION_6_7,
         )
             .allowMainThreadQueries()
             .build()
@@ -175,6 +177,7 @@ class WorkoutMigrationTest {
             WorkoutDb.MIGRATION_3_4,
             WorkoutDb.MIGRATION_4_5,
             WorkoutDb.MIGRATION_5_6,
+            WorkoutDb.MIGRATION_6_7,
         )
             .allowMainThreadQueries()
             .build()
@@ -249,6 +252,7 @@ class WorkoutMigrationTest {
             WorkoutDb.MIGRATION_3_4,
             WorkoutDb.MIGRATION_4_5,
             WorkoutDb.MIGRATION_5_6,
+            WorkoutDb.MIGRATION_6_7,
         )
             .allowMainThreadQueries()
             .build()
@@ -270,6 +274,67 @@ class WorkoutMigrationTest {
                 cursor.moveToFirst()
                 assertEquals(1, cursor.getInt(0))
             }
+        } finally {
+            database.close()
+        }
+    }
+
+    @Test
+    fun migratesSchemaSixToSevenAddingExerciseLifecycleUnitsAndSetTags() {
+        helper.createDatabase(DatabaseName, 6).apply {
+            execSQL(
+                """
+                INSERT INTO sessions (
+                    id, templateId, name, status, startedAtUtc, endedAtUtc, completedDateUtc,
+                    durationSeconds, notes, perceivedEffort, bodyweightKg, source, externalKey
+                ) VALUES ('s7', NULL, 'Migration workout', 1, 1000, 2000, 2000, 1, '', NULL, NULL, 0, NULL)
+                """.trimIndent(),
+            )
+            execSQL(
+                """
+                INSERT INTO entries (
+                    id, workoutSessionId, exerciseId, exerciseSnapshotName,
+                    exerciseSnapshotCategory, exerciseSnapshotPrimaryBodyPart, sortOrder,
+                    entryType, notes, supersetGroup
+                ) VALUES ('e7', 's7', 'ex7', 'Bench', 0, 'Chest', 0, 0, '', NULL)
+                """.trimIndent(),
+            )
+            execSQL(
+                """
+                INSERT INTO strength_sets (
+                    id, workoutEntryId, setNumber, reps, weightKg, rir, rpe, performedAtUtc,
+                    notes, isWarmup, isPr, durationSeconds, setType
+                ) VALUES ('set7', 'e7', 1, 5, 100.0, NULL, NULL, 1500, '', 0, 0, NULL, 3)
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(DatabaseName, 7, true, WorkoutDb.MIGRATION_6_7)
+
+        val database = Room.databaseBuilder(
+            ApplicationProvider.getApplicationContext(),
+            WorkoutDb::class.java,
+            DatabaseName,
+        ).addMigrations(WorkoutDb.MIGRATION_6_7)
+            .allowMainThreadQueries()
+            .build()
+        try {
+            database.query(
+                "SELECT weightUnitOverride, startedAtUtc, completedAtUtc FROM entries WHERE id = 'e7'",
+                null,
+            ).use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(true, cursor.isNull(0))
+                assertEquals(true, cursor.isNull(1))
+                assertEquals(true, cursor.isNull(2))
+            }
+            database.query("SELECT tagsJson, setType FROM strength_sets WHERE id = 'set7'", null)
+                .use { cursor ->
+                    cursor.moveToFirst()
+                    assertEquals("[]", cursor.getString(0))
+                    assertEquals(3, cursor.getInt(1))
+                }
         } finally {
             database.close()
         }

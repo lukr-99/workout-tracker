@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 The format is inspired by Keep a Changelog, and this project currently uses simple semantic app versions for local releases.
 
+## [2.5.0] - 2026-08-30
+
+### Added
+
+- **Per-exercise KG/LB input**: tap the unit chip on any live exercise to enter the machine's shown
+  weight directly; storage remains metric and other exercises keep their own unit choice.
+- **Combinable set tags**: warm-up, drop, to failure, failed early, negative, and back-off can now be
+  selected together. Legacy single set types remain compatible with older history and exports.
+- **Exercise lifecycle**: exercises can be started, timed, finished, collapsed into a compact stats
+  summary, expanded again, or reopened. Logging the first set starts its timer automatically.
+- **Superset editor**: clearer position/count visuals plus controls to add adjacent exercises,
+  remove individual members, or ungroup the block.
+- **Exact share preview**: workout detail now shows the rendered postcard before opening Android's
+  share sheet, and exercise cards expose sets, reps, volume, best set, and elapsed time.
+- **Guided Windows installer**: a release-packaging command creates a double-click installer for a
+  USB-connected Android phone, including first-time USB-debugging guidance.
+
+### Data
+
+- Room schema **v7** adds non-destructive exercise timing/unit fields and set-tag JSON. Portable
+  exports are now **v1.6** and still accept every published format from v1.0 onward.
+
 ## [2.4.0] - 2026-08-24
 
 ### Fixed

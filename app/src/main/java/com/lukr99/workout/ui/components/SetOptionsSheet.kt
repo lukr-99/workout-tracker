@@ -24,8 +24,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.lukr99.workout.domain.SetType
+import com.lukr99.workout.domain.SetTag
 import com.lukr99.workout.domain.StrengthSet
+import com.lukr99.workout.domain.effectiveTags
 import com.lukr99.workout.ui.theme.TextMid
 
 /**
@@ -36,7 +37,7 @@ import com.lukr99.workout.ui.theme.TextMid
 @Composable
 fun SetOptionsSheet(
     set: StrengthSet,
-    onType: (SetType) -> Unit,
+    onToggleTag: (SetTag) -> Unit,
     onRir: (Double?) -> Unit,
     onRpe: (Double?) -> Unit,
     onRemove: () -> Unit,
@@ -57,10 +58,10 @@ fun SetOptionsSheet(
         ) {
             Text("Set options", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
 
-            Text("Type", style = MaterialTheme.typography.labelMedium, color = TextMid)
+            Text("Tags · choose any that apply", style = MaterialTheme.typography.labelMedium, color = TextMid)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(SetType.entries) { type ->
-                    FilterChip(type.name, set.setType == type, onClick = { onType(type) })
+                items(SetTag.entries) { tag ->
+                    FilterChip(tag.label, tag in set.effectiveTags, onClick = { onToggleTag(tag) })
                 }
             }
 
@@ -105,6 +106,16 @@ fun SetOptionsSheet(
         else -> Unit
     }
 }
+
+val SetTag.label: String
+    get() = when (this) {
+        SetTag.Warmup -> "Warm-up"
+        SetTag.Drop -> "Drop"
+        SetTag.ToFailure -> "To failure"
+        SetTag.Failed -> "Failed early"
+        SetTag.Negative -> "Negative"
+        SetTag.BackOff -> "Back-off"
+    }
 
 private fun trim(v: Double): String {
     val r = Math.round(v * 10.0) / 10.0

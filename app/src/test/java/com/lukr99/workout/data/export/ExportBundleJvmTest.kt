@@ -5,6 +5,7 @@ import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.ExerciseSource
 import com.lukr99.workout.domain.SetType
+import com.lukr99.workout.domain.SetTag
 import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.domain.WorkoutSession
@@ -12,6 +13,7 @@ import com.lukr99.workout.domain.WorkoutSessionSource
 import com.lukr99.workout.domain.WorkoutSessionStatus
 import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.domain.WorkoutTemplateExercise
+import com.lukr99.workout.domain.WeightDisplayUnit
 import com.lukr99.workout.domain.run.Route
 import com.lukr99.workout.domain.run.RoutePoint
 import com.lukr99.workout.domain.run.Run
@@ -23,14 +25,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * The cross-device contract: our `1.5` bundle round-trips through JSON unchanged, and a hand-crafted
+ * The cross-device contract: our `1.6` bundle round-trips through JSON unchanged, and a hand-crafted
  * `v1.0` export (enums as ints, ISO-8601 timestamps, MAUI computed fields) imports 1:1.
  */
 class ExportBundleJvmTest {
 
     private val bundle = ExportBundle(
         exportedAtUtc = "2024-01-01T10:00:00Z",
-        exportFormatVersion = "1.5",
+        exportFormatVersion = "1.6",
         exercises = listOf(
             Exercise(
                 id = "ex1", name = "Bench", category = ExerciseCategory.Strength,
@@ -59,9 +61,16 @@ class ExportBundleJvmTest {
                         id = "e1", workoutSessionId = "s1", exerciseId = "ex1",
                         exerciseSnapshotName = "Bench", exerciseSnapshotPrimaryBodyPart = "Chest",
                         entryType = ExerciseCategory.Strength, supersetGroup = 1,
+                        weightUnitOverride = WeightDisplayUnit.Pounds,
+                        startedAtUtc = 1_700_000_100_000L,
+                        completedAtUtc = 1_700_000_700_000L,
                         strengthSets = listOf(
                             StrengthSet(id = "set1", workoutEntryId = "e1", setNumber = 1, reps = 5, weightKg = 100.0, isWarmup = true, setType = SetType.Warmup),
-                            StrengthSet(id = "set2", workoutEntryId = "e1", setNumber = 2, reps = 3, weightKg = 110.0, rir = 1.0, isPr = true, durationSeconds = null),
+                            StrengthSet(
+                                id = "set2", workoutEntryId = "e1", setNumber = 2, reps = 3,
+                                weightKg = 110.0, rir = 1.0, isPr = true, durationSeconds = null,
+                                tags = setOf(SetTag.ToFailure, SetTag.Failed),
+                            ),
                         ),
                     ),
                     WorkoutEntry(
@@ -109,6 +118,7 @@ class ExportBundleJvmTest {
         assertTrue("category should be the int ordinal", json.contains("\"category\": 0"))
         assertTrue("status should be the int ordinal", json.contains("\"status\": 1"))
         assertTrue("setType Warmup should be ordinal 1", json.contains("\"setType\": 1"))
+        assertTrue("combined tag ordinals should be serialized", json.contains("\"tags\": ["))
         assertTrue("session source should be ordinal 1", json.contains("\"source\": 1"))
         assertTrue("timestamps should be ISO strings", json.contains("\"startedAtUtc\": \"2023-11-14"))
     }
@@ -132,9 +142,14 @@ class ExportBundleJvmTest {
         assertEquals(WorkoutSessionSource.Local, session.source)
         assertEquals(null, session.externalKey)
         assertEquals(Instant.parse("2024-01-01T09:00:00Z").toEpochMilli(), session.startedAtUtc)
-        val set = session.entries.single().strengthSets.single()
+        val entry = session.entries.single()
+        assertEquals(null, entry.weightUnitOverride)
+        assertEquals(null, entry.startedAtUtc)
+        assertEquals(null, entry.completedAtUtc)
+        val set = entry.strengthSets.single()
         assertEquals(100.0, set.weightKg, 1e-9)
         assertEquals(SetType.Normal, set.setType) // additive default
+        assertTrue(set.tags.isEmpty())
     }
 
     @Test
@@ -153,8 +168,8 @@ class ExportBundleJvmTest {
 
     @Test
     fun supportsAllPublishedVersions() {
-        assertEquals(setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5"), ExportBundle.SUPPORTED_VERSIONS)
-        assertEquals("1.5", ExportBundle.CURRENT_VERSION)
+        assertEquals(setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6"), ExportBundle.SUPPORTED_VERSIONS)
+        assertEquals("1.6", ExportBundle.CURRENT_VERSION)
     }
 
     @Test

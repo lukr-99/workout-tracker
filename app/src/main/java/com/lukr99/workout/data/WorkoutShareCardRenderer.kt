@@ -31,19 +31,28 @@ class WorkoutShareCardRenderer(
 ) {
     private val appContext = context.applicationContext
 
-    suspend fun shareIntent(session: WorkoutSession, imperial: Boolean): Intent = withContext(Dispatchers.IO) {
+    data class PreparedShare(val bitmap: Bitmap, val intent: Intent)
+
+    /** Render and persist once so the preview is the exact image attached to the share intent. */
+    suspend fun prepare(session: WorkoutSession, imperial: Boolean): PreparedShare = withContext(Dispatchers.IO) {
         val bitmap = render(session, imperial)
         val dir = File(appContext.cacheDir, "shared-exports").apply { mkdirs() }
         val file = File(dir, "workout-${session.id}.png")
         file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        bitmap.recycle()
         val uri = FileProvider.getUriForFile(appContext, fileProviderAuthority, file)
-        Intent(Intent.ACTION_SEND).apply {
+        val intent = Intent(Intent.ACTION_SEND).apply {
             type = "image/png"
             putExtra(Intent.EXTRA_STREAM, uri)
             clipData = ClipData.newRawUri(file.name, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
+        PreparedShare(bitmap, intent)
+    }
+
+    suspend fun shareIntent(session: WorkoutSession, imperial: Boolean): Intent {
+        val prepared = prepare(session, imperial)
+        prepared.bitmap.recycle()
+        return prepared.intent
     }
 
     private fun render(session: WorkoutSession, imperial: Boolean): Bitmap {

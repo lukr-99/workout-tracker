@@ -5,7 +5,9 @@ import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.ExerciseSource
 import com.lukr99.workout.domain.SetType
+import com.lukr99.workout.domain.SetTag
 import com.lukr99.workout.domain.StrengthSet
+import com.lukr99.workout.domain.WeightDisplayUnit
 import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutSessionSource
@@ -226,10 +228,11 @@ class WorkoutFactory(
                     rpe = set.rpe,
                     performedAtUtc = set.performedAtUtc,
                     notes = set.notes.trim(),
-                    isWarmup = set.isWarmup || type == SetType.Warmup,
+                    isWarmup = set.isWarmup || type == SetType.Warmup || SetTag.Warmup in set.tags,
                     isPr = set.isPr,
                     durationSeconds = set.durationSeconds?.coerceAtLeast(0),
                     setType = type,
+                    tags = set.tags,
                 )
             }
         } else {
@@ -275,6 +278,9 @@ class WorkoutFactory(
             entryType = category,
             notes = draft.notes.trim(),
             supersetGroup = draft.supersetGroup,
+            weightUnitOverride = draft.weightUnitOverride,
+            startedAtUtc = draft.startedAtUtc,
+            completedAtUtc = draft.completedAtUtc,
             strengthSets = strengthSets,
             cardioData = cardio,
         )
@@ -378,6 +384,9 @@ data class EntryDraft(
     val bodyPart: String = "",
     val notes: String = "",
     val supersetGroup: Int? = null,
+    val weightUnitOverride: WeightDisplayUnit? = null,
+    val startedAtUtc: Long? = null,
+    val completedAtUtc: Long? = null,
     val strengthSets: List<StrengthSetDraft> = emptyList(),
     val cardio: CardioDraft? = null,
 )
@@ -394,6 +403,7 @@ data class StrengthSetDraft(
     val isPr: Boolean = false,
     val durationSeconds: Int? = null,
     val setType: SetType = SetType.Normal,
+    val tags: Set<SetTag> = emptySet(),
 )
 
 data class CardioDraft(

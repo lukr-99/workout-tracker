@@ -81,3 +81,25 @@ internal fun normalizeSupersetGroups(entries: List<WorkoutEntry>): List<WorkoutE
     }
     return output
 }
+
+internal fun extendSupersetGroup(
+    entries: List<WorkoutEntry>,
+    groupId: Int,
+    before: Boolean,
+): List<WorkoutEntry> {
+    val positions = entries.indices.filter { entries[it].supersetGroup == groupId }
+    if (positions.isEmpty()) return entries
+    val adjacent = if (before) positions.first() - 1 else positions.last() + 1
+    if (adjacent !in entries.indices || entries[adjacent].supersetGroup != null) return entries
+    return entries.mapIndexed { index, entry ->
+        if (index == adjacent) entry.copy(supersetGroup = groupId) else entry
+    }
+}
+
+internal fun removeFromSupersetGroup(entries: List<WorkoutEntry>, entryId: String): List<WorkoutEntry> =
+    normalizeSupersetGroups(entries.map { entry ->
+        if (entry.id == entryId) entry.copy(supersetGroup = null) else entry
+    })
+
+internal fun clearSupersetGroup(entries: List<WorkoutEntry>, groupId: Int): List<WorkoutEntry> =
+    entries.map { entry -> if (entry.supersetGroup == groupId) entry.copy(supersetGroup = null) else entry }

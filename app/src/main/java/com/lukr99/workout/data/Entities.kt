@@ -7,6 +7,7 @@ import androidx.room.PrimaryKey
 import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.ExerciseSource
 import com.lukr99.workout.domain.SetType
+import com.lukr99.workout.domain.WeightDisplayUnit
 import com.lukr99.workout.domain.WorkoutSessionStatus
 import com.lukr99.workout.domain.WorkoutSessionSource
 
@@ -120,6 +121,9 @@ data class EntryEntity(
     val entryType: ExerciseCategory,
     val notes: String,
     val supersetGroup: Int? = null,
+    val weightUnitOverride: WeightDisplayUnit? = null,
+    val startedAtUtc: Long? = null,
+    val completedAtUtc: Long? = null,
 )
 
 @Entity(
@@ -148,6 +152,8 @@ data class StrengthSetEntity(
     val isPr: Boolean = false,
     val durationSeconds: Int? = null,
     val setType: SetType = SetType.Normal,
+    /** JSON array of [com.lukr99.workout.domain.SetTag] ordinals. */
+    val tagsJson: String = "[]",
 )
 
 @Entity(

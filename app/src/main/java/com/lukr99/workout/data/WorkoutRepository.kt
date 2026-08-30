@@ -46,6 +46,7 @@ class WorkoutRepository(
 
     private val json = Json { ignoreUnknownKeys = true }
     private val stringListSerializer = ListSerializer(String.serializer())
+    private val intListSerializer = ListSerializer(Int.serializer())
 
     // --- Seeding -------------------------------------------------------------------------------
 
@@ -484,6 +485,9 @@ class WorkoutRepository(
         entryType = entryType,
         notes = notes,
         supersetGroup = supersetGroup,
+        weightUnitOverride = weightUnitOverride,
+        startedAtUtc = startedAtUtc,
+        completedAtUtc = completedAtUtc,
     )
 
     private fun StrengthSet.toEntity() = StrengthSetEntity(
@@ -500,6 +504,7 @@ class WorkoutRepository(
         isPr = isPr,
         durationSeconds = durationSeconds,
         setType = setType,
+        tagsJson = encodeIntList(tags.map { it.ordinal }.sorted()),
     )
 
     private fun CardioEntryData.toEntity() = CardioDataEntity(
@@ -538,6 +543,9 @@ class WorkoutRepository(
         entryType = entry.entryType,
         notes = entry.notes,
         supersetGroup = entry.supersetGroup,
+        weightUnitOverride = entry.weightUnitOverride,
+        startedAtUtc = entry.startedAtUtc,
+        completedAtUtc = entry.completedAtUtc,
         strengthSets = strengthSets.sortedBy { it.setNumber }.map { it.toDomain() },
         cardioData = cardio?.toDomain(),
     )
@@ -556,6 +564,7 @@ class WorkoutRepository(
         isPr = isPr,
         durationSeconds = durationSeconds,
         setType = setType,
+        tags = decodeIntList(tagsJson).mapNotNull { com.lukr99.workout.domain.SetTag.entries.getOrNull(it) }.toSet(),
     )
 
     private fun CardioDataEntity.toDomain() = CardioEntryData(
@@ -630,4 +639,9 @@ class WorkoutRepository(
     private fun decodeList(value: String?): List<String> =
         if (value.isNullOrBlank()) emptyList()
         else runCatching { json.decodeFromString(stringListSerializer, value) }.getOrDefault(emptyList())
+
+    private fun encodeIntList(list: List<Int>): String = json.encodeToString(intListSerializer, list)
+    private fun decodeIntList(value: String?): List<Int> =
+        if (value.isNullOrBlank()) emptyList()
+        else runCatching { json.decodeFromString(intListSerializer, value) }.getOrDefault(emptyList())
 }

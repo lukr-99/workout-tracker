@@ -54,6 +54,7 @@ headlessly and repeatably, and **exits non-zero on failure** (CI/agent chainable
 | `pull-lyfta.ps1` | Scan the phone for Lyfta's exported CSV(s) and copy them to `import/lyfta/`. | now |
 | `pull-data.ps1` | Pull OUR app's exported JSON/CSV via `adb run-as` (debug build). | when app exists |
 | `build-and-install.ps1` | `gradlew assembleDebug` + `adb install -r` (+ `-Launch`). | now |
+| `make-phone-installer.ps1` | Build and ZIP a guided, double-click Windows installer with a signed APK. | now |
 | `run-sim.ps1` | Replay a synthetic GPS run into the live controller (debug); `-UseRoute` links it. | now |
 | `run-mode-check.ps1` | End-to-end Run Mode verify: build/seed/screenshot/assert, non-zero on fail. | now |
 
@@ -61,7 +62,16 @@ headlessly and repeatably, and **exits non-zero on failure** (CI/agent chainable
 
 1. Enable **Developer options** (tap Build number 7×) and **USB debugging**.
 2. Plug in over USB; on the phone accept **"Allow USB debugging?"** (tick *Always allow*).
-3. Verify: `\.tools\phone.ps1 devices` should show one device in state `device`.
+3. Verify: `.\tools\phone.ps1 devices` should show one device in state `device`.
+
+## Installer for a non-programmer
+
+Run `.\tools\make-phone-installer.ps1` on the development computer. It builds the signed release
+and creates `dist/Ember-Phone-Installer-v<version>.zip`. The recipient only needs Windows, internet
+access on the first run, a USB data cable, and USB debugging enabled on the phone. After extracting
+the ZIP, they double-click **Install Ember.cmd**; the installer fetches Google's official platform
+tools, waits for phone authorization, upgrades Ember without clearing compatible data, and launches
+the app. It never auto-uninstalls a signature-mismatched copy because doing so would erase app data.
 
 ## Notes
 
