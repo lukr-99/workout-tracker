@@ -40,9 +40,9 @@ android {
         applicationId = "com.lukr99.workout"
         minSdk = 26
         targetSdk = 35
-        versionCode = 7
+        versionCode = 8
         // Native rework release line. The frozen MAUI proof-of-concept already used v1.0.0.
-        versionName = "2.5.0"
+        versionName = "2.5.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -149,6 +149,9 @@ dependencies {
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.room.testing)
+    // Instrumented Compose tests (layout regressions in the live-logging set rows)
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    debugImplementation(libs.compose.ui.test.manifest)
     androidTestImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.work.testing)
 }

@@ -5,10 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -48,6 +46,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -380,17 +381,28 @@ private fun EntryCard(
 ) {
     val entryUnits = Format.entryUnits(entry.weightUnitOverride, units)
     val stats = entry.stats(nowUtcMillis)
+    // The superset rail is painted behind the row instead of being a `fillMaxHeight` sibling under
+    // `Modifier.height(IntrinsicSize.Min)`. Intrinsic measurement walks the whole card, and any
+    // scrolling or lazy content inside a set row cannot answer it — a set earning a PR chip used to
+    // crash the app outright, then again on every relaunch because `isPr` is persisted.
+    val railColor = MaterialTheme.colorScheme.primary
     Row(
-        Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+        Modifier.fillMaxWidth().then(
+            if (entry.supersetGroup == null) {
+                Modifier
+            } else {
+                Modifier.drawBehind {
+                    val railWidth = 3.dp.toPx()
+                    drawRoundRect(
+                        color = railColor,
+                        size = Size(railWidth, size.height),
+                        cornerRadius = CornerRadius(railWidth / 2f),
+                    )
+                }
+            },
+        ),
     ) {
-        if (entry.supersetGroup != null) {
-            Box(
-                Modifier.width(3.dp).fillMaxHeight()
-                    .clip(RoundedCornerShape(50))
-                    .background(MaterialTheme.colorScheme.primary),
-            )
-            Spacer(Modifier.width(7.dp))
-        }
+        if (entry.supersetGroup != null) Spacer(Modifier.width(10.dp))
         Column(
             Modifier.weight(1f).clip(RoundedCornerShape(16.dp))
                 .background(MaterialTheme.colorScheme.surface).padding(12.dp),

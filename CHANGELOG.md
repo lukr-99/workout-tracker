@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is inspired by Keep a Changelog, and this project currently uses simple semantic app versions for local releases.
 
+## [2.5.1] - 2026-09-20
+
+### Fixed
+
+- **Live logging crash**: marking sets done could kill the app outright. When a set earned a
+  personal record, its "PR" chip appeared in the exercise card, and the card measured its height
+  with intrinsics to size the superset rail — which a lazily-laid-out chip strip cannot answer, so
+  Compose threw `IllegalStateException`. Because the PR flag is persisted into the draft, reopening
+  the app crashed it again within seconds, leaving a force-stop as the only way out. The chip strip
+  no longer uses a lazy list, and the superset rail is painted rather than measured, so neither
+  half of the fault can recur. The same crash could be triggered by any tagged set, not just a PR.
+
 ## [2.5.0] - 2026-08-30
 
 ### Added

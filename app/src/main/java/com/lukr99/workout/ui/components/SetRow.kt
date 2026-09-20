@@ -3,6 +3,7 @@ package com.lukr99.workout.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -11,8 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -154,7 +154,13 @@ fun SetRow(
     }
 }
 
-/** Small, horizontally scrollable chips so combined tags remain visible outside the edit sheet. */
+/**
+ * Small, horizontally scrollable chips so combined tags remain visible outside the edit sheet.
+ *
+ * Deliberately a plain scrolling [Row] and not a `LazyRow`: a set row is laid out inside cards that
+ * may be measured with intrinsics, and lazy lists are `SubcomposeLayout`s, which cannot answer an
+ * intrinsic measurement and throw instead. A handful of chips needs no recycling anyway.
+ */
 @Composable
 fun SetTagChips(set: StrengthSet, modifier: Modifier = Modifier) {
     val visibleTags = buildList {
@@ -169,8 +175,12 @@ fun SetTagChips(set: StrengthSet, modifier: Modifier = Modifier) {
         }
     }
     if (visibleTags.isEmpty()) return
-    LazyRow(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-        items(visibleTags) { (label, tint) ->
+    Row(
+        modifier = modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        visibleTags.forEach { (label, tint) ->
             Box(
                 Modifier.clip(RoundedCornerShape(50)).background(tint.copy(alpha = 0.13f))
                     .padding(horizontal = 7.dp, vertical = 2.dp),
