@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 The format is inspired by Keep a Changelog, and this project currently uses simple semantic app versions for local releases.
 
+## [2.5.2] - 2026-09-20
+
+### Fixed
+
+- **In-app update failed to install**: the updater never checked that a download actually finished.
+  A dropped connection simply ends the response stream without raising anything, so a partial APK
+  was handed to Android's package installer, which rejected it as corrupt — looking like an install
+  problem rather than the half-finished download it was. The download now verifies the transferred
+  byte count against the size GitHub reports, checks the HTTP status, streams to a `.part` file that
+  is only put in place once complete, and deletes it otherwise.
+- **Silent updater failures**: every error was discarded by `runCatching { }.getOrNull()`, leaving
+  "Download failed — try again later." and nothing in the logs. Failures now show the actual reason
+  and are logged.
+
+### Changed
+
+- **Update download is ~3x smaller**: release builds ship only `arm64-v8a`. The universal APK
+  carried native libraries for four architectures — 49 MB of its 52 MB — so roughly 39 MB of every
+  update was code no phone could run. Debug builds keep every ABI so emulator tests still run.
+- The Updates section now reports real download progress instead of an indeterminate spinner.
+
 ## [2.5.1] - 2026-09-20
 
 ### Fixed

@@ -4,7 +4,8 @@
   broadcast can trigger a synthetic run; it exists only in debug builds and is never shipped.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <application>
+    <!-- Loopback-only cleartext so instrumented tests can serve HTTP from a local socket. -->
+    <application android:usesCleartextTraffic="true">
         <receiver
             android:name=".data.location.RunSimReceiver"
             android:exported="true">

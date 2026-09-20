@@ -4,12 +4,15 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
+import kotlin.coroutines.coroutineContext
 
 /** A release discovered on GitHub that is newer than the installed build. */
 data class AppRelease(
@@ -17,6 +20,8 @@ data class AppRelease(
     val tag: String,
     val apkUrl: String,
     val notes: String,
+    /** Asset size in bytes as GitHub reports it; 0 when unknown. Detects a truncated download. */
+    val sizeBytes: Long = 0,
 )
 
 /**
@@ -51,25 +56,67 @@ class AppUpdater(
         if (isNewer(release.versionName, currentVersion)) release else null
     }
 
-    /** Downloads [release]'s APK into the cache and returns the file. */
-    suspend fun download(release: AppRelease): File = withContext(Dispatchers.IO) {
-        val dir = File(context.cacheDir, "updates").apply { mkdirs() }
-        dir.listFiles()?.forEach { it.delete() } // drop any stale download
-        val out = File(dir, "$repo-${release.tag}.apk")
-        val conn = (URL(release.apkUrl).openConnection() as HttpURLConnection).apply {
-            connectTimeout = 15_000
-            readTimeout = 60_000
-            instanceFollowRedirects = true
-            setRequestProperty("Accept", "application/octet-stream")
-            setRequestProperty("User-Agent", "$repo-updater")
+    /**
+     * Downloads [release]'s APK into the cache and returns the file, reporting 0f..1f through
+     * [onProgress] whenever the whole-percent figure changes.
+     *
+     * The APK streams to a `.part` file and is only renamed into place once every expected byte has
+     * arrived. That completeness check is the important one: a dropped connection simply ends the
+     * response stream without raising anything, so without it a truncated APK reaches the package
+     * installer and is rejected as corrupt ("App not installed") — which looks like an install
+     * failure rather than the half-finished download it actually is.
+     */
+    suspend fun download(release: AppRelease, onProgress: (Float) -> Unit = {}): File =
+        withContext(Dispatchers.IO) {
+            val dir = File(context.cacheDir, "updates").apply { mkdirs() }
+            dir.listFiles()?.forEach { it.delete() } // drop any stale download
+            val out = File(dir, "$repo-${release.tag}.apk")
+            val part = File(dir, out.name + ".part")
+            val conn = (URL(release.apkUrl).openConnection() as HttpURLConnection).apply {
+                connectTimeout = 15_000
+                readTimeout = 60_000
+                instanceFollowRedirects = true
+                setRequestProperty("Accept", "application/octet-stream")
+                setRequestProperty("User-Agent", "$repo-updater")
+            }
+            try {
+                val code = conn.responseCode
+                if (code !in 200..299) throw IOException("GitHub returned HTTP $code for the update download.")
+                val expected = if (release.sizeBytes > 0) release.sizeBytes else conn.contentLengthLong
+                var copied = 0L
+                var lastPercent = -1
+                conn.inputStream.use { input ->
+                    part.outputStream().buffered(BUFFER_BYTES).use { output ->
+                        val buffer = ByteArray(BUFFER_BYTES)
+                        while (true) {
+                            coroutineContext.ensureActive()
+                            val read = input.read(buffer)
+                            if (read < 0) break
+                            output.write(buffer, 0, read)
+                            copied += read
+                            if (expected > 0) {
+                                val percent = ((copied * 100) / expected).toInt()
+                                if (percent != lastPercent) {
+                                    lastPercent = percent
+                                    onProgress(copied.toFloat() / expected)
+                                }
+                            }
+                        }
+                    }
+                }
+                if (expected > 0 && copied != expected) {
+                    throw IOException("Download stopped early — got $copied of $expected bytes.")
+                }
+                if (out.exists() && !out.delete()) throw IOException("Could not replace the previous download.")
+                if (!part.renameTo(out)) throw IOException("Could not finalise the downloaded update.")
+                out
+            } catch (t: Throwable) {
+                part.delete()
+                throw t
+            } finally {
+                conn.disconnect()
+            }
         }
-        try {
-            conn.inputStream.use { input -> out.outputStream().use(input::copyTo) }
-        } finally {
-            conn.disconnect()
-        }
-        out
-    }
 
     /** Launches the system package installer for a downloaded [apk]. */
     fun install(apk: File) {
@@ -85,10 +132,12 @@ class AppUpdater(
         val tag = obj.optString("tag_name").ifBlank { return null }
         val assets = obj.optJSONArray("assets") ?: JSONArray()
         var apkUrl = ""
+        var sizeBytes = 0L
         for (i in 0 until assets.length()) {
             val asset = assets.getJSONObject(i)
             if (asset.optString("name").endsWith(".apk", ignoreCase = true)) {
                 apkUrl = asset.optString("browser_download_url")
+                sizeBytes = asset.optLong("size")
                 break
             }
         }
@@ -98,6 +147,7 @@ class AppUpdater(
             tag = tag,
             apkUrl = apkUrl,
             notes = obj.optString("body"),
+            sizeBytes = sizeBytes,
         )
     }
 
@@ -110,6 +160,8 @@ class AppUpdater(
             setRequestProperty("User-Agent", "$repo-updater")
         }
         try {
+            val code = conn.responseCode
+            if (code !in 200..299) throw IOException("GitHub returned HTTP $code for $url.")
             return conn.inputStream.bufferedReader().use { it.readText() }
         } finally {
             conn.disconnect()
@@ -117,6 +169,8 @@ class AppUpdater(
     }
 
     companion object {
+        private const val BUFFER_BYTES = 64 * 1024
+
         /** True when [candidate] is a strictly higher dotted-numeric version than [current]. */
         fun isNewer(candidate: String, current: String): Boolean {
             val c = parse(candidate)

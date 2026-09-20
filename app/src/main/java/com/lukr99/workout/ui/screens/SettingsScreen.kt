@@ -2,6 +2,7 @@ package com.lukr99.workout.ui.screens
 
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -310,6 +311,18 @@ fun SettingsScreen(
     }
 }
 
+/**
+ * Renders an updater failure for the status line and logs it.
+ *
+ * These used to be discarded by `runCatching { }.getOrNull()`, which left both the user and the
+ * logs with nothing to go on when an update would not install.
+ */
+private fun updateFailure(prefix: String, cause: Throwable): String {
+    Log.w("AppUpdater", prefix, cause)
+    val detail = cause.message?.takeIf { it.isNotBlank() } ?: cause::class.java.simpleName
+    return "$prefix: $detail"
+}
+
 /** GitHub-Releases self-update: check, then download & hand off to the system installer. */
 @Composable
 private fun UpdateSection(updater: AppUpdater) {
@@ -317,6 +330,7 @@ private fun UpdateSection(updater: AppUpdater) {
     var status by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var pending by remember { mutableStateOf<AppRelease?>(null) }
+    var progress by remember { mutableStateOf(0f) }
 
     SettingSection("Updates") {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -329,24 +343,37 @@ private fun UpdateSection(updater: AppUpdater) {
                 )
             }
             if (busy) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(22.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.primary,
-                )
+                if (progress > 0f) {
+                    CircularProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier.size(22.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                } else {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
             } else {
                 SettingsAction("Check") {
                     busy = true
                     status = "Checking for updates…"
                     scope.launch {
-                        val release = runCatching { updater.check() }.getOrNull()
+                        val result = runCatching { updater.check() }
                         busy = false
-                        if (release != null) {
-                            pending = release
-                            status = "Update available: v${release.versionName}"
-                        } else {
-                            status = "You're on the latest version."
-                        }
+                        result
+                            .onSuccess { release ->
+                                if (release != null) {
+                                    pending = release
+                                    status = "Update available: v${release.versionName}"
+                                } else {
+                                    status = "You're on the latest version."
+                                }
+                            }
+                            .onFailure { status = updateFailure("Check failed", it) }
                     }
                 }
             }
@@ -362,18 +389,25 @@ private fun UpdateSection(updater: AppUpdater) {
                     enabled = !busy,
                     onClick = {
                         busy = true
-                        status = "Downloading v${release.versionName}…"
+                        progress = 0f
+                        status = "Downloading v${release.versionName}… 0%"
                         scope.launch {
-                            val apk = runCatching { updater.download(release) }.getOrNull()
-                            busy = false
-                            if (apk != null) {
-                                pending = null
-                                status = "Launching installer…"
-                                runCatching { updater.install(apk) }
-                                    .onFailure { status = "Couldn't start the installer." }
-                            } else {
-                                status = "Download failed — try again later."
+                            val result = runCatching {
+                                updater.download(release) { fraction ->
+                                    progress = fraction
+                                    status = "Downloading v${release.versionName}… " +
+                                        "${(fraction * 100).toInt()}%"
+                                }
                             }
+                            busy = false
+                            result
+                                .onSuccess { apk ->
+                                    pending = null
+                                    status = "Launching installer…"
+                                    runCatching { updater.install(apk) }
+                                        .onFailure { status = updateFailure("Couldn't start the installer", it) }
+                                }
+                                .onFailure { status = updateFailure("Download failed", it) }
                         }
                     },
                 ) { Text("Download & install") }

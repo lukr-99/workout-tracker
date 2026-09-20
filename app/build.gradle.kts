@@ -40,9 +40,9 @@ android {
         applicationId = "com.lukr99.workout"
         minSdk = 26
         targetSdk = 35
-        versionCode = 8
+        versionCode = 9
         // Native rework release line. The frozen MAUI proof-of-concept already used v1.0.0.
-        versionName = "2.5.1"
+        versionName = "2.5.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -68,6 +68,12 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            // Ship only 64-bit ARM. A universal APK carried native libs for four ABIs — 49 MB of
+            // the 52 MB total — so ~39 MB of every in-app update was architectures no phone here
+            // can run. Trimming to arm64-v8a takes the download to roughly a third, which is what
+            // makes the updater's large-file transfer survive a phone connection. Debug builds
+            // keep every ABI so the x86_64 emulator still runs the instrumented tests.
+            ndk { abiFilters += "arm64-v8a" }
             if (releaseSigningReady) {
                 signingConfig = signingConfigs.getByName("release")
             }
