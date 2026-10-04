@@ -1,0 +1,102 @@
+# Ember architecture
+
+## Context
+
+Ember is a personal Android app for one owner. It logs strength workouts and records GPS runs.
+Everything runs on the phone: there is no backend and no account. The Room database on the phone is
+the source of truth. The versioned JSON export is the contract with anything outside the app:
+backups, restores and any future desktop tool.
+
+## Modules and dependencies
+
+One Gradle module, `:app`, package `com.lukr99.workout`, split by role:
+
+```text
+ui/ (Compose screens, ViewModels) ---> domain/ (pure Kotlin)
+   |                                       ^
+   v                                       |
+data/ (Room, files, network, Health Connect) --+
+settings/ (DataStore)    update/ (GitHub release updater)
+```
+
+| Package | Responsibility | May depend on |
+|---|---|---|
+| `domain/` | Models and the export contract (`Models.kt`), analytics, records, recovery, progression, stats, queries, run maths, validated creation (`creation/WorkoutFactory`). No Android imports. | nothing else in the app |
+| `data/` | `WorkoutRepository` and `RunRepository` (the only Room users), import and export, backup, Health Connect, wger sync, images, location service, routing, map tiles, music. | `domain/`, `settings/` |
+| `settings/` | `SettingsStore`: theme, units, default rest (Preferences DataStore). | nothing |
+| `update/` | `AppUpdater`: GitHub release check, download, install hand-off. | Android only |
+| `ui/` | `App.kt` shell and custom `Navigator`, one ViewModel per area, screens in `ui/screens/` and `ui/run/`, shared pieces in `ui/components/`, tokens in `ui/theme/`. | everything above |
+
+The composition root is `data/AppContainer.kt`, created once by `WorkoutApp`. ViewModels get their
+dependencies through `factory(container)`. Known exceptions, to be removed (GoalMaker item
+CodePrint 5/5):
+
+- `LocationService`, `BackupWorker` and `LiveRunViewModel` look the container up through
+  `application as WorkoutApp`.
+- `SettingsScreen` builds its own `AppUpdater`, and `LiveRunScreen` builds `RunCues`.
+
+## Data flow
+
+- **Reads:** Room DAOs return `Flow`s. Repositories map Room entities to `domain/` models, and
+  ViewModels expose `StateFlow`s that screens collect.
+- **Live workout:** `LiveWorkoutViewModel` keeps an in-memory draft of the active session and
+  saves it on structural changes, on set done, on leaving the screen, and on finish or discard.
+  A live session survives process death.
+- **History is a snapshot:** an entry copies the exercise's name, category and body part when it is
+  logged. Catalog exercises are archived, never deleted, so past workouts never change.
+- **Runs:** `LocationService` is a foreground service that holds a partial wake lock while a run
+  records. `RunSessionController` feeds fixes to the pure `domain/run/RunTracker`, and
+  `RunRepository` stores runs, trace points, routes and route points.
+- **Export and import:** `DataTransferService` writes the `ExportBundle` JSON (format 1.7) and a
+  flat CSV. It imports our own bundles and Lyfta CSV, and plans every import (preview, merge,
+  counts) before writing. Single runs import and export as GPX from the Runs screen (`GpxCodec`).
+- **Automatic backup:** WorkManager runs `BackupWorker` daily or weekly. It writes the same JSON
+  bundle into a folder the owner picks (Storage Access Framework) and keeps the newest N files
+  (`workout-backup-*.json`).
+- **Health Connect:** optional. Exports finished workouts and runs, and imports workouts as
+  sessions.
+- **Settings:** Preferences DataStore. Not part of the export yet (GoalMaker item CodePrint 2/5).
+
+## Capability modules
+
+| Capability | Interface or entry point | Adapter |
+|---|---|---|
+| Health Connect | `HealthConnectGateway` | `AndroidHealthConnectGateway` |
+| Backup storage | `BackupGateway` | Storage Access Framework tree |
+| Music | `SpotifyController` | `StubSpotifyController` (opens Spotify only) |
+| Routing | `RoutingClient` | OSRM public server |
+| Exercise catalog | `WgerSyncService` with `ExternalExerciseMerger` | wger REST API |
+| Exercise images | `FreeExerciseImageIndex`, `ExercisePhotoStore` | free-exercise-db, app files |
+
+## Connections
+
+All network use is optional, and the app works fully offline. Every peer is plain HTTPS with no
+authentication:
+
+- GitHub Releases API for updates.
+- `wger.de` for catalog sync.
+- `router.project-osrm.org` for snapping planned routes to roads.
+- OpenFreeMap tiles for the run map, with an offline tile cache.
+- `raw.githubusercontent.com` for free-exercise-db images.
+
+Failures show as a message on the screen that started the call. There are no background retries.
+
+## Delivery
+
+- **Release:** `com.lukr99.workout`, signed with the owner's keystore, R8 on, arm64 only. It is
+  published as a GitHub Release with the APK attached.
+- **Debug and test:** `com.lukr99.workout.debug`, "Ember dev", version `x.y.z-dev`. It installs
+  beside the release app and never updates itself.
+- **Updates:** Settings, Updates, Check. The updater compares the release tag with the installed
+  version, downloads the APK and opens the system installer. Android enforces the signature match.
+- **Manual path:** `tools/make-phone-installer.ps1` builds a USB installer zip.
+- Details, keystore backup and first-install steps are in `docs/RELEASING.md`.
+
+## Known constraints
+
+- Room migrations are inline objects in `WorkoutDb`. Moving them to numbered files is planned
+  (CodePrint 5/5). Schemas 1 to 8 are checked in under `app/schemas/`.
+- Several files are over 400 lines (`WorkoutRepository`, `LiveRunScreen`, `LiveWorkoutViewModel`,
+  `SettingsScreen` and others). Split them when you change them.
+- Strings are written in the Compose code, not in `strings.xml`. The planned redesign moves them.
+- `androidx.navigation.compose` is declared but unused; navigation is the custom `Navigator`.

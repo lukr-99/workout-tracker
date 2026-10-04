@@ -8,6 +8,20 @@ dark map, pace/splits, routes). This is a personal-use app.
 > branch and tag **`v1.0.0`**. v2 is this ground-up native Kotlin rewrite (tag `v2.0.0`). The full
 > migration story, architecture, and design system live in [`docs/rework/`](docs/rework/README.md).
 
+## Status
+
+In daily personal use on one phone. The latest release is
+[v2.5.2](https://github.com/lukr-99/workout-tracker/releases/tag/v2.5.2) (2026-09-20). Unreleased
+work is listed under `[Unreleased]` in [CHANGELOG.md](CHANGELOG.md). Strength logging, Run Mode,
+backup and the updater are stable. The Spotify control only opens Spotify for now.
+
+## Requirements
+
+- Android 8.0 (API 26) or newer. Release builds are arm64 only.
+- To build: JDK 17 or newer, Android SDK platform 35 and build-tools 35.
+- Optional: Health Connect on the phone, and internet access for updates, catalog sync, map tiles
+  and route snapping.
+
 ## Features
 
 - 5-item shell with a central **Start** action; fast live logging (touch numpad, REPS/KG, set types,
@@ -44,28 +58,48 @@ installer downloads Google's Android platform tools, installs or upgrades Ember 
 compatible app data, and opens it. Android requires USB debugging for computer-driven installs;
 the included `README.txt` walks through that one-time phone setting.
 
-Building from source requires JDK 17 and the Android SDK (platform 35, build-tools 35). The Gradle
-wrapper fetches Gradle.
+To build from source and install a debug build on a connected phone:
 
 ```powershell
 .\tools\build-and-install.ps1 -Launch
 ```
 
-Or with Gradle directly:
+A debug build is its own app, **Ember dev**, so it installs beside the real Ember and never touches
+its data. Test commands are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
-```powershell
-.\gradlew.bat assembleDebug
-.\gradlew.bat testDebugUnitTest
-.\gradlew.bat connectedDebugAndroidTest   # on a connected device
-```
+## Architecture
 
-A minified, self-signed **release** build is available if wanted — see
-[`docs/rework/release-signing.md`](docs/rework/release-signing.md) — but nothing requires it.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for modules, dependency direction, data flow and known
+constraints, and [CONTEXT.md](CONTEXT.md) for the words the app uses.
+
+## Data safety
+
+- All data stays on the phone in a Room database (`workout.db`), plus settings in DataStore and
+  personal exercise photos in the app's files.
+- Schema changes use additive Room migrations with no destructive fallback. Every schema from 1 to
+  8 is checked in under `app/schemas/` and covered by migration tests.
+- **Manual backup:** Settings, Data, export JSON (format 1.7), and import it to restore. The import
+  shows a preview and merges into the existing data.
+- **Automatic backup:** daily or weekly into a folder you choose, keeping the newest N files.
+- **Not covered yet:** settings and personal photos are not in the backup, and there is no
+  in-app "delete all data". Both are tracked as GoalMaker item CodePrint 2/5.
+- Recovery steps are in [SECURITY.md](SECURITY.md#recovery).
+
+## Delivery
+
+- **Release:** `com.lukr99.workout`, signed with the owner's keystore and published as a GitHub
+  Release with the APK. The in-app updater (Settings, Updates) installs newer releases in place.
+- **Debug:** `com.lukr99.workout.debug`, labelled Ember dev, version `x.y.z-dev`. It never updates
+  itself.
+- **Manual path:** the USB phone installer above, or `adb install -r` with a release APK.
+- Signing, keystore backup and publishing steps are in [docs/RELEASING.md](docs/RELEASING.md).
 
 ## Documentation
 
-- [`docs/rework/README.md`](docs/rework/README.md) — the rework index (architecture, design, phases)
-- `docs/decisions.md`, `docs/roadmap.md` — **historical**, describe the v1 MAUI POC
+- [docs/pitfalls.md](docs/pitfalls.md): mistakes this repository already made. Search it first.
+- [docs/rework/README.md](docs/rework/README.md) and [docs/run-mode/README.md](docs/run-mode/README.md):
+  the history of the v2 rewrite and Run Mode (plans, phase reports, design notes).
+- `docs/decisions.md`, `docs/roadmap.md`: **historical**, describe the v1 MAUI POC.
 
 
 ## License
