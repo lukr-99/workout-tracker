@@ -20,6 +20,7 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Archive
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Unarchive
 import androidx.compose.material3.Icon
@@ -46,6 +47,7 @@ import com.lukr99.workout.ui.LibraryViewModel
 import com.lukr99.workout.ui.components.EmptyHint
 import com.lukr99.workout.ui.components.ExerciseThumbnail
 import com.lukr99.workout.ui.components.FilterChip
+import com.lukr99.workout.ui.components.NoteLine
 import com.lukr99.workout.ui.components.Tag
 import com.lukr99.workout.ui.theme.TextMid
 
@@ -278,6 +280,9 @@ private fun CatalogList(
                                 color = if (ex.isArchived) TextMid else MaterialTheme.colorScheme.onBackground,
                             )
                             Text(ex.bodyPartsSummary, style = MaterialTheme.typography.labelSmall, color = TextMid)
+                            if (ex.notes.isNotBlank()) {
+                                NoteLine(Icons.Rounded.PushPin, label = null, text = ex.notes, description = "Exercise note", maxLines = 1)
+                            }
                         }
                         if (ex.equipment.isNotBlank()) {
                             Tag(ex.equipment, accent = MaterialTheme.colorScheme.secondary)

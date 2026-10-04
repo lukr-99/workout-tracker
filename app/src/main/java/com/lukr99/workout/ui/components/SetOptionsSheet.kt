@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.NoteAdd
+import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -40,6 +42,7 @@ fun SetOptionsSheet(
     onToggleTag: (SetTag) -> Unit,
     onRir: (Double?) -> Unit,
     onRpe: (Double?) -> Unit,
+    onEditNote: () -> Unit,
     onRemove: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -76,6 +79,15 @@ fun SetOptionsSheet(
                     ValueCell(display = set.rpe?.let { trim(it) } ?: "–", modifier = Modifier.fillMaxWidth()) { editingRpe = true }
                 }
             }
+
+            Text("Note", style = MaterialTheme.typography.labelMedium, color = TextMid)
+            NoteLine(
+                if (set.notes.isBlank()) Icons.AutoMirrored.Rounded.NoteAdd else Icons.AutoMirrored.Rounded.Notes,
+                label = null,
+                text = set.notes.ifBlank { "Add a note to this set" },
+                description = if (set.notes.isBlank()) "Add set note" else "Edit set note",
+                onClick = onEditNote,
+            )
 
             TextButton(onClick = { onRemove(); onDismiss() }, modifier = Modifier.align(Alignment.Start)) {
                 Icon(Icons.Rounded.Delete, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.padding(end = 6.dp))

@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -124,6 +125,7 @@ fun SetRow(
         }
     }
     SetTagChips(set, Modifier.fillMaxWidth().padding(start = 48.dp, top = 3.dp))
+    SetNoteLine(set)
     if (previousHint != null) {
         Text(
             previousHint,
@@ -189,6 +191,20 @@ fun SetTagChips(set: StrengthSet, modifier: Modifier = Modifier) {
             }
         }
     }
+}
+
+/** A set's own note under its row, aligned with the tag chips. Nothing when the set has none. */
+@Composable
+fun SetNoteLine(set: StrengthSet, modifier: Modifier = Modifier) {
+    if (set.notes.isBlank()) return
+    NoteLine(
+        Icons.AutoMirrored.Rounded.Notes,
+        label = null,
+        text = set.notes,
+        description = "Set note",
+        maxLines = 2,
+        modifier = modifier.padding(start = 48.dp),
+    )
 }
 
 /** REPS / KG labels aligned to the [SetRow] value columns. Render once above a set list. */
