@@ -103,6 +103,25 @@ interface WorkoutDao {
     @Query("SELECT * FROM sessions ORDER BY startedAtUtc DESC")
     suspend fun getAllSessions(): List<SessionWithEntries>
 
+    /**
+     * The newest non-blank note on [exerciseId] from a completed workout, skipping
+     * [excludeSessionId] (the live one), for the "Last time" line while logging.
+     */
+    @Query(
+        """
+        SELECT entries.notes AS note,
+               COALESCE(sessions.completedDateUtc, sessions.startedAtUtc) AS atUtc
+        FROM entries INNER JOIN sessions ON sessions.id = entries.workoutSessionId
+        WHERE entries.exerciseId = :exerciseId
+          AND sessions.status = 1
+          AND sessions.id != :excludeSessionId
+          AND TRIM(entries.notes) != ''
+        ORDER BY atUtc DESC
+        LIMIT 1
+        """,
+    )
+    suspend fun getLatestEntryNote(exerciseId: String, excludeSessionId: String): PreviousNoteRow?
+
     @Upsert
     suspend fun upsertSession(session: SessionEntity)
 

@@ -43,6 +43,10 @@ data class ExerciseEntity(
     val imageUrl: String? = null,
     val imageAttribution: String? = null,
     val localImagePath: String? = null,
+    /** v8: how-to steps, one per line. */
+    val instructions: String = "",
+    /** v8: optional http(s) guide or video link. */
+    val videoUrl: String? = null,
 )
 
 @Entity(

@@ -48,7 +48,8 @@ class WgerSyncServiceTest {
         assertEquals("Chest", merged.first().primaryBodyPart)
         assertEquals(listOf("Triceps"), merged.first().secondaryBodyParts)
         assertEquals("Barbell", merged.first().equipment)
-        assertEquals("Use control & breathe.", merged.first().notes)
+        assertEquals("Use control & breathe.", merged.first().instructions)
+        assertEquals("", merged.first().notes)
         assertEquals("https://wger.de/media/bench.png", merged.first().imageUrl)
         assertEquals("wger · CC-BY-SA 4 · Test Author", merged.first().imageAttribution)
     }

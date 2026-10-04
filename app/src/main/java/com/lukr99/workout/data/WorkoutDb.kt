@@ -36,7 +36,7 @@ import com.lukr99.workout.data.run.RunPointEntity
         RouteEntity::class,
         RoutePointEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -58,6 +58,7 @@ abstract class WorkoutDb : RoomDatabase() {
                     MIGRATION_4_5,
                     MIGRATION_5_6,
                     MIGRATION_6_7,
+                    MIGRATION_7_8,
                 )
                 .build()
 
@@ -141,6 +142,17 @@ abstract class WorkoutDb : RoomDatabase() {
                 db.execSQL("ALTER TABLE entries ADD COLUMN startedAtUtc INTEGER")
                 db.execSQL("ALTER TABLE entries ADD COLUMN completedAtUtc INTEGER")
                 db.execSQL("ALTER TABLE strength_sets ADD COLUMN tagsJson TEXT NOT NULL DEFAULT '[]'")
+            }
+        }
+
+        /**
+         * v8 — richer exercise info (additive): how-to steps and an optional guide link. Existing
+         * exercises get no steps and no link; their personal notes are untouched.
+         */
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE exercises ADD COLUMN instructions TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE exercises ADD COLUMN videoUrl TEXT")
             }
         }
     }
