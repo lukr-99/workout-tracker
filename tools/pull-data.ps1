@@ -12,9 +12,11 @@
 #>
 param(
     [string]$Dest,
-    [string]$Package = "com.lukr99.workout"
+    # run-as only works on a debuggable build, so the default is the debug app (com.lukr99.workout.debug).
+    [string]$Package
 )
 . "$PSScriptRoot\common.ps1"
+if (-not $Package) { $Package = $DebugPackage }
 $adb = Get-Adb
 Assert-Device -Adb $adb
 

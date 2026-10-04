@@ -49,8 +49,15 @@ class AppUpdater(
         }.getOrDefault("0")
     }
 
-    /** Returns the latest release when it is newer than [currentVersion], otherwise null. */
+    /**
+     * Returns the latest release when it is newer than [currentVersion], otherwise null.
+     * A development build refuses: a release APK is a different app (no `.debug` suffix), so
+     * "updating" would install a second copy instead of updating this one.
+     */
     suspend fun check(): AppRelease? = withContext(Dispatchers.IO) {
+        check(!isDevelopmentVersion(currentVersion)) {
+            "This is a development build. It does not update itself; install a release to get updates."
+        }
         val json = httpGet("https://api.github.com/repos/$owner/$repo/releases/latest")
         val release = parseRelease(JSONObject(json)) ?: return@withContext null
         if (isNewer(release.versionName, currentVersion)) release else null
@@ -170,6 +177,10 @@ class AppUpdater(
 
     companion object {
         private const val BUFFER_BYTES = 64 * 1024
+
+        /** True for a debug or test build's version, which carries the `-dev` suffix. */
+        fun isDevelopmentVersion(version: String): Boolean =
+            version.trim().endsWith("-dev", ignoreCase = true)
 
         /** True when [candidate] is a strictly higher dotted-numeric version than [current]. */
         fun isNewer(candidate: String, current: String): Boolean {

@@ -1,6 +1,9 @@
 ﻿<#
   build-and-install.ps1 — build the (native Android) app and install it on the tethered phone.
 
+  Installs the debug build ("Ember dev", com.lukr99.workout.debug) beside the release app, so the
+  release app and its data are never touched.
+
   Works once the Gradle/Compose project exists (Phase 0 of docs/rework/00-migration-plan.md).
   Requires a JDK 17+ (JAVA_HOME or on PATH) and the Android SDK. The Gradle wrapper fetches Gradle.
 
@@ -33,7 +36,7 @@ if ($LASTEXITCODE -ne 0) { throw "Install failed" }
 Write-Host "Installed." -ForegroundColor Green
 
 if ($Launch) {
-    $pkg = "com.lukr99.workout"
+    $pkg = $DebugPackage
     & $adb shell monkey -p $pkg -c android.intent.category.LAUNCHER 1 | Out-Null
     Write-Host "Launched $pkg." -ForegroundColor Green
 }

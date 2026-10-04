@@ -62,9 +62,14 @@ android {
     }
 
     buildTypes {
-        // No debug applicationId suffix: the frozen MAUI 1.0 app ships as
-        // `com.lukr99.workouttracker`, so `com.lukr99.workout` already coexists with it, and the
-        // tools/build-and-install.ps1 -Launch step targets the un-suffixed id.
+        // Debug and test builds are a separate app ("Ember dev", com.lukr99.workout.debug,
+        // versionName "x.y.z-dev"). The phone runs the release-signed app, so a dev install or an
+        // instrumented test run (which uninstalls its app afterwards) can never touch real data,
+        // and the updater can never mistake a local build for a shipped release (CodePrint rule).
+        debug {
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-dev"
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true

@@ -24,7 +24,7 @@ param(
 $adb = Get-Adb
 $repo = Split-Path -Parent $PSScriptRoot
 Assert-Device -Adb $adb
-$pkg = "com.lukr99.workout"
+$pkg = $DebugPackage
 
 if (-not $OutDir) { $OutDir = Join-Path $repo ("import\run-mode-check-{0}" -f (Get-Date -Format yyyyMMdd-HHmmss)) }
 New-Item -ItemType Directory -Force $OutDir | Out-Null
@@ -41,7 +41,7 @@ function Shot($name) {
     Write-Host "  shot: $out" -ForegroundColor DarkGray
 }
 function Dev($action, [string[]]$extra) {
-    & $adb shell am broadcast -a "com.lukr99.workout.$action" -n "$pkg/.data.location.RunDevReceiver" @extra | Out-Null
+    & $adb shell am broadcast -a "$ClassPrefix.$action" -n "$pkg/$ClassPrefix.data.location.RunDevReceiver" @extra | Out-Null
 }
 
 # Bottom-nav tab centres (5 equal slots) + the 16 KB debug dialog's OK button.
@@ -76,7 +76,7 @@ Write-Host "Capturing screens..." -ForegroundColor Cyan
 & $adb shell input keyevent KEYCODE_WAKEUP | Out-Null   # wake the screen (was off → AOD)
 & $adb shell wm dismiss-keyguard | Out-Null              # dismiss the lock (no-op if secured)
 Start-Sleep -Milliseconds 600
-& $adb shell am start -n "$pkg/.MainActivity" | Out-Null
+& $adb shell am start -n "$pkg/$ClassPrefix.MainActivity" | Out-Null
 Start-Sleep -Seconds 2
 DismissDebugDialog
 Tap 0.14 $navY;  Shot "01-home"                    # Home tab

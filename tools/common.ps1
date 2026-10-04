@@ -47,6 +47,14 @@ function Assert-Device {
     }
 }
 
+# App identity. Debug builds install as their own app (applicationIdSuffix ".debug"), while the code
+# keeps the com.lukr99.workout namespace, so always name components with the full class name:
+# "$DebugPackage/$ClassPrefix.MainActivity". The "pkg/.Class" shorthand would expand against the
+# suffixed package and miss.
+$ReleasePackage = "com.lukr99.workout"
+$DebugPackage = "com.lukr99.workout.debug"
+$ClassPrefix = "com.lukr99.workout"
+
 # Find the package id of an installed app by a name fragment (case-insensitive).
 function Find-Package {
     param([Parameter(Mandatory)][string]$Fragment, [string]$Adb = (Get-Adb))
