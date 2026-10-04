@@ -54,18 +54,6 @@ import com.lukr99.workout.ui.components.Tag
 import com.lukr99.workout.ui.theme.Numbers
 import com.lukr99.workout.ui.theme.TextMid
 
-/**
- * One row of the template being edited. [rowId] is the template exercise's own id, so the same
- * exercise can appear twice (a heavy and a back-off block) and a save keeps ids and notes.
- */
-private data class TemplateRow(
-    val rowId: String,
-    val exerciseId: String,
-    val name: String,
-    val bodyPart: String,
-    val notes: String,
-)
-
 /** Create or edit a workout template: name, note and ordered exercises, each with its own note. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
