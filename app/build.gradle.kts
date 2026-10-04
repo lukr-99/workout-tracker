@@ -113,6 +113,22 @@ android {
     }
 }
 
+// Room writes schema JSON without a final newline, which the CodePrint validator rejects. Fix the
+// generated files after every KSP run instead of hand-editing them (CodePrint data-lifecycle.md).
+val normalizeRoomSchemas = tasks.register("normalizeRoomSchemas") {
+    val schemaDir = layout.projectDirectory.dir("schemas").asFile
+    outputs.upToDateWhen { false }
+    doLast {
+        schemaDir.walkTopDown().filter { it.isFile && it.extension == "json" }.forEach { file ->
+            val text = file.readText()
+            if (text.isNotEmpty() && !text.endsWith("\n")) file.writeText(text + "\n")
+        }
+    }
+}
+tasks.matching { it.name.startsWith("ksp") && it.name.endsWith("Kotlin") }.configureEach {
+    finalizedBy(normalizeRoomSchemas)
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
