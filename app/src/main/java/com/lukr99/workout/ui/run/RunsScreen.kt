@@ -4,27 +4,33 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.DirectionsRun
 import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Upload
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -40,8 +46,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.lukr99.workout.domain.run.Pace
 import com.lukr99.workout.domain.run.Route
 import com.lukr99.workout.domain.run.Run
@@ -49,6 +57,7 @@ import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.components.EmptyHint
 import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.ScreenHeader
+import com.lukr99.workout.ui.run.components.MiniRoute
 import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
 
@@ -90,42 +99,36 @@ fun RunsScreen(
         contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 120.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item { ScreenHeader("Runs", "Track a run outdoors") }
+        item { ScreenHeader("Runs", weekSummary(runs, units)) }
         item { StartRunButton(onStartRun) }
-        item { PlanRouteButton(onPlanRoute) }
         item {
-            SecondaryRow(Icons.Rounded.Upload, "Import a GPX file") {
-                importLauncher.launch(arrayOf("application/gpx+xml", "application/xml", "text/xml", "*/*"))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                SecondaryButton(Icons.Rounded.Map, "Plan a route", Modifier.weight(1f), onPlanRoute)
+                SecondaryButton(Icons.Rounded.Upload, "Import GPX", Modifier.weight(1f)) {
+                    importLauncher.launch(arrayOf("application/gpx+xml", "application/xml", "text/xml", "*/*"))
+                }
             }
         }
 
         if (routes.isNotEmpty()) {
+            item { SectionLabel("Saved routes") }
             item {
-                Text(
-                    "Saved routes",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-            }
-            items(routes, key = { "route-${it.id}" }) { route ->
-                RouteRow(
-                    route = route,
-                    units = units,
-                    onStart = { onStartRoute(route.id) },
-                    onRename = { renaming = route },
-                    onSaveOffline = { vm.downloadRouteOffline(route) },
-                    onDelete = { deleting = route },
-                )
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    routes.forEach { route ->
+                        RouteCard(
+                            route = route,
+                            units = units,
+                            onStart = { onStartRoute(route.id) },
+                            onRename = { renaming = route },
+                            onSaveOffline = { vm.downloadRouteOffline(route) },
+                            onDelete = { deleting = route },
+                        )
+                    }
+                }
             }
         }
 
-        item {
-            Text(
-                "Recent runs",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-        }
+        item { SectionLabel("Recent runs") }
         if (runs.isEmpty()) {
             item { EmptyHint("No runs yet. Tap Start a run to record your first.") }
         } else {
@@ -174,38 +177,46 @@ private fun RenameRouteDialog(initial: String, onDismiss: () -> Unit, onSave: (S
     )
 }
 
-@Composable
-private fun PlanRouteButton(onPlanRoute: () -> Unit) {
-    SecondaryRow(Icons.Rounded.Map, "Plan a route", emphasise = true, onClick = onPlanRoute)
+/** "12.3 km this week", counted from Monday. */
+private fun weekSummary(runs: List<Run>, units: UnitSystem): String {
+    val zone = java.time.ZoneId.systemDefault()
+    val monday = java.time.LocalDate.now(zone).with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
+    val start = monday.atStartOfDay(zone).toInstant().toEpochMilli()
+    val meters = runs.filter { it.startedAtUtc >= start }.sumOf { it.distanceMeters }
+    val value = if (units == UnitSystem.Imperial) meters / 1_609.344 else meters / 1_000.0
+    val unit = if (units == UnitSystem.Imperial) "mi" else "km"
+    return "${"%.1f".format(value).replace(Regex("[.,]0$"), "")} $unit this week"
 }
 
 @Composable
-private fun SecondaryRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    emphasise: Boolean = false,
-    onClick: () -> Unit,
-) {
+private fun SectionLabel(text: String) {
+    Text(
+        text.uppercase(),
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = 1.sp,
+        color = EmberTheme.colors.textSecondary,
+        modifier = Modifier.padding(top = 8.dp),
+    )
+}
+
+@Composable
+private fun SecondaryButton(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, modifier: Modifier, onClick: () -> Unit) {
+    val colors = EmberTheme.colors
+    val shape = RoundedCornerShape(16.dp)
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 18.dp, vertical = 14.dp),
+        modifier.height(50.dp).clip(shape).background(colors.surface).border(1.dp, colors.border, shape)
+            .clickable(role = Role.Button, onClick = onClick),
+        horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
-        Text(
-            label,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = if (emphasise) FontWeight.SemiBold else FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
+        Icon(icon, null, tint = colors.primaryText, modifier = Modifier.size(19.dp))
+        Text("  $label", fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
     }
 }
 
 @Composable
-private fun RouteRow(
+private fun RouteCard(
     route: Route,
     units: UnitSystem,
     onStart: () -> Unit,
@@ -213,36 +224,29 @@ private fun RouteRow(
     onSaveOffline: () -> Unit,
     onDelete: () -> Unit,
 ) {
+    val colors = EmberTheme.colors
     var menu by remember { mutableStateOf(false) }
-    Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
-            .background(MaterialTheme.colorScheme.surface).clickable(onClick = onStart).padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    val shape = RoundedCornerShape(18.dp)
+    Column(
+        Modifier.width(156.dp).clip(shape).background(colors.surface).border(1.dp, colors.border, shape)
+            .clickable(onClickLabel = "Run ${route.name.ifBlank { "this route" }}", onClick = onStart).padding(10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Column(Modifier.weight(1f)) {
-            Text(
-                route.name.ifBlank { "Route" },
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            Text("Tap to run this route", style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
-        }
-        Text(
-            Format.distance(route.distanceMeters, units),
-            style = MaterialTheme.typography.labelLarge,
-            color = EmberTheme.colors.textSecondary,
-        )
-        Box {
-            Icon(
-                Icons.Rounded.MoreVert, "Route options",
-                tint = EmberTheme.colors.textSecondary,
-                modifier = Modifier.padding(start = 8.dp).size(22.dp)
-                    .clip(RoundedCornerShape(11.dp)).clickable { menu = true },
-            )
-            DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                DropdownMenuItem(text = { Text("Rename") }, onClick = { menu = false; onRename() })
-                DropdownMenuItem(text = { Text("Save offline") }, onClick = { menu = false; onSaveOffline() })
-                DropdownMenuItem(text = { Text("Delete") }, onClick = { menu = false; onDelete() })
+        MiniRoute(route.encodedPolyline, Modifier.fillMaxWidth().height(80.dp), points = route.points.map { it.lat to it.lon })
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(route.name.ifBlank { "Route" }, fontWeight = FontWeight.SemiBold, color = colors.textPrimary, maxLines = 1)
+                Text(Format.distance(route.distanceMeters, units), style = MaterialTheme.typography.labelLarge, color = colors.textSecondary)
+            }
+            Box {
+                IconButton(onClick = { menu = true }, modifier = Modifier.size(36.dp)) {
+                    Icon(Icons.Rounded.MoreVert, "Options for ${route.name.ifBlank { "route" }}", tint = colors.textSecondary)
+                }
+                DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    DropdownMenuItem(text = { Text("Rename") }, onClick = { menu = false; onRename() })
+                    DropdownMenuItem(text = { Text("Save offline") }, onClick = { menu = false; onSaveOffline() })
+                    DropdownMenuItem(text = { Text("Delete", color = colors.danger) }, onClick = { menu = false; onDelete() })
+                }
             }
         }
     }
@@ -250,47 +254,47 @@ private fun RouteRow(
 
 @Composable
 private fun StartRunButton(onStartRun: () -> Unit) {
+    val colors = EmberTheme.colors
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.primary)
-            .clickable(onClick = onStartRun)
-            .padding(horizontal = 18.dp, vertical = 16.dp),
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(colors.primary)
+            .clickable(role = Role.Button, onClick = onStartRun).padding(18.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Icon(
-            Icons.AutoMirrored.Rounded.DirectionsRun, null,
-            tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp),
-        )
-        Text(
-            "Start a run",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onPrimary,
-        )
+        Box(Modifier.size(52.dp).clip(CircleShape).background(colors.onPrimary.copy(alpha = 0.14f)), contentAlignment = Alignment.Center) {
+            Icon(Icons.Rounded.PlayArrow, null, tint = colors.onPrimary, modifier = Modifier.size(28.dp))
+        }
+        Column {
+            Text("Start a run", style = MaterialTheme.typography.titleLarge, color = colors.onPrimary)
+            Text("GPS route, pace and splits", style = MaterialTheme.typography.labelLarge, color = colors.onPrimary.copy(alpha = 0.8f))
+        }
     }
 }
 
 @Composable
 private fun RunRow(run: Run, units: UnitSystem, onClick: () -> Unit) {
-    Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
-            .background(MaterialTheme.colorScheme.surface).clickable(onClick = onClick).padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+    val colors = EmberTheme.colors
+    val shape = RoundedCornerShape(18.dp)
+    Row(
+        Modifier.fillMaxWidth().clip(shape).background(colors.surface).border(1.dp, colors.border, shape)
+            .clickable(onClick = onClick).padding(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        MiniRoute(run.encodedPolyline, Modifier.width(72.dp).height(54.dp))
+        Column(Modifier.weight(1f)) {
+            Text(run.notes.lineSequence().firstOrNull()?.ifBlank { null } ?: "Run", fontWeight = FontWeight.SemiBold, color = colors.textPrimary, maxLines = 1)
+            Text(Format.relativeDay(run.startedAtUtc), style = MaterialTheme.typography.labelLarge, color = colors.textSecondary)
             Text(
-                run.notes.ifBlank { "Run" },
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.weight(1f),
+                "${Pace.formatDuration(run.durationSeconds)} \u00b7 ${Pace.formatPace(paceForUnits(run.avgPaceSecPerKm, units))} ${paceLabel(units)}",
+                style = Numbers.copy(fontSize = 15.sp),
+                color = colors.textSecondary,
             )
-            Text(Format.date(run.startedAtUtc), style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            Metric(Format.distance(run.distanceMeters, units), "distance")
-            Metric(Pace.formatDuration(run.durationSeconds), "time")
-            Metric(Pace.formatPace(paceForUnits(run.avgPaceSecPerKm, units)), paceLabel(units))
+        val (value, unit) = Format.distance(run.distanceMeters, units).split(' ').let { it[0] to it[1] }
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(value, style = Numbers.copy(fontSize = 26.sp), color = colors.textPrimary)
+            Text(" $unit", style = MaterialTheme.typography.labelLarge, color = colors.textSecondary, modifier = Modifier.padding(bottom = 3.dp))
         }
     }
 }
@@ -299,14 +303,3 @@ private fun paceForUnits(secPerKm: Double, units: UnitSystem): Double =
     if (units == UnitSystem.Imperial) Pace.paceSecPerMile(secPerKm) else secPerKm
 
 private fun paceLabel(units: UnitSystem): String = if (units == UnitSystem.Imperial) "/mi" else "/km"
-
-@Composable
-private fun Metric(value: String, label: String) {
-    Box {
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(value, style = Numbers, color = MaterialTheme.colorScheme.onBackground)
-            Spacer(Modifier.size(4.dp))
-            Text(label, style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
-        }
-    }
-}

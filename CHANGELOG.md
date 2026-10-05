@@ -76,6 +76,9 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
   note, opens on Exercises, and its body-part filters show the same colour dots.
 - Progress has one header above the Progress, Running and History switch, and its tiles and
   cards (and those on other screens) have the new bordered style.
+- **A new Runs tab.** This week's distance, a big Start a run card, Plan a route and Import GPX
+  side by side, saved routes as cards with their shape, and recent runs with their shape, time,
+  pace and distance.
 - **New fonts.** Titles and numbers use Barlow Condensed and everything else Barlow, bundled with
   the app so it looks the same offline.
 - **Light mode works on every screen.** Labels, hints and status colours used to stay dark-mode
