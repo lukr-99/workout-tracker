@@ -56,6 +56,12 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 - The update dialog says "Ember" instead of the old "Workout Tracker".
 - `tools/publish-release.ps1` builds the signed APK, checks its signing key, writes the checksum
   and creates a draft GitHub Release with both files.
+- Developer loop:
+  - stable test tags that show up as resource ids;
+  - JVM screenshot tests in light and dark (Robolectric and Roborazzi);
+  - a Maestro launch smoke flow;
+  - the CodePrint `emulator`, `ui-check` and `agent-doctor` scripts.
+  - The bundled exercise image index moved to `src/main/resources`, so tests read the same file.
 
 ### Fixed
 

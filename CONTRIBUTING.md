@@ -20,6 +20,20 @@ $env:ANDROID_SERIAL = 'emulator-5554'
 CI also runs the instrumented tests on a Gradle managed device (`pixel2Api35DebugAndroidTest`) and
 parses every PowerShell script under `tools/` and `installer/`.
 
+### Screenshots and the emulator loop
+
+- `ComponentScreenshotTest` renders key components in light and dark on the JVM (Robolectric and
+  Roborazzi). `testDebugUnitTest` runs them as a smoke test. `recordRoborazziDebug` rewrites the
+  PNGs in `app/src/test/screenshots/`, and `compareRoborazziDebug` writes diff images. Record and
+  compare on the same OS; Windows and Linux render slightly differently.
+- `tools/emulator.ps1 start` boots a headless emulator. `tools/ui-check.ps1 -PackageName
+  com.lukr99.workout.debug` builds, installs without clearing data, launches, and saves a
+  screenshot, the UI hierarchy and logcat under `artifacts/ui-check/`. It picks the emulator when a
+  phone is also attached.
+- `.maestro/launch-smoke.yaml` is the smallest end-to-end journey. Run it with
+  `tools/ui-check.ps1 ... -Flow .maestro` once Maestro is installed (`tools/agent-doctor.ps1` says
+  how).
+
 To try a build on a phone, `.\tools\build-and-install.ps1 -Launch` installs **Ember dev** beside
 the release app. Release builds and publishing are described in `docs/RELEASING.md`.
 

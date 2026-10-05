@@ -59,8 +59,21 @@ sits beside this repository (`../CodePrint`).
 
 ## Verification
 
+Pick the cheapest check that answers the question (CodePrint `docs/android-agent-workflow.md`):
+
 ```powershell
 py -B tools/validate_repository.py --root .     # python on Linux and in CI
 .\gradlew.bat testDebugUnitTest lintDebug assembleDebug
-$env:ANDROID_SERIAL = 'emulator-5554'; .\gradlew.bat connectedDebugAndroidTest
+.\gradlew.bat recordRoborazziDebug              # then open app\src\test\screenshots\*.png
+.\tools\emulator.ps1 start                      # headless emulator, prints its serial
+.\tools\ui-check.ps1 -PackageName com.lukr99.workout.debug   # build, install, launch, screen.png + layout.xml
+$env:ANDROID_SERIAL = '<emulator serial>'; .\gradlew.bat connectedDebugAndroidTest
+.\tools\agent-doctor.ps1                        # what is installed, with fixes
 ```
+
+- Test tags live in `AppTags`, `LiveWorkoutTags` and `DataTags`. The root sets `testTagsAsResourceId`,
+  so they appear as `resource-id` in `layout.xml` and as Maestro `id:` selectors. A bottom sheet is its
+  own window and must set `testTagsAsResourceId` again.
+- Prefer `layout.xml` over a screenshot to check text or state.
+- Robolectric tests that render Compose use `@Config(application = android.app.Application::class)`,
+  because `WorkoutApp` starts Room work that leaks into the next test.
