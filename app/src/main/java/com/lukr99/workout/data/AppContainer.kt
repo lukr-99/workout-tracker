@@ -72,7 +72,7 @@ class AppContainer(context: Context) {
     val insights: WorkoutInsightsService by lazy { WorkoutInsightsService(repository) }
     val wgerSync: WgerSyncService by lazy { WgerSyncService(repository) }
     val exerciseImages: ExerciseImageResolver by lazy {
-        ExerciseImageResolver(FreeExerciseImageIndex(context.assets))
+        ExerciseImageResolver(FreeExerciseImageIndex())
     }
     val exercisePhotos: ExercisePhotoStore by lazy { ExercisePhotoStore(context.applicationContext) }
     /** versionName of this build, written into every export so a backup says what made it. */

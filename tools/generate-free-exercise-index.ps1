@@ -4,7 +4,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$assetsDirectory = Join-Path $repoRoot "app\src\main\assets"
+# The app and the JVM tests both read it from the classpath (CodePrint android-agent-workflow).
+$assetsDirectory = Join-Path $repoRoot "app\src\main\resources"
 $outputPath = Join-Path $assetsDirectory "free_exercise_image_index.json"
 $temporaryPath = Join-Path ([System.IO.Path]::GetTempPath()) "free-exercise-db-$([guid]::NewGuid()).json"
 

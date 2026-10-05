@@ -1,11 +1,10 @@
 package com.lukr99.workout.data.images
 
-import android.content.res.AssetManager
 import com.lukr99.workout.domain.Exercise
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-private const val AssetName = "free_exercise_image_index.json"
+private const val ResourceName = "free_exercise_image_index.json"
 private const val RawImageBase =
     "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/"
 
@@ -23,11 +22,16 @@ data class FreeExerciseImageEntry(
 class FreeExerciseImageIndex private constructor(
     private val loader: () -> Map<String, FreeExerciseImageEntry>,
 ) {
+    /**
+     * Reads the bundled index from the classpath (`src/main/resources`), so the app and JVM tests
+     * load the very same file (CodePrint android-agent-workflow).
+     */
     constructor(
-        assetManager: AssetManager,
         json: Json = Json { ignoreUnknownKeys = true },
     ) : this({
-        assetManager.open(AssetName).bufferedReader().use { reader ->
+        val stream = FreeExerciseImageIndex::class.java.classLoader?.getResourceAsStream(ResourceName)
+            ?: error("$ResourceName is missing from the app's resources.")
+        stream.bufferedReader().use { reader ->
             json.decodeFromString<Map<String, FreeExerciseImageEntry>>(reader.readText())
         }
     })

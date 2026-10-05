@@ -1,6 +1,7 @@
 package com.lukr99.workout.data.images
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -34,6 +35,14 @@ class FreeExerciseImageIndexTest {
             mapOf("incline chest press" to entry("incline"), "decline chest press" to entry("decline")),
         )
         assertNull(index.find("Chest Press"))
+    }
+
+    @Test
+    fun theBundledIndexLoadsFromTheClasspathAndFindsSeedExercises() {
+        // The same file the app ships, read the same way: a seed name must resolve to an image.
+        val index = FreeExerciseImageIndex()
+        assertNotNull(index.imageUrl("Barbell Bench Press"))
+        assertNotNull(index.imageUrl("Lat Pulldown"))
     }
 
     @Test
