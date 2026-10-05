@@ -4,6 +4,18 @@ Things that went wrong in this repository and took longer to find than to fix. S
 CodePrint's `docs/pitfalls/`, for the error text before debugging something surprising. The format
 is in CodePrint's `docs/pitfalls/README.md`. Newest first.
 
+## A Robolectric screenshot test fails with "uncaught exceptions before the test started"
+
+- Symptom: a Compose screenshot test fails at random with
+  `UncaughtExceptionsBeforeTest`, caused by
+  `IllegalStateException: Illegal connection pointer ... arch_disk_io`.
+- Cause: Robolectric starts the real `WorkoutApp` for every test. Its `onCreate` builds the Room
+  database and seeds the catalog on a background thread, and that work outlives the test, then
+  fails while the next test runs.
+- Fix: run rendering tests with `@Config(application = android.app.Application::class)`.
+- Closed off by: `ComponentScreenshotTest` uses it; AGENTS.md says to.
+- Seen: CodePrint 4/5 (agent loop), 2026-10-05.
+
 ## Merging the bottom of a PR stack with `--delete-branch` closes the PR above it
 
 - Symptom: after `gh pr merge 3 --merge --delete-branch`, the PR stacked on it shows as closed, and

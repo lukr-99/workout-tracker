@@ -37,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.lukr99.workout.domain.Exercise
@@ -151,7 +152,7 @@ fun LiveWorkoutScreen(
                 }
                 MusicMiniControls()
                 Spacer(Modifier.width(4.dp))
-                TextButton(onClick = { confirmFinish = true }) {
+                TextButton(onClick = { confirmFinish = true }, modifier = Modifier.testTag(LiveWorkoutTags.FINISH)) {
                     Text("Finish", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                 }
             }
@@ -167,7 +168,11 @@ fun LiveWorkoutScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 item(key = "workout-note") {
-                    WorkoutNoteRow(note = session?.notes.orEmpty(), onEdit = { noteTarget = NoteTarget.Workout })
+                    WorkoutNoteRow(
+                        note = session?.notes.orEmpty(),
+                        onEdit = { noteTarget = NoteTarget.Workout },
+                        modifier = Modifier.testTag(LiveWorkoutTags.WORKOUT_NOTE),
+                    )
                 }
                 itemsIndexed(entries, key = { _, entry -> entry.id }) { index, entry ->
                     val catalogExercise = catalog[entry.exerciseId]
@@ -225,7 +230,7 @@ fun LiveWorkoutScreen(
                     )
                 }
                 item {
-                    AddButton("Add exercise") { showPicker = true }
+                    AddButton("Add exercise", Modifier.testTag(LiveWorkoutTags.ADD_EXERCISE)) { showPicker = true }
                 }
                 if (entries.isEmpty()) {
                     item {
@@ -276,7 +281,7 @@ fun LiveWorkoutScreen(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 TextButton(
                     onClick = { confirmDiscard = true },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f).testTag(LiveWorkoutTags.DISCARD)
                         .clip(RoundedCornerShape(14.dp))
                         .background(MaterialTheme.colorScheme.surface),
                 ) { Text("Discard", color = MaterialTheme.colorScheme.error) }
@@ -430,9 +435,9 @@ private fun SupersetEditorSheet(
 }
 
 @Composable
-private fun AddButton(label: String, onClick: () -> Unit) {
+private fun AddButton(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
+        modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
             .background(MaterialTheme.colorScheme.surface)
             .clickable(onClick = onClick)
             .padding(vertical = 14.dp),

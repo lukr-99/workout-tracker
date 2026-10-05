@@ -58,6 +58,9 @@ import com.lukr99.workout.ui.run.RoutePlannerViewModel
 import com.lukr99.workout.ui.run.RunDetailScreen
 import com.lukr99.workout.ui.run.RunViewModel
 import com.lukr99.workout.ui.run.RunsScreen
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import com.lukr99.workout.ui.screens.DataTransferScreen
 import com.lukr99.workout.ui.screens.ExerciseEditorScreen
 import com.lukr99.workout.ui.screens.HomeScreen
@@ -76,6 +79,7 @@ import com.lukr99.workout.ui.screens.WorkoutDetailScreen
  * lives under the Progress tab now. Peer tabs cross-fade; full-screen flows layer over them through a
  * manual back-stack ([Navigator]). See 02-design-system.md and docs/run-mode.
  */
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 fun App(container: AppContainer) {
     val nav = remember { Navigator() }
@@ -138,7 +142,13 @@ fun App(container: AppContainer) {
         LocalExerciseImageResolver provides container.exerciseImages,
         LocalSpotify provides container.spotify,
     ) {
-        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        Box(
+            Modifier.fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                // Test tags become resource ids for uiautomator, Android CLI and Maestro.
+                .semantics { testTagsAsResourceId = true }
+                .testTag(AppTags.ROOT),
+        ) {
             // Peer-tab layer (always mounted so tab state persists behind overlays).
             Column(
                 Modifier.fillMaxSize()
@@ -349,7 +359,7 @@ private fun NavItem(tab: Tab, current: Tab, modifier: Modifier, onClick: () -> U
     val on = tab == current
     val tint = if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
     Column(
-        modifier.clip(RoundedCornerShape(16.dp)).clickable(onClick = onClick).padding(vertical = 3.dp),
+        modifier.testTag(AppTags.nav(tab)).clip(RoundedCornerShape(16.dp)).clickable(onClick = onClick).padding(vertical = 3.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
@@ -371,7 +381,7 @@ private fun NavItem(tab: Tab, current: Tab, modifier: Modifier, onClick: () -> U
 private fun StartAction(resumeMode: Boolean, onStart: () -> Unit, modifier: Modifier) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
-            Modifier.size(52.dp).clip(CircleShape)
+            Modifier.testTag(AppTags.NAV_START).size(52.dp).clip(CircleShape)
                 .background(MaterialTheme.colorScheme.primary)
                 .clickable(onClick = onStart),
             contentAlignment = Alignment.Center,
