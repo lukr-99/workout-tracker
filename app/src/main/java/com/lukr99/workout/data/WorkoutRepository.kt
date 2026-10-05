@@ -144,6 +144,11 @@ class WorkoutRepository(
                     bodyPart = ex.bodyPart,
                     sortOrder = index,
                     notes = ex.notes,
+                    targetSets = ex.targetSets?.coerceIn(1, 20),
+                    repsMin = ex.repsMin?.coerceIn(1, 100),
+                    repsMax = ex.repsMax?.coerceIn(1, 100),
+                    restSeconds = ex.restSeconds?.coerceIn(0, 3_600),
+                    supersetGroup = ex.supersetGroup,
                 )
             }
         if (children.isNotEmpty()) dao.upsertTemplateExercises(children)

@@ -70,6 +70,9 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 - wger sync now stores an exercise's description as how-to steps, not as your personal note.
 - Export format 1.7 adds `instructions` and `videoUrl` to exercises. Older exports still import.
 - Database version 8, an additive migration with no data change.
+- Database version 9 and export format 1.9: template exercises can hold a plan (target sets, a
+  rep range, rest and a superset group). Existing templates have no plan and work as before, and
+  older backups still import.
 - **Debug builds are a separate app**, "Ember dev" (`com.lukr99.workout.debug`, version
   `x.y.z-dev`). They install beside the real app and can never replace it or wipe its data. The
   updater does not run in them.
