@@ -140,4 +140,23 @@ interface WorkoutDao {
 
     @Query("DELETE FROM sessions WHERE id = :id")
     suspend fun deleteSession(id: String)
+
+    // --- Erase everything (replace-restore, delete all data) ---------------------------------
+
+    /** Cascade removes entries, strength sets and cardio data. */
+    @Query("DELETE FROM sessions")
+    suspend fun deleteAllSessions()
+
+    /** Cascade removes template exercises. */
+    @Query("DELETE FROM templates")
+    suspend fun deleteAllTemplates()
+
+    @Query("DELETE FROM exercises")
+    suspend fun deleteAllExercises()
+
+    @Query("SELECT COUNT(*) FROM templates")
+    suspend fun countTemplates(): Int
+
+    @Query("SELECT COUNT(*) FROM sessions WHERE status != 2")
+    suspend fun countKeptSessions(): Int
 }

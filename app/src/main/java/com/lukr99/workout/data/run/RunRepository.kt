@@ -81,6 +81,14 @@ class RunRepository(private val dao: RunDao) {
 
     suspend fun deleteRoute(id: String) = dao.deleteRoute(id)
 
+    suspend fun countRoutes(): Int = dao.countRoutes()
+
+    /** Removes every run and route with their points. Callers wrap it in the restore transaction. */
+    suspend fun deleteAll() {
+        dao.deleteAllRuns()
+        dao.deleteAllRoutes()
+    }
+
     // --- Export/import (ExportBundle 1.5) ------------------------------------------------------
 
     /** All runs with traces, for a portable export snapshot. */

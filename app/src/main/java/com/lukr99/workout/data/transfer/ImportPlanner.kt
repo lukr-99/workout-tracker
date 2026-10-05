@@ -48,6 +48,7 @@ internal object ImportPlanner {
             },
             insertedRuns = runs.size,
             insertedRoutes = routes.size,
+            photos = payload.photos.size,
             dateFromUtc = payload.sessions.minOfOrNull(WorkoutSession::startedAtUtc),
             dateToUtc = payload.sessions.maxOfOrNull(WorkoutSession::startedAtUtc),
             metadata = payload.metadata,
@@ -62,6 +63,10 @@ internal object ImportPlanner {
                 routes = routes,
                 issues = payload.issues,
                 sourceLabel = payload.sourceLabel,
+                mode = RestoreMode.Merge,
+                exerciseIdMap = exerciseRemap.toMap(),
+                photos = payload.photos,
+                settings = payload.settings,
             ),
             summary,
         )

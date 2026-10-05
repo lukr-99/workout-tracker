@@ -45,6 +45,13 @@ class SettingsStore(private val context: Context) {
         it[Keys.RestSeconds] = seconds.coerceIn(0, 3_600)
     }
 
+    /** Writes every setting at once, for restoring a backup or resetting to defaults. */
+    suspend fun replaceAll(settings: AppSettings) = context.settingsDataStore.edit {
+        it[Keys.ThemeMode] = settings.themeMode.name
+        it[Keys.Units] = settings.units.name
+        it[Keys.RestSeconds] = settings.defaultRestSeconds.coerceIn(0, 3_600)
+    }
+
     private fun Preferences.toSettings(): AppSettings = AppSettings(
         themeMode = this[Keys.ThemeMode]?.let { runCatching { ThemeMode.valueOf(it) }.getOrNull() }
             ?: ThemeMode.System,
