@@ -39,7 +39,6 @@ import com.lukr99.workout.ui.components.ProgressChart
 import com.lukr99.workout.ui.components.StatTile
 import com.lukr99.workout.ui.components.VolumeBars
 import com.lukr99.workout.ui.theme.EmberTheme
-import com.lukr99.workout.ui.theme.Accents
 
 /** Per-exercise progress detail — the spline e1RM trend + per-session volume bars. */
 @Composable
@@ -90,7 +89,7 @@ fun ProgressDetailScreen(
                 Text("Estimated 1RM", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
                 ProgressChart(
                     points = detail.points.map { ChartPoint(Format.shortDate(it.dateMillis), it.e1rmKg) },
-                    lineColor = Accents.E1rm,
+                    lineColor = EmberTheme.colors.violet,
                     valueFormat = { Format.weightWithUnit(it, units) },
                 )
             }

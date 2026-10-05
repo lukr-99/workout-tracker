@@ -39,7 +39,6 @@ import com.lukr99.workout.ui.components.StatTile
 import com.lukr99.workout.ui.components.VolumeBars
 import com.lukr99.workout.ui.theme.EmberColors
 import com.lukr99.workout.ui.theme.EmberTheme
-import com.lukr99.workout.ui.theme.Accents
 import com.lukr99.workout.ui.theme.Numbers
 
 /** Progress analytics home — KPIs + weekly volume trend + per-exercise strength list. */
@@ -190,7 +189,7 @@ private fun ExerciseRow(summary: ExerciseProgressSummary, units: UnitSystem, onC
         }
         Sparkline(
             values = summary.points.map { it.e1rmKg },
-            color = Accents.E1rm,
+            color = EmberTheme.colors.violet,
             modifier = Modifier.width(64.dp).height(28.dp),
         )
     }
