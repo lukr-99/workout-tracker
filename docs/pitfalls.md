@@ -4,6 +4,18 @@ Things that went wrong in this repository and took longer to find than to fix. S
 CodePrint's `docs/pitfalls/`, for the error text before debugging something surprising. The format
 is in CodePrint's `docs/pitfalls/README.md`. Newest first.
 
+## Merging the bottom of a PR stack with `--delete-branch` closes the PR above it
+
+- Symptom: after `gh pr merge 3 --merge --delete-branch`, the PR stacked on it shows as closed, and
+  `gh pr edit 4 --base main` fails with `Cannot change the base branch of a closed pull request`.
+- Cause: deleting a PR's base branch makes GitHub close that PR rather than retarget it. `gh pr
+  merge --delete-branch` also deletes the local branch.
+- Fix: push the base branch back from the merged PR's `headRefOid`
+  (`git push origin <sha>:refs/heads/<branch>`), then `gh pr reopen`, `gh pr edit --base main`, and
+  delete the branch again. Next time, retarget the upper PR to `main` before merging the lower one.
+- Closed off by: not yet; a habit.
+- Seen: PRs lukr-99/workout-tracker#3 and #4, 2026-10-05. Reported to CodePrint.
+
 ## A PowerShell 5.1 rewrite turns `—` into `â€”` in Kotlin sources
 
 - Symptom: after a scripted edit, a source file shows `â€”`, `Ã—` or `â†’` where it had `—`, `×`
@@ -36,7 +48,8 @@ is in CodePrint's `docs/pitfalls/README.md`. Newest first.
   with a partial file. Every updater error was also swallowed by `runCatching { }.getOrNull()`.
 - Fix: check the HTTP status, compare the byte count with the size GitHub reports, write to a
   `.part` file and move it into place only when complete. Show and log the real failure reason.
-- Closed off by: `AppUpdaterDownloadTest` (instrumented).
+- Closed off by: `HttpsUpdateHttpTest` (instrumented) and `UpdateServiceTest`. Since CodePrint 3/5
+  the SHA-256 check would also catch it.
 - Seen: v2.5.2, 2026-09-20, commit 0558b41.
 
 ## A PR chip crashed the live workout on every launch (2.5.1)

@@ -58,8 +58,7 @@
     "app/src/main/java/com/lukr99/workout/ui/run/components/MapView.kt",
     "app/src/main/java/com/lukr99/workout/ui/screens/LibraryScreen.kt",
     "app/src/main/java/com/lukr99/workout/ui/screens/ProgressHubScreen.kt",
-    "app/src/main/java/com/lukr99/workout/ui/theme/Color.kt",
-    "app/src/main/java/com/lukr99/workout/update/AppUpdater.kt"
+    "app/src/main/java/com/lukr99/workout/ui/theme/Color.kt"
   ],
   "link_check_excludes": []
 }

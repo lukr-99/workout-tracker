@@ -24,7 +24,7 @@ settings/ (DataStore)    update/ (GitHub release updater)
 | `domain/` | Models and the export contract (`Models.kt`), analytics, records, recovery, progression, stats, queries, run maths, validated creation (`creation/WorkoutFactory`). No Android imports. | nothing else in the app |
 | `data/` | `WorkoutRepository` and `RunRepository` (the only Room users), import and export, backup, Health Connect, wger sync, images, location service, routing, map tiles, music. | `domain/`, `settings/` |
 | `settings/` | `SettingsStore`: theme, units, default rest (Preferences DataStore). | nothing |
-| `update/` | `AppUpdater`: GitHub release check, download, install hand-off. | Android only |
+| `update/` | The updater chain: `GitHubReleaseSource`, `VersionPolicy`, `ArtifactSelector`, `VerifiedDownloader` (HTTPS, size, SHA-256), `PackageSignatureCheck`, `FileProviderInstallerLauncher`, joined by `UpdateService`. Only the Android adapters touch Android. | nothing else in the app |
 | `ui/` | `App.kt` shell and custom `Navigator`, one ViewModel per area, screens in `ui/screens/` and `ui/run/`, shared pieces in `ui/components/`, tokens in `ui/theme/`. | everything above |
 
 The composition root is `data/AppContainer.kt`, created once by `WorkoutApp`. ViewModels get their
@@ -33,7 +33,7 @@ CodePrint 5/5):
 
 - `LocationService`, `BackupWorker` and `LiveRunViewModel` look the container up through
   `application as WorkoutApp`.
-- `SettingsScreen` builds its own `AppUpdater`, and `LiveRunScreen` builds `RunCues`.
+- `LiveRunScreen` builds `RunCues`.
 
 ## Data flow
 

@@ -2,7 +2,6 @@ package com.lukr99.workout.ui.screens
 
 import android.content.Intent
 import android.net.Uri
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -29,15 +28,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
+import com.lukr99.workout.ui.UpdatesState
+import com.lukr99.workout.ui.UpdatesViewModel
 import androidx.health.connect.client.PermissionController
 import com.lukr99.workout.data.backup.BackupResult
 import com.lukr99.workout.data.health.HealthConnectAvailability
@@ -45,9 +43,6 @@ import com.lukr99.workout.settings.ThemeMode
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.SettingsViewModel
 import com.lukr99.workout.ui.components.FilterChip
-import com.lukr99.workout.update.AppRelease
-import com.lukr99.workout.update.AppUpdater
-import kotlinx.coroutines.launch
 import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.ScreenHeader
@@ -60,10 +55,12 @@ import java.util.Date
 @Composable
 fun SettingsScreen(
     vm: SettingsViewModel,
+    updates: UpdatesViewModel,
     onOpenData: () -> Unit,
     onOpenPrivacy: () -> Unit,
 ) {
     val settings by vm.settings.collectAsState()
+    val updateState by updates.state.collectAsState()
     val health by vm.healthConnectUi.collectAsState()
     val backup by vm.backupState.collectAsState()
     val backupOptions by vm.backupOptions.collectAsState()
@@ -299,11 +296,15 @@ fun SettingsScreen(
             onClick = onOpenData,
         )
 
-        val updater = remember { AppUpdater(context, owner = "lukr-99", repo = "workout-tracker") }
-        UpdateSection(updater)
+        UpdateSection(
+            state = updateState,
+            onCheck = updates::check,
+            onInstall = updates::downloadAndInstall,
+            onDismiss = updates::dismissOffer,
+        )
 
         Text(
-            "Ember · ${updater.currentVersion}",
+            "Ember · ${updateState.currentVersion}",
             style = MaterialTheme.typography.labelSmall,
             color = TextMid,
             modifier = Modifier.padding(start = 4.dp),
@@ -312,40 +313,31 @@ fun SettingsScreen(
 }
 
 /**
- * Renders an updater failure for the status line and logs it.
- *
- * These used to be discarded by `runCatching { }.getOrNull()`, which left both the user and the
- * logs with nothing to go on when an update would not install.
+ * Updates: the version (or the latest status), Check, a link to the releases page as the manual
+ * path, and a consent dialog for a verified newer release. State lives in [UpdatesViewModel].
  */
-private fun updateFailure(prefix: String, cause: Throwable): String {
-    Log.w("AppUpdater", prefix, cause)
-    val detail = cause.message?.takeIf { it.isNotBlank() } ?: cause::class.java.simpleName
-    return "$prefix: $detail"
-}
-
-/** GitHub-Releases self-update: check, then download & hand off to the system installer. */
 @Composable
-private fun UpdateSection(updater: AppUpdater) {
-    val scope = rememberCoroutineScope()
-    var status by remember { mutableStateOf("") }
-    var busy by remember { mutableStateOf(false) }
-    var pending by remember { mutableStateOf<AppRelease?>(null) }
-    var progress by remember { mutableStateOf(0f) }
-
+private fun UpdateSection(
+    state: UpdatesState,
+    onCheck: () -> Unit,
+    onInstall: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val uriHandler = LocalUriHandler.current
     SettingSection("Updates") {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("App version", color = MaterialTheme.colorScheme.onBackground)
                 Text(
-                    status.ifBlank { "v${updater.currentVersion}" },
+                    state.status.ifBlank { "v${state.currentVersion}" },
                     style = MaterialTheme.typography.labelSmall,
                     color = TextMid,
                 )
             }
-            if (busy) {
-                if (progress > 0f) {
+            if (state.busy) {
+                if (state.progress > 0f) {
                     CircularProgressIndicator(
-                        progress = { progress },
+                        progress = { state.progress },
                         modifier = Modifier.size(22.dp),
                         strokeWidth = 2.dp,
                         color = MaterialTheme.colorScheme.primary,
@@ -358,65 +350,26 @@ private fun UpdateSection(updater: AppUpdater) {
                     )
                 }
             } else {
-                SettingsAction("Check") {
-                    busy = true
-                    status = "Checking for updates…"
-                    scope.launch {
-                        val result = runCatching { updater.check() }
-                        busy = false
-                        result
-                            .onSuccess { release ->
-                                if (release != null) {
-                                    pending = release
-                                    status = "Update available: v${release.versionName}"
-                                } else {
-                                    status = "You're on the latest version."
-                                }
-                            }
-                            .onFailure { status = updateFailure("Check failed", it) }
-                    }
-                }
+                SettingsAction("Check", onCheck)
             }
+        }
+        SettingsAction("All releases on GitHub") {
+            runCatching { uriHandler.openUri(UpdatesViewModel.RELEASES_URL) }
         }
     }
 
-    val release = pending
-    if (release != null) {
+    val offer = state.offer
+    if (offer != null) {
         AlertDialog(
-            onDismissRequest = { if (!busy) pending = null },
+            onDismissRequest = onDismiss,
             confirmButton = {
-                TextButton(
-                    enabled = !busy,
-                    onClick = {
-                        busy = true
-                        progress = 0f
-                        status = "Downloading v${release.versionName}… 0%"
-                        scope.launch {
-                            val result = runCatching {
-                                updater.download(release) { fraction ->
-                                    progress = fraction
-                                    status = "Downloading v${release.versionName}… " +
-                                        "${(fraction * 100).toInt()}%"
-                                }
-                            }
-                            busy = false
-                            result
-                                .onSuccess { apk ->
-                                    pending = null
-                                    status = "Launching installer…"
-                                    runCatching { updater.install(apk) }
-                                        .onFailure { status = updateFailure("Couldn't start the installer", it) }
-                                }
-                                .onFailure { status = updateFailure("Download failed", it) }
-                        }
-                    },
-                ) { Text("Download & install") }
+                TextButton(enabled = !state.busy, onClick = onInstall) { Text("Download and install") }
             },
-            dismissButton = { TextButton(enabled = !busy, onClick = { pending = null }) { Text("Later") } },
-            title = { Text("Workout Tracker v${release.versionName}") },
+            dismissButton = { TextButton(enabled = !state.busy, onClick = onDismiss) { Text("Later") } },
+            title = { Text("Ember v${offer.version}") },
             text = {
                 Text(
-                    release.notes.ifBlank { "A new version is available." }.take(600),
+                    offer.notes.ifBlank { "A new version is available." }.take(600),
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextMid,
                 )

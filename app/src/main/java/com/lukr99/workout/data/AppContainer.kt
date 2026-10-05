@@ -27,6 +27,12 @@ import com.lukr99.workout.data.transfer.DataTransferService
 import com.lukr99.workout.data.transfer.SettingsArchive
 import com.lukr99.workout.data.transfer.UserDataEraser
 import com.lukr99.workout.settings.SettingsStore
+import com.lukr99.workout.update.FileProviderInstallerLauncher
+import com.lukr99.workout.update.GitHubReleaseSource
+import com.lukr99.workout.update.HttpsUpdateHttp
+import com.lukr99.workout.update.PackageSignatureCheck
+import com.lukr99.workout.update.UpdateService
+import com.lukr99.workout.update.VerifiedDownloader
 
 /**
  * Manual dependency graph (ServiceLocator, ring-set style — see 01-architecture.md "DI"):
@@ -81,6 +87,18 @@ class AppContainer(context: Context) {
             photos = exercisePhotos,
             settings = settingsArchive,
             appVersion = appVersion,
+        )
+    }
+    /** The updater: public GitHub Releases, exact asset names, SHA-256 and signer checks. */
+    val updates: UpdateService by lazy {
+        val http = HttpsUpdateHttp(userAgent = "Ember/${appVersion ?: "unknown"}")
+        UpdateService(
+            currentVersion = appVersion ?: "0",
+            source = GitHubReleaseSource(owner = "lukr-99", repo = "workout-tracker", http = http),
+            http = http,
+            downloader = VerifiedDownloader(http, java.io.File(context.cacheDir, "updates")),
+            signatureCheck = PackageSignatureCheck(context.applicationContext),
+            launcher = FileProviderInstallerLauncher(context.applicationContext),
         )
     }
     val dataEraser: UserDataEraser by lazy {

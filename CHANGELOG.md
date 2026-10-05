@@ -47,6 +47,15 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
   updater does not run in them.
 - The repository follows the CodePrint baseline: new AGENTS, ARCHITECTURE, CONTRIBUTING, SECURITY
   and CONTEXT docs, a pitfalls log, and a CI job that validates the repository.
+- **Updates are verified before they install.** The updater now takes exactly
+  `Ember-<version>.apk` from a release, not just the first APK, and only over HTTPS. It checks the
+  file against the release's published SHA-256 and checks that it is signed by the same key as
+  the installed app. Only then does it open the installer. A release without a checksum is shown
+  as "cannot be verified" instead of being installed.
+- Updates has a link to all releases on GitHub, the manual way to update.
+- The update dialog says "Ember" instead of the old "Workout Tracker".
+- `tools/publish-release.ps1` builds the signed APK, checks its signing key, writes the checksum
+  and creates a draft GitHub Release with both files.
 
 ### Fixed
 

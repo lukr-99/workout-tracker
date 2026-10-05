@@ -17,7 +17,7 @@ server and no analytics. These inputs cross into the app and are treated as untr
 
 | Input | Where | Checks today |
 |---|---|---|
-| Update APK | GitHub Releases API, then the system installer | HTTPS. Download checked against the size GitHub reports. Android rejects an APK not signed with the same key. No checksum yet, and the first `.apk` asset is taken (CodePrint 3/5). |
+| Update APK | Public GitHub Releases API, then the system installer | HTTPS only, before and after redirects. Exact asset names (`Ember-<version>.apk` and its `.sha256`). Every announced byte must arrive, the SHA-256 must match, and the package name and signing certificate must match the installed app before the installer opens. Development builds never update. |
 | JSON backup or export | File picker or the backup folder | Refused over 64 MB. Parsed with an allowlist of format versions, planned and previewed before any write, committed in one transaction. Each photo must decode as an image and be at most 8 MB, and is written under a name the app chooses. |
 | Lyfta CSV | File picker | Parsed into drafts and validated by `WorkoutFactory` before saving. |
 | GPX run | File picker | XML parser with DTDs and external entities turned off (`GpxCodec`). |
