@@ -22,7 +22,10 @@ import com.lukr99.workout.data.services.WorkoutDataService
 import com.lukr99.workout.data.services.WorkoutInsightsService
 import com.lukr99.workout.data.sync.WgerSyncService
 import com.lukr99.workout.data.transfer.AndroidDocumentGateway
+import com.lukr99.workout.data.transfer.DataStoreSettingsArchive
 import com.lukr99.workout.data.transfer.DataTransferService
+import com.lukr99.workout.data.transfer.SettingsArchive
+import com.lukr99.workout.data.transfer.UserDataEraser
 import com.lukr99.workout.settings.SettingsStore
 
 /**
@@ -66,7 +69,30 @@ class AppContainer(context: Context) {
         ExerciseImageResolver(FreeExerciseImageIndex(context.assets))
     }
     val exercisePhotos: ExercisePhotoStore by lazy { ExercisePhotoStore(context.applicationContext) }
-    val dataTransfer: DataTransferService by lazy { DataTransferService(repository, runRepository) }
+    /** versionName of this build, written into every export so a backup says what made it. */
+    private val appVersion: String? = runCatching {
+        context.packageManager.getPackageInfo(context.packageName, 0).versionName
+    }.getOrNull()
+    private val settingsArchive: SettingsArchive by lazy { DataStoreSettingsArchive(settings) }
+    val dataTransfer: DataTransferService by lazy {
+        DataTransferService(
+            repository = repository,
+            runRepository = runRepository,
+            photos = exercisePhotos,
+            settings = settingsArchive,
+            appVersion = appVersion,
+        )
+    }
+    val dataEraser: UserDataEraser by lazy {
+        UserDataEraser(
+            repository = repository,
+            runRepository = runRepository,
+            photos = exercisePhotos,
+            settings = settingsArchive,
+            stopAutomaticBackup = { backup.disable() },
+            isRunRecording = { runSessionController.isRunning },
+        )
+    }
     val documents: AndroidDocumentGateway by lazy { AndroidDocumentGateway(context) }
     val settings: SettingsStore by lazy { SettingsStore(context) }
     val healthConnect: HealthConnectService by lazy {

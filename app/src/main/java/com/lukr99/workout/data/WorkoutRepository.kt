@@ -316,6 +316,23 @@ class WorkoutRepository(
 
     suspend fun deleteWorkoutSession(id: String) = dao.deleteSession(id)
 
+    /**
+     * Removes every workout, template and exercise. Callers wrap it in a transaction together with
+     * whatever replaces the data, and reseed with [ensureSeeded] when nothing replaces it.
+     */
+    suspend fun deleteAllWorkoutData() {
+        dao.deleteAllSessions()
+        dao.deleteAllTemplates()
+        dao.deleteAllExercises()
+    }
+
+    suspend fun countExercises(): Int = dao.countExercises()
+
+    suspend fun countTemplates(): Int = dao.countTemplates()
+
+    /** Finished and live workouts; discarded ones are not counted. */
+    suspend fun countWorkouts(): Int = dao.countKeptSessions()
+
     private suspend fun replaceSessionChildren(session: WorkoutSession) {
         dao.deleteEntriesForSession(session.id) // cascade clears old sets + cardio
 

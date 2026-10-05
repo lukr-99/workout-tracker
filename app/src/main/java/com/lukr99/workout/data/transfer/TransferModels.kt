@@ -35,6 +35,7 @@ data class ImportOptions(
     val exerciseCategoryOverrides: Map<String, com.lukr99.workout.domain.ExerciseCategory> =
         emptyMap(),
     val strict: Boolean = false,
+    val mode: RestoreMode = RestoreMode.Merge,
 )
 
 data class JsonExportOptions(
@@ -45,6 +46,10 @@ data class JsonExportOptions(
     val includeDiscardedSessions: Boolean = false,
     /** Include Run Mode data (runs with traces + saved routes) in the bundle. */
     val includeRuns: Boolean = true,
+    /** The owner's settings (theme, units, rest), restored by a replace-restore. */
+    val includeSettings: Boolean = true,
+    /** Personal exercise photos, scaled down to fit (see ExercisePhoto). */
+    val includePhotos: Boolean = true,
     val fileName: String = "workout-backup.json",
 )
 
@@ -141,6 +146,15 @@ data class ImportPlan(
     val routes: List<Route> = emptyList(),
     val issues: List<TransferIssue> = emptyList(),
     val sourceLabel: String? = null,
+    val mode: RestoreMode = RestoreMode.Merge,
+    /** Backup id of each exercise -> the id it will have in the store (they differ on a merge). */
+    val exerciseIdMap: Map<String, String> = emptyMap(),
+    /** Personal photos from the backup, keyed by their backup exercise id. */
+    val photos: List<com.lukr99.workout.data.export.ExercisePhoto> = emptyList(),
+    /** Settings from the backup; only a replace-restore applies them. */
+    val settings: com.lukr99.workout.data.export.SettingsSnapshot? = null,
+    /** On a replace-restore, what the store holds now and will lose. */
+    val replaces: StoreCounts? = null,
 )
 
 data class ImportPreview(
@@ -163,6 +177,7 @@ data class ImportSummary(
     val setCount: Int = 0,
     val insertedRuns: Int = 0,
     val insertedRoutes: Int = 0,
+    val photos: Int = 0,
     val dateFromUtc: Long? = null,
     val dateToUtc: Long? = null,
     val metadata: Map<String, String> = emptyMap(),
@@ -179,6 +194,9 @@ data class ImportCommitResult(
     val skippedSessions: Int,
     val insertedRuns: Int = 0,
     val insertedRoutes: Int = 0,
+    val restoredPhotos: Int = 0,
+    val restoredSettings: Boolean = false,
+    val mode: RestoreMode = RestoreMode.Merge,
     val issues: List<TransferIssue>,
 )
 
@@ -197,6 +215,8 @@ data class ImportedPayload(
     val sessions: List<WorkoutSession> = emptyList(),
     val runs: List<Run> = emptyList(),
     val routes: List<Route> = emptyList(),
+    val photos: List<com.lukr99.workout.data.export.ExercisePhoto> = emptyList(),
+    val settings: com.lukr99.workout.data.export.SettingsSnapshot? = null,
     val issues: List<TransferIssue> = emptyList(),
     val sourceRows: Int = 0,
     val sourceLabel: String? = null,

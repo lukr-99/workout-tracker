@@ -95,8 +95,14 @@ internal object BundleTextImporter : TextDataImporter {
             sessions = bundle.sessions,
             runs = bundle.runs,
             routes = bundle.routes,
+            photos = bundle.photos,
+            settings = bundle.settings,
             sourceLabel = sourceLabel,
-            metadata = mapOf("exportFormatVersion" to bundle.exportFormatVersion),
+            metadata = buildMap {
+                put("exportFormatVersion", bundle.exportFormatVersion)
+                bundle.appVersion?.let { put("appVersion", it) }
+                put("exportedAtUtc", bundle.exportedAtUtc)
+            },
         )
     }
 }

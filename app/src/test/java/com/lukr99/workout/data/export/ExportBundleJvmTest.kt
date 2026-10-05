@@ -25,14 +25,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * The cross-device contract: our `1.7` bundle round-trips through JSON unchanged, and a hand-crafted
+ * The cross-device contract: our `1.8` bundle round-trips through JSON unchanged, and a hand-crafted
  * `v1.0` export (enums as ints, ISO-8601 timestamps, MAUI computed fields) imports 1:1.
  */
 class ExportBundleJvmTest {
 
     private val bundle = ExportBundle(
         exportedAtUtc = "2024-01-01T10:00:00Z",
-        exportFormatVersion = "1.7",
+        exportFormatVersion = "1.8",
         exercises = listOf(
             Exercise(
                 id = "ex1", name = "Bench", category = ExerciseCategory.Strength,
@@ -106,6 +106,9 @@ class ExportBundleJvmTest {
                 ),
             ),
         ),
+        appVersion = "2.6.0",
+        settings = SettingsSnapshot(themeMode = "Dark", units = "Imperial", defaultRestSeconds = 150),
+        photos = listOf(ExercisePhoto(exerciseId = "ex1", dataBase64 = "/9j/4AAQ")),
     )
 
     @Test
@@ -141,6 +144,9 @@ class ExportBundleJvmTest {
         assertEquals(null, exercise.localImagePath)
         assertEquals("", exercise.instructions)
         assertEquals(null, exercise.videoUrl)
+        assertEquals(null, restored.appVersion) // 1.8 additions default on an old read
+        assertEquals(null, restored.settings)
+        assertTrue(restored.photos.isEmpty())
 
         val session = restored.sessions.single()
         assertEquals(WorkoutSessionStatus.Completed, session.status)
@@ -173,8 +179,8 @@ class ExportBundleJvmTest {
 
     @Test
     fun supportsAllPublishedVersions() {
-        assertEquals(setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7"), ExportBundle.SUPPORTED_VERSIONS)
-        assertEquals("1.7", ExportBundle.CURRENT_VERSION)
+        assertEquals(setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8"), ExportBundle.SUPPORTED_VERSIONS)
+        assertEquals("1.8", ExportBundle.CURRENT_VERSION)
     }
 
     @Test

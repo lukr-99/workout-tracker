@@ -2,28 +2,34 @@ package com.lukr99.workout.data.transfer
 
 import com.lukr99.workout.data.WorkoutRepository
 import com.lukr99.workout.data.export.CsvExporter
+import com.lukr99.workout.data.export.ExercisePhoto
 import com.lukr99.workout.data.export.ExportBundle
 import com.lukr99.workout.data.export.JsonExporter
 import com.lukr99.workout.data.importer.BundleTextImporter
 import com.lukr99.workout.data.importer.LyftaCsvImporter
 import com.lukr99.workout.data.run.RunRepository
 import com.lukr99.workout.domain.Exercise
+import com.lukr99.workout.domain.ExerciseFilter
 import com.lukr99.workout.domain.WorkoutSession
-import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.domain.query.WorkoutQueryEngine
+import java.util.Base64
 
 /**
- * High-level Phase 3 API: detect -> parse -> preview -> plan -> atomic commit, plus selective
- * JSON/CSV exports. UI, command-line tools, and future sync adapters can all use the same service.
+ * High-level transfer API: detect -> parse -> preview -> plan -> atomic commit, plus JSON and CSV
+ * exports. The automatic backup writes through [exportJson] too, so a backup is the whole store:
+ * workouts, templates, the catalog, runs and routes, the owner's settings and personal photos.
  *
- * Owns both the strength [repository] and the Run Mode [runRepository] so a bundle is the *whole*
- * store — exports carry runs + routes (with traces), and a restore puts them back. (This is the seam
- * the automatic backup writes through, so backups include runs too.)
+ * A commit is all or nothing. Photos are written to fresh files first; one database transaction
+ * then writes every row (and, for [RestoreMode.Replace], deletes the old ones first). If anything
+ * fails, the new photo files are deleted and the database is left as it was.
  */
 class DataTransferService(
     private val repository: WorkoutRepository,
     private val runRepository: RunRepository,
     importers: Iterable<TextDataImporter> = listOf(BundleTextImporter, LyftaCsvImporter),
+    private val photos: PhotoArchive = NoPhotoArchive,
+    private val settings: SettingsArchive? = null,
+    private val appVersion: String? = null,
 ) {
     private val importers = importers.toList()
 
@@ -33,9 +39,7 @@ class DataTransferService(
         options: ImportOptions = ImportOptions(),
     ): ImportPreview {
         val context = ImportContext(
-            exercises = repository.getExercises(
-                com.lukr99.workout.domain.ExerciseFilter(includeArchived = true),
-            ),
+            exercises = repository.getExercises(ExerciseFilter(includeArchived = true)),
             templates = repository.getTemplates(),
             sessions = repository.getSessions(includeDiscarded = true),
             existingRunIds = runRepository.getRuns().mapTo(mutableSetOf()) { it.id },
@@ -57,16 +61,32 @@ class DataTransferService(
                         ),
                     ),
                     sourceLabel = fileName,
+                    mode = options.mode,
                 ),
                 ImportSummary(),
             )
         }
         val payload = importer.parse(text, context, options, fileName)
-        return ImportPlanner.plan(payload, context, options)
+        return when (options.mode) {
+            RestoreMode.Merge -> ImportPlanner.plan(payload, context, options)
+            RestoreMode.Replace -> ReplacePlanner.plan(payload, currentCounts())
+        }
     }
 
     suspend fun commitImport(preview: ImportPreview): ImportCommitResult {
         require(preview.canCommit) { "Import preview contains errors and cannot be committed." }
+        val plan = preview.plan
+        val replacing = plan.mode == RestoreMode.Replace
+
+        // 1. Photos go to fresh files outside the database. Nothing points at them yet.
+        val staged = mutableListOf<String>()
+        val exercises = try {
+            withRestoredPhotos(plan, staged)
+        } catch (failure: Throwable) {
+            staged.forEach(photos::delete)
+            throw failure
+        }
+
         var insertedExercises = 0
         var changedExercises = 0
         var insertedTemplates = 0
@@ -75,62 +95,84 @@ class DataTransferService(
         var changedSessions = 0
         var skippedSessions = 0
 
-        repository.inTransaction {
-            preview.plan.exercises.forEach { planned ->
-                when (planned.action) {
-                    PlannedAction.Skip -> Unit
-                    PlannedAction.Insert, PlannedAction.KeepBoth -> {
-                        saveExercise(planned.value)
-                        insertedExercises++
-                    }
-                    else -> {
-                        saveExercise(planned.value)
-                        changedExercises++
-                    }
+        // 2. Every row in one transaction, runs and routes included.
+        try {
+            repository.inTransaction {
+                if (replacing) {
+                    deleteAllWorkoutData()
+                    runRepository.deleteAll()
                 }
-            }
-            preview.plan.templates.forEach { planned ->
-                when (planned.action) {
-                    PlannedAction.Skip -> Unit
-                    PlannedAction.Insert, PlannedAction.KeepBoth -> {
-                        saveTemplate(planned.value)
-                        insertedTemplates++
-                    }
-                    else -> {
-                        saveTemplate(planned.value)
-                        changedTemplates++
-                    }
-                }
-            }
-            preview.plan.sessions.forEach { planned ->
-                when (planned.action) {
-                    PlannedAction.Skip -> skippedSessions++
-                    PlannedAction.Insert, PlannedAction.KeepBoth -> {
-                        saveWorkoutSession(planned.value)
-                        insertedSessions++
-                    }
-                    PlannedAction.Replace -> {
-                        planned.targetId?.let { target ->
-                            if (target != planned.value.id) deleteWorkoutSession(target)
+                exercises.forEach { planned ->
+                    when (planned.action) {
+                        PlannedAction.Skip -> Unit
+                        PlannedAction.Insert, PlannedAction.KeepBoth -> {
+                            saveExercise(planned.value)
+                            insertedExercises++
                         }
-                        saveWorkoutSession(planned.value)
-                        changedSessions++
-                    }
-                    PlannedAction.Update, PlannedAction.Merge -> {
-                        saveWorkoutSession(planned.value)
-                        changedSessions++
+                        else -> {
+                            saveExercise(planned.value)
+                            changedExercises++
+                        }
                     }
                 }
+                plan.templates.forEach { planned ->
+                    when (planned.action) {
+                        PlannedAction.Skip -> Unit
+                        PlannedAction.Insert, PlannedAction.KeepBoth -> {
+                            saveTemplate(planned.value)
+                            insertedTemplates++
+                        }
+                        else -> {
+                            saveTemplate(planned.value)
+                            changedTemplates++
+                        }
+                    }
+                }
+                plan.sessions.forEach { planned ->
+                    when (planned.action) {
+                        PlannedAction.Skip -> skippedSessions++
+                        PlannedAction.Insert, PlannedAction.KeepBoth -> {
+                            saveWorkoutSession(planned.value)
+                            insertedSessions++
+                        }
+                        PlannedAction.Replace -> {
+                            planned.targetId?.let { target ->
+                                if (target != planned.value.id) deleteWorkoutSession(target)
+                            }
+                            saveWorkoutSession(planned.value)
+                            changedSessions++
+                        }
+                        PlannedAction.Update, PlannedAction.Merge -> {
+                            saveWorkoutSession(planned.value)
+                            changedSessions++
+                        }
+                    }
+                }
+                // Routes first, so a run's routeId points at a route that is already there.
+                plan.routes.forEach { runRepository.saveRoute(it) }
+                plan.runs.forEach { runRepository.saveRun(it) }
             }
+        } catch (failure: Throwable) {
+            staged.forEach(photos::delete)
+            throw failure
         }
 
-        // Runs/routes live in their own tables (RunRepository); restore them after the strength commit.
-        // Routes first so a run's routeId reference resolves to an already-present route.
-        preview.plan.routes.forEach { runRepository.saveRoute(it) }
-        preview.plan.runs.forEach { runRepository.saveRun(it) }
+        // 3. After the commit: a replace takes the backup's settings and drops photos nobody uses.
+        var restoredSettings = false
+        if (replacing) {
+            plan.settings?.let { snapshot ->
+                settings?.let {
+                    it.restore(snapshot)
+                    restoredSettings = true
+                }
+            }
+            val inUse = repository.getExercises(ExerciseFilter(includeArchived = true))
+                .mapNotNullTo(mutableSetOf(), Exercise::localImagePath)
+            photos.deleteAllExcept(inUse)
+        }
 
         return ImportCommitResult(
-            format = preview.plan.format,
+            format = plan.format,
             insertedExercises = insertedExercises,
             changedExercises = changedExercises,
             insertedTemplates = insertedTemplates,
@@ -138,18 +180,28 @@ class DataTransferService(
             insertedSessions = insertedSessions,
             changedSessions = changedSessions,
             skippedSessions = skippedSessions,
-            insertedRuns = preview.plan.runs.size,
-            insertedRoutes = preview.plan.routes.size,
-            issues = preview.plan.issues,
+            insertedRuns = plan.runs.size,
+            insertedRoutes = plan.routes.size,
+            restoredPhotos = staged.size,
+            restoredSettings = restoredSettings,
+            mode = plan.mode,
+            issues = plan.issues,
         )
     }
+
+    /** What the store holds now: shown before a replace-restore or "Delete all data". */
+    suspend fun currentCounts(): StoreCounts = StoreCounts(
+        exercises = repository.countExercises(),
+        templates = repository.countTemplates(),
+        workouts = repository.countWorkouts(),
+        runs = runRepository.countRuns(),
+        routes = runRepository.countRoutes(),
+    )
 
     suspend fun exportJson(options: JsonExportOptions = JsonExportOptions()): ExportArtifact {
         val allSessions = repository.getSessions(options.includeDiscardedSessions)
         val sessions = WorkoutQueryEngine.filterSessions(allSessions, options.query)
-        val allExercises = repository.getExercises(
-            com.lukr99.workout.domain.ExerciseFilter(includeArchived = true),
-        )
+        val allExercises = repository.getExercises(ExerciseFilter(includeArchived = true))
         val referencedIds = sessions.flatMap(WorkoutSession::entries)
             .mapTo(linkedSetOf()) { it.exerciseId }
         val exercises = when {
@@ -158,8 +210,6 @@ class DataTransferService(
             else -> allExercises.filter { it.id in referencedIds }
         }
         val templates = if (options.includeTemplates) repository.getTemplates() else emptyList()
-        // Run Mode data is part of the store: full runs (with traces) + saved routes go in the bundle,
-        // so both a manual export and the automatic backup capture them.
         val runs = if (options.includeRuns) runRepository.exportRuns() else emptyList()
         val routes = if (options.includeRuns) runRepository.exportRoutes() else emptyList()
         val bundle = ExportBundle(
@@ -168,6 +218,9 @@ class DataTransferService(
             sessions = sessions.sortedByDescending(WorkoutSession::startedAtUtc),
             runs = runs,
             routes = routes,
+            appVersion = appVersion,
+            settings = if (options.includeSettings) settings?.snapshot() else null,
+            photos = if (options.includePhotos) exportPhotos(exercises) else emptyList(),
         )
         return ExportArtifact(
             fileName = options.fileName.ensureExtension("json"),
@@ -180,6 +233,36 @@ class DataTransferService(
 
     suspend fun exportCsv(options: CsvExportOptions = CsvExportOptions()): ExportArtifact =
         CsvExporter.export(repository.getSessions(options.includeDiscardedSessions), options)
+
+    private fun exportPhotos(exercises: List<Exercise>): List<ExercisePhoto> =
+        exercises.mapNotNull { exercise ->
+            val bytes = exercise.localImagePath?.let(photos::exportBytes) ?: return@mapNotNull null
+            ExercisePhoto(exerciseId = exercise.id, dataBase64 = Base64.getEncoder().encodeToString(bytes))
+        }
+
+    /**
+     * Points each saved exercise at a photo that exists on this phone. On a merge, a photo the
+     * exercise already has here wins. Otherwise the backup's photo is staged, and a path that only
+     * existed on another phone is cleared rather than left dangling.
+     */
+    private fun withRestoredPhotos(plan: ImportPlan, staged: MutableList<String>): List<PlannedExercise> {
+        val photoByTargetId = plan.photos.associateBy { photo ->
+            plan.exerciseIdMap[photo.exerciseId] ?: photo.exerciseId
+        }
+        return plan.exercises.map { planned ->
+            if (planned.action == PlannedAction.Skip) return@map planned
+            val current = planned.value.localImagePath?.takeIf(photos::exists)
+            val photo = photoByTargetId[planned.value.id]
+            val path = when {
+                current != null && plan.mode == RestoreMode.Merge -> current
+                photo != null -> photos.stage(planned.value.id, Base64.getDecoder().decode(photo.dataBase64))
+                    .also(staged::add)
+                else -> current
+            }
+            if (path == planned.value.localImagePath) planned
+            else planned.copy(value = planned.value.copy(localImagePath = path))
+        }
+    }
 
     private fun String.ensureExtension(extension: String): String =
         if (endsWith(".$extension", ignoreCase = true)) this else "$this.$extension"

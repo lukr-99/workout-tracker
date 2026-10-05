@@ -66,4 +66,15 @@ interface RunDao {
     /** Cascade removes `route_points`. */
     @Query("DELETE FROM routes WHERE id = :id")
     suspend fun deleteRoute(id: String)
+
+    @Query("SELECT COUNT(*) FROM routes")
+    suspend fun countRoutes(): Int
+
+    /** Cascade removes every `run_points` row. */
+    @Query("DELETE FROM runs")
+    suspend fun deleteAllRuns()
+
+    /** Cascade removes every `route_points` row. */
+    @Query("DELETE FROM routes")
+    suspend fun deleteAllRoutes()
 }

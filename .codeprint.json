@@ -50,7 +50,6 @@
     "app/src/main/java/com/lukr99/workout/domain/run/RunTracker.kt",
     "app/src/main/java/com/lukr99/workout/domain/stats/StatsEngine.kt",
     "app/src/main/java/com/lukr99/workout/settings/SettingsStore.kt",
-    "app/src/main/java/com/lukr99/workout/ui/DataTransferViewModel.kt",
     "app/src/main/java/com/lukr99/workout/ui/Navigation.kt",
     "app/src/main/java/com/lukr99/workout/ui/ProgressViewModel.kt",
     "app/src/main/java/com/lukr99/workout/ui/components/Charts.kt",
