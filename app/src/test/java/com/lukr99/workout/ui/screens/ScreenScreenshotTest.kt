@@ -2,13 +2,16 @@ package com.lukr99.workout.ui.screens
 
 import android.app.Application
 import android.content.Context
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.unit.dp
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -18,6 +21,7 @@ import com.lukr99.workout.data.RoomTransactionRunner
 import com.lukr99.workout.data.WorkoutDb
 import com.lukr99.workout.data.WorkoutRepository
 import com.lukr99.workout.data.images.ExercisePhotoStore
+import com.lukr99.workout.data.run.RunRepository
 import com.lukr99.workout.data.services.WorkoutDataService
 import com.lukr99.workout.data.services.WorkoutInsightsService
 import com.lukr99.workout.domain.Exercise
@@ -75,32 +79,33 @@ class ScreenScreenshotTest {
     // No @After close: leaving a screen saves its live draft, which runs after the test body. The
     // in-memory database goes away with the test process.
 
-    @Test fun homeDark() = capture("screen_home_dark", dark = true) { Home() }
-    @Test fun homeLight() = capture("screen_home_light", dark = false) { Home() }
-    @Test fun libraryDark() = capture("screen_library_dark", dark = true) { Library() }
-    @Test fun libraryLight() = capture("screen_library_light", dark = false) { Library() }
-    @Test fun progressDark() = capture("screen_progress_dark", dark = true) { Progress() }
-    @Test fun progressLight() = capture("screen_progress_light", dark = false) { Progress() }
-    @Test fun historyDark() = capture("screen_history_dark", dark = true) { History() }
-    @Test fun historyLight() = capture("screen_history_light", dark = false) { History() }
+    @Test fun homeDark() = capture("screen_home_dark", dark = true) { Tab { Home() } }
+    @Test fun homeLight() = capture("screen_home_light", dark = false) { Tab { Home() } }
+    @Test fun libraryDark() = capture("screen_library_dark", dark = true) { Tab { Library() } }
+    @Test fun libraryLight() = capture("screen_library_light", dark = false) { Tab { Library() } }
+    @Test fun progressDark() = capture("screen_progress_dark", dark = true) { Tab { Progress() } }
+    @Test fun progressLight() = capture("screen_progress_light", dark = false) { Tab { Progress() } }
+    @Test fun historyDark() = capture("screen_history_dark", dark = true) { Tab { History() } }
+    @Test fun historyLight() = capture("screen_history_light", dark = false) { Tab { History() } }
     @Test fun liveWorkoutDark() = capture("screen_live_workout_dark", dark = true) { Live() }
     @Test fun liveWorkoutLight() = capture("screen_live_workout_light", dark = false) { Live() }
 
     @Composable
     private fun Home() = HomeScreen(
-        vm = HomeViewModel(repo),
+        vm = HomeViewModel(repo, RunRepository(db.runDao())),
         units = UnitSystem.Metric,
-        onStart = {},
+        onResume = {},
         onStartTemplate = {},
-        onOpenLibrary = {},
+        onOpenTemplates = {},
         onOpenSession = {},
+        onOpenRun = {},
+        onOpenSettings = {},
     )
 
     @Composable
     private fun Library() = LibraryScreen(
         vm = LibraryViewModel(repo, WorkoutDataService(repo), ExercisePhotoStore(context)),
         units = UnitSystem.Metric,
-        onBack = {},
         onEditTemplate = {},
         onNewTemplate = {},
         onEditExercise = {},
@@ -123,6 +128,12 @@ class ScreenScreenshotTest {
         val vm = LiveWorkoutViewModel(repo, SettingsStore(context), WorkoutInsightsService(repo))
         vm.loadActiveIfAny()
         LiveWorkoutScreen(vm = vm, units = UnitSystem.Metric, onClose = {}, onCreateExercise = {}, onEditExercise = {})
+    }
+
+    /** Tab screens get the shell's side and top padding, as in App. */
+    @Composable
+    private fun Tab(content: @Composable () -> Unit) {
+        Box(Modifier.fillMaxSize().padding(horizontal = 18.dp).padding(top = 12.dp)) { content() }
     }
 
     private fun capture(name: String, dark: Boolean, content: @Composable () -> Unit) {
