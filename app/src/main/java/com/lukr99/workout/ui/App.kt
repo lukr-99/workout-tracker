@@ -71,7 +71,7 @@ import com.lukr99.workout.ui.screens.LiveWorkoutScreen
 import com.lukr99.workout.ui.screens.ProgressDetailScreen
 import com.lukr99.workout.ui.screens.ProgressHubScreen
 import com.lukr99.workout.ui.screens.PrivacyPolicyScreen
-import com.lukr99.workout.ui.screens.SettingsScreen
+import com.lukr99.workout.ui.settings.SettingsScreen
 import com.lukr99.workout.ui.screens.TemplatePreviewSheet
 import com.lukr99.workout.ui.screens.TemplateEditorScreen
 import com.lukr99.workout.ui.screens.WorkoutDetailScreen

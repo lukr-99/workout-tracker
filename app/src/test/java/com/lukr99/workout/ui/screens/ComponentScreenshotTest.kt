@@ -34,6 +34,12 @@ import com.lukr99.workout.ui.components.ExercisePicker
 import com.lukr99.workout.ui.components.QuickCreateSheet
 import com.lukr99.workout.ui.components.SetEntrySheet
 import com.lukr99.workout.ui.components.SetEntryState
+import com.lukr99.workout.ui.settings.ButtonRow
+import com.lukr99.workout.ui.settings.LinkRow
+import com.lukr99.workout.ui.settings.SettingsCard
+import com.lukr99.workout.ui.settings.SettingsRow
+import com.lukr99.workout.ui.settings.SettingsSection
+import com.lukr99.workout.ui.settings.ToggleRow
 import com.lukr99.workout.ui.theme.WorkoutTheme
 import org.junit.Rule
 import org.junit.Test
@@ -169,6 +175,23 @@ class ComponentScreenshotTest {
             ),
         )
         FinishWorkoutSheet(session, template, UnitSystem.Metric, volumeKg = 3_100.0, nowUtcMillis = 52 * 60_000L, onFinish = { _, _ -> }, onDismiss = {})
+    }
+
+    @Test fun settingsCardsDark() = capture("settings_cards_dark", dark = true) { SettingsCards() }
+    @Test fun settingsCardsLight() = capture("settings_cards_light", dark = false) { SettingsCards() }
+
+    @Composable
+    private fun SettingsCards() = androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
+        SettingsCard(SettingsSection.Appearance, jump = 1f, scroll = 0f) {
+            SettingsRow("Theme", "Follows the phone unless you pick one.", first = true)
+            ToggleRow("Reduce motion", "Fewer animations.", checked = false) {}
+        }
+        SettingsCard(SettingsSection.YourData, jump = 0f, scroll = 0f) {
+            ToggleRow("Automatic backup", "Daily to Documents/Ember. Last backup today 03:12.", checked = true, first = true) {}
+            ButtonRow("Exercise catalog", "Download the open wger exercise database.", "Sync now", busy = true, busyLabel = "Syncing…") {}
+            LinkRow("Import, export and delete", "Ember backups, Lyfta CSV, plain CSV.") {}
+            LinkRow("All releases on GitHub", "Release notes and the manual download.", outside = true) {}
+        }
     }
 
     /** Sheets and dialogs draw in their own window, so these capture the whole screen. */

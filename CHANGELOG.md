@@ -79,6 +79,10 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 - **A new Runs tab.** This week's distance, a big Start a run card, Plan a route and Import GPX
   side by side, saved routes as cards with their shape, and recent runs with their shape, time,
   pace and distance.
+- **A new Settings page.** One scrolling page with a card per section (Appearance, Workouts,
+  Health Connect, Your data, Updates) and a chip row that jumps to a section, lights it up briefly
+  and follows you as you scroll. Theme, units, rest, backups and updates save as soon as you change
+  them. With animations turned off in Android, the jump is instant and nothing flashes.
 - **New fonts.** Titles and numbers use Barlow Condensed and everything else Barlow, bundled with
   the app so it looks the same offline.
 - **Light mode works on every screen.** Labels, hints and status colours used to stay dark-mode
