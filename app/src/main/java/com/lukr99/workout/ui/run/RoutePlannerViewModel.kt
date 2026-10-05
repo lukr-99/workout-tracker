@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
-import com.lukr99.workout.WorkoutApp
+import com.lukr99.workout.data.AppContainer
 import com.lukr99.workout.data.routing.LatLon
 import com.lukr99.workout.data.routing.RoutingClient
 import com.lukr99.workout.data.routing.SnappedRoute
@@ -99,11 +99,12 @@ class RoutePlannerViewModel(
     fun waypointLatLon(): List<Pair<Double, Double>> = _waypoints.value.map { it.lat to it.lon }
 
     companion object {
-        fun factory(): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+        /** Dependencies come from [container]; only the Application is taken from the framework. */
+        fun factory(container: AppContainer): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
-                val app = extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as WorkoutApp
-                return RoutePlannerViewModel(app, app.container.routingClient, app.container.runRepository) as T
+                val app = checkNotNull(extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY])
+                return RoutePlannerViewModel(app, container.routingClient, container.runRepository) as T
             }
         }
     }

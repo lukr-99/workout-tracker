@@ -92,8 +92,8 @@ fun App(container: AppContainer) {
     val libraryVm: LibraryViewModel = viewModel(factory = LibraryViewModel.factory(container))
     val liveVm: LiveWorkoutViewModel = viewModel(factory = LiveWorkoutViewModel.factory(container))
     val runVm: RunViewModel = viewModel(factory = RunViewModel.factory(container))
-    val liveRunVm: LiveRunViewModel = viewModel(factory = LiveRunViewModel.factory())
-    val routePlannerVm: RoutePlannerViewModel = viewModel(factory = RoutePlannerViewModel.factory())
+    val liveRunVm: LiveRunViewModel = viewModel(factory = LiveRunViewModel.factory(container))
+    val routePlannerVm: RoutePlannerViewModel = viewModel(factory = RoutePlannerViewModel.factory(container))
     val dataVm: DataTransferViewModel = viewModel(
         factory = DataTransferViewModel.factory(container.dataTransfer, container.documents, container.dataEraser),
     )

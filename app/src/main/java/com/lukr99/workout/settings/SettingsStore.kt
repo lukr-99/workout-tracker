@@ -17,18 +17,6 @@ import kotlinx.coroutines.flow.map
  */
 val Context.settingsDataStore by preferencesDataStore(name = "settings")
 
-/** Light/dark override on top of the system setting (dark is the product; see 02-design-system.md). */
-enum class ThemeMode { System, Dark, Light }
-
-/** Display units for weights/distances. Storage is always metric (kg/km); this is display-only. */
-enum class UnitSystem { Metric, Imperial }
-
-data class AppSettings(
-    val themeMode: ThemeMode = ThemeMode.System,
-    val units: UnitSystem = UnitSystem.Metric,
-    val defaultRestSeconds: Int = 120,
-)
-
 class SettingsStore(private val context: Context) {
 
     val settings: Flow<AppSettings> = context.settingsDataStore.data.map { prefs -> prefs.toSettings() }

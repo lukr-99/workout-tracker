@@ -29,9 +29,6 @@ import com.lukr99.workout.ui.run.RunViewModel
 import com.lukr99.workout.ui.run.RunningProgressSection
 import com.lukr99.workout.ui.theme.TextMid
 
-/** The three panes of the look-back hub. */
-private enum class HubPane { Progress, Running, History }
-
 /**
  * The "look back" hub (Run Mode shell change): strength **Progress**, the new **Running** analytics,
  * and the workout **History**, switched by a segmented control now that History is no longer its own

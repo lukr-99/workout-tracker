@@ -1,7 +1,6 @@
 package com.lukr99.workout.data.importer
 
 import com.lukr99.workout.data.transfer.DataFormat
-import com.lukr99.workout.data.transfer.ExerciseMatchMode
 import com.lukr99.workout.data.transfer.ImportContext
 import com.lukr99.workout.data.transfer.ImportOptions
 import com.lukr99.workout.data.transfer.ImportedPayload
@@ -20,13 +19,7 @@ import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutSessionStatus
 import com.lukr99.workout.domain.newId
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.OffsetDateTime
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
-import kotlin.math.max
 
 /**
  * Lyfta CSV -> portable domain mapping. Parsing is side-effect free: it returns a staged payload
@@ -97,7 +90,7 @@ internal object LyftaCsvImporter : TextDataImporter {
         }
         val sourceUnit = resolveWeightUnit(table, options)
         val rows = table.records.mapNotNull { record -> parseRow(record, zone, sourceUnit, options, issues) }
-        val resolver = ExerciseResolver(context.exercises, options)
+        val resolver = ImportExerciseMatcher(context.exercises, options)
         val newExercises = linkedMapOf<String, Exercise>()
         val grouped = linkedMapOf<SessionKey, MutableList<LyftaRow>>()
         rows.forEach { row -> grouped.getOrPut(SessionKey(row.title, row.startedAtUtc)) { mutableListOf() } += row }
@@ -107,7 +100,7 @@ internal object LyftaCsvImporter : TextDataImporter {
             val duration = sessionRows.firstNotNullOfOrNull(LyftaRow::sessionDurationSeconds) ?: 0L
             val entryGroups = linkedMapOf<String, MutableList<LyftaRow>>()
             sessionRows.forEach { row ->
-                entryGroups.getOrPut(normalizeName(row.exerciseName)) { mutableListOf() } += row
+                entryGroups.getOrPut(normalizeExerciseName(row.exerciseName)) { mutableListOf() } += row
             }
             val supersetIds = sessionRows.mapNotNull(LyftaRow::supersetId)
                 .distinct()
@@ -117,13 +110,13 @@ internal object LyftaCsvImporter : TextDataImporter {
             val entries = entryGroups.values.mapIndexed { index, exerciseRows ->
                 val rawName = exerciseRows.first().exerciseName
                 val category = inferCategory(rawName, exerciseRows, options)
-                val exercise = resolver.resolve(rawName, category) ?: newExercises.getOrPut(normalizeName(rawName)) {
+                val exercise = resolver.resolve(rawName, category) ?: newExercises.getOrPut(normalizeExerciseName(rawName)) {
                     Exercise(
                         name = rawName.trim(),
                         category = category,
                         primaryBodyPart = if (category == ExerciseCategory.Cardio) "Cardio" else "Full Body",
                         source = ExerciseSource.Custom,
-                        externalSourceId = "lyfta:${normalizeName(rawName).replace(' ', '-')}",
+                        externalSourceId = "lyfta:${normalizeExerciseName(rawName).replace(' ', '-')}",
                     )
                 }
                 val entryId = newId()
@@ -230,7 +223,7 @@ internal object LyftaCsvImporter : TextDataImporter {
             )
             return null
         }
-        val startedAt = parseDate(date, zone)
+        val startedAt = LyftaValues.parseDate(date, zone)
         if (startedAt == null) {
             issues += TransferIssue(
                 "lyfta.date",
@@ -241,9 +234,9 @@ internal object LyftaCsvImporter : TextDataImporter {
             )
             return null
         }
-        val rawWeight = parseNumber(record["weight", "weight kg", "weight lbs"])
+        val rawWeight = LyftaValues.parseNumber(record["weight", "weight kg", "weight lbs"])
         val rawSetType = record["set type", "settype", "type"]
-        val type = parseSetType(rawSetType)
+        val type = LyftaValues.parseSetType(rawSetType)
         if (rawSetType != null && type == null) {
             issues += TransferIssue(
                 "lyfta.set_type",
@@ -256,13 +249,13 @@ internal object LyftaCsvImporter : TextDataImporter {
         return LyftaRow(
             title = title.ifBlank { "Imported Workout" },
             startedAtUtc = startedAt,
-            sessionDurationSeconds = parseDuration(record["duration", "workout duration"])?.toLong(),
+            sessionDurationSeconds = LyftaValues.parseDuration(record["duration", "workout duration"])?.toLong(),
             exerciseName = exercise,
             supersetId = record["superset id", "superset", "supersetid"],
             weightKg = rawWeight?.let { if (unit == WeightUnit.Pounds) Units.lbToKg(it) else it },
-            reps = parseNumber(record["reps", "repetitions"])?.toInt(),
-            distanceKm = parseNumber(record["distance", "distance km", "kilometers"]),
-            workSeconds = parseDuration(record["time", "set time", "set duration"]),
+            reps = LyftaValues.parseNumber(record["reps", "repetitions"])?.toInt(),
+            distanceKm = LyftaValues.parseNumber(record["distance", "distance km", "kilometers"]),
+            workSeconds = LyftaValues.parseDuration(record["time", "set time", "set duration"]),
             setType = type ?: SetType.Normal,
         )
     }
@@ -278,59 +271,14 @@ internal object LyftaCsvImporter : TextDataImporter {
         rows: List<LyftaRow>,
         options: ImportOptions,
     ): ExerciseCategory {
-        val normalized = normalizeName(name)
+        val normalized = normalizeExerciseName(name)
         options.exerciseCategoryOverrides.entries.firstOrNull {
-            normalizeName(it.key) == normalized
+            normalizeExerciseName(it.key) == normalized
         }?.let { return it.value }
         if (rows.any { it.reps != null || it.weightKg != null }) return ExerciseCategory.Strength
         if (rows.any { it.distanceKm != null }) return ExerciseCategory.Cardio
         return if (CARDIO_WORDS.any(normalized::contains)) ExerciseCategory.Cardio
         else ExerciseCategory.Strength
-    }
-
-    private fun parseSetType(value: String?): SetType? = when (
-        value?.trim()?.uppercase()?.replace('-', '_')?.replace(' ', '_')
-    ) {
-        null, "" -> SetType.Normal
-        "NORMAL", "NORMAL_SET", "WORKING_SET" -> SetType.Normal
-        "WARMUP", "WARM_UP", "WARMUP_SET", "WARM_UP_SET" -> SetType.Warmup
-        "DROP", "DROP_SET" -> SetType.Drop
-        "FAILURE", "FAILURE_SET", "TO_FAILURE" -> SetType.Failure
-        "NEGATIVE", "NEGATIVE_SET", "NEGATIVE_REPS_SET" -> SetType.Negative
-        "BACK_OFF", "BACKOFF", "BACK_OFF_SET", "BACKOFF_SET" -> SetType.BackOff
-        else -> null
-    }
-
-    private fun parseDate(value: String, zone: ZoneId): Long? {
-        runCatching { return Instant.parse(value).toEpochMilli() }
-        runCatching { return OffsetDateTime.parse(value).toInstant().toEpochMilli() }
-        DATE_FORMATS.forEach { formatter ->
-            try {
-                return LocalDateTime.parse(value.trim(), formatter).atZone(zone).toInstant().toEpochMilli()
-            } catch (_: DateTimeParseException) {
-                // Try the next supported format.
-            }
-        }
-        return null
-    }
-
-    private fun parseDuration(value: String?): Int? {
-        val clean = value?.trim()?.takeUnless { it.isBlank() || it.equals("null", true) } ?: return null
-        clean.toIntOrNull()?.let { return it }
-        val pieces = clean.split(':').mapNotNull(String::toIntOrNull)
-        if (pieces.size != clean.count { it == ':' } + 1) return null
-        return when (pieces.size) {
-            3 -> pieces[0] * 3_600 + pieces[1] * 60 + pieces[2]
-            2 -> pieces[0] * 60 + pieces[1]
-            1 -> pieces[0]
-            else -> null
-        }
-    }
-
-    private fun parseNumber(value: String?): Double? {
-        val clean = value?.trim()?.takeUnless { it.isBlank() || it.equals("null", true) } ?: return null
-        return clean.removeSuffix("kg").removeSuffix("lbs").removeSuffix("lb")
-            .trim().replace(',', '.').toDoubleOrNull()
     }
 
     private data class SessionKey(val title: String, val startedAtUtc: Long)
@@ -348,69 +296,8 @@ internal object LyftaCsvImporter : TextDataImporter {
         val setType: SetType,
     )
 
-    private class ExerciseResolver(
-        catalog: List<Exercise>,
-        private val options: ImportOptions,
-    ) {
-        private val catalog = catalog
-        private val exact = catalog.associateBy { it.name.trim().lowercase() }
-        private val normalized = catalog.associateBy { normalizeName(it.name) }
-        private val aliases = (BUILT_IN_ALIASES + options.exerciseAliases.mapKeys { normalizeName(it.key) })
-            .mapValues { normalizeName(it.value) }
-
-        fun resolve(name: String, category: ExerciseCategory): Exercise? {
-            if (options.exerciseMatchMode == ExerciseMatchMode.AlwaysCreate) return null
-            exact[name.trim().lowercase()]?.let { return it }
-            if (options.exerciseMatchMode == ExerciseMatchMode.Exact) return null
-            val key = normalizeName(name)
-            normalized[key]?.let { return it }
-            if (options.exerciseMatchMode in setOf(ExerciseMatchMode.Aliases, ExerciseMatchMode.Fuzzy)) {
-                aliases[key]?.let(normalized::get)?.let { return it }
-            }
-            if (options.exerciseMatchMode == ExerciseMatchMode.Fuzzy) {
-                return catalog.asSequence()
-                    .filter { it.category == category }
-                    .map { it to similarity(key, normalizeName(it.name)) }
-                    .maxByOrNull(Pair<Exercise, Double>::second)
-                    ?.takeIf { it.second >= options.fuzzyMatchThreshold }
-                    ?.first
-            }
-            return null
-        }
-    }
-
-    private fun normalizeName(value: String): String = value.lowercase()
-        .replace(Regex("[^a-z0-9]+"), " ")
-        .trim()
-        .replace(Regex("\\s+"), " ")
-
-    private fun similarity(left: String, right: String): Double {
-        if (left == right) return 1.0
-        val a = left.split(' ').filter(String::isNotBlank).toSet()
-        val b = right.split(' ').filter(String::isNotBlank).toSet()
-        if (a.isEmpty() || b.isEmpty()) return 0.0
-        val tokenScore = a.intersect(b).size.toDouble() / a.union(b).size
-        val prefix = left.zip(right).takeWhile { it.first == it.second }.size.toDouble() /
-            max(left.length, right.length).coerceAtLeast(1)
-        return tokenScore * 0.85 + prefix * 0.15
-    }
-
-    private val DATE_FORMATS = listOf(
-        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
-        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"),
-        DateTimeFormatter.ISO_LOCAL_DATE_TIME,
-    )
-
     private val CARDIO_WORDS = setOf(
         "run", "walk", "bike", "cycling", "rower", "rowing", "treadmill", "elliptical",
         "stair", "swim", "jump rope",
-    )
-
-    private val BUILT_IN_ALIASES = mapOf(
-        "bench press" to "barbell bench press",
-        "barbell squat" to "back squat",
-        "cable seated row" to "seated cable row",
-        "stationary bicycle" to "stationary bike",
-        "running treadmill" to "treadmill run",
     )
 }

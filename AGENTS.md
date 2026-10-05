@@ -20,9 +20,10 @@ sits beside this repository (`../CodePrint`).
   `application as WorkoutApp` lookups.
 - `domain/` has no Android imports. The repository is the only class that touches Room.
 - Add or update deterministic tests with every behavior change.
-- A Room schema change needs a new numbered migration, the generated schema JSON checked in, an
-  isolated `N-1 -> N` test and the full chain in `WorkoutMigrationTest`. Never use a destructive
-  fallback.
+- A Room schema change needs a new numbered migration file in `data/migrations/`
+  (`MigrationNNNNWhatChanged`, added to `WorkoutMigrations.ALL`), the generated schema JSON checked
+  in, an isolated `N-1 -> N` test and the full chain in `WorkoutMigrationTest`. Never use a
+  destructive fallback.
 - A change to the export bundle bumps `ExportBundle.CURRENT_VERSION`, keeps every older version in
   `SUPPORTED_VERSIONS`, and extends the round-trip tests.
 - Use Conventional Commits and several coherent commits for independent slices. Add user-visible

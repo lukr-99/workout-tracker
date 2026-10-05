@@ -79,24 +79,3 @@ internal object CsvReader {
         .lowercase()
         .filter(Char::isLetterOrDigit)
 }
-
-internal data class CsvTable(
-    val headers: List<String>,
-    val records: List<CsvRecord>,
-    val delimiter: Char,
-)
-
-internal data class CsvRecord(
-    val rowNumber: Int,
-    val values: Map<String, String>,
-    val rawValues: List<String>,
-) {
-    operator fun get(vararg aliases: String): String? {
-        aliases.forEach { alias ->
-            values[CsvReader.normalizeHeader(alias)]?.let { return it.trim().takeUnless(String::isBlank) }
-        }
-        return null
-    }
-}
-
-internal class CsvParseException(message: String) : IllegalArgumentException(message)

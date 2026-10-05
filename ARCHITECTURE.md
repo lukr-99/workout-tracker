@@ -21,19 +21,25 @@ settings/ (DataStore)    update/ (GitHub release updater)
 
 | Package | Responsibility | May depend on |
 |---|---|---|
-| `domain/` | Models and the export contract (`Models.kt`), analytics, records, recovery, progression, stats, queries, run maths, validated creation (`creation/WorkoutFactory`). No Android imports. | nothing else in the app |
-| `data/` | `WorkoutRepository` and `RunRepository` (the only Room users), import and export, backup, Health Connect, wger sync, images, location service, routing, map tiles, music. | `domain/`, `settings/` |
+| `domain/` | Models and the export contract (`Models.kt`), analytics, records, recovery, progression, stats, queries, run maths, validated creation (`creation/WorkoutFactory`), snapshot copies (`WorkoutSnapshots.kt`) and live workout edits (`WorkoutDraftEdits.kt`). No Android imports. | nothing else in the app |
+| `data/` | `WorkoutRepository` and `RunRepository` (the only Room users, with entity mapping in `WorkoutEntityMapping.kt`), numbered Room migrations in `data/migrations/`, import and export, backup, Health Connect, wger sync, images, location service, routing, map tiles, music. | `domain/`, `settings/` |
 | `settings/` | `SettingsStore`: theme, units, default rest (Preferences DataStore). | nothing |
 | `update/` | The updater chain: `GitHubReleaseSource`, `VersionPolicy`, `ArtifactSelector`, `VerifiedDownloader` (HTTPS, size, SHA-256), `PackageSignatureCheck`, `FileProviderInstallerLauncher`, joined by `UpdateService`. Only the Android adapters touch Android. | nothing else in the app |
 | `ui/` | `App.kt` shell and custom `Navigator`, one ViewModel per area, screens in `ui/screens/` and `ui/run/`, shared pieces in `ui/components/`, tokens in `ui/theme/`. | everything above |
 
 The composition root is `data/AppContainer.kt`, created once by `WorkoutApp`. ViewModels get their
-dependencies through `factory(container)`. Known exceptions, to be removed (GoalMaker item
-CodePrint 5/5):
+dependencies through `factory(container)`. `WorkoutApp` also gives WorkManager its configuration,
+and `BackupWorkerFactory` hands the backup to `BackupWorker`, so the default WorkManager initializer
+is removed in the manifest.
 
-- `LocationService`, `BackupWorker` and `LiveRunViewModel` look the container up through
-  `application as WorkoutApp`.
-- `LiveRunScreen` builds `RunCues`.
+Android creates two classes itself and offers them no constructor injection. They read the container
+from `WorkoutApp`, and nothing else may:
+
+- `MainActivity`, which hands the container to `App`.
+- `LocationService`, the foreground service that records runs.
+
+`LiveRunScreen` still builds its own `RunCues` (speech and vibration tied to the screen). The
+redesign replaces that screen and moves it into the container.
 
 ## Data flow
 
@@ -41,7 +47,8 @@ CodePrint 5/5):
   ViewModels expose `StateFlow`s that screens collect.
 - **Live workout:** `LiveWorkoutViewModel` keeps an in-memory draft of the active session and
   saves it on structural changes, on set done, on leaving the screen, and on finish or discard.
-  A live session survives process death.
+  A live session survives process death. The edits themselves are pure functions in
+  `domain/WorkoutDraftEdits.kt`, and `RestTimer` runs the rest countdown.
 - **History is a snapshot:** an entry copies the exercise's name, category and body part when it is
   logged. Catalog exercises are archived, never deleted, so past workouts never change.
 - **Runs:** `LocationService` is a foreground service that holds a partial wake lock while a run
@@ -99,9 +106,10 @@ Failures show as a message on the screen that started the call. There are no bac
 
 ## Known constraints
 
-- Room migrations are inline objects in `WorkoutDb`. Moving them to numbered files is planned
-  (CodePrint 5/5). Schemas 1 to 8 are checked in under `app/schemas/`.
-- Several files are over 400 lines (`WorkoutRepository`, `LiveRunScreen`, `LiveWorkoutViewModel`,
-  `SettingsScreen` and others). Split them when you change them.
+- Room migrations are one numbered file each in `data/migrations/` (`Migration0008ExerciseGuides`),
+  listed in order by `WorkoutMigrations.ALL`. Schemas 1 to 8 are checked in under `app/schemas/`.
+- Five screen files are still over 400 lines: `LiveRunScreen`, `SettingsScreen`,
+  `LiveWorkoutScreen`, `WorkoutDetailScreen` and `App.kt`. The planned redesign rewrites them, so
+  they were not split first. Split any of them you change before then.
 - Strings are written in the Compose code, not in `strings.xml`. The planned redesign moves them.
 - `androidx.navigation.compose` is declared but unused; navigation is the custom `Navigator`.

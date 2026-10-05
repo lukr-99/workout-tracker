@@ -3,15 +3,12 @@ package com.lukr99.workout.domain.creation
 import com.lukr99.workout.domain.CardioEntryData
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
-import com.lukr99.workout.domain.ExerciseSource
 import com.lukr99.workout.domain.GuideLink
 import com.lukr99.workout.domain.SetType
 import com.lukr99.workout.domain.SetTag
 import com.lukr99.workout.domain.StrengthSet
-import com.lukr99.workout.domain.WeightDisplayUnit
 import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.domain.WorkoutSession
-import com.lukr99.workout.domain.WorkoutSessionSource
 import com.lukr99.workout.domain.WorkoutSessionStatus
 import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.domain.WorkoutTemplateExercise
@@ -305,123 +302,3 @@ fun interface IdGenerator {
 fun interface TimeProvider {
     fun now(): Long
 }
-
-data class CreationPolicy(
-    val requireCatalogExercise: Boolean = false,
-    val requireSessionEntries: Boolean = false,
-    val requireTemplateExercises: Boolean = false,
-    val fallbackExerciseName: String = "Custom Exercise",
-    val fallbackBodyPart: String = "Full Body",
-    val fallbackTemplateName: String = "Untitled Template",
-    val fallbackSessionName: String = "Quick Workout",
-    val restSecondsRange: IntRange = 0..3_600,
-)
-
-data class CreationResult<T>(
-    val value: T,
-    val issues: List<ValidationIssue> = emptyList(),
-) {
-    val isValid: Boolean get() = issues.none { it.severity == IssueSeverity.Error }
-
-    fun requireValid(): T {
-        require(isValid) { issues.filter { it.severity == IssueSeverity.Error }.joinToString { it.message } }
-        return value
-    }
-}
-
-data class ValidationIssue(
-    val path: String,
-    val message: String,
-    val severity: IssueSeverity,
-)
-
-enum class IssueSeverity { Info, Warning, Error }
-
-data class ExerciseDraft(
-    val id: String = "",
-    val name: String = "",
-    val category: ExerciseCategory = ExerciseCategory.Strength,
-    val primaryBodyPart: String = "",
-    val secondaryBodyParts: List<String> = emptyList(),
-    val equipment: String = "",
-    val notes: String = "",
-    val source: ExerciseSource = ExerciseSource.Custom,
-    val externalSourceId: String? = null,
-    val isArchived: Boolean = false,
-    val defaultRestSeconds: Int? = null,
-    val imageUrl: String? = null,
-    val imageAttribution: String? = null,
-    val localImagePath: String? = null,
-    val instructions: String = "",
-    val videoUrl: String? = null,
-)
-
-data class TemplateDraft(
-    val id: String = "",
-    val name: String = "",
-    val notes: String = "",
-    val exercises: List<TemplateExerciseDraft> = emptyList(),
-)
-
-data class TemplateExerciseDraft(
-    val id: String = "",
-    val exerciseId: String = "",
-    val exerciseName: String = "",
-    val category: ExerciseCategory = ExerciseCategory.Strength,
-    val bodyPart: String = "",
-    val notes: String = "",
-)
-
-data class SessionDraft(
-    val id: String = "",
-    val templateId: String? = null,
-    val name: String = "",
-    val startedAtUtc: Long? = null,
-    val endedAtUtc: Long? = null,
-    val completedDateUtc: Long? = null,
-    val durationSeconds: Long = 0,
-    val notes: String = "",
-    val status: WorkoutSessionStatus = WorkoutSessionStatus.Active,
-    val perceivedEffort: Int? = null,
-    val bodyweightKg: Double? = null,
-    val source: WorkoutSessionSource = WorkoutSessionSource.Local,
-    val externalKey: String? = null,
-    val entries: List<EntryDraft> = emptyList(),
-)
-
-data class EntryDraft(
-    val id: String = "",
-    val exerciseId: String = "",
-    val exerciseName: String = "",
-    val category: ExerciseCategory = ExerciseCategory.Strength,
-    val bodyPart: String = "",
-    val notes: String = "",
-    val supersetGroup: Int? = null,
-    val weightUnitOverride: WeightDisplayUnit? = null,
-    val startedAtUtc: Long? = null,
-    val completedAtUtc: Long? = null,
-    val strengthSets: List<StrengthSetDraft> = emptyList(),
-    val cardio: CardioDraft? = null,
-)
-
-data class StrengthSetDraft(
-    val id: String = "",
-    val reps: Int = 0,
-    val weightKg: Double = 0.0,
-    val rir: Double? = null,
-    val rpe: Double? = null,
-    val performedAtUtc: Long? = null,
-    val notes: String = "",
-    val isWarmup: Boolean = false,
-    val isPr: Boolean = false,
-    val durationSeconds: Int? = null,
-    val setType: SetType = SetType.Normal,
-    val tags: Set<SetTag> = emptySet(),
-)
-
-data class CardioDraft(
-    val durationSeconds: Int = 0,
-    val distanceKm: Double? = null,
-    val calories: Double? = null,
-    val notes: String = "",
-)

@@ -29,15 +29,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lukr99.workout.ui.theme.Numbers
 import com.lukr99.workout.ui.theme.TextMid
-
-data class ChartPoint(val label: String, val value: Double)
 
 /**
  * Smooth spline area chart with a scrub handle (ring-set `MetricChart` lineage — 02-design-system.md).
@@ -138,8 +135,6 @@ fun ProgressChart(
         }
     }
 }
-
-data class BarPoint(val label: String, val value: Double)
 
 /** Weekly volume / frequency bars with the current (last) bar highlighted, others dimmed. */
 @Composable

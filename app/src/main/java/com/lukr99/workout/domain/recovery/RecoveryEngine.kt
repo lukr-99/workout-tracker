@@ -5,13 +5,6 @@ import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.SetType
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutSessionStatus
-import com.lukr99.workout.domain.query.WorkoutDataPoint
-import com.lukr99.workout.domain.stats.DimensionProvider
-import com.lukr99.workout.domain.stats.ExpandingDimensionProvider
-import com.lukr99.workout.domain.stats.MetricProvider
-import com.lukr99.workout.domain.stats.MetricUnit
-import com.lukr99.workout.domain.stats.MetricValue
-import java.time.ZoneId
 import kotlin.math.exp
 import kotlin.math.ln
 
@@ -141,97 +134,4 @@ object RecoveryEngine {
         var weeklySetCount: Double = 0.0,
         var weeklyLoadUnits: Double = 0.0,
     )
-}
-
-data class RecoveryConfig(
-    val halfLifeHours: Double = 36.0,
-    val lookbackHours: Double = 14 * 24.0,
-    val weeklyWindowHours: Double = 7 * 24.0,
-    val secondaryMuscleContribution: Double = 0.5,
-    val setLoadUnits: Double = 1.0,
-    val volumeKgPerLoadUnit: Double = 1_000.0,
-    val cardioMinutesPerLoadUnit: Double = 30.0,
-    val fatigueSaturationLoad: Double = 3.0,
-    val readyThreshold: Double = 80.0,
-) {
-    init {
-        require(halfLifeHours > 0 && lookbackHours > 0 && weeklyWindowHours > 0)
-        require(secondaryMuscleContribution in 0.0..1.0)
-        require(setLoadUnits >= 0 && volumeKgPerLoadUnit > 0 && cardioMinutesPerLoadUnit > 0)
-        require(fatigueSaturationLoad > 0)
-        require(readyThreshold in 0.01..99.99)
-    }
-}
-
-data class RecoverySnapshot(
-    val calculatedAtUtc: Long,
-    val muscles: List<MuscleRecovery>,
-    val averageReadiness: Double,
-) {
-    fun forBodyPart(bodyPart: String): MuscleRecovery? =
-        muscles.firstOrNull { it.bodyPart.equals(bodyPart, ignoreCase = true) }
-}
-
-data class MuscleRecovery(
-    val bodyPart: String,
-    val readiness: Double,
-    val fatigueLoad: Double,
-    val lastTrainedAtUtc: Long?,
-    val readyAtUtc: Long?,
-    val weeklyVolumeKg: Double,
-    /** Fractional when secondary-muscle contribution is below 1. */
-    val weeklySetCount: Double,
-    val weeklyLoadUnits: Double,
-)
-
-object BodyPartStatsKeys {
-    const val AllBodyParts = "body_part_all"
-    const val WorkingSetCount = "working_set_count"
-    const val WorkingVolumeKg = "working_volume_kg"
-}
-
-object BodyPartStatsProviders {
-    val metrics: List<MetricProvider> = listOf(
-        object : MetricProvider {
-            override val key = BodyPartStatsKeys.WorkingSetCount
-            override fun calculate(points: List<WorkoutDataPoint>) = MetricValue(
-                points.count {
-                    it.strengthSet?.let { set ->
-                        !set.isWarmup && set.setType != SetType.Warmup
-                    } == true
-                }.toDouble(),
-                MetricUnit.Count,
-            )
-        },
-        object : MetricProvider {
-            override val key = BodyPartStatsKeys.WorkingVolumeKg
-            override fun calculate(points: List<WorkoutDataPoint>) = MetricValue(
-                points.sumOf {
-                    it.strengthSet?.takeIf { set ->
-                        !set.isWarmup && set.setType != SetType.Warmup
-                    }?.let { set -> set.weightKg * set.reps } ?: 0.0
-                },
-                MetricUnit.Kilograms,
-            )
-        },
-    )
-
-    fun bodyPartDimension(exercises: Iterable<Exercise>): DimensionProvider {
-        val catalog = exercises.associateBy(Exercise::id)
-        return object : ExpandingDimensionProvider {
-            override val key = BodyPartStatsKeys.AllBodyParts
-            override fun resolveValues(point: WorkoutDataPoint, zoneId: ZoneId): Set<String> {
-                val entry = point.entry ?: return emptySet()
-                val exercise = catalog[entry.exerciseId]
-                val values = linkedMapOf<String, String>()
-                return (sequenceOf(entry.exerciseSnapshotPrimaryBodyPart) +
-                    exercise?.secondaryBodyParts.orEmpty().asSequence())
-                    .map(String::trim)
-                    .filter(String::isNotBlank)
-                    .onEach { values.putIfAbsent(it.lowercase(), it) }
-                    .toList()
-                    .let { values.values.toSet() }
-            }
-        }
-    }
 }

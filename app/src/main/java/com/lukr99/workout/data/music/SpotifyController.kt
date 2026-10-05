@@ -3,16 +3,7 @@ package com.lukr99.workout.data.music
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-
-/** The currently-playing track, when a music remote is connected. */
-data class MusicTrack(
-    val title: String,
-    val artist: String,
-    val isPlaying: Boolean,
-)
 
 /**
  * Deliberately-small music control seam, shared by the live **run** and live **lift** screens
@@ -43,26 +34,6 @@ interface SpotifyController {
 
     /** Always available: bring Spotify to the foreground (or the store if it isn't installed). */
     fun openSpotify(context: Context)
-}
-
-/**
- * Shipping default — **Open Spotify** only. No App Remote SDK / client id required, so it compiles and
- * runs everywhere; [available] is always false so only the open button shows.
- */
-object StubSpotifyController : SpotifyController {
-    private val _available = MutableStateFlow(false)
-    override val available: StateFlow<Boolean> = _available.asStateFlow()
-
-    private val _track = MutableStateFlow<MusicTrack?>(null)
-    override val track: StateFlow<MusicTrack?> = _track.asStateFlow()
-
-    override fun connect(context: Context) = Unit
-    override fun disconnect() = Unit
-    override fun playPause() = Unit
-    override fun next() = Unit
-    override fun previous() = Unit
-
-    override fun openSpotify(context: Context) = openSpotifyApp(context)
 }
 
 /** Launch the Spotify app; fall back to the Play Store, then the web player. */
