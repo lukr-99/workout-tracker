@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.roborazzi)
 }
 
 val keystoreProperties = Properties()
@@ -101,6 +102,8 @@ android {
         getByName("androidTest").assets.srcDirs("$projectDir/schemas", "src/test/resources")
     }
     testOptions {
+        // Robolectric and Roborazzi render real resources on the JVM (screenshot tests).
+        unitTests.isIncludeAndroidResources = true
         managedDevices {
             localDevices {
                 create("pixel2Api35") {
@@ -170,6 +173,13 @@ dependencies {
     // JVM unit tests (domain analytics/estimates + serialization round-trip)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    // JVM screenshot tests: `recordRoborazziDebug` writes app/src/test/screenshots/*.png.
+    testImplementation(composeBom)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.ext.junit)
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
 
     // Instrumented Room tests (DAO CRUD, filters, cascades, seed, round-trip)
     androidTestImplementation(libs.androidx.test.core)
