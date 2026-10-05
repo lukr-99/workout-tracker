@@ -13,20 +13,24 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.github.takahirom.roborazzi.captureScreenRoboImage
-import com.lukr99.workout.ui.components.SetEntrySheet
-import com.lukr99.workout.ui.components.SetEntryState
 import com.lukr99.workout.data.transfer.DataFormat
 import com.lukr99.workout.data.transfer.ImportPlan
 import com.lukr99.workout.data.transfer.ImportPreview
 import com.lukr99.workout.data.transfer.ImportSummary
 import com.lukr99.workout.data.transfer.RestoreMode
 import com.lukr99.workout.data.transfer.StoreCounts
+import com.lukr99.workout.domain.BodyParts
+import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseOuting
 import com.lukr99.workout.domain.PreviousEntryNote
 import com.lukr99.workout.domain.SetTag
 import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.settings.UnitSystem
+import com.lukr99.workout.ui.components.ExercisePicker
+import com.lukr99.workout.ui.components.QuickCreateSheet
+import com.lukr99.workout.ui.components.SetEntrySheet
+import com.lukr99.workout.ui.components.SetEntryState
 import com.lukr99.workout.ui.theme.WorkoutTheme
 import org.junit.Rule
 import org.junit.Test
@@ -111,6 +115,38 @@ class ComponentScreenshotTest {
         },
         onReplace = {}, onToggleSuperset = {}, onMoveUp = {}, onMoveDown = {}, onEditNote = {}, onShowGuide = {}, onRemove = {}, onDismiss = {},
     )
+
+    private val catalog = listOf(
+        Exercise(id = "incline", name = "Incline Dumbbell Press", primaryBodyPart = "Chest"),
+        Exercise(id = "fly", name = "Cable Fly", primaryBodyPart = "Chest"),
+        Exercise(id = "raise", name = "Lateral Raise", primaryBodyPart = "Shoulders"),
+        Exercise(id = "squat", name = "Back Squat", primaryBodyPart = "Legs"),
+        Exercise(id = "row", name = "Barbell Row", primaryBodyPart = "Back"),
+    )
+
+    @Test
+    fun pickerDark() = capture("exercise_picker_dark", dark = true) {
+        ExercisePicker(
+            exercises = catalog,
+            onPick = {},
+            title = "Add exercises",
+            subtitle = "Pick one or more. They go to the end of the workout.",
+            recentIds = listOf("incline", "fly", "raise"),
+            hint = { if (it.id == "incline") "Last 30 × 10" else null },
+            onCreate = {},
+            onPickMany = { _, _ -> },
+        )
+    }
+
+    @Test
+    fun quickCreateDark() = captureScreen("quick_create_dark", dark = true) {
+        QuickCreateSheet(initialName = "Landmine press", bodyParts = BodyParts.common.take(10), onCreate = {}, onDismiss = {})
+    }
+
+    @Test
+    fun emptyWorkoutLight() = capture("empty_workout_start_light", dark = false) {
+        EmptyWorkoutStart(recent = catalog, onAddExercises = {}, onQuickAdd = {})
+    }
 
     /** Sheets and dialogs draw in their own window, so these capture the whole screen. */
     private fun captureScreen(name: String, dark: Boolean, content: @Composable () -> Unit) {

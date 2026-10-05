@@ -28,6 +28,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -61,7 +62,6 @@ fun LiveWorkoutScreen(
     vm: LiveWorkoutViewModel,
     units: UnitSystem,
     onClose: () -> Unit,
-    onCreateExercise: (String) -> Unit,
     onEditExercise: (String) -> Unit,
 ) {
     val toast = LocalToast.current
@@ -106,6 +106,7 @@ fun LiveWorkoutScreen(
     val catalog by vm.catalogById.collectAsState()
     val previousNotes by vm.previousNotes.collectAsState()
     val previousSets by vm.previousSets.collectAsState()
+    val recentIds by produceState(emptyList<String>()) { value = vm.history.recentExerciseIds() }
     val currentSetId = nextSet(draft?.entries.orEmpty(), doneIds)?.second?.id
     var nowUtcMillis by remember { mutableStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
@@ -197,16 +198,17 @@ fun LiveWorkoutScreen(
                         ),
                     )
                 }
-                item {
-                    AddButton("Add exercise", Modifier.testTag(LiveWorkoutTags.ADD_EXERCISE)) { sheet = LiveSheet.AddExercise }
-                }
                 if (entries.isEmpty()) {
-                    item {
-                        Text(
-                            "No exercises yet. Add one to start logging.",
-                            style = MaterialTheme.typography.bodyLarge, color = EmberTheme.colors.textSecondary,
-                            modifier = Modifier.padding(top = 8.dp),
+                    item(key = "empty-start") {
+                        EmptyWorkoutStart(
+                            recent = recentIds.mapNotNull(catalog::get).filterNot { it.isArchived },
+                            onAddExercises = { sheet = LiveSheet.AddExercise },
+                            onQuickAdd = { vm.addExercise(it); toast("${it.name} added") },
                         )
+                    }
+                } else {
+                    item {
+                        AddButton("Add exercises", Modifier.testTag(LiveWorkoutTags.ADD_EXERCISE)) { sheet = LiveSheet.AddExercise }
                     }
                 }
             }
@@ -266,7 +268,6 @@ fun LiveWorkoutScreen(
         exercises = exercises,
         catalog = catalog,
         onSheet = { sheet = it },
-        onCreateExercise = onCreateExercise,
         onEditExercise = onEditExercise,
         onClose = onClose,
         toast = { toast(it) },

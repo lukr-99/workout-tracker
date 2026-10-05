@@ -41,6 +41,13 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
   both values side by side, quick steps (2.5 kg or 5 lb, 1 rep), a button that copies the set
   before, and Next and Done set. Done set saves the set and starts the rest timer.
 - The rest timer floats at the bottom and says which set is next.
+- **Add exercises on the go.** The picker lists your recent exercises first with what you did last
+  time, lets you tick several and add them at once, and can add them as a superset.
+- **Create an exercise without leaving the workout.** Type a name the library does not have and
+  pick Create: a short form asks for the name, kind, main muscle, what else it works and the
+  equipment. Steps, photo and guide link can be added later from the Library.
+- An empty workout shows a big Add exercises button and your recent exercises as chips that add
+  with one tap.
 - **An exercise menu with history.** The three dots on an exercise now open a sheet with the last
   three times you did it (sets and best estimated 1RM), then Replace exercise, Superset with
   previous, Move up or down, a note for today, How to do it, and Remove.

@@ -9,7 +9,6 @@ import com.lukr99.workout.data.services.WorkoutInsightsService
 import com.lukr99.workout.domain.Estimates
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseFilter
-import com.lukr99.workout.domain.ExerciseOuting
 import com.lukr99.workout.domain.replacedWith
 import com.lukr99.workout.domain.PreviousEntryNote
 import com.lukr99.workout.domain.SetTag
@@ -19,6 +18,7 @@ import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutSessionStatus
 import com.lukr99.workout.domain.completedAt
 import com.lukr99.workout.domain.setIdsMarkedDone
+import com.lukr99.workout.domain.withEntriesAdded
 import com.lukr99.workout.domain.withEntry
 import com.lukr99.workout.domain.withEntryFinished
 import com.lukr99.workout.domain.withEntryMoved
@@ -92,7 +92,8 @@ class LiveWorkoutViewModel(
             .map { rows -> rows.associateBy(Exercise::id) }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
-    private val history = EntryHistory(repo, insights)
+    /** Read-only look-ups into earlier workouts, for the sheets (history, recents, last time). */
+    val history = EntryHistory(repo, insights)
 
     /** The live workout's id and exercise ids; "last time" data reloads only when these change. */
     private val onScreen = draftState
@@ -155,21 +156,31 @@ class LiveWorkoutViewModel(
         mutate { it.withSet(entryId, setId) { set -> set.copy(notes = text.trim()) } }
 
     /** Adds [exercise] at the end, starting from the suggested or last time's sets when there are any. */
-    fun addExercise(exercise: Exercise) {
+    fun addExercise(exercise: Exercise) = addExercises(listOf(exercise), asSuperset = false)
+
+    /** Adds several exercises at the end in order, grouped as one superset when asked and when there are two or more. */
+    fun addExercises(exercises: List<Exercise>, asSuperset: Boolean) {
+        if (exercises.isEmpty()) return
         viewModelScope.launch {
-            val base = repo.newEntryForExercise(exercise, sortOrder = draftState.value?.entries?.size ?: 0)
-            val prefill = history.prefill(exercise)
-            prefill?.rationale?.let { suggestionState.value = it }
-            val entry = prefill?.let { base.copy(strengthSets = it.sets) } ?: base
-            mutate { it.copy(entries = it.entries + entry.copy(workoutSessionId = it.id)) }
+            val start = draftState.value?.entries?.size ?: 0
+            val added = exercises.mapIndexed { i, exercise ->
+                val base = repo.newEntryForExercise(exercise, sortOrder = start + i)
+                val prefill = history.prefill(exercise)
+                prefill?.rationale?.let { suggestionState.value = it }
+                prefill?.let { base.copy(strengthSets = it.sets) } ?: base
+            }
+            mutate { it.withEntriesAdded(added, asSuperset) }
         }
+    }
+
+    /** Saves a new exercise from the quick form to the library and adds it to the workout. */
+    fun createAndAdd(exercise: Exercise) {
+        viewModelScope.launch { addExercise(repo.saveExercise(exercise)) }
     }
 
     /** Swaps an exercise for another (the machine is taken) and keeps its logged sets. */
     fun replaceExercise(entryId: String, exercise: Exercise) =
         mutate { it.withEntry(entryId) { entry -> entry.replacedWith(exercise) } }
-
-    suspend fun outings(exerciseId: String): List<ExerciseOuting> = history.outings(exerciseId)
 
     fun removeEntry(entryId: String) = mutate { session ->
         session.copy(entries = normalizeSupersetGroups(session.entries.filterNot { it.id == entryId }))

@@ -18,6 +18,19 @@ fun WorkoutSession.withSet(
     entry.copy(strengthSets = entry.strengthSets.map { if (it.id == setId) transform(it) else it })
 }
 
+/**
+ * Adds [added] at the end in order. With [asSuperset] and two or more of them they become one new
+ * superset group, numbered after the groups already in the workout.
+ */
+fun WorkoutSession.withEntriesAdded(added: List<WorkoutEntry>, asSuperset: Boolean): WorkoutSession {
+    val group = if (asSuperset && added.size > 1) (entries.mapNotNull { it.supersetGroup }.maxOrNull() ?: 0) + 1 else null
+    return copy(
+        entries = entries + added.mapIndexed { i, entry ->
+            entry.copy(workoutSessionId = id, sortOrder = entries.size + i, supersetGroup = group)
+        },
+    )
+}
+
 /** Moves exercise [entryId] one place up or down. Nothing changes at either end of the list. */
 fun WorkoutSession.withEntryMoved(entryId: String, up: Boolean): WorkoutSession {
     val list = entries.toMutableList()

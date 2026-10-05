@@ -119,4 +119,20 @@ class WorkoutDraftEditsTest {
         assertTrue(listOf(live).lastSetsFor("ex-bench").isEmpty())
         assertTrue(listOf(finished(1_000, reps = 8)).lastSetsFor("").isEmpty())
     }
+
+    @Test
+    fun addedExercisesGoToTheEndAndCanFormANewSuperset() {
+        val grouped = workout.copy(entries = listOf(bench.copy(supersetGroup = 2), row.copy(supersetGroup = 2)))
+        val fly = WorkoutEntry(id = "fly")
+        val dips = WorkoutEntry(id = "dips")
+
+        val superset = grouped.withEntriesAdded(listOf(fly, dips), asSuperset = true)
+        assertEquals(listOf("bench", "row", "fly", "dips"), superset.entries.map { it.id })
+        assertEquals(listOf(2, 3), superset.entries.map { it.sortOrder }.takeLast(2))
+        assertEquals(listOf(3, 3), superset.entries.takeLast(2).map { it.supersetGroup })
+        assertTrue(superset.entries.takeLast(2).all { it.workoutSessionId == "w" })
+
+        val single = workout.withEntriesAdded(listOf(fly), asSuperset = true)
+        assertNull(single.entries.last().supersetGroup)
+    }
 }
