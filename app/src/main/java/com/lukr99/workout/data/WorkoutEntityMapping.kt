@@ -68,6 +68,11 @@ internal fun TemplateWithExercises.toDomain() = WorkoutTemplate(
             bodyPart = it.bodyPart,
             sortOrder = it.sortOrder,
             notes = it.notes,
+            targetSets = it.targetSets,
+            repsMin = it.repsMin,
+            repsMax = it.repsMax,
+            restSeconds = it.restSeconds,
+            supersetGroup = it.supersetGroup,
         )
     },
 )

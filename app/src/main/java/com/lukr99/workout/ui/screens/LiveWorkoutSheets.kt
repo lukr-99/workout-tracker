@@ -11,8 +11,10 @@ import com.lukr99.workout.domain.BodyParts
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.WorkoutSession
+import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.LiveWorkoutViewModel
+import com.lukr99.workout.ui.TemplateChoice
 import com.lukr99.workout.ui.components.ConfirmDialog
 import com.lukr99.workout.ui.components.ExerciseGuideSheet
 import com.lukr99.workout.ui.components.ExercisePicker
@@ -145,13 +147,31 @@ internal fun LiveWorkoutSheets(
             onUngroup = { vm.ungroupSuperset(sheet.groupId); close() },
             onDismiss = close,
         )
-        LiveSheet.ConfirmFinish -> ConfirmDialog(
-            title = "Finish workout?",
-            message = "Empty exercises are dropped. This saves the session to your history.",
-            confirmLabel = "Finish",
-            onConfirm = { vm.finish { onClose(); toast("Workout saved") } },
-            onDismiss = close,
-        )
+        LiveSheet.ConfirmFinish -> {
+            if (session == null) return close()
+            val template by produceState<WorkoutTemplate?>(null, session.templateId) { value = vm.templates.templateOf(session) }
+            FinishWorkoutSheet(
+                session = session,
+                template = template,
+                units = units,
+                volumeKg = vm.estimatedVolumeKg(),
+                nowUtcMillis = System.currentTimeMillis(),
+                onFinish = { choice, name ->
+                    val from = template
+                    vm.finish(afterSave = { saved -> if (from != null) vm.templates.apply(saved, from, choice, name) }) {
+                        onClose()
+                        toast(
+                            when {
+                                from == null || choice == TemplateChoice.Keep -> "Workout saved"
+                                choice == TemplateChoice.Update -> "Workout saved, ${from.name} updated"
+                                else -> "Workout saved as a new template too"
+                            },
+                        )
+                    }
+                },
+                onDismiss = close,
+            )
+        }
         LiveSheet.ConfirmDiscard -> ConfirmDialog(
             title = "Discard workout?",
             message = "This session will not be saved to your history.",

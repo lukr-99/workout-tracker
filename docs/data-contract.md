@@ -22,7 +22,9 @@ Health Connect once written.
 
 A backup is one JSON file, the `ExportBundle` (`data/export/ExportBundle.kt`):
 
-- `exportFormatVersion` is `1.8`. Every version from `1.0` on still imports.
+- `exportFormatVersion` is `1.9`. Every version from `1.0` on still imports.
+- Template exercises carry an optional plan (from 1.9): `targetSets`, `repsMin`, `repsMax`,
+  `restSeconds` and `supersetGroup`.
 - `exportedAtUtc` and `appVersion` (from 1.8) say when it was made and by which build.
 - Ids are stable strings. Timestamps are ISO-8601 UTC. Weights are kilograms, distances are
   metres. Enums are ordinals, except in `settings`, where they are names.

@@ -37,7 +37,7 @@ import com.lukr99.workout.data.migrations.WorkoutMigrations
         RouteEntity::class,
         RoutePointEntity::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

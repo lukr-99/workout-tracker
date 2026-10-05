@@ -41,6 +41,17 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
   both values side by side, quick steps (2.5 kg or 5 lb, 1 rep), a button that copies the set
   before, and Next and Done set. Done set saves the set and starts the rest timer.
 - The rest timer floats at the bottom and says which set is next.
+- **Templates learn from your workouts.** When you finish a workout that started from a template
+  and did it differently (added or skipped an exercise, more or fewer sets), Ember lists the
+  changes and asks whether to update the template, keep it as it is, or save the changes as a new
+  template. The finish sheet also shows the time, weight lifted, sets and PRs.
+- A template with a plan starts each exercise with its planned number of sets and its supersets.
+- **A template preview.** Tapping a template on Home or in the Library shows its note, the plan
+  per exercise with your best set last time, and when you last did it, with Edit and Start
+  workout. The start button on Home still starts right away.
+- **A rebuilt template editor.** Each exercise has steppers for sets and rest, a rep range, a note,
+  and a menu to move it, remove it, or join it to the exercise above as a superset. Add exercises
+  uses the same picker as the live workout, several at a time.
 - **Add exercises on the go.** The picker lists your recent exercises first with what you did last
   time, lets you tick several and add them at once, and can add them as a superset.
 - **Create an exercise without leaving the workout.** Type a name the library does not have and
@@ -70,6 +81,9 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 - wger sync now stores an exercise's description as how-to steps, not as your personal note.
 - Export format 1.7 adds `instructions` and `videoUrl` to exercises. Older exports still import.
 - Database version 8, an additive migration with no data change.
+- Database version 9 and export format 1.9: template exercises can hold a plan (target sets, a
+  rep range, rest and a superset group). Existing templates have no plan and work as before, and
+  older backups still import.
 - **Debug builds are a separate app**, "Ember dev" (`com.lukr99.workout.debug`, version
   `x.y.z-dev`). They install beside the real app and can never replace it or wipe its data. The
   updater does not run in them.

@@ -18,6 +18,8 @@ import kotlinx.serialization.Serializable
  * **Version 1.7** adds exercise how-to steps (`instructions`) and a guide link (`videoUrl`).
  * **Version 1.8** makes the bundle a full backup: the app version that wrote it, the owner's
  * settings, and personal exercise photos (see [ExercisePhoto]).
+ * **Version 1.9** adds a plan to template exercises: target sets, a rep range, rest and a superset
+ * group (all optional).
  * Older exports omit them (they default empty), and the reader accepts all earlier published
  * versions and ignores unknown fields, so older exports and future tools interoperate.
  */
@@ -36,7 +38,7 @@ data class ExportBundle(
     val photos: List<ExercisePhoto> = emptyList(),
 ) {
     companion object {
-        const val CURRENT_VERSION = "1.8"
-        val SUPPORTED_VERSIONS = setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8")
+        const val CURRENT_VERSION = "1.9"
+        val SUPPORTED_VERSIONS = setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9")
     }
 }

@@ -14,6 +14,7 @@ import com.lukr99.workout.data.migrations.Migration0005RunTables
 import com.lukr99.workout.data.migrations.Migration0006RunSegmentBreaks
 import com.lukr99.workout.data.migrations.Migration0007LiveLoggingMetadata
 import com.lukr99.workout.data.migrations.Migration0008ExerciseGuides
+import com.lukr99.workout.data.migrations.Migration0009TemplatePlan
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -347,6 +348,32 @@ class WorkoutMigrationTest {
                 assertEquals("[\"Biceps\"]", cursor.getString(1))
                 assertEquals("", cursor.getString(2))
                 assertEquals(true, cursor.isNull(3))
+            }
+        }
+    }
+
+    @Test
+    fun migratesSchemaEightToNineAddingTemplatePlan() {
+        helper.createDatabase(DatabaseName, 8).apply {
+            execSQL("INSERT INTO templates (id, name, notes) VALUES ('t9', 'Push', '')")
+            execSQL(
+                """
+                INSERT INTO template_exercises (
+                    id, templateId, exerciseId, exerciseName, category, bodyPart, sortOrder, notes
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """.trimIndent(),
+                arrayOf("te9", "t9", "ex9", "Bench", 0, "Chest", 0, "Pause"),
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(DatabaseName, 9, true, Migration0009TemplatePlan).use { db ->
+            db.query(
+                "SELECT notes, targetSets, repsMin, repsMax, restSeconds, supersetGroup FROM template_exercises WHERE id = 'te9'",
+            ).use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("Pause", cursor.getString(0))
+                (1..5).forEach { assertEquals(true, cursor.isNull(it)) }
             }
         }
     }

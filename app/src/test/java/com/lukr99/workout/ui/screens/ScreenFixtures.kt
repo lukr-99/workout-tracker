@@ -27,7 +27,11 @@ internal object ScreenFixtures {
                 name = "Push day",
                 notes = "Heavy bench first.",
                 exercises = listOf(bench, incline).mapIndexed { i, e ->
-                    WorkoutTemplateExercise(exerciseId = e.id, exerciseName = e.name, category = e.category, bodyPart = e.primaryBodyPart, sortOrder = i)
+                    WorkoutTemplateExercise(
+                        exerciseId = e.id, exerciseName = e.name, category = e.category, bodyPart = e.primaryBodyPart, sortOrder = i,
+                        targetSets = if (i == 0) 4 else 3, repsMin = if (i == 0) 6 else 8, repsMax = if (i == 0) 8 else 10,
+                        restSeconds = if (i == 0) 150 else 90, notes = if (i == 0) "Pause on the chest" else "",
+                    )
                 },
             ),
         )

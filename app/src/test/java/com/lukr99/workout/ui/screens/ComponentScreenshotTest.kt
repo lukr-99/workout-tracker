@@ -26,6 +26,9 @@ import com.lukr99.workout.domain.PreviousEntryNote
 import com.lukr99.workout.domain.SetTag
 import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.WorkoutEntry
+import com.lukr99.workout.domain.WorkoutSession
+import com.lukr99.workout.domain.WorkoutTemplate
+import com.lukr99.workout.domain.WorkoutTemplateExercise
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.components.ExercisePicker
 import com.lukr99.workout.ui.components.QuickCreateSheet
@@ -146,6 +149,26 @@ class ComponentScreenshotTest {
     @Test
     fun emptyWorkoutLight() = capture("empty_workout_start_light", dark = false) {
         EmptyWorkoutStart(recent = catalog, onAddExercises = {}, onQuickAdd = {})
+    }
+
+    @Test
+    fun finishWithTemplateChangesDark() = captureScreen("finish_workout_dark", dark = true) {
+        val template = WorkoutTemplate(
+            name = "Push day",
+            exercises = listOf(
+                WorkoutTemplateExercise(exerciseId = "bench", exerciseName = "Bench press", targetSets = 3),
+                WorkoutTemplateExercise(exerciseId = "dips", exerciseName = "Dips", sortOrder = 1),
+            ),
+        )
+        val session = WorkoutSession(
+            name = "Push day",
+            startedAtUtc = 0L,
+            entries = listOf(
+                WorkoutEntry(exerciseId = "bench", exerciseSnapshotName = "Bench press", strengthSets = List(4) { StrengthSet(reps = 8, weightKg = 80.0, performedAtUtc = 1L, isPr = it == 3) }),
+                WorkoutEntry(exerciseId = "fly", exerciseSnapshotName = "Cable fly", sortOrder = 1, strengthSets = List(3) { StrengthSet(reps = 12, weightKg = 15.0, performedAtUtc = 1L) }),
+            ),
+        )
+        FinishWorkoutSheet(session, template, UnitSystem.Metric, volumeKg = 3_100.0, nowUtcMillis = 52 * 60_000L, onFinish = { _, _ -> }, onDismiss = {})
     }
 
     /** Sheets and dialogs draw in their own window, so these capture the whole screen. */

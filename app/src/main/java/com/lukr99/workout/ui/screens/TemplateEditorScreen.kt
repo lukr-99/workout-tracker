@@ -1,33 +1,29 @@
 package com.lukr99.workout.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.NoteAdd
-import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.ArrowDownward
-import androidx.compose.material.icons.rounded.ArrowUpward
-import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -40,8 +36,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.lukr99.workout.domain.creation.TemplateDraft
 import com.lukr99.workout.domain.creation.TemplateExerciseDraft
 import com.lukr99.workout.domain.newId
@@ -49,12 +52,13 @@ import com.lukr99.workout.ui.LibraryViewModel
 import com.lukr99.workout.ui.components.ExercisePicker
 import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.NoteEditorSheet
-import com.lukr99.workout.ui.components.NoteLine
-import com.lukr99.workout.ui.components.Tag
+import com.lukr99.workout.ui.components.RoundIconButton
 import com.lukr99.workout.ui.theme.EmberTheme
-import com.lukr99.workout.ui.theme.Numbers
 
-/** Create or edit a workout template: name, note and ordered exercises, each with its own note. */
+/**
+ * Create or edit a template: name, note, and the exercises with their plan (sets, rep range,
+ * rest), notes and supersets. Changes only affect new workouts; logged ones stay as they were.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TemplateEditorScreen(
@@ -62,6 +66,7 @@ fun TemplateEditorScreen(
     templateId: String?,
     onDone: () -> Unit,
 ) {
+    val colors = EmberTheme.colors
     val toast = LocalToast.current
     val templates by vm.templates.collectAsState()
     val catalog by vm.catalog.collectAsState()
@@ -73,6 +78,7 @@ fun TemplateEditorScreen(
     val rows = remember { mutableStateListOf<TemplateRow>() }
     var showPicker by remember { mutableStateOf(false) }
     var editingNoteFor by remember { mutableStateOf<String?>(null) }
+    var editingRepsFor by remember { mutableStateOf<String?>(null) }
 
     if (existing != null && !seeded) {
         name = existing.name
@@ -80,112 +86,147 @@ fun TemplateEditorScreen(
         rows.clear()
         rows.addAll(
             existing.exercises.sortedBy { it.sortOrder }.map {
-                TemplateRow(it.id.ifBlank { newId() }, it.exerciseId, it.exerciseName, it.bodyPart, it.notes)
+                TemplateRow(
+                    it.id.ifBlank { newId() }, it.exerciseId, it.exerciseName, it.bodyPart, it.notes,
+                    it.targetSets, it.repsMin, it.repsMax, it.restSeconds, it.supersetGroup,
+                )
             },
         )
         seeded = true
     }
 
+    fun replaceAll(next: List<TemplateRow>) {
+        rows.clear()
+        rows.addAll(next)
+    }
+
+    fun save() = vm.saveTemplate(
+        TemplateDraft(
+            id = templateId.orEmpty(),
+            name = name,
+            notes = notes,
+            exercises = rows.map {
+                TemplateExerciseDraft(
+                    id = it.rowId, exerciseId = it.exerciseId, exerciseName = it.name, bodyPart = it.bodyPart, notes = it.notes,
+                    targetSets = it.targetSets, repsMin = it.repsMin, repsMax = it.repsMax, restSeconds = it.restSeconds,
+                    supersetGroup = it.supersetGroup,
+                )
+            },
+        ),
+    ) { result ->
+        if (result.isValid) {
+            toast(if (templateId == null) "Template created" else "Template saved")
+            onDone()
+        } else {
+            toast(result.issues.firstOrNull()?.message ?: "Could not save")
+        }
+    }
+
     Column(Modifier.fillMaxWidth()) {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 6.dp),
+            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            IconButton(onClick = onDone) {
-                Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+            RoundIconButton(Icons.AutoMirrored.Rounded.ArrowBack, "Back", onDone)
             Text(
                 if (templateId == null) "New template" else "Edit template",
-                style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground,
+                style = MaterialTheme.typography.titleLarge,
+                color = colors.textPrimary,
+                modifier = Modifier.weight(1f),
             )
+            val canSave = rows.isNotEmpty()
+            Box(
+                Modifier.testTag("template_save").height(44.dp).clip(RoundedCornerShape(50))
+                    .background(if (canSave) colors.primary else colors.surfaceRaised)
+                    .clickable(enabled = canSave, role = Role.Button) { save() }.padding(horizontal = 20.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(if (templateId == null) "Create" else "Save", fontWeight = FontWeight.Bold, color = if (canSave) colors.onPrimary else colors.textSecondary)
+            }
         }
 
         LazyColumn(
             Modifier.weight(1f).fillMaxWidth(),
-            contentPadding = PaddingValues(start = 18.dp, end = 18.dp, bottom = 100.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 40.dp),
         ) {
-            item(key = "name") {
-                OutlinedTextField(name, { name = it }, label = { Text("Template name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            }
-            item(key = "notes") {
-                OutlinedTextField(
-                    notes, { notes = it },
-                    label = { Text("Template note (optional)") },
-                    placeholder = { Text("Heavy day. Keep rests to 3 minutes.") },
-                    minLines = 2,
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
+            item(key = "name") { Field("Name", name, "Push day", singleLine = true) { name = it } }
+            item(key = "notes") { Field("Template note", notes, "Heavy bench first. Short rests on the accessories.", singleLine = false) { notes = it } }
             item(key = "exercises-title") {
-                Text("Exercises", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
+                Text(
+                    "EXERCISES · ${rows.size}",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 1.sp,
+                    color = colors.textSecondary,
+                    modifier = Modifier.padding(top = 20.dp, bottom = 8.dp),
+                )
             }
             itemsIndexed(rows, key = { _, row -> row.rowId }) { index, row ->
-                TemplateRowCard(
-                    index = index,
-                    row = row,
-                    canMoveUp = index > 0,
-                    canMoveDown = index < rows.lastIndex,
-                    onMoveUp = { rows.add(index - 1, rows.removeAt(index)) },
-                    onMoveDown = { rows.add(index + 1, rows.removeAt(index)) },
-                    onRemove = { rows.removeAt(index) },
-                    onEditNote = { editingNoteFor = row.rowId },
-                )
+                val joinedAbove = TemplateRowGroups.joinedToPrevious(rows, index)
+                val joinedBelow = index < rows.lastIndex && TemplateRowGroups.joinedToPrevious(rows, index + 1)
+                Box(Modifier.padding(top = if (joinedAbove) 4.dp else 10.dp)) {
+                    TemplatePlanCard(
+                        row = row,
+                        joinedAbove = joinedAbove,
+                        joinedBelow = joinedBelow,
+                        actions = TemplatePlanActions(
+                            onChange = { changed -> rows[index] = changed },
+                            onEditReps = { editingRepsFor = row.rowId },
+                            onEditNote = { editingNoteFor = row.rowId },
+                            onMoveUp = if (index > 0) ({ rows.add(index - 1, rows.removeAt(index)) }) else null,
+                            onMoveDown = if (index < rows.lastIndex) ({ rows.add(index + 1, rows.removeAt(index)) }) else null,
+                            onToggleSuperset = when {
+                                row.supersetGroup != null -> ({ replaceAll(TemplateRowGroups.leave(rows, index)) })
+                                index > 0 -> ({ replaceAll(TemplateRowGroups.joinPrevious(rows, index)) })
+                                else -> null
+                            },
+                            onRemove = { replaceAll(TemplateRowGroups.leave(rows, index).filterIndexed { i, _ -> i != index }) },
+                        ),
+                    )
+                }
             }
             item(key = "add") {
+                val shape = RoundedCornerShape(18.dp)
                 Row(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surface).clickable { showPicker = true }
-                        .padding(vertical = 12.dp),
-                    horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
+                    Modifier.padding(top = 12.dp).fillMaxWidth().height(54.dp).clip(shape)
+                        .border(1.5.dp, colors.primary.copy(alpha = 0.5f), shape)
+                        .clickable(role = Role.Button) { showPicker = true },
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(Icons.Rounded.Add, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                    Text("  Add exercise", color = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.Rounded.Add, null, tint = colors.primaryText, modifier = Modifier.size(20.dp))
+                    Text("  Add exercises", fontWeight = FontWeight.Bold, color = colors.primaryText)
                 }
             }
+            item(key = "footer") {
+                Text(
+                    "Changes here only affect new workouts. Logged workouts stay as they were.",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = colors.textSecondary,
+                    modifier = Modifier.fillMaxWidth().padding(top = 14.dp),
+                )
+            }
         }
-
-        Button(
-            onClick = {
-                vm.saveTemplate(
-                    TemplateDraft(
-                        id = templateId.orEmpty(),
-                        name = name,
-                        notes = notes,
-                        exercises = rows.map {
-                            TemplateExerciseDraft(
-                                id = it.rowId,
-                                exerciseId = it.exerciseId,
-                                exerciseName = it.name,
-                                bodyPart = it.bodyPart,
-                                notes = it.notes,
-                            )
-                        },
-                    ),
-                ) { result ->
-                    if (result.isValid) {
-                        toast(if (templateId == null) "Template created" else "Template saved")
-                        onDone()
-                    } else toast(result.issues.firstOrNull()?.message ?: "Could not save")
-                }
-            },
-            enabled = rows.isNotEmpty(),
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 10.dp),
-        ) { Text(if (templateId == null) "Create template" else "Save changes") }
     }
 
     if (showPicker) {
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(
             onDismissRequest = { showPicker = false },
-            sheetState = sheetState,
-            containerColor = MaterialTheme.colorScheme.surface,
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = colors.surface,
         ) {
-            ExercisePicker(exercises = catalog, onPick = { ex ->
-                rows.add(TemplateRow(newId(), ex.id, ex.name, ex.primaryBodyPart, notes = ""))
-                showPicker = false
-            })
+            ExercisePicker(
+                exercises = catalog,
+                onPick = {},
+                title = "Add exercises",
+                subtitle = "They go to the end of the template with 3 sets each.",
+                onPickMany = { picked, asSuperset ->
+                    val group = if (asSuperset && picked.size > 1) (rows.mapNotNull { it.supersetGroup }.maxOrNull() ?: 0) + 1 else null
+                    rows.addAll(picked.map { TemplateRow(newId(), it.id, it.name, it.primaryBodyPart, notes = "", targetSets = 3, supersetGroup = group) })
+                    showPicker = false
+                },
+            )
         }
     }
 
@@ -203,55 +244,43 @@ fun TemplateEditorScreen(
             )
         }
     }
+
+    editingRepsFor?.let { rowId ->
+        val index = rows.indexOfFirst { it.rowId == rowId }
+        if (index < 0) {
+            editingRepsFor = null
+        } else {
+            RepRangeSheet(
+                exerciseName = rows[index].name,
+                initialMin = rows[index].repsMin,
+                initialMax = rows[index].repsMax,
+                onSave = { min, max -> rows[index] = rows[index].copy(repsMin = min, repsMax = max) },
+                onDismiss = { editingRepsFor = null },
+            )
+        }
+    }
 }
 
 @Composable
-private fun TemplateRowCard(
-    index: Int,
-    row: TemplateRow,
-    canMoveUp: Boolean,
-    canMoveDown: Boolean,
-    onMoveUp: () -> Unit,
-    onMoveDown: () -> Unit,
-    onRemove: () -> Unit,
-    onEditNote: () -> Unit,
-) {
-    Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surface).padding(horizontal = 12.dp, vertical = 8.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("${index + 1}", style = Numbers, color = EmberTheme.colors.textSecondary, modifier = Modifier.size(20.dp))
-            Column(Modifier.weight(1f)) {
-                Text(row.name, color = MaterialTheme.colorScheme.onBackground)
-                if (row.bodyPart.isNotBlank()) Tag(row.bodyPart, accent = MaterialTheme.colorScheme.secondary)
-            }
-            IconButton(onClick = onEditNote) {
-                Icon(
-                    Icons.AutoMirrored.Rounded.NoteAdd,
-                    if (row.notes.isBlank()) "Add note to ${row.name}" else "Edit note on ${row.name}",
-                    tint = if (row.notes.isBlank()) EmberTheme.colors.textSecondary else MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(18.dp),
-                )
-            }
-            IconButton(onClick = onMoveUp, enabled = canMoveUp) {
-                Icon(Icons.Rounded.ArrowUpward, "Move ${row.name} up", tint = EmberTheme.colors.textSecondary, modifier = Modifier.size(18.dp))
-            }
-            IconButton(onClick = onMoveDown, enabled = canMoveDown) {
-                Icon(Icons.Rounded.ArrowDownward, "Move ${row.name} down", tint = EmberTheme.colors.textSecondary, modifier = Modifier.size(18.dp))
-            }
-            IconButton(onClick = onRemove) {
-                Icon(Icons.Rounded.Delete, "Remove ${row.name}", tint = EmberTheme.colors.textSecondary, modifier = Modifier.size(18.dp))
-            }
-        }
-        if (row.notes.isNotBlank()) {
-            NoteLine(
-                Icons.AutoMirrored.Rounded.Notes,
-                label = null,
-                text = row.notes,
-                description = "Exercise note in this template",
-                onClick = onEditNote,
-                modifier = Modifier.padding(start = 20.dp),
+private fun Field(label: String, value: String, placeholder: String, singleLine: Boolean, onValue: (String) -> Unit) {
+    val colors = EmberTheme.colors
+    val shape = RoundedCornerShape(14.dp)
+    Column(Modifier.padding(top = 12.dp)) {
+        Text(label.uppercase(), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp, color = colors.textSecondary)
+        Box(
+            Modifier.padding(top = 6.dp).fillMaxWidth().clip(shape).background(colors.surfaceRaised).border(1.dp, colors.border, shape)
+                .padding(horizontal = 14.dp, vertical = 14.dp),
+        ) {
+            if (value.isEmpty()) Text(placeholder, style = MaterialTheme.typography.bodyLarge, color = colors.textTertiary)
+            BasicTextField(
+                value = value,
+                onValueChange = onValue,
+                singleLine = singleLine,
+                minLines = if (singleLine) 1 else 2,
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.textPrimary),
+                cursorBrush = SolidColor(colors.primary),
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                modifier = Modifier.fillMaxWidth().semantics { contentDescription = label },
             )
         }
     }

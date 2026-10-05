@@ -91,6 +91,46 @@ class NewestMigrationJvmTest {
         }
     }
 
+    @Test
+    fun aVersionEightTemplateOpensAtNineWithoutAPlan() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val name = "jvm-migration-8.db"
+        context.deleteDatabase(name)
+        val file = context.getDatabasePath(name).apply { parentFile?.mkdirs() }
+
+        SQLiteDatabase.openOrCreateDatabase(file, null).use { db ->
+            createSchema(db, version = 8)
+            db.execSQL("INSERT INTO templates (id, name, notes) VALUES ('t8', 'Push', 'Heavy first')")
+            db.execSQL(
+                "INSERT INTO template_exercises (id, templateId, exerciseId, exerciseName, category, bodyPart, " +
+                    "sortOrder, notes) VALUES ('te8', 't8', 'ex8', 'Bench', 0, 'Chest', 0, 'Pause')",
+            )
+            db.version = 8
+        }
+
+        val room = Room.databaseBuilder(context, WorkoutDb::class.java, name)
+            .addMigrations(*WorkoutMigrations.ALL)
+            .allowMainThreadQueries()
+            .build()
+        try {
+            val repo = WorkoutRepository(room.workoutDao(), RoomTransactionRunner(room))
+            val template = repo.getTemplate("t8")!!
+            assertEquals("Heavy first", template.notes)
+            val exercise = template.exercises.single()
+            assertEquals("Pause", exercise.notes)
+            assertNull(exercise.targetSets)
+            assertNull(exercise.repsMin)
+            assertNull(exercise.repsMax)
+            assertNull(exercise.restSeconds)
+            assertNull(exercise.supersetGroup)
+
+            val planned = repo.saveTemplate(template.copy(exercises = listOf(exercise.copy(targetSets = 4, repsMin = 6, repsMax = 8))))
+            assertEquals(4, planned.exercises.single().targetSets)
+        } finally {
+            room.close()
+        }
+    }
+
     /** Builds the schema exactly as Room exported it for [version]. */
     private fun createSchema(db: SQLiteDatabase, version: Int) {
         val schemaFile = File("schemas/com.lukr99.workout.data.WorkoutDb/$version.json")

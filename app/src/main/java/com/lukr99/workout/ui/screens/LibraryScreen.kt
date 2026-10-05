@@ -62,6 +62,7 @@ fun LibraryScreen(
     onEditExercise: (String) -> Unit,
     onNewExercise: (String) -> Unit,
     onStartTemplate: (String) -> Unit,
+    onOpenTemplate: (String) -> Unit,
 ) {
     var tab by remember { mutableStateOf(LibTab.Catalog) }
     val templates by vm.templates.collectAsState()
@@ -89,7 +90,7 @@ fun LibraryScreen(
         when (tab) {
             LibTab.Templates -> TemplateList(
                 templates = templates,
-                onEdit = onEditTemplate,
+                onEdit = onOpenTemplate,
                 onStart = onStartTemplate,
                 onDelete = { vm.deleteTemplate(it) },
             )
@@ -134,7 +135,7 @@ private fun TemplateList(
             Row(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
                     .background(MaterialTheme.colorScheme.surface)
-                    .clickable { onEdit(template.id) }.padding(14.dp),
+                    .clickable(onClickLabel = "Preview ${template.name}") { onEdit(template.id) }.padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {

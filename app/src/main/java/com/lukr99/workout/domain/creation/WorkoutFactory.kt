@@ -103,6 +103,11 @@ class WorkoutFactory(
                 bodyPart = item.bodyPart.trim().ifBlank { exercise?.primaryBodyPart.orEmpty() },
                 sortOrder = index,
                 notes = item.notes.trim(),
+                targetSets = item.targetSets?.coerceIn(1, 20),
+                repsMin = listOfNotNull(item.repsMin, item.repsMax).minOrNull()?.coerceIn(1, 100),
+                repsMax = listOfNotNull(item.repsMin, item.repsMax).maxOrNull()?.coerceIn(1, 100),
+                restSeconds = item.restSeconds?.coerceIn(0, 3_600),
+                supersetGroup = item.supersetGroup,
             )
         }
         if (children.isEmpty() && policy.requireTemplateExercises) {

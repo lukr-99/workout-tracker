@@ -25,14 +25,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * The cross-device contract: our `1.8` bundle round-trips through JSON unchanged, and a hand-crafted
+ * The cross-device contract: our `1.9` bundle round-trips through JSON unchanged, and a hand-crafted
  * `v1.0` export (enums as ints, ISO-8601 timestamps, MAUI computed fields) imports 1:1.
  */
 class ExportBundleJvmTest {
 
     private val bundle = ExportBundle(
         exportedAtUtc = "2024-01-01T10:00:00Z",
-        exportFormatVersion = "1.8",
+        exportFormatVersion = "1.9",
         exercises = listOf(
             Exercise(
                 id = "ex1", name = "Bench", category = ExerciseCategory.Strength,
@@ -49,7 +49,12 @@ class ExportBundleJvmTest {
         templates = listOf(
             WorkoutTemplate(
                 id = "t1", name = "Push",
-                exercises = listOf(WorkoutTemplateExercise(id = "te1", exerciseId = "ex1", exerciseName = "Bench", bodyPart = "Chest")),
+                exercises = listOf(
+                    WorkoutTemplateExercise(
+                        id = "te1", exerciseId = "ex1", exerciseName = "Bench", bodyPart = "Chest",
+                        targetSets = 4, repsMin = 6, repsMax = 8, restSeconds = 150, supersetGroup = 1,
+                    ),
+                ),
             ),
         ),
         sessions = listOf(
@@ -164,6 +169,35 @@ class ExportBundleJvmTest {
     }
 
     @Test
+    fun reads_v18_templateWithoutAPlan() {
+        val restored = JsonExporter.fromJson(
+            """
+            {
+              "exportFormatVersion": "1.8",
+              "exportedAtUtc": "2026-09-01T10:00:00Z",
+              "templates": [
+                {
+                  "id": "t1", "name": "Push", "notes": "",
+                  "exercises": [
+                    { "id": "te1", "exerciseId": "ex1", "exerciseName": "Bench", "category": 0,
+                      "bodyPart": "Chest", "sortOrder": 0, "notes": "Pause" }
+                  ]
+                }
+              ]
+            }
+            """.trimIndent(),
+        )
+
+        val planned = restored.templates.single().exercises.single()
+        assertEquals("Pause", planned.notes)
+        assertEquals(null, planned.targetSets) // the 1.9 plan defaults on an older read
+        assertEquals(null, planned.repsMin)
+        assertEquals(null, planned.repsMax)
+        assertEquals(null, planned.restSeconds)
+        assertEquals(null, planned.supersetGroup)
+    }
+
+    @Test
     fun reads_v11_exportWithV12SessionDefaults() {
         val restored = JsonExporter.fromJson(
             V10_JSON.replace(
@@ -179,8 +213,8 @@ class ExportBundleJvmTest {
 
     @Test
     fun supportsAllPublishedVersions() {
-        assertEquals(setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8"), ExportBundle.SUPPORTED_VERSIONS)
-        assertEquals("1.8", ExportBundle.CURRENT_VERSION)
+        assertEquals(setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9"), ExportBundle.SUPPORTED_VERSIONS)
+        assertEquals("1.9", ExportBundle.CURRENT_VERSION)
     }
 
     @Test

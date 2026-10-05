@@ -17,7 +17,11 @@ fun Exercise.toNewEntry(sortOrder: Int = 0): WorkoutEntry = WorkoutEntry(
     cardioData = firstCardioFor(category),
 )
 
-/** The template's exercises as exercises in workout [sessionId], in template order, notes kept. */
+/**
+ * The template's exercises as exercises in workout [sessionId], in template order, with their notes
+ * and supersets. A planned exercise starts with its target number of sets, each set to the top of
+ * the rep range; an unplanned one starts with a single empty set.
+ */
 fun WorkoutTemplate.toEntries(sessionId: String): List<WorkoutEntry> =
     exercises.sortedBy { it.sortOrder }.mapIndexed { index, ex ->
         WorkoutEntry(
@@ -29,10 +33,18 @@ fun WorkoutTemplate.toEntries(sessionId: String): List<WorkoutEntry> =
             sortOrder = index,
             entryType = ex.category,
             notes = ex.notes,
-            strengthSets = firstSetsFor(ex.category),
+            supersetGroup = ex.supersetGroup,
+            strengthSets = plannedSetsFor(ex),
             cardioData = firstCardioFor(ex.category),
         )
     }
+
+private fun plannedSetsFor(ex: WorkoutTemplateExercise): List<StrengthSet> {
+    if (ex.category != ExerciseCategory.Strength) return emptyList()
+    val count = ex.targetSets?.coerceIn(1, 20) ?: return firstSetsFor(ex.category)
+    val reps = ex.repsMax ?: ex.repsMin ?: 0
+    return (1..count).map { StrengthSet(setNumber = it, reps = reps) }
+}
 
 /**
  * A new template with this workout's catalog exercises in order. It is named [templateName], or
