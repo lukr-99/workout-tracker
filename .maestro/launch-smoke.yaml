@@ -1,0 +1,22 @@
+# Smallest useful journey against Ember dev: the app launches, draws its shell, and the Start
+# action opens the Lift or Run choice. Ids are Compose test tags (AppTags) exposed through
+# testTagsAsResourceId. Run on an emulator only:
+#   .\tools\ui-check.ps1 -PackageName com.lukr99.workout.debug -Flow .maestro
+appId: com.lukr99.workout.debug
+name: Launch smoke
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: "nav_start"
+    timeout: 15000
+- assertVisible:
+    id: "nav_home"
+- tapOn:
+    id: "nav_start"
+- assertVisible:
+    id: "start_lift"
+- assertVisible:
+    id: "start_run"
+- takeScreenshot: start-chooser
+- back
