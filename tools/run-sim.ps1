@@ -26,7 +26,7 @@ Write-Host "Simulating a $Meters m run over $Seconds s (bearing $Bearing) from $
 # Explicit component (-n): action-only broadcasts to a manifest receiver are blocked by Android's
 # background-broadcast limits, so target the receiver directly.
 $useRouteArg = if ($UseRoute) { "true" } else { "false" }
-& $adb shell am broadcast -a com.lukr99.workout.SIM_RUN -n com.lukr99.workout/.data.location.RunSimReceiver `
+& $adb shell am broadcast -a "$ClassPrefix.SIM_RUN" -n "$DebugPackage/$ClassPrefix.data.location.RunSimReceiver" `
     --ed lat $Lat --ed lon $Lon --ei meters $Meters --ei seconds $Seconds --ed bearing $Bearing `
     --ez useRoute $useRouteArg
 Write-Host "Sent. Watch the Run screen, or open Runs to see the saved run (logcat tag: RunSim)." -ForegroundColor Green

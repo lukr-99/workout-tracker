@@ -117,7 +117,7 @@ switch ($Command.ToLower()) {
         $name = if ($Args.Count -ge 1) { $Args[0] } else { "Dev route" }
         $meters = if ($Args.Count -ge 2) { $Args[1] } else { "1000" }
         $bearing = if ($Args.Count -ge 3) { $Args[2] } else { "0" }
-        & $adb shell am broadcast -a com.lukr99.workout.DEV_SEED_ROUTE -n com.lukr99.workout/.data.location.RunDevReceiver `
+        & $adb shell am broadcast -a "$ClassPrefix.DEV_SEED_ROUTE" -n "$DebugPackage/$ClassPrefix.data.location.RunDevReceiver" `
             --es name "$name" --ei meters $meters --ed bearing $bearing | Out-Null
         Write-Host "Seeded route '$name' ($meters m)." -ForegroundColor Green
     }
@@ -125,7 +125,7 @@ switch ($Command.ToLower()) {
     "dump" {
         Assert-Device -Adb $adb
         & $adb logcat -c
-        & $adb shell am broadcast -a com.lukr99.workout.DEV_DUMP -n com.lukr99.workout/.data.location.RunDevReceiver | Out-Null
+        & $adb shell am broadcast -a "$ClassPrefix.DEV_DUMP" -n "$DebugPackage/$ClassPrefix.data.location.RunDevReceiver" | Out-Null
         Start-Sleep -Milliseconds 700
         $line = (& $adb logcat -d -s RunDev:D) -split "`r?`n" | Where-Object { $_ -match "RUNMODE_DUMP" } | Select-Object -Last 1
         if ($line) { Write-Host ($line -replace '.*RUNMODE_DUMP', 'RUNMODE_DUMP') -ForegroundColor Green }

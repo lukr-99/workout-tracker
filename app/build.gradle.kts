@@ -62,9 +62,14 @@ android {
     }
 
     buildTypes {
-        // No debug applicationId suffix: the frozen MAUI 1.0 app ships as
-        // `com.lukr99.workouttracker`, so `com.lukr99.workout` already coexists with it, and the
-        // tools/build-and-install.ps1 -Launch step targets the un-suffixed id.
+        // Debug and test builds are a separate app ("Ember dev", com.lukr99.workout.debug,
+        // versionName "x.y.z-dev"). The phone runs the release-signed app, so a dev install or an
+        // instrumented test run (which uninstalls its app afterwards) can never touch real data,
+        // and the updater can never mistake a local build for a shipped release (CodePrint rule).
+        debug {
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-dev"
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -106,6 +111,22 @@ android {
             }
         }
     }
+}
+
+// Room writes schema JSON without a final newline, which the CodePrint validator rejects. Fix the
+// generated files after every KSP run instead of hand-editing them (CodePrint data-lifecycle.md).
+val normalizeRoomSchemas = tasks.register("normalizeRoomSchemas") {
+    val schemaDir = layout.projectDirectory.dir("schemas").asFile
+    outputs.upToDateWhen { false }
+    doLast {
+        schemaDir.walkTopDown().filter { it.isFile && it.extension == "json" }.forEach { file ->
+            val text = file.readText()
+            if (text.isNotEmpty() && !text.endsWith("\n")) file.writeText(text + "\n")
+        }
+    }
+}
+tasks.matching { it.name.startsWith("ksp") && it.name.endsWith("Kotlin") }.configureEach {
+    finalizedBy(normalizeRoomSchemas)
 }
 
 dependencies {

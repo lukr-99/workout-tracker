@@ -63,7 +63,10 @@ and gitignored — set it to wherever that machine's Android SDK lives (this sta
 
 ## Build & install
 
-**Dev / debug** (fast, debug-signed — cannot receive release-signed updates):
+**Dev / debug** (fast, debug-signed). A debug build is its own app: **Ember dev**,
+`com.lukr99.workout.debug`, version `x.y.z-dev`. It installs beside the release app and never
+touches its data. Instrumented test runs uninstall their app afterwards, which now only removes
+Ember dev. The updater refuses to run in a `-dev` build.
 
 ```
 ./gradlew.bat :app:assembleDebug

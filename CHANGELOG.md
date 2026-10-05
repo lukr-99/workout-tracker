@@ -34,6 +34,11 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 - wger sync now stores an exercise's description as how-to steps, not as your personal note.
 - Export format 1.7 adds `instructions` and `videoUrl` to exercises. Older exports still import.
 - Database version 8, an additive migration with no data change.
+- **Debug builds are a separate app**, "Ember dev" (`com.lukr99.workout.debug`, version
+  `x.y.z-dev`). They install beside the real app and can never replace it or wipe its data. The
+  updater does not run in them.
+- The repository follows the CodePrint baseline: new AGENTS, ARCHITECTURE, CONTRIBUTING, SECURITY
+  and CONTEXT docs, a pitfalls log, and a CI job that validates the repository.
 
 ### Fixed
 
@@ -131,8 +136,7 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 ## [2.2.0] - 2026-08-10
 
-Run Mode reliability & map pass. First `2.x` entry recorded here; the `2.0`–`2.1` native-rewrite line
-(Run Mode R0–R5) landed ahead of this changelog and is documented under `docs/run-mode/`.
+Run Mode reliability & map pass.
 
 ### Fixed
 
@@ -156,6 +160,51 @@ Run Mode reliability & map pass. First `2.x` entry recorded here; the `2.0`–`2
   the recenter and music buttons), and made a toggle — one tap locks the map to the phone's heading
   (road ahead up), the next returns it to north-up. The needle always points to true north; an ember
   tint means it's currently locked to your heading.
+
+## [2.1.1] - 2026-08-08
+
+Written up on 2026-10-04 from the git history.
+
+### Fixed
+
+- Android 16 no longer warns that the app's native libraries are not 16 KB aligned. MapLibre,
+  DataStore and `androidx.graphics:graphics-path` moved to aligned versions.
+
+## [2.1.0] - 2026-08-08
+
+Written up on 2026-10-04 from the git history. Details are in `docs/run-mode/`.
+
+### Added
+
+- **Run Mode**: live GPS runs in a foreground service, with a dark map, pace and splits.
+- Run detail with stats, charts and personal records, plus a running section in Progress.
+  Runs sync to Health Connect.
+- **Route planner**: tap to drop points, snap to roads and save. A run can start from a saved route,
+  shown as a faint guide.
+- A small music button that opens Spotify.
+- Spoken split cues, GPX import and export, offline map tiles, run sharing and route management.
+
+### Changed
+
+- The app is now called **Ember**. The shell has five items with a central Start action.
+
+## [2.0.0] - 2026-07-26
+
+Written up on 2026-10-04 from the git history. Details are in `docs/rework/`.
+
+### Changed
+
+- **Native rewrite**: the app is now Kotlin, Jetpack Compose and Room. The .NET MAUI proof of
+  concept is kept on the `release/1.0` branch and tag `v1.0.0`.
+
+### Added
+
+- Live workout logging with a number pad, set types, RIR and RPE, supersets and a rest timer.
+- Templates, an exercise catalog with custom exercises, photos and wger images.
+- History with editing after the fact.
+- Progress with e1RM and volume charts, personal records and a muscle recovery body map.
+- Progression suggestions when adding an exercise.
+- JSON and CSV export and import, a Lyfta CSV importer, Health Connect sync and automatic backup.
 
 ## [1.0.0] - 2026-07-25
 
