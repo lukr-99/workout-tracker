@@ -12,7 +12,6 @@ import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutSessionStatus
 import com.lukr99.workout.domain.records.ExerciseRecords
-import com.lukr99.workout.domain.recovery.RecoverySnapshot
 import com.lukr99.workout.domain.query.WorkoutCriterion
 import com.lukr99.workout.domain.query.WorkoutQuery
 import com.lukr99.workout.domain.query.asFilter
@@ -155,45 +154,3 @@ class ProgressViewModel(
         }
     }
 }
-
-data class ProgressUiState(
-    val loaded: Boolean = false,
-    val overview: ProgressOverview = ProgressOverview(),
-    val weeklyVolume: List<WeeklyVolume> = emptyList(),
-    val exercises: List<ExerciseProgressSummary> = emptyList(),
-    val recovery: RecoverySnapshot? = null,
-)
-
-data class ProgressOverview(
-    val workouts: Int = 0,
-    val volumeKg: Double = 0.0,
-    val sets: Int = 0,
-    val prSets: Int = 0,
-    val streakWeeks: Int = 0,
-)
-
-data class WeeklyVolume(val label: String, val volumeKg: Double)
-
-data class ProgressPoint(
-    val dateMillis: Long,
-    val e1rmKg: Double,
-    val volumeKg: Double,
-    val reps: Int,
-    val sessionName: String,
-)
-
-data class ExerciseProgressSummary(
-    val exerciseId: String,
-    val name: String,
-    val bodyPart: String,
-    val category: ExerciseCategory,
-    val bestE1rmKg: Double,
-    val latestE1rmKg: Double,
-    val deltaKg: Double,
-    val points: List<ProgressPoint>,
-)
-
-data class ExerciseProgressDetail(
-    val summary: ExerciseProgressSummary,
-    val points: List<ProgressPoint>,
-)

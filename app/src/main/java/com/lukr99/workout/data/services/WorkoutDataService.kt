@@ -77,9 +77,3 @@ class WorkoutDataService(
         includeDiscardedSessions: Boolean = false,
     ): StatsReport = stats.calculate(repository.getSessions(includeDiscardedSessions), request)
 }
-
-data class WorkoutDataSnapshot(
-    val exercises: List<Exercise>,
-    val templates: List<WorkoutTemplate>,
-    val sessions: List<WorkoutSession>,
-)

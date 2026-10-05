@@ -11,11 +11,6 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.UUID
 
-data class PhotoCaptureTarget(
-    val uri: Uri,
-    val temporaryPath: String,
-)
-
 /** App-private file boundary for personal exercise photos, and their side of backup and restore. */
 class ExercisePhotoStore(private val context: Context) : PhotoArchive {
     private val photosDirectory: File

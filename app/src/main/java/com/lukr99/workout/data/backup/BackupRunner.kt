@@ -1,9 +1,5 @@
 package com.lukr99.workout.data.backup
 
-import java.time.Instant
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
-
 internal class BackupRunner(
     private val exportJson: suspend () -> String,
     private val gateway: BackupGateway,
@@ -25,26 +21,4 @@ internal class BackupRunner(
             deleted = expired.size,
         )
     }
-}
-
-internal object BackupNaming {
-    private val formatter = DateTimeFormatter
-        .ofPattern("'workout-backup-'yyyyMMdd-HHmmss-SSS'.json'")
-        .withZone(ZoneOffset.UTC)
-
-    fun fileName(utcMillis: Long): String = formatter.format(Instant.ofEpochMilli(utcMillis))
-
-    fun isManagedBackup(name: String): Boolean =
-        name.startsWith("workout-backup-") && name.endsWith(".json", ignoreCase = true)
-}
-
-internal object BackupRetention {
-    fun expired(documents: List<BackupDocument>, keep: Int): List<BackupDocument> =
-        documents
-            .filter { BackupNaming.isManagedBackup(it.name) }
-            .sortedWith(
-                compareByDescending<BackupDocument> { it.lastModifiedUtcMillis }
-                    .thenByDescending { it.name },
-            )
-            .drop(keep.coerceAtLeast(1))
 }

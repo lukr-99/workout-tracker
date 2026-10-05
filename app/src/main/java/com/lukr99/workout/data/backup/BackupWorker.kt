@@ -23,8 +23,3 @@ class BackupWorker(
         }
     }
 }
-
-/** Instrumented-test seam; production never assigns this. */
-internal object BackupWorkerTestHook {
-    var run: (suspend () -> BackupRunSummary)? = null
-}

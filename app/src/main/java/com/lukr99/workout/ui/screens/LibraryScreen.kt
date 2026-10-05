@@ -37,7 +37,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
@@ -50,8 +49,6 @@ import com.lukr99.workout.ui.components.FilterChip
 import com.lukr99.workout.ui.components.NoteLine
 import com.lukr99.workout.ui.components.Tag
 import com.lukr99.workout.ui.theme.TextMid
-
-private enum class LibTab { Templates, Catalog }
 
 /** Library surface — Templates (with editor) and the exercise Catalog (search/filter, archive). */
 @Composable
