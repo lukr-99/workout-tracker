@@ -36,6 +36,19 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 ### Changed
 
+- **Faster set logging.** Each set row shows what you did last time in a Previous column, and
+  the set you are on has an orange outline. Tapping weight or reps opens a new number pad with
+  both values side by side, quick steps (2.5 kg or 5 lb, 1 rep), a button that copies the set
+  before, and Next and Done set. Done set saves the set and starts the rest timer.
+- The rest timer floats at the bottom and says which set is next.
+- **An exercise menu with history.** The three dots on an exercise now open a sheet with the last
+  three times you did it (sets and best estimated 1RM), then Replace exercise, Superset with
+  previous, Move up or down, a note for today, How to do it, and Remove.
+- **Replace an exercise mid-workout.** When the machine is taken, swap the exercise for another
+  of the same kind and keep the sets you already logged.
+- The live workout header shows the elapsed time, the weight lifted and the sets done, with a
+  bigger Finish button.
+- Orange text and links are darker in light mode, so they are easier to read.
 - **New tabs: Home, Library, Start, Runs, Progress.** The Library (exercises and templates) is now
   a tab. Settings moved to the gear on Home. Tab labels are bigger.
 - **A new Home.** It shows today's date, your workout in progress with a Resume button, this

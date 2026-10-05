@@ -61,6 +61,7 @@ import com.lukr99.workout.ui.run.RunsScreen
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
+import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.screens.DataTransferScreen
 import com.lukr99.workout.ui.screens.ExerciseEditorScreen
 import com.lukr99.workout.ui.screens.HomeScreen
@@ -384,14 +385,14 @@ private fun StartAction(resumeMode: Boolean, onStart: () -> Unit, modifier: Modi
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             Modifier.testTag(AppTags.NAV_START).size(52.dp).clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary)
+                .background(EmberTheme.colors.primary)
                 .clickable(onClick = onStart),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 if (resumeMode) Icons.Rounded.PlayArrow else Icons.Rounded.Add,
                 contentDescription = if (resumeMode) "Resume workout" else "Start workout",
-                tint = MaterialTheme.colorScheme.onPrimary,
+                tint = EmberTheme.colors.onPrimary,
                 modifier = Modifier.size(28.dp),
             )
         }

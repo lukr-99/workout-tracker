@@ -12,12 +12,16 @@ import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
 import com.github.takahirom.roborazzi.captureRoboImage
+import com.github.takahirom.roborazzi.captureScreenRoboImage
+import com.lukr99.workout.ui.components.SetEntrySheet
+import com.lukr99.workout.ui.components.SetEntryState
 import com.lukr99.workout.data.transfer.DataFormat
 import com.lukr99.workout.data.transfer.ImportPlan
 import com.lukr99.workout.data.transfer.ImportPreview
 import com.lukr99.workout.data.transfer.ImportSummary
 import com.lukr99.workout.data.transfer.RestoreMode
 import com.lukr99.workout.data.transfer.StoreCounts
+import com.lukr99.workout.domain.ExerciseOuting
 import com.lukr99.workout.domain.PreviousEntryNote
 import com.lukr99.workout.domain.SetTag
 import com.lukr99.workout.domain.StrengthSet
@@ -66,6 +70,55 @@ class ComponentScreenshotTest {
         DataDangerZone(counts = null, blocker = "Finish or discard the live workout first.", working = false, onErase = {})
     }
 
+    @Test
+    fun setEntrySheetDark() = captureScreen("set_entry_sheet_dark", dark = true) { SetPad() }
+
+    @Test
+    fun setEntrySheetLight() = captureScreen("set_entry_sheet_light", dark = false) { SetPad() }
+
+    @Composable
+    private fun SetPad() = SetEntrySheet(
+        title = "Barbell Bench Press",
+        subtitle = "Set 4 of 4 · last time 80 × 6",
+        initial = SetEntryState.of(weightDisplay = 82.5, reps = 8),
+        unitLabel = "kg",
+        weightStep = 2.5,
+        copyLabel = "Set 3",
+        copyFrom = 82.5 to 8,
+        onChange = { _, _ -> },
+        onDone = {},
+        onDismiss = {},
+    )
+
+    @Test
+    fun exerciseMenuDark() = captureScreen("exercise_menu_dark", dark = true) { Menu() }
+
+    @Composable
+    private fun Menu() = ExerciseMenuSheet(
+        entry = WorkoutEntry(
+            exerciseId = "bench",
+            exerciseSnapshotName = "Barbell Bench Press",
+            exerciseSnapshotPrimaryBodyPart = "Chest",
+            strengthSets = listOf(StrengthSet(reps = 8, weightKg = 82.5, performedAtUtc = 1L)),
+        ),
+        units = UnitSystem.Metric,
+        options = ExerciseMenuOptions(canSupersetWithPrevious = true, groupedWithPrevious = false, canMoveUp = true, canMoveDown = true, hasGuide = true),
+        loadOutings = {
+            listOf(
+                ExerciseOuting(1_759_000_000_000, listOf(StrengthSet(reps = 8, weightKg = 80.0), StrengthSet(reps = 7, weightKg = 80.0)), 101.3),
+                ExerciseOuting(1_758_600_000_000, listOf(StrengthSet(reps = 8, weightKg = 77.5), StrengthSet(reps = 8, weightKg = 77.5)), 98.2),
+            )
+        },
+        onReplace = {}, onToggleSuperset = {}, onMoveUp = {}, onMoveDown = {}, onEditNote = {}, onShowGuide = {}, onRemove = {}, onDismiss = {},
+    )
+
+    /** Sheets and dialogs draw in their own window, so these capture the whole screen. */
+    private fun captureScreen(name: String, dark: Boolean, content: @Composable () -> Unit) {
+        compose.setContent { WorkoutTheme(dark = dark) { content() } }
+        compose.waitForIdle()
+        captureScreenRoboImage("src/test/screenshots/$name.png")
+    }
+
     @Composable
     private fun LiveCard() {
         val entry = WorkoutEntry(
@@ -83,8 +136,7 @@ class ComponentScreenshotTest {
             entry = entry,
             units = UnitSystem.Metric,
             doneIds = setOf("s1"),
-            canGroupWithPrevious = false,
-            groupedWithPrevious = false,
+            currentSetId = "s2",
             supersetPosition = null,
             supersetSize = 0,
             collapsed = false,
@@ -125,9 +177,9 @@ class ComponentScreenshotTest {
     )
 
     private val noActions = EntryCardActions(
-        onToggleSuperset = {}, onEditSuperset = {}, onToggleCollapsed = {}, onToggleWeightUnit = {},
+        onOpenMenu = {}, onEditSuperset = {}, onToggleCollapsed = {}, onToggleWeightUnit = {},
         onStart = {}, onFinish = {}, onReopen = {}, onReps = { _, _ -> }, onWeight = { _, _ -> },
-        onToggleDone = {}, onOptions = {}, onAddSet = {}, onMoveUp = {}, onMoveDown = {}, onRemove = {},
+        onToggleDone = {}, onOptions = {}, onAddSet = {},
         onCardioChange = {}, onEditNote = {}, onShowGuide = {},
     )
 }
