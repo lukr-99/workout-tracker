@@ -4,28 +4,38 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
 
 /**
@@ -40,7 +50,9 @@ fun RestTimerBar(
     onAdd15: () -> Unit,
     onSkip: () -> Unit,
     modifier: Modifier = Modifier,
+    next: String? = null,
 ) {
+    val colors = EmberTheme.colors
     val fraction by animateFloatAsState(
         targetValue = if (totalSeconds <= 0) 0f else (remainingSeconds.toFloat() / totalSeconds).coerceIn(0f, 1f),
         label = "restRing",
@@ -56,23 +68,27 @@ fun RestTimerBar(
         ),
         label = "restPulseScale",
     )
-    val ring = if (pulsing) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-    val track = MaterialTheme.colorScheme.outline
+    val ring = colors.primary
+    val track = colors.surfaceRaised
+    val shape = RoundedCornerShape(22.dp)
 
     Row(
         modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .shadow(12.dp, shape)
+            .clip(shape)
+            .background(colors.surface)
+            .border(1.dp, colors.border, shape)
+            .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }
+            .padding(start = 12.dp, end = 10.dp, top = 10.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(50.dp), contentAlignment = Alignment.Center) {
             Canvas(
-                Modifier.size(40.dp).graphicsLayer { scaleX = pulse; scaleY = pulse },
+                Modifier.size(50.dp).graphicsLayer { scaleX = pulse; scaleY = pulse },
             ) {
-                val stroke = 4.dp.toPx()
+                val stroke = 5.dp.toPx()
                 val d = Size(size.width - stroke, size.height - stroke)
                 val topLeft = androidx.compose.ui.geometry.Offset(stroke / 2, stroke / 2)
                 drawArc(track, -90f, 360f, false, topLeft, d, style = Stroke(stroke, cap = StrokeCap.Round))
@@ -80,14 +96,32 @@ fun RestTimerBar(
             }
         }
         Column(Modifier.weight(1f)) {
-            Text("Rest", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(Format.clock(remainingSeconds), style = Numbers.copy(fontSize = 28.sp), color = colors.textPrimary)
             Text(
-                Format.clock(remainingSeconds),
-                style = Numbers.copy(fontSize = 22.sp),
-                color = MaterialTheme.colorScheme.onBackground,
+                if (next != null) "Rest · next is $next" else "Rest",
+                style = MaterialTheme.typography.labelLarge,
+                color = colors.textSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
-        TextButton(onClick = onAdd15) { Text("+15s", color = MaterialTheme.colorScheme.primary) }
-        TextButton(onClick = onSkip) { Text("Skip", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        Pill("+15s", filled = false, onClick = onAdd15)
+        Pill("Skip", filled = true, onClick = onSkip)
+    }
+}
+
+@Composable
+private fun Pill(text: String, filled: Boolean, onClick: () -> Unit) {
+    val colors = EmberTheme.colors
+    val shape = RoundedCornerShape(50)
+    Box(
+        Modifier.height(44.dp).clip(shape)
+            .background(if (filled) colors.primary else colors.surfaceRaised)
+            .then(if (filled) Modifier else Modifier.border(1.dp, colors.border, shape))
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 14.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text, fontWeight = FontWeight.Bold, color = if (filled) colors.onPrimary else colors.textPrimary)
     }
 }

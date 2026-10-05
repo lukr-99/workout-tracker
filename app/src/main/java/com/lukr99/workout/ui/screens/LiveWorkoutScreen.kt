@@ -115,6 +115,8 @@ fun LiveWorkoutScreen(
     var guideFor by remember { mutableStateOf<Exercise?>(null) }
     val catalog by vm.catalogById.collectAsState()
     val previousNotes by vm.previousNotes.collectAsState()
+    val previousSets by vm.previousSets.collectAsState()
+    val currentSetId = nextSet(draft?.entries.orEmpty(), doneIds)?.second?.id
     var nowUtcMillis by remember { mutableStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
         while (true) {
@@ -180,6 +182,7 @@ fun LiveWorkoutScreen(
                         entry = entry,
                         units = units,
                         doneIds = doneIds,
+                        currentSetId = currentSetId,
                         canGroupWithPrevious = index > 0,
                         groupedWithPrevious = index > 0 &&
                             entry.supersetGroup != null &&
@@ -194,6 +197,7 @@ fun LiveWorkoutScreen(
                             exerciseNote = catalogExercise?.notes.orEmpty(),
                             previous = previousNotes[entry.exerciseId],
                             hasGuide = catalogExercise != null,
+                            lastTimeSets = previousSets[entry.exerciseId].orEmpty(),
                         ),
                         actions = EntryCardActions(
                             onToggleSuperset = { vm.toggleSupersetWithPrevious(entry.id) },
@@ -276,6 +280,7 @@ fun LiveWorkoutScreen(
                     totalSeconds = rest.total,
                     onAdd15 = { vm.addRest(15) },
                     onSkip = { vm.skipRest() },
+                    next = nextSetLabel(draft?.entries.orEmpty(), doneIds),
                 )
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -449,3 +454,18 @@ private fun AddButton(label: String, modifier: Modifier = Modifier, onClick: () 
     }
 }
 
+/** The next set to do: the first set not done, in the first strength exercise that is not finished. */
+private fun nextSet(
+    entries: List<com.lukr99.workout.domain.WorkoutEntry>,
+    doneIds: Set<String>,
+): Pair<com.lukr99.workout.domain.WorkoutEntry, com.lukr99.workout.domain.StrengthSet>? =
+    entries.asSequence()
+        .filter { it.isStrength && it.completedAtUtc == null }
+        .firstNotNullOfOrNull { entry -> entry.strengthSets.firstOrNull { it.id !in doneIds }?.let { entry to it } }
+
+/** "set 4 of 4" in the current exercise, or the next exercise's name when it changes. */
+private fun nextSetLabel(entries: List<com.lukr99.workout.domain.WorkoutEntry>, doneIds: Set<String>): String? {
+    val (entry, set) = nextSet(entries, doneIds) ?: return null
+    val started = entry.strengthSets.any { it.id in doneIds }
+    return if (started) "set ${entry.strengthSets.indexOf(set) + 1} of ${entry.strengthSets.size}" else entry.exerciseSnapshotName
+}

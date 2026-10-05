@@ -42,7 +42,7 @@ class SetRowLayoutTest {
     fun prSetRowSurvivesIntrinsicHeightMeasurement() {
         renderUnderIntrinsicHeight(StrengthSet(reps = 8, weightKg = 100.0, isPr = true))
 
-        compose.onNodeWithContentDescription("mark set not done").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Set 1 done").assertIsDisplayed()
         // Twice: the set badge and the tag chip that used to be a LazyRow. Both must be laid out,
         // otherwise this test would pass on a set row that quietly stopped rendering its chips.
         compose.onAllNodesWithText("PR").assertCountEquals(2)
@@ -54,7 +54,7 @@ class SetRowLayoutTest {
             StrengthSet(reps = 12, weightKg = 40.0, tags = setOf(SetTag.Warmup, SetTag.ToFailure)),
         )
 
-        compose.onNodeWithContentDescription("mark set not done").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Set 1 done").assertIsDisplayed()
         compose.onNodeWithText("WARM-UP").assertIsDisplayed()
         compose.onNodeWithText("TO FAILURE").assertIsDisplayed()
     }
@@ -68,9 +68,14 @@ class SetRowLayoutTest {
                     Column(Modifier.weight(1f)) {
                         SetRow(
                             index = 0,
+                            total = 1,
                             set = set,
                             units = UnitSystem.Metric,
                             done = true,
+                            current = false,
+                            exerciseName = "Bench press",
+                            previous = null,
+                            before = null,
                             onReps = {},
                             onWeightKg = {},
                             onToggleDone = {},

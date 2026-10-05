@@ -12,6 +12,9 @@ import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
 import com.github.takahirom.roborazzi.captureRoboImage
+import com.github.takahirom.roborazzi.captureScreenRoboImage
+import com.lukr99.workout.ui.components.SetEntrySheet
+import com.lukr99.workout.ui.components.SetEntryState
 import com.lukr99.workout.data.transfer.DataFormat
 import com.lukr99.workout.data.transfer.ImportPlan
 import com.lukr99.workout.data.transfer.ImportPreview
@@ -66,6 +69,33 @@ class ComponentScreenshotTest {
         DataDangerZone(counts = null, blocker = "Finish or discard the live workout first.", working = false, onErase = {})
     }
 
+    @Test
+    fun setEntrySheetDark() = captureScreen("set_entry_sheet_dark", dark = true) { SetPad() }
+
+    @Test
+    fun setEntrySheetLight() = captureScreen("set_entry_sheet_light", dark = false) { SetPad() }
+
+    @Composable
+    private fun SetPad() = SetEntrySheet(
+        title = "Barbell Bench Press",
+        subtitle = "Set 4 of 4 · last time 80 × 6",
+        initial = SetEntryState.of(weightDisplay = 82.5, reps = 8),
+        unitLabel = "kg",
+        weightStep = 2.5,
+        copyLabel = "Set 3",
+        copyFrom = 82.5 to 8,
+        onChange = { _, _ -> },
+        onDone = {},
+        onDismiss = {},
+    )
+
+    /** Sheets and dialogs draw in their own window, so these capture the whole screen. */
+    private fun captureScreen(name: String, dark: Boolean, content: @Composable () -> Unit) {
+        compose.setContent { WorkoutTheme(dark = dark) { content() } }
+        compose.waitForIdle()
+        captureScreenRoboImage("src/test/screenshots/$name.png")
+    }
+
     @Composable
     private fun LiveCard() {
         val entry = WorkoutEntry(
@@ -83,6 +113,7 @@ class ComponentScreenshotTest {
             entry = entry,
             units = UnitSystem.Metric,
             doneIds = setOf("s1"),
+            currentSetId = "s2",
             canGroupWithPrevious = false,
             groupedWithPrevious = false,
             supersetPosition = null,

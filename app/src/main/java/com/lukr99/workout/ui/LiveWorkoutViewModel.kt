@@ -8,7 +8,6 @@ import com.lukr99.workout.data.WorkoutRepository
 import com.lukr99.workout.data.services.WorkoutInsightsService
 import com.lukr99.workout.domain.Estimates
 import com.lukr99.workout.domain.Exercise
-import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.ExerciseFilter
 import com.lukr99.workout.domain.PreviousEntryNote
 import com.lukr99.workout.domain.SetTag
@@ -16,9 +15,7 @@ import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutSessionStatus
-import com.lukr99.workout.domain.newId
 import com.lukr99.workout.domain.completedAt
-import com.lukr99.workout.domain.lastSetsFor
 import com.lukr99.workout.domain.setIdsMarkedDone
 import com.lukr99.workout.domain.withEntry
 import com.lukr99.workout.domain.withEntryFinished
@@ -30,8 +27,6 @@ import com.lukr99.workout.domain.withSetDone
 import com.lukr99.workout.domain.withTagToggled
 import com.lukr99.workout.domain.withWeightUnitToggled
 import com.lukr99.workout.domain.effectiveTags
-import com.lukr99.workout.domain.progression.DoubleProgression
-import com.lukr99.workout.domain.progression.SuggestionStatus
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -95,15 +90,23 @@ class LiveWorkoutViewModel(
             .map { rows -> rows.associateBy(Exercise::id) }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
-    /** "Last time" notes for the exercises in the live session, refreshed when that set changes. */
+    private val history = EntryHistory(repo, insights)
+
+    /** The live workout's id and exercise ids; "last time" data reloads only when these change. */
+    private val onScreen = draftState
+        .map { session -> session?.let { it.id to it.entries.map(WorkoutEntry::exerciseId).toSet() } }
+        .distinctUntilChanged()
+
+    /** "Last time" notes for the exercises in the live session. */
     @OptIn(ExperimentalCoroutinesApi::class)
     val previousNotes: StateFlow<Map<String, PreviousEntryNote>> =
-        draftState
-            .map { session -> session?.let { it.id to it.entries.map(WorkoutEntry::exerciseId).toSet() } }
-            .distinctUntilChanged()
-            .mapLatest { key ->
-                key?.let { (sessionId, ids) -> repo.getPreviousEntryNotes(ids, sessionId) }.orEmpty()
-            }
+        onScreen.mapLatest { key -> key?.let { (sessionId, ids) -> history.notes(ids, sessionId) }.orEmpty() }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
+    /** Last time's sets for the exercises in the live session, for each set row's "Previous". */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val previousSets: StateFlow<Map<String, List<StrengthSet>>> =
+        onScreen.mapLatest { key -> key?.let { (_, ids) -> history.lastSets(ids) }.orEmpty() }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     private val persistMutex = Mutex()
@@ -149,41 +152,14 @@ class LiveWorkoutViewModel(
     fun setSetNote(entryId: String, setId: String, text: String) =
         mutate { it.withSet(entryId, setId) { set -> set.copy(notes = text.trim()) } }
 
+    /** Adds [exercise] at the end, starting from the suggested or last time's sets when there are any. */
     fun addExercise(exercise: Exercise) {
         viewModelScope.launch {
             val base = repo.newEntryForExercise(exercise, sortOrder = draftState.value?.entries?.size ?: 0)
-            val entry = if (exercise.category == ExerciseCategory.Strength) {
-                val suggested = suggestedSets(exercise)
-                when {
-                    suggested != null -> base.copy(strengthSets = suggested)
-                    else -> {
-                        val prefill = repo.getSessions().lastSetsFor(exercise.id)
-                        if (prefill.isNotEmpty()) base.copy(strengthSets = prefill) else base
-                    }
-                }
-            } else base
+            val prefill = history.prefill(exercise)
+            prefill?.rationale?.let { suggestionState.value = it }
+            val entry = prefill?.let { base.copy(strengthSets = it.sets) } ?: base
             mutate { it.copy(entries = it.entries + entry.copy(workoutSessionId = it.id)) }
-        }
-    }
-
-    /**
-     * Phase 3.5 `insights.progression` as the pre-filled next sets (default double-progression). Emits
-     * the rationale for a toast. Returns null when there is not enough history to suggest.
-     */
-    private suspend fun suggestedSets(exercise: Exercise): List<StrengthSet>? {
-        if (exercise.id.isBlank()) return null
-        val suggestion = runCatching { insights.progression(exercise.id, DoubleProgression()) }.getOrNull()
-            ?: return null
-        if (suggestion.status != SuggestionStatus.Ready || suggestion.targets.isEmpty()) return null
-        suggestionState.value = suggestion.rationale
-        return suggestion.targets.mapIndexed { i, t ->
-            StrengthSet(
-                id = newId(),
-                setNumber = i + 1,
-                reps = t.reps,
-                weightKg = t.weightKg,
-                setType = t.setType,
-            )
         }
     }
 

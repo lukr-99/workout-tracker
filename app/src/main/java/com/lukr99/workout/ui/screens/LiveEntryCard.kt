@@ -55,7 +55,7 @@ import com.lukr99.workout.ui.components.ExerciseNotesPanel
 import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.SetColumnHeader
 import com.lukr99.workout.ui.components.SetRow
-import com.lukr99.workout.ui.components.Tag
+import com.lukr99.workout.ui.components.BodyPartTag
 import com.lukr99.workout.ui.stats
 import com.lukr99.workout.ui.statsSummary
 import com.lukr99.workout.ui.theme.EmberTheme
@@ -66,6 +66,8 @@ fun LiveEntryCard(
     entry: WorkoutEntry,
     units: UnitSystem,
     doneIds: Set<String>,
+    /** The one set in the whole workout that is up next; it gets the orange outline. */
+    currentSetId: String?,
     canGroupWithPrevious: Boolean,
     groupedWithPrevious: Boolean,
     supersetPosition: Int?,
@@ -160,9 +162,14 @@ fun LiveEntryCard(
                 entry.strengthSets.forEachIndexed { index, set ->
                     SetRow(
                         index = index,
+                        total = entry.strengthSets.size,
                         set = set,
                         units = entryUnits,
                         done = set.id in doneIds,
+                        current = set.id == currentSetId,
+                        exerciseName = entry.exerciseSnapshotName,
+                        previous = notes.lastTimeSets.getOrNull(index),
+                        before = entry.strengthSets.getOrNull(index - 1),
                         onReps = { actions.onReps(set.id, it) },
                         onWeightKg = { actions.onWeight(set.id, it) },
                         onToggleDone = { actions.onToggleDone(set.id) },
@@ -231,10 +238,7 @@ private fun EntryHeader(
             )
             if (entry.exerciseSnapshotPrimaryBodyPart.isNotBlank()) {
                 Spacer(Modifier.height(2.dp))
-                Tag(
-                    entry.exerciseSnapshotPrimaryBodyPart,
-                    accent = MaterialTheme.colorScheme.secondary,
-                )
+                BodyPartTag(entry.exerciseSnapshotPrimaryBodyPart)
             }
             Text(
                 when {
