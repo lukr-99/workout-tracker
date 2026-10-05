@@ -26,9 +26,12 @@ fun WorkoutTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () 
 
 private fun EmberColors.toMaterial(): ColorScheme {
     val base = if (isDark) darkColorScheme() else lightColorScheme()
+    // Material components and older screens use `primary` for orange text as well as fills. In
+    // light mode the bright fill orange is too pale for text, so Material gets the darker text
+    // orange there; components that want the bright fill read EmberTheme.colors.primary.
     return base.copy(
-        primary = primary,
-        onPrimary = onPrimary,
+        primary = if (isDark) primary else primaryText,
+        onPrimary = if (isDark) onPrimary else androidx.compose.ui.graphics.Color.White,
         primaryContainer = primarySoft,
         onPrimaryContainer = textPrimary,
         secondary = violet,

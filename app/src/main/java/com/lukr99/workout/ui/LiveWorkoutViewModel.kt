@@ -9,6 +9,8 @@ import com.lukr99.workout.data.services.WorkoutInsightsService
 import com.lukr99.workout.domain.Estimates
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseFilter
+import com.lukr99.workout.domain.ExerciseOuting
+import com.lukr99.workout.domain.replacedWith
 import com.lukr99.workout.domain.PreviousEntryNote
 import com.lukr99.workout.domain.SetTag
 import com.lukr99.workout.domain.StrengthSet
@@ -162,6 +164,12 @@ class LiveWorkoutViewModel(
             mutate { it.copy(entries = it.entries + entry.copy(workoutSessionId = it.id)) }
         }
     }
+
+    /** Swaps an exercise for another (the machine is taken) and keeps its logged sets. */
+    fun replaceExercise(entryId: String, exercise: Exercise) =
+        mutate { it.withEntry(entryId) { entry -> entry.replacedWith(exercise) } }
+
+    suspend fun outings(exerciseId: String): List<ExerciseOuting> = history.outings(exerciseId)
 
     fun removeEntry(entryId: String) = mutate { session ->
         session.copy(entries = normalizeSupersetGroups(session.entries.filterNot { it.id == entryId }))

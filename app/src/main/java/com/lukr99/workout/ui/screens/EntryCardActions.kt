@@ -4,7 +4,7 @@ import com.lukr99.workout.domain.CardioEntryData
 
 /** Everything one exercise card in the live workout can do. Set callbacks take the set id. */
 data class EntryCardActions(
-    val onToggleSuperset: () -> Unit,
+    val onOpenMenu: () -> Unit,
     val onEditSuperset: () -> Unit,
     val onToggleCollapsed: () -> Unit,
     val onToggleWeightUnit: () -> Unit,
@@ -16,9 +16,6 @@ data class EntryCardActions(
     val onToggleDone: (String) -> Unit,
     val onOptions: (String) -> Unit,
     val onAddSet: () -> Unit,
-    val onMoveUp: () -> Unit,
-    val onMoveDown: () -> Unit,
-    val onRemove: () -> Unit,
     val onCardioChange: (CardioEntryData) -> Unit,
     val onEditNote: () -> Unit,
     val onShowGuide: () -> Unit,

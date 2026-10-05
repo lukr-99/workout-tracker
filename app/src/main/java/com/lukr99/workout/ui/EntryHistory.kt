@@ -4,12 +4,14 @@ import com.lukr99.workout.data.WorkoutRepository
 import com.lukr99.workout.data.services.WorkoutInsightsService
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
+import com.lukr99.workout.domain.ExerciseOuting
 import com.lukr99.workout.domain.PreviousEntryNote
 import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.lastSetsFor
 import com.lukr99.workout.domain.newId
 import com.lukr99.workout.domain.progression.DoubleProgression
 import com.lukr99.workout.domain.progression.SuggestionStatus
+import com.lukr99.workout.domain.recentOutings
 
 /**
  * What the live workout knows about earlier workouts: last time's sets and notes for the
@@ -45,4 +47,8 @@ class EntryHistory(
         }
         return repo.getSessions().lastSetsFor(exercise.id).takeIf { it.isNotEmpty() }?.let { EntryPrefill(it) }
     }
+
+    /** The newest few finished workouts with this exercise, for the exercise menu. */
+    suspend fun outings(exerciseId: String, limit: Int = 3): List<ExerciseOuting> =
+        repo.getSessions().recentOutings(exerciseId, limit)
 }

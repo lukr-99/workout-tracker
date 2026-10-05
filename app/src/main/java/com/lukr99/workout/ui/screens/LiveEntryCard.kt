@@ -2,7 +2,6 @@ package com.lukr99.workout.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,19 +14,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.NoteAdd
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.ArrowDownward
-import androidx.compose.material.icons.rounded.ArrowUpward
-import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.Link
-import androidx.compose.material.icons.rounded.LinkOff
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -35,8 +27,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,8 +58,6 @@ fun LiveEntryCard(
     doneIds: Set<String>,
     /** The one set in the whole workout that is up next; it gets the orange outline. */
     currentSetId: String?,
-    canGroupWithPrevious: Boolean,
-    groupedWithPrevious: Boolean,
     supersetPosition: Int?,
     supersetSize: Int,
     collapsed: Boolean,
@@ -129,8 +117,6 @@ fun LiveEntryCard(
                 entryUnits = entryUnits,
                 durationSeconds = stats.durationSeconds ?: 0,
                 collapsed = collapsed,
-                canGroupWithPrevious = canGroupWithPrevious,
-                groupedWithPrevious = groupedWithPrevious,
                 hasGuide = notes.hasGuide,
                 actions = actions,
             )
@@ -224,8 +210,6 @@ private fun EntryHeader(
     entryUnits: UnitSystem,
     durationSeconds: Long,
     collapsed: Boolean,
-    canGroupWithPrevious: Boolean,
-    groupedWithPrevious: Boolean,
     hasGuide: Boolean,
     actions: EntryCardActions,
 ) {
@@ -269,56 +253,8 @@ private fun EntryHeader(
                 Icon(Icons.Rounded.Info, "How to do ${entry.exerciseSnapshotName}", tint = EmberTheme.colors.textSecondary)
             }
         }
-        EntryMenu(
-            hasNote = entry.notes.isNotBlank(),
-            canGroupWithPrevious = canGroupWithPrevious,
-            groupedWithPrevious = groupedWithPrevious,
-            actions = actions,
-        )
-    }
-}
-
-@Composable
-private fun EntryMenu(
-    hasNote: Boolean,
-    canGroupWithPrevious: Boolean,
-    groupedWithPrevious: Boolean,
-    actions: EntryCardActions,
-) {
-    var open by remember { mutableStateOf(false) }
-    Box {
-        IconButton(onClick = { open = true }) {
-            Icon(Icons.Rounded.MoreVert, "More actions for this exercise", tint = EmberTheme.colors.textSecondary)
-        }
-        // Each item closes the menu before acting, so a removed card never keeps an open menu.
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            DropdownMenuItem(
-                text = { Text(if (hasNote) "Edit note" else "Add note") },
-                leadingIcon = { Icon(Icons.AutoMirrored.Rounded.NoteAdd, null) },
-                onClick = { open = false; actions.onEditNote() },
-            )
-            if (canGroupWithPrevious) {
-                DropdownMenuItem(
-                    text = { Text(if (groupedWithPrevious) "Ungroup from previous" else "Superset with previous") },
-                    leadingIcon = { Icon(if (groupedWithPrevious) Icons.Rounded.LinkOff else Icons.Rounded.Link, null) },
-                    onClick = { open = false; actions.onToggleSuperset() },
-                )
-            }
-            DropdownMenuItem(
-                text = { Text("Move up") },
-                leadingIcon = { Icon(Icons.Rounded.ArrowUpward, null) },
-                onClick = { open = false; actions.onMoveUp() },
-            )
-            DropdownMenuItem(
-                text = { Text("Move down") },
-                leadingIcon = { Icon(Icons.Rounded.ArrowDownward, null) },
-                onClick = { open = false; actions.onMoveDown() },
-            )
-            DropdownMenuItem(
-                text = { Text("Remove exercise", color = MaterialTheme.colorScheme.error) },
-                leadingIcon = { Icon(Icons.Rounded.Delete, null, tint = MaterialTheme.colorScheme.error) },
-                onClick = { open = false; actions.onRemove() },
-            )
+        IconButton(onClick = actions.onOpenMenu) {
+            Icon(Icons.Rounded.MoreVert, "More for ${entry.exerciseSnapshotName}", tint = EmberTheme.colors.textSecondary)
         }
     }
 }

@@ -21,6 +21,7 @@ import com.lukr99.workout.data.transfer.ImportPreview
 import com.lukr99.workout.data.transfer.ImportSummary
 import com.lukr99.workout.data.transfer.RestoreMode
 import com.lukr99.workout.data.transfer.StoreCounts
+import com.lukr99.workout.domain.ExerciseOuting
 import com.lukr99.workout.domain.PreviousEntryNote
 import com.lukr99.workout.domain.SetTag
 import com.lukr99.workout.domain.StrengthSet
@@ -89,6 +90,28 @@ class ComponentScreenshotTest {
         onDismiss = {},
     )
 
+    @Test
+    fun exerciseMenuDark() = captureScreen("exercise_menu_dark", dark = true) { Menu() }
+
+    @Composable
+    private fun Menu() = ExerciseMenuSheet(
+        entry = WorkoutEntry(
+            exerciseId = "bench",
+            exerciseSnapshotName = "Barbell Bench Press",
+            exerciseSnapshotPrimaryBodyPart = "Chest",
+            strengthSets = listOf(StrengthSet(reps = 8, weightKg = 82.5, performedAtUtc = 1L)),
+        ),
+        units = UnitSystem.Metric,
+        options = ExerciseMenuOptions(canSupersetWithPrevious = true, groupedWithPrevious = false, canMoveUp = true, canMoveDown = true, hasGuide = true),
+        loadOutings = {
+            listOf(
+                ExerciseOuting(1_759_000_000_000, listOf(StrengthSet(reps = 8, weightKg = 80.0), StrengthSet(reps = 7, weightKg = 80.0)), 101.3),
+                ExerciseOuting(1_758_600_000_000, listOf(StrengthSet(reps = 8, weightKg = 77.5), StrengthSet(reps = 8, weightKg = 77.5)), 98.2),
+            )
+        },
+        onReplace = {}, onToggleSuperset = {}, onMoveUp = {}, onMoveDown = {}, onEditNote = {}, onShowGuide = {}, onRemove = {}, onDismiss = {},
+    )
+
     /** Sheets and dialogs draw in their own window, so these capture the whole screen. */
     private fun captureScreen(name: String, dark: Boolean, content: @Composable () -> Unit) {
         compose.setContent { WorkoutTheme(dark = dark) { content() } }
@@ -114,8 +137,6 @@ class ComponentScreenshotTest {
             units = UnitSystem.Metric,
             doneIds = setOf("s1"),
             currentSetId = "s2",
-            canGroupWithPrevious = false,
-            groupedWithPrevious = false,
             supersetPosition = null,
             supersetSize = 0,
             collapsed = false,
@@ -156,9 +177,9 @@ class ComponentScreenshotTest {
     )
 
     private val noActions = EntryCardActions(
-        onToggleSuperset = {}, onEditSuperset = {}, onToggleCollapsed = {}, onToggleWeightUnit = {},
+        onOpenMenu = {}, onEditSuperset = {}, onToggleCollapsed = {}, onToggleWeightUnit = {},
         onStart = {}, onFinish = {}, onReopen = {}, onReps = { _, _ -> }, onWeight = { _, _ -> },
-        onToggleDone = {}, onOptions = {}, onAddSet = {}, onMoveUp = {}, onMoveDown = {}, onRemove = {},
+        onToggleDone = {}, onOptions = {}, onAddSet = {},
         onCardioChange = {}, onEditNote = {}, onShowGuide = {},
     )
 }
