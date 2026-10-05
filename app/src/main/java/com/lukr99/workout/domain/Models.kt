@@ -37,7 +37,15 @@ data class Exercise(
     val imageAttribution: String? = null,
     // Exported as a reference only; the app-private image file remains device-local.
     val localImagePath: String? = null,
+    // Export v1.7: how to perform it (one step per line) and an optional guide or video link.
+    // [notes] stays the owner's personal note (seat height, grip) shown while logging.
+    val instructions: String = "",
+    val videoUrl: String? = null,
 ) {
+    /** Non-blank instruction lines, in order. Derived, not persisted. */
+    val instructionSteps: List<String>
+        get() = instructions.lines().map(String::trim).filter(String::isNotBlank)
+
     /** Primary + distinct secondaries, joined for display. Derived — not persisted. */
     val bodyPartsSummary: String
         get() = (listOf(primaryBodyPart) + secondaryBodyParts)

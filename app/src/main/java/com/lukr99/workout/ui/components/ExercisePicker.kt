@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -189,6 +190,9 @@ fun ExercisePicker(
                     Column(Modifier.weight(1f)) {
                         Text(ex.name, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onBackground)
                         Text(ex.bodyPartsSummary, style = MaterialTheme.typography.labelSmall, color = TextMid)
+                        if (ex.notes.isNotBlank()) {
+                            NoteLine(Icons.Rounded.PushPin, label = null, text = ex.notes, description = "Exercise note", maxLines = 1)
+                        }
                     }
                     Text(ex.category.name, style = Numbers.copy(fontSize = 11.sp), color = TextMid)
                 }

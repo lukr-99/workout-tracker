@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.NoteAdd
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Share
@@ -52,7 +53,10 @@ import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.HistoryViewModel
 import com.lukr99.workout.ui.statsSummary
 import com.lukr99.workout.ui.components.ConfirmDialog
+import com.lukr99.workout.ui.components.ExerciseNotesPanel
 import com.lukr99.workout.ui.components.ExercisePicker
+import com.lukr99.workout.ui.components.SetNoteLine
+import com.lukr99.workout.ui.components.WorkoutNoteRow
 import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.SetColumnHeader
@@ -92,6 +96,7 @@ fun WorkoutDetailScreen(
         seeded = true
     }
     var confirmDelete by remember { mutableStateOf(false) }
+    var noteTarget by remember { mutableStateOf<NoteTarget?>(null) }
 
     val session = draft
     if (session == null) {
@@ -148,6 +153,9 @@ fun WorkoutDetailScreen(
             contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 14.dp, end = 14.dp, bottom = 40.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            item(key = "workout-note") {
+                WorkoutNoteRow(note = session.notes, onEdit = { noteTarget = NoteTarget.Workout })
+            }
             items(session.entries, key = { it.id }) { entry ->
                 val entryUnits = Format.entryUnits(entry.weightUnitOverride, units)
                 Column(
@@ -183,10 +191,26 @@ fun WorkoutDetailScreen(
                                 Text(Format.unitLabel(entryUnits).uppercase(), fontWeight = FontWeight.Bold)
                             }
                         }
+                        IconButton(onClick = { noteTarget = NoteTarget.Entry(entry.id) }) {
+                            Icon(
+                                Icons.AutoMirrored.Rounded.NoteAdd,
+                                if (entry.notes.isBlank()) "Add note" else "Edit note",
+                                tint = TextMid,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
                         IconButton(onClick = { draft = session.copy(entries = session.entries.filterNot { it.id == entry.id }) }) {
                             Icon(Icons.Rounded.Delete, "Remove exercise", tint = TextMid, modifier = Modifier.size(18.dp))
                         }
                     }
+                    ExerciseNotesPanel(
+                        exerciseNote = "",
+                        previous = null,
+                        entryNote = entry.notes,
+                        onEditEntryNote = { noteTarget = NoteTarget.Entry(entry.id) },
+                        // A past workout is not "today"; the note stands on its own here.
+                        entryNoteLabel = null,
+                    )
                     if (entry.isStrength) {
                         if (entry.strengthSets.isNotEmpty()) {
                             SetColumnHeader(entryUnits)
@@ -197,6 +221,7 @@ fun WorkoutDetailScreen(
                                 onReps = { reps -> mutateEntry(entry.id) { e -> e.copy(strengthSets = e.strengthSets.map { if (it.id == set.id) it.copy(reps = reps) else it }) } },
                                 onWeight = { kg -> mutateEntry(entry.id) { e -> e.copy(strengthSets = e.strengthSets.map { if (it.id == set.id) it.copy(weightKg = kg) else it }) } },
                                 onRemove = { mutateEntry(entry.id) { e -> e.copy(strengthSets = e.strengthSets.filterNot { it.id == set.id }) } },
+                                onNote = { noteTarget = NoteTarget.Set(entry.id, set.id) },
                             )
                         }
                         TextButton(onClick = {
@@ -308,6 +333,22 @@ fun WorkoutDetailScreen(
         }
     }
 
+    noteTarget?.let { target ->
+        // Notes join the unsaved draft like every other edit here; Save writes them.
+        NoteTargetSheet(
+            target = target,
+            session = session,
+            onSaveWorkout = { draft = session.copy(notes = it) },
+            onSaveEntry = { entryId, text -> mutateEntry(entryId) { it.copy(notes = text) } },
+            onSaveSet = { entryId, setId, text ->
+                mutateEntry(entryId) { e ->
+                    e.copy(strengthSets = e.strengthSets.map { if (it.id == setId) it.copy(notes = text) else it })
+                }
+            },
+            onDismiss = { noteTarget = null },
+        )
+    }
+
     if (confirmDelete) {
         ConfirmDialog(
             title = "Delete workout?",
@@ -328,6 +369,7 @@ private fun EditSetRow(
     onReps: (Int) -> Unit,
     onWeight: (Double) -> Unit,
     onRemove: () -> Unit,
+    onNote: () -> Unit,
 ) {
     // null = closed, false = editing reps, true = editing weight
     var editingWeight by remember { mutableStateOf<Boolean?>(null) }
@@ -352,11 +394,20 @@ private fun EditSetRow(
                 modifier = Modifier.weight(1.25f),
             ) { editingWeight = true }
         }
+        IconButton(onClick = onNote, modifier = Modifier.size(38.dp)) {
+            Icon(
+                Icons.AutoMirrored.Rounded.NoteAdd,
+                if (set.notes.isBlank()) "Add note to set ${index + 1}" else "Edit note on set ${index + 1}",
+                tint = if (set.notes.isBlank()) TextMid else MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(16.dp),
+            )
+        }
         IconButton(onClick = onRemove, modifier = Modifier.size(38.dp)) {
             Icon(Icons.Rounded.Delete, "Remove set", tint = TextMid, modifier = Modifier.size(16.dp))
         }
     }
     SetTagChips(set, Modifier.fillMaxWidth().padding(start = 48.dp, top = 3.dp))
+    SetNoteLine(set)
 
     when (editingWeight) {
         false -> com.lukr99.workout.ui.components.NumberPadSheet(

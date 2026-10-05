@@ -25,14 +25,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * The cross-device contract: our `1.6` bundle round-trips through JSON unchanged, and a hand-crafted
+ * The cross-device contract: our `1.7` bundle round-trips through JSON unchanged, and a hand-crafted
  * `v1.0` export (enums as ints, ISO-8601 timestamps, MAUI computed fields) imports 1:1.
  */
 class ExportBundleJvmTest {
 
     private val bundle = ExportBundle(
         exportedAtUtc = "2024-01-01T10:00:00Z",
-        exportFormatVersion = "1.6",
+        exportFormatVersion = "1.7",
         exercises = listOf(
             Exercise(
                 id = "ex1", name = "Bench", category = ExerciseCategory.Strength,
@@ -41,6 +41,9 @@ class ExportBundleJvmTest {
                 imageUrl = "https://wger.de/media/bench.png",
                 localImagePath = "/data/user/0/com.lukr99.workout/files/exercise_images/ex1.jpg",
                 imageAttribution = "wger · CC-BY-SA 4",
+                notes = "Seat on 4",
+                instructions = "Feet flat\nBar to lower chest",
+                videoUrl = "https://www.youtube.com/watch?v=bench",
             ),
         ),
         templates = listOf(
@@ -136,6 +139,8 @@ class ExportBundleJvmTest {
         assertEquals(null, exercise.imageUrl)
         assertEquals(null, exercise.imageAttribution)
         assertEquals(null, exercise.localImagePath)
+        assertEquals("", exercise.instructions)
+        assertEquals(null, exercise.videoUrl)
 
         val session = restored.sessions.single()
         assertEquals(WorkoutSessionStatus.Completed, session.status)
@@ -168,8 +173,8 @@ class ExportBundleJvmTest {
 
     @Test
     fun supportsAllPublishedVersions() {
-        assertEquals(setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6"), ExportBundle.SUPPORTED_VERSIONS)
-        assertEquals("1.6", ExportBundle.CURRENT_VERSION)
+        assertEquals(setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7"), ExportBundle.SUPPORTED_VERSIONS)
+        assertEquals("1.7", ExportBundle.CURRENT_VERSION)
     }
 
     @Test

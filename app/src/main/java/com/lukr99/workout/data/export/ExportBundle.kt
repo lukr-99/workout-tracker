@@ -15,6 +15,7 @@ import kotlinx.serialization.Serializable
  * `v1.0` wire format).
  *
  * **Version 1.6** adds combinable set tags plus per-exercise unit and timing metadata.
+ * **Version 1.7** adds exercise how-to steps (`instructions`) and a guide link (`videoUrl`).
  * Older exports omit them (they default empty), and the reader accepts all earlier published
  * versions and ignores unknown fields, so older exports and future tools interoperate.
  */
@@ -29,7 +30,7 @@ data class ExportBundle(
     val routes: List<Route> = emptyList(),
 ) {
     companion object {
-        const val CURRENT_VERSION = "1.6"
-        val SUPPORTED_VERSIONS = setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6")
+        const val CURRENT_VERSION = "1.7"
+        val SUPPORTED_VERSIONS = setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7")
     }
 }

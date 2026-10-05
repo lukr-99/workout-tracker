@@ -61,6 +61,7 @@ class WorkoutMigrationTest {
             WorkoutDb.MIGRATION_4_5,
             WorkoutDb.MIGRATION_5_6,
             WorkoutDb.MIGRATION_6_7,
+            WorkoutDb.MIGRATION_7_8,
         )
             .allowMainThreadQueries()
             .build()
@@ -121,6 +122,7 @@ class WorkoutMigrationTest {
             WorkoutDb.MIGRATION_4_5,
             WorkoutDb.MIGRATION_5_6,
             WorkoutDb.MIGRATION_6_7,
+            WorkoutDb.MIGRATION_7_8,
         )
             .allowMainThreadQueries()
             .build()
@@ -178,6 +180,7 @@ class WorkoutMigrationTest {
             WorkoutDb.MIGRATION_4_5,
             WorkoutDb.MIGRATION_5_6,
             WorkoutDb.MIGRATION_6_7,
+            WorkoutDb.MIGRATION_7_8,
         )
             .allowMainThreadQueries()
             .build()
@@ -253,6 +256,7 @@ class WorkoutMigrationTest {
             WorkoutDb.MIGRATION_4_5,
             WorkoutDb.MIGRATION_5_6,
             WorkoutDb.MIGRATION_6_7,
+            WorkoutDb.MIGRATION_7_8,
         )
             .allowMainThreadQueries()
             .build()
@@ -316,7 +320,7 @@ class WorkoutMigrationTest {
             ApplicationProvider.getApplicationContext(),
             WorkoutDb::class.java,
             DatabaseName,
-        ).addMigrations(WorkoutDb.MIGRATION_6_7)
+        ).addMigrations(WorkoutDb.MIGRATION_6_7, WorkoutDb.MIGRATION_7_8)
             .allowMainThreadQueries()
             .build()
         try {
@@ -337,6 +341,35 @@ class WorkoutMigrationTest {
                 }
         } finally {
             database.close()
+        }
+    }
+
+    @Test
+    fun migratesSchemaSevenToEightAddingExerciseGuideFields() {
+        helper.createDatabase(DatabaseName, 7).apply {
+            execSQL(
+                """
+                INSERT INTO exercises (
+                    id, name, category, primaryBodyPart, secondaryBodyPartsJson,
+                    equipment, notes, source, externalSourceId, isArchived, defaultRestSeconds,
+                    imageUrl, imageAttribution, localImagePath
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """.trimIndent(),
+                arrayOf("ex8", "Fixture Lift", 0, "Back", "[\"Biceps\"]", "Cable", "Seat on 4", 2, null, 0, 90, null, null, null),
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(DatabaseName, 8, true, WorkoutDb.MIGRATION_7_8).use { db ->
+            db.query(
+                "SELECT notes, secondaryBodyPartsJson, instructions, videoUrl FROM exercises WHERE id = 'ex8'",
+            ).use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("Seat on 4", cursor.getString(0))
+                assertEquals("[\"Biceps\"]", cursor.getString(1))
+                assertEquals("", cursor.getString(2))
+                assertEquals(true, cursor.isNull(3))
+            }
         }
     }
 

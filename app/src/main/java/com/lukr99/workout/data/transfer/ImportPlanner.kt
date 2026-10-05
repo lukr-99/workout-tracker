@@ -197,6 +197,8 @@ internal object ImportPlanner {
         imageUrl = incoming.imageUrl ?: existing.imageUrl,
         imageAttribution = incoming.imageAttribution ?: existing.imageAttribution,
         localImagePath = incoming.localImagePath ?: existing.localImagePath,
+        instructions = incoming.instructions.ifBlank { existing.instructions },
+        videoUrl = incoming.videoUrl ?: existing.videoUrl,
     )
 
     private fun mergeTemplate(

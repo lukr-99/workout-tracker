@@ -4,6 +4,7 @@ import com.lukr99.workout.domain.CardioEntryData
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.ExerciseSource
+import com.lukr99.workout.domain.GuideLink
 import com.lukr99.workout.domain.SetType
 import com.lukr99.workout.domain.SetTag
 import com.lukr99.workout.domain.StrengthSet
@@ -45,6 +46,13 @@ class WorkoutFactory(
                 )
             }
         }?.coerceIn(policy.restSecondsRange)
+        if (!GuideLink.isAcceptable(draft.videoUrl)) {
+            issues += ValidationIssue(
+                "exercise.videoUrl",
+                "The link must be a web address, like youtube.com/watch?v=...",
+                IssueSeverity.Error,
+            )
+        }
 
         return CreationResult(
             value = Exercise(
@@ -66,6 +74,9 @@ class WorkoutFactory(
                 imageUrl = draft.imageUrl?.trim()?.ifBlank { null },
                 imageAttribution = draft.imageAttribution?.trim()?.ifBlank { null },
                 localImagePath = draft.localImagePath?.trim()?.ifBlank { null },
+                instructions = draft.instructions.lines().map(String::trim)
+                    .filter(String::isNotBlank).joinToString("\n"),
+                videoUrl = GuideLink.normalize(draft.videoUrl),
             ),
             issues = issues,
         )
@@ -341,6 +352,8 @@ data class ExerciseDraft(
     val imageUrl: String? = null,
     val imageAttribution: String? = null,
     val localImagePath: String? = null,
+    val instructions: String = "",
+    val videoUrl: String? = null,
 )
 
 data class TemplateDraft(

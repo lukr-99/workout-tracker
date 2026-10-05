@@ -9,6 +9,8 @@ import com.lukr99.workout.data.services.WorkoutInsightsService
 import com.lukr99.workout.domain.Estimates
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
+import com.lukr99.workout.domain.ExerciseFilter
+import com.lukr99.workout.domain.PreviousEntryNote
 import com.lukr99.workout.domain.SetType
 import com.lukr99.workout.domain.SetTag
 import com.lukr99.workout.domain.StrengthSet
@@ -21,12 +23,16 @@ import com.lukr99.workout.domain.effectiveTags
 import com.lukr99.workout.domain.progression.DoubleProgression
 import com.lukr99.workout.domain.progression.SuggestionStatus
 import com.lukr99.workout.domain.records.RecordKind
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.delay
@@ -75,6 +81,23 @@ class LiveWorkoutViewModel(
     val exercises: StateFlow<List<Exercise>> =
         repo.observeExercises().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    /** Every catalog row by id, archived included, so a logged exercise always finds its notes. */
+    val catalogById: StateFlow<Map<String, Exercise>> =
+        repo.observeExercises(ExerciseFilter(includeArchived = true))
+            .map { rows -> rows.associateBy(Exercise::id) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
+    /** "Last time" notes for the exercises in the live session, refreshed when that set changes. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val previousNotes: StateFlow<Map<String, PreviousEntryNote>> =
+        draftState
+            .map { session -> session?.let { it.id to it.entries.map(WorkoutEntry::exerciseId).toSet() } }
+            .distinctUntilChanged()
+            .mapLatest { key ->
+                key?.let { (sessionId, ids) -> repo.getPreviousEntryNotes(ids, sessionId) }.orEmpty()
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
     private var restJob: Job? = null
     private val persistMutex = Mutex()
     private var persistJob: Job? = null
@@ -117,6 +140,21 @@ class LiveWorkoutViewModel(
     // --- Structural edits ----------------------------------------------------------------------
 
     fun rename(name: String) = mutate(persist = false) { it.copy(name = name) }
+
+    // --- Notes (saved right away; each comes from an explicit Save in the note sheet) ----------
+
+    fun setWorkoutNote(text: String) = mutate { it.copy(notes = text.trim()) }
+
+    fun setEntryNote(entryId: String, text: String) = mutate { session ->
+        session.copy(entries = session.entries.map { if (it.id == entryId) it.copy(notes = text.trim()) else it })
+    }
+
+    fun setSetNote(entryId: String, setId: String, text: String) = mutate { session ->
+        session.copy(entries = session.entries.map { entry ->
+            if (entry.id != entryId) entry
+            else entry.copy(strengthSets = entry.strengthSets.map { if (it.id == setId) it.copy(notes = text.trim()) else it })
+        })
+    }
 
     fun addExercise(exercise: Exercise) {
         viewModelScope.launch {

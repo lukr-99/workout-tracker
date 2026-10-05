@@ -10,6 +10,8 @@ import com.lukr99.workout.domain.ExerciseAnalyticsPoint
 import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.ExerciseFilter
 import com.lukr99.workout.domain.ExerciseSource
+import com.lukr99.workout.domain.GuideLink
+import com.lukr99.workout.domain.PreviousEntryNote
 import com.lukr99.workout.domain.Progression
 import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.WorkoutEntry
@@ -259,6 +261,23 @@ class WorkoutRepository(
         return saveWorkoutSession(session)
     }
 
+    /**
+     * The latest "Last time" note for each of [exerciseIds], from finished workouts other than
+     * [currentSessionId]. Exercises without an earlier note are left out of the map.
+     */
+    suspend fun getPreviousEntryNotes(
+        exerciseIds: Collection<String>,
+        currentSessionId: String,
+    ): Map<String, PreviousEntryNote> = exerciseIds
+        .filter(String::isNotBlank)
+        .distinct()
+        .mapNotNull { id ->
+            dao.getLatestEntryNote(id, currentSessionId)?.let { row ->
+                id to PreviousEntryNote(exerciseId = id, text = row.note.trim(), atUtc = row.atUtc)
+            }
+        }
+        .toMap()
+
     fun observeActiveSession(): Flow<WorkoutSession?> =
         dao.observeActiveSession().map { it?.toDomain() }
 
@@ -422,6 +441,8 @@ class WorkoutRepository(
         imageUrl = imageUrl,
         imageAttribution = imageAttribution,
         localImagePath = localImagePath,
+        instructions = instructions,
+        videoUrl = videoUrl,
     )
 
     private fun Exercise.toEntity() = ExerciseEntity(
@@ -439,6 +460,8 @@ class WorkoutRepository(
         imageUrl = imageUrl,
         imageAttribution = imageAttribution,
         localImagePath = localImagePath,
+        instructions = instructions,
+        videoUrl = videoUrl,
     )
 
     private fun TemplateWithExercises.toDomain() = WorkoutTemplate(
@@ -621,6 +644,8 @@ class WorkoutRepository(
         imageUrl = imageUrl?.trim()?.ifBlank { null },
         imageAttribution = imageAttribution?.trim()?.ifBlank { null },
         localImagePath = localImagePath?.trim()?.ifBlank { null },
+        instructions = instructions.trim(),
+        videoUrl = GuideLink.normalize(videoUrl),
     )
 
     private fun Exercise.addExternalFields(incoming: Exercise): Exercise = copy(
@@ -631,6 +656,11 @@ class WorkoutRepository(
             .distinctBy(String::lowercase),
         equipment = equipment.ifBlank { incoming.equipment },
         notes = notes.ifBlank { incoming.notes },
+        // Rows synced before v8 kept the description in notes; do not show it twice.
+        instructions = instructions.ifBlank {
+            incoming.instructions.takeUnless { it.trim() == notes.trim() }.orEmpty()
+        },
+        videoUrl = videoUrl ?: incoming.videoUrl,
         imageUrl = imageUrl ?: incoming.imageUrl,
         imageAttribution = imageAttribution ?: incoming.imageAttribution,
     )

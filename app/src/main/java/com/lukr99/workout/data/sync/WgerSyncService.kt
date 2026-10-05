@@ -246,7 +246,8 @@ data class WgerExerciseDto(
                 .filter(String::isNotBlank)
                 .distinctBy(String::lowercase),
             equipment = equipment.joinToString(", ", transform = WgerNamedDto::displayName),
-            notes = description.toPlainText(),
+            // The description is how-to text, not a personal note (v8 split the two).
+            instructions = description.toPlainText(),
             source = ExerciseSource.Synced,
             externalSourceId = "wger:$externalId",
             imageUrl = imageUrl,

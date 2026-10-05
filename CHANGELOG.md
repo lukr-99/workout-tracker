@@ -4,6 +4,45 @@ All notable changes to this project will be documented in this file.
 
 The format is inspired by Keep a Changelog, and this project currently uses simple semantic app versions for local releases.
 
+## [Unreleased]
+
+### Added
+
+- **Notes you can see while you lift.** Each exercise card in a live workout now shows three
+  kinds of notes, and only the ones that exist:
+  - the exercise's own note from the Library (seat height, grip), pinned;
+  - what you wrote on that exercise last time, with its date;
+  - today's note.
+- **Notes everywhere in a workout:**
+  - a note for the whole workout;
+  - a note per exercise, from the card's "Add note" button or its menu;
+  - a note per set, from set options.
+  - Past workouts can be edited the same way.
+- **How-to steps and a guide link for each exercise.** The exercise editor takes steps (one per
+  line) and a video or guide link. While logging, the info button on a card shows the steps as a
+  numbered list, your note, and an "Open guide" button.
+- **Body part picker in the exercise editor.** The editor now uses chips for the main muscle and
+  for the muscles it also works, instead of free text. Typing your own body part still works.
+- The exercise note shows in the Library catalog and in the exercise picker.
+- Templates now have their own note and a note per exercise.
+
+### Changed
+
+- The live exercise card moved "Move up", "Move down", "Superset with previous" and "Remove" into a
+  menu, giving the exercise name room on narrow phones.
+- The template editor uses the same exercise picker as the live workout, with filters and search.
+- wger sync now stores an exercise's description as how-to steps, not as your personal note.
+- Export format 1.7 adds `instructions` and `videoUrl` to exercises. Older exports still import.
+- Database version 8, an additive migration with no data change.
+
+### Fixed
+
+- **Saving a template wiped its notes**, including the "Created from workout on ..." note.
+- **Adding the same exercise twice to a template crashed the editor.**
+- **Saving an exercise wiped its secondary muscles.** The editor never passed them on.
+- The exercise editor could open an existing exercise as a blank new one while a Library search
+  or filter hid it.
+
 ## [2.5.2] - 2026-09-20
 
 ### Fixed

@@ -46,6 +46,13 @@ class LibraryViewModel(
     val templates: StateFlow<List<WorkoutTemplate>> =
         repo.observeTemplates().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    /** The whole active catalog, ignoring the Library filter: body part options and the template picker. */
+    val catalog: StateFlow<List<Exercise>> =
+        repo.observeExercises().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** One exercise by id, archived included, so the editor never depends on the Library filter. */
+    suspend fun getExercise(id: String): Exercise? = repo.getExercise(id)
+
     fun setSearch(text: String) = filterState.update { it.copy(searchText = text) }
     fun setBodyPart(part: String) = filterState.update { it.copy(bodyPart = part) }
     fun setCategory(category: ExerciseCategory?) = filterState.update { it.copy(category = category) }

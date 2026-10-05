@@ -196,6 +196,7 @@ fun App(container: AppContainer) {
                             onCreateExercise = {
                                 nav.push(Route.ExerciseEditor(null, initialName = it))
                             },
+                            onEditExercise = { nav.push(Route.ExerciseEditor(it)) },
                         )
                         Route.LiveRun -> LiveRunScreen(
                             vm = liveRunVm,
