@@ -5,13 +5,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import com.lukr99.workout.domain.BodyParts
 import com.lukr99.workout.domain.Exercise
+import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.LiveWorkoutViewModel
 import com.lukr99.workout.ui.components.ConfirmDialog
 import com.lukr99.workout.ui.components.ExerciseGuideSheet
 import com.lukr99.workout.ui.components.ExercisePicker
+import com.lukr99.workout.ui.components.Format
+import com.lukr99.workout.ui.components.QuickCreateSheet
 import com.lukr99.workout.ui.components.SetOptionsSheet
 
 /** Shows the one sheet or dialog [sheet] names over the live workout. [onSheet] opens another or closes it. */
@@ -25,7 +31,6 @@ internal fun LiveWorkoutSheets(
     exercises: List<Exercise>,
     catalog: Map<String, Exercise>,
     onSheet: (LiveSheet?) -> Unit,
-    onCreateExercise: (String) -> Unit,
     onEditExercise: (String) -> Unit,
     onClose: () -> Unit,
     toast: (String) -> Unit,
@@ -34,11 +39,40 @@ internal fun LiveWorkoutSheets(
     val entries = session?.entries.orEmpty()
     when (sheet) {
         null -> Unit
-        LiveSheet.AddExercise -> PickerSheet(exercises, "Add exercise", close, onCreate = { close(); onCreateExercise(it) }) {
-            vm.addExercise(it)
-            close()
-            toast("${it.name} added")
+        LiveSheet.AddExercise -> {
+            val recentIds by produceState(emptyList<String>()) { value = vm.history.recentExerciseIds() }
+            val lastSets by produceState(emptyMap<String, List<StrengthSet>>(), recentIds) { value = vm.history.lastSets(recentIds.toSet()) }
+            ModalBottomSheet(
+                onDismissRequest = close,
+                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                containerColor = MaterialTheme.colorScheme.surface,
+            ) {
+                ExercisePicker(
+                    exercises = exercises,
+                    onPick = {},
+                    title = "Add exercises",
+                    subtitle = "Pick one or more. They go to the end of the workout.",
+                    recentIds = recentIds,
+                    hint = { ex -> lastSets[ex.id]?.maxByOrNull { it.weightKg }?.let { "Last ${Format.weight(it.weightKg, units)} × ${it.reps}" } },
+                    onCreate = { onSheet(LiveSheet.QuickCreate(it)) },
+                    onPickMany = { picked, asSuperset ->
+                        vm.addExercises(picked, asSuperset)
+                        close()
+                        toast(if (picked.size == 1) "${picked.single().name} added" else "${picked.size} exercises added")
+                    },
+                )
+            }
         }
+        is LiveSheet.QuickCreate -> QuickCreateSheet(
+            initialName = sheet.name,
+            bodyParts = BodyParts.options(catalog.values.toList()).take(15),
+            onCreate = {
+                vm.createAndAdd(it)
+                close()
+                toast("${it.name} created and added")
+            },
+            onDismiss = { onSheet(LiveSheet.AddExercise) },
+        )
         is LiveSheet.Replace -> {
             val entry = entries.firstOrNull { it.id == sheet.entryId } ?: return close()
             val sameKind = exercises.filter { it.category == entry.entryType && it.id != entry.exerciseId }
@@ -62,7 +96,7 @@ internal fun LiveWorkoutSheets(
                     canMoveDown = index < entries.lastIndex,
                     hasGuide = catalogExercise != null,
                 ),
-                loadOutings = { vm.outings(entry.exerciseId) },
+                loadOutings = { vm.history.outings(entry.exerciseId) },
                 onReplace = { onSheet(LiveSheet.Replace(entry.id)) },
                 onToggleSuperset = { vm.toggleSupersetWithPrevious(entry.id) },
                 onMoveUp = { vm.moveEntry(entry.id, up = true) },

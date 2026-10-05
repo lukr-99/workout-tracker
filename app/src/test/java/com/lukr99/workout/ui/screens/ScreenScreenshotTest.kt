@@ -127,7 +127,7 @@ class ScreenScreenshotTest {
     private fun Live() {
         val vm = LiveWorkoutViewModel(repo, SettingsStore(context), WorkoutInsightsService(repo))
         vm.loadActiveIfAny()
-        LiveWorkoutScreen(vm = vm, units = UnitSystem.Metric, onClose = {}, onCreateExercise = {}, onEditExercise = {})
+        LiveWorkoutScreen(vm = vm, units = UnitSystem.Metric, onClose = {}, onEditExercise = {})
     }
 
     /** Tab screens get the shell's side and top padding, as in App. */

@@ -7,6 +7,7 @@ import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.ExerciseOuting
 import com.lukr99.workout.domain.PreviousEntryNote
 import com.lukr99.workout.domain.StrengthSet
+import com.lukr99.workout.domain.WorkoutSessionStatus
 import com.lukr99.workout.domain.lastSetsFor
 import com.lukr99.workout.domain.newId
 import com.lukr99.workout.domain.progression.DoubleProgression
@@ -51,4 +52,17 @@ class EntryHistory(
     /** The newest few finished workouts with this exercise, for the exercise menu. */
     suspend fun outings(exerciseId: String, limit: Int = 3): List<ExerciseOuting> =
         repo.getSessions().recentOutings(exerciseId, limit)
+
+    /** Exercises from the newest finished workouts, newest first, without repeats. */
+    suspend fun recentExerciseIds(limit: Int = 8): List<String> =
+        repo.getSessions()
+            .filter { it.status == WorkoutSessionStatus.Completed }
+            .sortedByDescending { it.completedDateUtc ?: it.startedAtUtc }
+            .asSequence()
+            .flatMap { session -> session.entries.sortedBy { it.sortOrder }.asSequence() }
+            .map { it.exerciseId }
+            .filter(String::isNotBlank)
+            .distinct()
+            .take(limit)
+            .toList()
 }
