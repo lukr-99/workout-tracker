@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.DirectionsRun
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,16 +21,16 @@ import com.lukr99.workout.domain.run.Pace
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.components.BarPoint
 import com.lukr99.workout.ui.components.ChartPoint
-import com.lukr99.workout.ui.components.EmptyHint
+import com.lukr99.workout.ui.components.EmptyState
 import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.ProgressChart
 import com.lukr99.workout.ui.components.SectionCard
 import com.lukr99.workout.ui.components.StatTile
 import com.lukr99.workout.ui.components.VolumeBars
+import com.lukr99.workout.ui.theme.EmberTheme
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
  * The Running section of the Progress tab (R2): totals + streak, weekly distance bars, an average-pace
@@ -44,7 +46,12 @@ fun RunningProgressSection(
     val stats by vm.stats.collectAsState()
 
     if (!stats.hasRuns) {
-        EmptyHint("No runs yet. Record a run to see your distance, pace trend and PRs.", modifier)
+        EmptyState(
+            Icons.AutoMirrored.Rounded.DirectionsRun,
+            "No runs yet",
+            "Record a run in the Runs tab. Your distance, pace trend and personal records show up here.",
+            modifier,
+        )
         return
     }
 

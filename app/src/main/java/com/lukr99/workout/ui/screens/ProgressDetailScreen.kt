@@ -2,11 +2,9 @@ package com.lukr99.workout.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -14,14 +12,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ShowChart
+import androidx.compose.material.icons.rounded.TouchApp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,8 +33,9 @@ import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.ProgressViewModel
 import com.lukr99.workout.ui.components.BarPoint
 import com.lukr99.workout.ui.components.ChartPoint
-import com.lukr99.workout.ui.components.EmptyHint
+import com.lukr99.workout.ui.components.EmptyState
 import com.lukr99.workout.ui.components.Format
+import com.lukr99.workout.ui.components.InlineHint
 import com.lukr99.workout.ui.components.ProgressChart
 import com.lukr99.workout.ui.components.StatTile
 import com.lukr99.workout.ui.components.VolumeBars
@@ -68,9 +69,7 @@ fun ProgressDetailScreen(
         }
 
         if (detail == null || detail.points.isEmpty()) {
-            Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                EmptyHint("No logged sets for this exercise yet.")
-            }
+            EmptyState(Icons.AutoMirrored.Rounded.ShowChart, "No sets logged yet", "Log this exercise in a workout and its chart and records show up here.")
             return
         }
 
@@ -108,10 +107,7 @@ fun ProgressDetailScreen(
 
             records?.let { RecordsCard(it, units) }
 
-            Text(
-                "Tap and drag the chart to scrub through sessions.",
-                style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary,
-            )
+            InlineHint(Icons.Rounded.TouchApp, "Tap or drag along the chart to see each workout.")
         }
     }
 }

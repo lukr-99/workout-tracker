@@ -18,6 +18,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.TouchApp
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -43,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.LiveWorkoutViewModel
 import com.lukr99.workout.ui.components.Format
+import com.lukr99.workout.ui.components.InlineHint
 import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.MusicMiniControls
 import com.lukr99.workout.ui.components.PrBanner
@@ -207,6 +209,9 @@ fun LiveWorkoutScreen(
                         )
                     }
                 } else {
+                    item(key = "set-hint") {
+                        InlineHint(Icons.Rounded.TouchApp, "Tap a set's number for tags, effort, a note, or to remove it.")
+                    }
                     item {
                         AddButton("Add exercises", Modifier.testTag(LiveWorkoutTags.ADD_EXERCISE)) { sheet = LiveSheet.AddExercise }
                     }

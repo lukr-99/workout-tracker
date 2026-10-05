@@ -21,9 +21,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Archive
+import androidx.compose.material.icons.rounded.ContentPaste
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.SearchOff
 import androidx.compose.material.icons.rounded.Unarchive
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,7 +47,7 @@ import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.LibraryViewModel
 import com.lukr99.workout.ui.components.BodyPartTag
-import com.lukr99.workout.ui.components.EmptyHint
+import com.lukr99.workout.ui.components.EmptyState
 import com.lukr99.workout.ui.components.ExerciseThumbnail
 import com.lukr99.workout.ui.components.FilterChip
 import com.lukr99.workout.ui.components.NoteLine
@@ -97,6 +99,7 @@ fun LibraryScreen(
                 onEdit = onOpenTemplate,
                 onStart = onStartTemplate,
                 onDelete = { vm.deleteTemplate(it) },
+                onNew = onNewTemplate,
             )
             LibTab.Catalog -> CatalogList(
                 exercises = exercises,
@@ -125,9 +128,16 @@ private fun TemplateList(
     onEdit: (String) -> Unit,
     onStart: (String) -> Unit,
     onDelete: (String) -> Unit,
+    onNew: () -> Unit,
 ) {
     if (templates.isEmpty()) {
-        EmptyHint("No templates yet — tap + to build one.", Modifier.padding(18.dp))
+        EmptyState(
+            Icons.Rounded.ContentPaste,
+            "No templates yet",
+            "A template is a saved list of exercises to start a workout from, with a plan for each one if you like.",
+            action = "New template",
+            onAction = onNew,
+        )
         return
     }
     LazyColumn(
@@ -226,17 +236,13 @@ private fun CatalogList(
         }
         Spacer(Modifier.size(8.dp))
         if (exercises.isEmpty()) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                EmptyHint("No matches.")
-                androidx.compose.material3.TextButton(
-                    onClick = { onCreate(searchText.trim()) },
-                ) {
-                    Text(
-                        if (searchText.isBlank()) "Create exercise"
-                        else "Create “${searchText.trim()}”",
-                    )
-                }
-            }
+            EmptyState(
+                Icons.Rounded.SearchOff,
+                "No exercises match",
+                "Clear a filter or try another word. Or add it as your own exercise.",
+                action = if (searchText.isBlank()) "Create exercise" else "Create “${searchText.trim()}”",
+                onAction = { onCreate(searchText.trim()) },
+            )
         } else {
             LazyColumn(
                 Modifier.fillMaxWidth(),

@@ -8,6 +8,12 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 ### Added
 
+- **What's new after an update.** Home shows a short card about the release once, until you tap
+  Got it. A fresh install shows nothing.
+- **Clearer empty screens.** Home, History, Runs, Progress and the Library say what is missing and
+  how to fill it, with a button where one helps (New template, Create exercise).
+- A hint under a live workout says that tapping a set's number opens its tags, effort, note and
+  Remove.
 - **Notes you can see while you lift.** Each exercise card in a live workout now shows three
   kinds of notes, and only the ones that exist:
   - the exercise's own note from the Library (seat height, grip), pinned;

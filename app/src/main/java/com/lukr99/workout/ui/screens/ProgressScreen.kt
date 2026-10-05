@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ShowChart
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,6 +35,7 @@ import com.lukr99.workout.ui.ProgressViewModel
 import com.lukr99.workout.ui.components.BarPoint
 import com.lukr99.workout.ui.components.BodyHeatmap
 import com.lukr99.workout.ui.components.EmptyHint
+import com.lukr99.workout.ui.components.EmptyState
 import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.Sparkline
 import com.lukr99.workout.ui.components.StatTile
@@ -91,7 +94,13 @@ fun ProgressScreen(
             Text("Exercises", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
         }
         if (state.exercises.isEmpty()) {
-            item { EmptyHint(if (state.loaded) "Log some sets to see progress." else "Loading…") }
+            item {
+                if (state.loaded) {
+                    EmptyState(Icons.AutoMirrored.Rounded.ShowChart, "No progress yet", "Finish a workout with a few sets. Each exercise you log gets a chart of its best sets here.")
+                } else {
+                    EmptyHint("Loading…")
+                }
+            }
         } else {
             items(state.exercises, key = { it.exerciseId }) { summary ->
                 ExerciseRow(summary, units) { onOpenExercise(summary.exerciseId) }

@@ -41,3 +41,7 @@ docs/rework/reference/
 *.iml
 captures/
 *.hprof
+
+# Local tool state: Codex environments and a Visual Studio SDK path file.
+.codex/
+Directory.Build.props
