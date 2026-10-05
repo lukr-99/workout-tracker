@@ -25,6 +25,14 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
   for the muscles it also works, instead of free text. Typing your own body part still works.
 - The exercise note shows in the Library catalog and in the exercise picker.
 - Templates now have their own note and a note per exercise.
+- **Backups hold everything.** Save JSON and automatic backup now include your settings and your
+  exercise photos (scaled to 1600 px), and say which app version made them. Export format 1.8.
+- **Replace everything** when restoring an Ember backup: after a confirmation that names what will
+  be deleted, the phone's data is replaced by the backup exactly, settings and photos included.
+  Merge stays the default.
+- **Delete all data** in a danger zone at the end of the Data screen. You type "delete" to confirm.
+  It also turns off automatic backup, so empty backups cannot push out your good ones, and leaves
+  your backup files alone. Not available while a workout or run is live.
 
 ### Changed
 
@@ -47,6 +55,11 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 - **Saving an exercise wiped its secondary muscles.** The editor never passed them on.
 - The exercise editor could open an existing exercise as a blank new one while a Library search
   or filter hid it.
+- **A restore was not all or nothing.** Runs and routes were saved after the main transaction, so a
+  failure there left a half-restored phone. Everything now commits in one transaction, and a failed
+  restore leaves no trace.
+- A restored exercise kept a photo path from the phone that made the backup, which pointed at a
+  file that does not exist here. The path is now cleared, or replaced by the photo in the backup.
 
 ## [2.5.2] - 2026-09-20
 

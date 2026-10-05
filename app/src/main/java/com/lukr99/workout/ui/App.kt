@@ -91,7 +91,7 @@ fun App(container: AppContainer) {
     val liveRunVm: LiveRunViewModel = viewModel(factory = LiveRunViewModel.factory())
     val routePlannerVm: RoutePlannerViewModel = viewModel(factory = RoutePlannerViewModel.factory())
     val dataVm: DataTransferViewModel = viewModel(
-        factory = DataTransferViewModel.factory(container.dataTransfer, container.documents),
+        factory = DataTransferViewModel.factory(container.dataTransfer, container.documents, container.dataEraser),
     )
 
     val settings by settingsVm.settings.collectAsState()

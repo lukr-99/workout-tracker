@@ -12,12 +12,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -25,7 +25,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.lukr99.workout.data.transfer.TransferIssueSeverity
+import com.lukr99.workout.data.transfer.ImportCommitResult
+import com.lukr99.workout.data.transfer.RestoreMode
 import com.lukr99.workout.ui.DataTransferViewModel
 import kotlinx.coroutines.launch
 
@@ -39,6 +40,8 @@ fun DataTransferScreen(
     modifier: Modifier = Modifier,
 ) {
     val state by vm.state.collectAsState()
+    // Counts and the live-session check feed the danger zone; refresh after every operation.
+    LaunchedEffect(state.isWorking) { if (!state.isWorking) vm.refreshErase() }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -57,7 +60,9 @@ fun DataTransferScreen(
     ) {
         Text("Data", style = MaterialTheme.typography.headlineMedium)
         Text(
-            "Import with a dry preview first, or export a portable backup/spreadsheet.",
+            "Save JSON is a full backup: workouts, runs, routes, templates, exercises, photos and " +
+                "settings. Keep it somewhere outside the phone. CSV is a spreadsheet of your workouts " +
+                "and cannot restore anything. Every import shows a preview before it changes anything.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
@@ -112,58 +117,39 @@ fun DataTransferScreen(
             Text(error, color = MaterialTheme.colorScheme.error)
         }
         state.preview?.let { preview ->
-            Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Import preview", style = MaterialTheme.typography.titleLarge)
-                    Text(
-                        "${preview.summary.parsedSessions} sessions · " +
-                            "${preview.summary.setCount} sets/activities · " +
-                            "${preview.summary.insertedExercises} new exercises",
-                    )
-                    Text(
-                        "${preview.summary.insertedSessions} new · " +
-                            "${preview.summary.changedSessions} changed · " +
-                            "${preview.summary.skippedSessions} duplicates",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    if (preview.summary.insertedRuns > 0 || preview.summary.insertedRoutes > 0) {
-                        Text(
-                            "${preview.summary.insertedRuns} runs · " +
-                                "${preview.summary.insertedRoutes} routes",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    preview.plan.issues.take(8).forEach { issue ->
-                        Text(
-                            "• ${issue.message}",
-                            color = if (issue.severity == TransferIssueSeverity.Error) {
-                                MaterialTheme.colorScheme.error
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
-                        )
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Button(
-                            onClick = vm::commitPreview,
-                            enabled = preview.canCommit && !state.isWorking,
-                        ) { Text("Commit import") }
-                        OutlinedButton(onClick = vm::clearPreview) { Text("Cancel") }
-                    }
-                }
-            }
-        }
-        state.commitResult?.let { result ->
-            val runsNote = if (result.insertedRuns > 0 || result.insertedRoutes > 0) {
-                " · ${result.insertedRuns} runs · ${result.insertedRoutes} routes"
-            } else {
-                ""
-            }
-            Text(
-                "Imported ${result.insertedSessions} sessions$runsNote; " +
-                    "${result.skippedSessions} duplicates skipped.",
-                color = MaterialTheme.colorScheme.primary,
+            ImportPreviewCard(
+                preview = preview,
+                working = state.isWorking,
+                onMode = vm::setRestoreMode,
+                onCommit = vm::commitPreview,
+                onCancel = vm::clearPreview,
             )
         }
+        state.commitResult?.let { result ->
+            Text(commitMessage(result), color = MaterialTheme.colorScheme.primary)
+        }
+        if (state.erased) {
+            Text("All data deleted. Ember is back to a fresh start.", color = MaterialTheme.colorScheme.primary)
+        }
+
+        DataDangerZone(
+            counts = state.storeCounts,
+            blocker = state.eraseBlocker,
+            working = state.isWorking,
+            onErase = vm::eraseAll,
+        )
+    }
+}
+
+private fun commitMessage(result: ImportCommitResult): String {
+    val restored = buildList {
+        add("${result.insertedSessions} workouts")
+        if (result.insertedRuns > 0 || result.insertedRoutes > 0) add("${result.insertedRuns} runs, ${result.insertedRoutes} routes")
+        if (result.restoredPhotos > 0) add("${result.restoredPhotos} photos")
+        if (result.restoredSettings) add("your settings")
+    }.joinToString(", ")
+    return when (result.mode) {
+        RestoreMode.Replace -> "Replaced your data with the backup: $restored."
+        RestoreMode.Merge -> "Imported $restored. ${result.skippedSessions} were already here."
     }
 }
