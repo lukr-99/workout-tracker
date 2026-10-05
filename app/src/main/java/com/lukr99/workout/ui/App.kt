@@ -93,6 +93,7 @@ fun App(container: AppContainer) {
     val dataVm: DataTransferViewModel = viewModel(
         factory = DataTransferViewModel.factory(container.dataTransfer, container.documents, container.dataEraser),
     )
+    val updatesVm: UpdatesViewModel = viewModel(factory = UpdatesViewModel.factory(container.updates))
 
     val settings by settingsVm.settings.collectAsState()
     val activeSession by homeVm.activeSession.collectAsState()
@@ -173,6 +174,7 @@ fun App(container: AppContainer) {
                         )
                         Tab.SETTINGS -> SettingsScreen(
                             vm = settingsVm,
+                            updates = updatesVm,
                             onOpenData = { nav.push(Route.DataTransfer) },
                             onOpenPrivacy = { nav.push(Route.PrivacyPolicy) },
                         )
