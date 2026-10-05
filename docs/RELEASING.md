@@ -5,18 +5,27 @@ versions. Companion doc for ring-set uses the same pattern.
 
 ## How the in-app updater works
 
-Settings → **Updates** → **Check** calls
-[`AppUpdater`](../app/src/main/java/com/lukr99/workout/update/AppUpdater.kt), which:
+Settings, **Updates**, **Check** runs [`UpdateService`](../app/src/main/java/com/lukr99/workout/update/UpdateService.kt)
+through `UpdatesViewModel`. The chain follows CodePrint's auto-update seam:
 
-1. GETs `https://api.github.com/repos/lukr-99/workout-tracker/releases/latest` (public API, no auth).
-2. Parses the release `tag_name` and the first asset whose name ends in `.apk`.
-3. Compares the tag (minus a leading `v`) against the installed `versionName` (read from
-   `PackageManager`) with a dotted-numeric comparison.
-4. If newer: downloads the APK into `cacheDir/updates/`, then launches the system package installer
-   via a `FileProvider` content URI (`${applicationId}.files`, path `updates/`).
+1. **Release source:** `GitHubReleaseSource` reads
+   `https://api.github.com/repos/lukr-99/workout-tracker/releases/latest`. The repository is
+   public, so no token is needed. That is the chosen distribution model.
+2. **Version policy:** a `-dev` build never checks. Otherwise the tag (without `v`) must be a
+   higher dotted number than the installed `versionName`.
+3. **Artifact selector:** the release must carry exactly `Ember-<version>.apk` and
+   `Ember-<version>.apk.sha256`. A release without the checksum is shown as "cannot be verified"
+   and is not offered.
+4. **Verified download:** HTTPS only, before and after redirects. The APK streams to
+   `cacheDir/updates/` as a `.part` file, and every announced byte must arrive. The SHA-256 must
+   match the published checksum. Then the APK's package name and signing certificate must match the
+   installed app's. Only then is the file kept.
+5. **Installer launcher:** opens the system package installer through the FileProvider
+   (`${applicationId}.files`, path `updates/`). Android checks the signature again and stays the
+   final authority.
 
-No third-party dependencies — `HttpURLConnection` + `org.json` + coroutines. Requires the
-`INTERNET` and `REQUEST_INSTALL_PACKAGES` permissions (both declared in the manifest).
+The manual path is always there: **All releases on GitHub** in the same section, or the USB phone
+installer. Requires the `INTERNET` and `REQUEST_INSTALL_PACKAGES` permissions.
 
 **The critical constraint — signatures must match.** Android only lets an APK upgrade an installed
 app *in place* when both are signed with the **same key**. So:
@@ -93,17 +102,23 @@ Verify what's installed: `adb shell dumpsys package com.lukr99.workout | findstr
 
 ## Publishing a release the updater will find
 
-1. Bump `versionCode` + `versionName` in `app/build.gradle.kts` and add a `CHANGELOG.md` entry.
-2. `./gradlew.bat :app:assembleRelease`.
-3. Create a **GitHub Release** (not just a tag) tagged `v<versionName>` and **attach
-   `app-release.apk`**.
-4. Ensure the repo's Releases are **public** (the updater hits the unauthenticated API).
+1. Bump `versionCode` and `versionName` in `app/build.gradle.kts`, and rename `[Unreleased]` in
+   `CHANGELOG.md` to `[<versionName>] - <date>`. Merge that to `main`.
+2. On a clean `main`, run `.\tools\publish-release.ps1`. It:
+   - builds `assembleRelease`;
+   - checks the APK is signed with the release key (certificate SHA-256 `1db09253...19e3`);
+   - writes `dist/release-v<version>/Ember-<version>.apk` and its `.sha256`;
+   - creates a **draft** GitHub Release `v<version>` with both files and the changelog section as
+     notes.
 
-The next time any installed copy taps **Check**, it finds the release and updates in place.
+   Use `-DryRun` to stop before GitHub.
+3. Review the draft on GitHub and publish it. Only a published release is visible to the updater.
 
-## Current state (2026-08-22)
+Installed copies from 2.5.2 and older pick the first `.apk` asset and ignore the checksum. They
+update fine from a release made this way, and from then on they verify.
 
-- Installed on the phone: **v2.3.0**, release-signed with `keystore.jks`. Updater UI verified live.
+## Current state (2026-10-05)
+
+- Latest release: **v2.5.2** (`Ember-2.5.2.apk`, no checksum file; it predates the verified
+  updater).
 - Keystore created and backed up to the flash drive; **still needs a second backup copy**.
-- No GitHub Release published yet — until one exists with an APK asset, Check reports "You're on the
-  latest version."
