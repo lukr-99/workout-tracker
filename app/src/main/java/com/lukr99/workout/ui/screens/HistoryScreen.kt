@@ -25,7 +25,6 @@ import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.HistoryViewModel
 import com.lukr99.workout.ui.components.EmptyHint
 import com.lukr99.workout.ui.components.Format
-import com.lukr99.workout.ui.components.ScreenHeader
 import com.lukr99.workout.ui.components.SearchField
 import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
@@ -45,7 +44,6 @@ fun HistoryScreen(
         contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 120.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item { ScreenHeader("History", "Past workouts") }
         item {
             SearchField(value = search, onValueChange = vm::setSearch, placeholder = "Search workouts")
         }
