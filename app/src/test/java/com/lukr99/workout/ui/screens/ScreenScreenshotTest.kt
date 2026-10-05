@@ -23,9 +23,12 @@ import com.lukr99.workout.data.RoomTransactionRunner
 import com.lukr99.workout.data.WorkoutDb
 import com.lukr99.workout.data.WorkoutRepository
 import com.lukr99.workout.data.images.ExercisePhotoStore
+import com.lukr99.workout.data.map.OfflineTileCache
 import com.lukr99.workout.data.run.RunRepository
+import com.lukr99.workout.data.run.ShareCardRenderer
 import com.lukr99.workout.data.services.WorkoutDataService
 import com.lukr99.workout.data.services.WorkoutInsightsService
+import com.lukr99.workout.data.transfer.AndroidDocumentGateway
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.settings.SettingsStore
 import com.lukr99.workout.settings.UnitSystem
@@ -34,6 +37,8 @@ import com.lukr99.workout.ui.HomeViewModel
 import com.lukr99.workout.ui.LibraryViewModel
 import com.lukr99.workout.ui.LiveWorkoutViewModel
 import com.lukr99.workout.ui.ProgressViewModel
+import com.lukr99.workout.ui.run.RunViewModel
+import com.lukr99.workout.ui.run.RunsScreen
 import com.lukr99.workout.ui.theme.WorkoutTheme
 import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
@@ -78,6 +83,7 @@ class ScreenScreenshotTest {
         repo = WorkoutRepository(db.workoutDao(), RoomTransactionRunner(db))
         repo.ensureSeeded()
         ScreenFixtures.fill(repo)
+        ScreenFixtures.fillRuns(RunRepository(db.runDao()))
     }
 
     // No @After close: leaving a screen saves its live draft, which runs after the test body. The
@@ -115,6 +121,22 @@ class ScreenScreenshotTest {
         val vm = LibraryViewModel(repo, WorkoutDataService(repo), ExercisePhotoStore(context))
         val id = remember { runBlocking { repo.getTemplates().first { it.name == "Push day" }.id } }
         TemplateEditorScreen(vm = vm, templateId = id, onDone = {})
+    }
+
+    @Test fun runsDark() = capture("screen_runs_dark", dark = true) { Tab { Runs() } }
+    @Test fun runsLight() = capture("screen_runs_light", dark = false) { Tab { Runs() } }
+
+    @Composable
+    private fun Runs() {
+        val runs = RunRepository(db.runDao())
+        RunsScreen(
+            vm = RunViewModel(runs, AndroidDocumentGateway(context), ShareCardRenderer(context), OfflineTileCache(context)),
+            units = UnitSystem.Metric,
+            onStartRun = {},
+            onOpenRun = {},
+            onPlanRoute = {},
+            onStartRoute = {},
+        )
     }
 
     @Composable
