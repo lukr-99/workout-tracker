@@ -1,6 +1,7 @@
 package com.lukr99.workout.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -32,8 +33,9 @@ fun SectionCard(
     Column(
         modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surface)
+            .clip(RoundedCornerShape(20.dp))
+            .background(EmberTheme.colors.surface)
+            .border(1.dp, EmberTheme.colors.border, RoundedCornerShape(20.dp))
             .padding(contentPadding),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {

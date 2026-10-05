@@ -1,6 +1,7 @@
 package com.lukr99.workout.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,7 +34,6 @@ import com.lukr99.workout.ui.components.BarPoint
 import com.lukr99.workout.ui.components.BodyHeatmap
 import com.lukr99.workout.ui.components.EmptyHint
 import com.lukr99.workout.ui.components.Format
-import com.lukr99.workout.ui.components.ScreenHeader
 import com.lukr99.workout.ui.components.Sparkline
 import com.lukr99.workout.ui.components.StatTile
 import com.lukr99.workout.ui.components.VolumeBars
@@ -56,8 +56,6 @@ fun ProgressScreen(
         contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 120.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        item { ScreenHeader("Progress", "Strength over time") }
-
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 StatTile("Workouts", state.overview.workouts.toString(), modifier = Modifier.weight(1f))
@@ -77,8 +75,8 @@ fun ProgressScreen(
 
         item {
             Column(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surface).padding(16.dp),
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp))
+                    .background(EmberTheme.colors.surface).border(1.dp, EmberTheme.colors.border, RoundedCornerShape(20.dp)).padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Text("Weekly volume", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
@@ -106,8 +104,8 @@ fun ProgressScreen(
 @Composable
 private fun MuscleRecoveryCard(recovery: RecoverySnapshot, units: UnitSystem) {
     Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surface).padding(16.dp),
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp))
+            .background(EmberTheme.colors.surface).border(1.dp, EmberTheme.colors.border, RoundedCornerShape(20.dp)).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

@@ -1,6 +1,7 @@
 package com.lukr99.workout.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,8 +34,9 @@ fun StatTile(
 ) {
     Column(
         modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surface)
+            .clip(RoundedCornerShape(18.dp))
+            .background(EmberTheme.colors.surface)
+            .border(1.dp, EmberTheme.colors.border, RoundedCornerShape(18.dp))
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
@@ -48,8 +50,8 @@ fun StatTile(
         Row(verticalAlignment = androidx.compose.ui.Alignment.Bottom) {
             Text(
                 value,
-                style = Numbers.copy(fontSize = 26.sp, fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onBackground,
+                style = Numbers.copy(fontSize = 30.sp, fontWeight = FontWeight.SemiBold),
+                color = EmberTheme.colors.textPrimary,
                 maxLines = 1,
             )
             if (unit != null) {
