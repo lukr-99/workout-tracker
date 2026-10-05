@@ -26,12 +26,7 @@ class EntryHistory(
         repo.getPreviousEntryNotes(exerciseIds, currentSessionId)
 
     /** Last time's sets per exercise, from the newest finished workout that logged it. */
-    suspend fun lastSets(exerciseIds: Set<String>): Map<String, List<StrengthSet>> {
-        val ids = exerciseIds.filter(String::isNotBlank)
-        if (ids.isEmpty()) return emptyMap()
-        val sessions = repo.getSessions()
-        return ids.associateWith { sessions.lastSetsFor(it) }.filterValues { it.isNotEmpty() }
-    }
+    suspend fun lastSets(exerciseIds: Set<String>): Map<String, List<StrengthSet>> = repo.getLastSets(exerciseIds)
 
     /**
      * The progression's suggested sets when it has enough history, else last time's sets, else

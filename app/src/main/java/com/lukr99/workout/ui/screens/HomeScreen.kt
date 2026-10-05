@@ -66,6 +66,7 @@ fun HomeScreen(
     units: UnitSystem,
     onResume: () -> Unit,
     onStartTemplate: (String) -> Unit,
+    onOpenTemplate: (String) -> Unit,
     onOpenTemplates: () -> Unit,
     onOpenSession: (String) -> Unit,
     onOpenRun: (String) -> Unit,
@@ -94,7 +95,7 @@ fun HomeScreen(
         item { WeekCard(week, units) }
         if (templates.isNotEmpty()) {
             item { SectionLabel("Start from a template") { TextLink("All templates", onOpenTemplates) } }
-            item { TemplateCard(templates.take(4), onStartTemplate) }
+            item { TemplateCard(templates.take(4), onStartTemplate, onOpenTemplate) }
         }
         item { SectionLabel("Recent") {} }
         if (recent.isEmpty()) {
@@ -259,7 +260,7 @@ private fun WeekTotal(value: String, unit: String, label: String, modifier: Modi
 }
 
 @Composable
-private fun TemplateCard(templates: List<WorkoutTemplate>, onStart: (String) -> Unit) {
+private fun TemplateCard(templates: List<WorkoutTemplate>, onStart: (String) -> Unit, onOpen: (String) -> Unit) {
     val colors = EmberTheme.colors
     Column(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(colors.surface)
@@ -268,7 +269,7 @@ private fun TemplateCard(templates: List<WorkoutTemplate>, onStart: (String) -> 
         templates.forEachIndexed { index, template ->
             if (index > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(colors.border))
             Row(
-                Modifier.fillMaxWidth().clickable { onStart(template.id) }.padding(horizontal = 14.dp, vertical = 12.dp),
+                Modifier.fillMaxWidth().clickable(onClickLabel = "Preview ${template.name}") { onOpen(template.id) }.padding(horizontal = 14.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {

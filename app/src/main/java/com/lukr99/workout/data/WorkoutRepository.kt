@@ -10,12 +10,14 @@ import com.lukr99.workout.domain.ExerciseAnalyticsPoint
 import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.ExerciseFilter
 import com.lukr99.workout.domain.PreviousEntryNote
+import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.Progression
 import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutSessionStatus
 import com.lukr99.workout.domain.WorkoutSessionSummary
 import com.lukr99.workout.domain.WorkoutTemplate
+import com.lukr99.workout.domain.lastSetsFor
 import com.lukr99.workout.domain.newId
 import com.lukr99.workout.domain.normalized
 import com.lukr99.workout.domain.toEntries
@@ -157,6 +159,20 @@ class WorkoutRepository(
     }
 
     suspend fun deleteTemplate(id: String) = dao.deleteTemplate(id)
+
+    /** When a workout from this template was last finished, or null if never. */
+    suspend fun getTemplateLastDone(templateId: String): Long? =
+        dao.getCompletedSessions().map { it.toDomain() }
+            .filter { it.templateId == templateId }
+            .maxOfOrNull { it.completedDateUtc ?: it.startedAtUtc }
+
+    /** Last time's sets for each of [exerciseIds], from the newest finished workout that logged it. */
+    suspend fun getLastSets(exerciseIds: Collection<String>): Map<String, List<StrengthSet>> {
+        val ids = exerciseIds.filter(String::isNotBlank).toSet()
+        if (ids.isEmpty()) return emptyMap()
+        val sessions = getSessions()
+        return ids.associateWith { sessions.lastSetsFor(it) }.filterValues { it.isNotEmpty() }
+    }
 
     // --- Sessions ------------------------------------------------------------------------------
 

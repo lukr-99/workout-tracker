@@ -46,6 +46,12 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
   changes and asks whether to update the template, keep it as it is, or save the changes as a new
   template. The finish sheet also shows the time, weight lifted, sets and PRs.
 - A template with a plan starts each exercise with its planned number of sets and its supersets.
+- **A template preview.** Tapping a template on Home or in the Library shows its note, the plan
+  per exercise with your best set last time, and when you last did it, with Edit and Start
+  workout. The start button on Home still starts right away.
+- **A rebuilt template editor.** Each exercise has steppers for sets and rest, a rep range, a note,
+  and a menu to move it, remove it, or join it to the exercise above as a superset. Add exercises
+  uses the same picker as the live workout, several at a time.
 - **Add exercises on the go.** The picker lists your recent exercises first with what you did last
   time, lets you tick several and add them at once, and can add them as a superset.
 - **Create an exercise without leaving the workout.** Type a name the library does not have and

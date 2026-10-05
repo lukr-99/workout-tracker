@@ -65,6 +65,11 @@ class HomeViewModel(
         activeSession.onEach { refresh() }.launchIn(viewModelScope)
     }
 
+    suspend fun preview(template: WorkoutTemplate): TemplatePreviewData = TemplatePreviewData(
+        lastSets = repo.getLastSets(template.exercises.map { it.exerciseId }),
+        lastDoneUtc = repo.getTemplateLastDone(template.id),
+    )
+
     fun refresh() {
         viewModelScope.launch { snapshotState.value = repo.getDashboardSnapshot() }
     }

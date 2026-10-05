@@ -73,4 +73,27 @@ class WorkoutFactoryTest {
         assertTrue(result.issues.any { it.path.endsWith("weightKg") })
         assertEquals(0.0, result.value.entries.single().strengthSets.single().weightKg, 0.0)
     }
+
+    @Test
+    fun template_keepsThePlanAndOrdersTheRepRange() {
+        val result = factory.template(
+            TemplateDraft(
+                name = "Push",
+                exercises = listOf(
+                    TemplateExerciseDraft(exerciseName = "Bench", targetSets = 4, repsMin = 8, repsMax = 6, restSeconds = 150, supersetGroup = 1),
+                    TemplateExerciseDraft(exerciseName = "Dips", targetSets = 99, restSeconds = -5),
+                ),
+            ),
+        )
+
+        val (bench, dips) = result.value.exercises
+        assertEquals(4, bench.targetSets)
+        assertEquals(6, bench.repsMin)
+        assertEquals(8, bench.repsMax)
+        assertEquals(150, bench.restSeconds)
+        assertEquals(1, bench.supersetGroup)
+        assertEquals(20, dips.targetSets)
+        assertEquals(0, dips.restSeconds)
+        assertEquals(null, dips.repsMin)
+    }
 }

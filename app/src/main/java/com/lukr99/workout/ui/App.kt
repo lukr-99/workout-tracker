@@ -32,6 +32,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -71,6 +72,7 @@ import com.lukr99.workout.ui.screens.ProgressDetailScreen
 import com.lukr99.workout.ui.screens.ProgressHubScreen
 import com.lukr99.workout.ui.screens.PrivacyPolicyScreen
 import com.lukr99.workout.ui.screens.SettingsScreen
+import com.lukr99.workout.ui.screens.TemplatePreviewSheet
 import com.lukr99.workout.ui.screens.TemplateEditorScreen
 import com.lukr99.workout.ui.screens.WorkoutDetailScreen
 
@@ -111,6 +113,8 @@ fun App(container: AppContainer) {
     val overlay = nav.top
     var chooserOpen by remember { mutableStateOf(false) }
     var resumeChooserOpen by remember { mutableStateOf(false) }
+    var previewTemplateId by remember { mutableStateOf<String?>(null) }
+    val templates by homeVm.templates.collectAsState()
 
     fun startWorkout(templateId: String? = null) {
         liveVm.startOrResume(templateId)
@@ -164,6 +168,7 @@ fun App(container: AppContainer) {
                             units = settings.units,
                             onResume = { startWorkout() },
                             onStartTemplate = { startWorkout(it) },
+                            onOpenTemplate = { previewTemplateId = it },
                             onOpenTemplates = { nav.switch(Tab.LIBRARY) },
                             onOpenSession = { nav.push(Route.WorkoutDetail(it)) },
                             onOpenRun = { nav.push(Route.RunDetail(it)) },
@@ -177,6 +182,7 @@ fun App(container: AppContainer) {
                             onEditExercise = { nav.push(Route.ExerciseEditor(it)) },
                             onNewExercise = { nav.push(Route.ExerciseEditor(null, initialName = it)) },
                             onStartTemplate = { startWorkout(it) },
+                            onOpenTemplate = { previewTemplateId = it },
                         )
                         Tab.RUNS -> RunsScreen(
                             vm = runVm,
@@ -291,6 +297,18 @@ fun App(container: AppContainer) {
                     onLift = { chooserOpen = false; startWorkout() },
                     onRun = { chooserOpen = false; startRun() },
                     onDismiss = { chooserOpen = false },
+                )
+            }
+
+            templates.firstOrNull { it.id == previewTemplateId }?.let { template ->
+                val data by produceState(TemplatePreviewData(), template) { value = homeVm.preview(template) }
+                TemplatePreviewSheet(
+                    template = template,
+                    data = data,
+                    units = settings.units,
+                    onEdit = { previewTemplateId = null; nav.push(Route.TemplateEditor(template.id)) },
+                    onStart = { previewTemplateId = null; startWorkout(template.id) },
+                    onDismiss = { previewTemplateId = null },
                 )
             }
 

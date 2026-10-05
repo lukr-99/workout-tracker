@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
@@ -17,6 +18,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
 import com.github.takahirom.roborazzi.captureRoboImage
+import com.github.takahirom.roborazzi.captureScreenRoboImage
 import com.lukr99.workout.data.RoomTransactionRunner
 import com.lukr99.workout.data.WorkoutDb
 import com.lukr99.workout.data.WorkoutRepository
@@ -90,12 +92,36 @@ class ScreenScreenshotTest {
     @Test fun liveWorkoutDark() = capture("screen_live_workout_dark", dark = true) { Live() }
     @Test fun liveWorkoutLight() = capture("screen_live_workout_light", dark = false) { Live() }
 
+    @Test fun templateEditorDark() = capture("screen_template_editor_dark", dark = true) { Editor() }
+    @Test fun templateEditorLight() = capture("screen_template_editor_light", dark = false) { Editor() }
+
+    @Test
+    fun templatePreviewDark() {
+        val template = runBlocking { repo.getTemplates().first { it.name == "Push day" } }
+        val data = runBlocking { HomeViewModel(repo, RunRepository(db.runDao())).preview(template) }
+        compose.setContent {
+            WorkoutTheme(dark = true) {
+                TemplatePreviewSheet(template, data, UnitSystem.Metric, onEdit = {}, onStart = {}, onDismiss = {})
+            }
+        }
+        compose.waitForIdle()
+        captureScreenRoboImage("src/test/screenshots/template_preview_dark.png")
+    }
+
+    @Composable
+    private fun Editor() {
+        val vm = LibraryViewModel(repo, WorkoutDataService(repo), ExercisePhotoStore(context))
+        val id = remember { runBlocking { repo.getTemplates().first { it.name == "Push day" }.id } }
+        TemplateEditorScreen(vm = vm, templateId = id, onDone = {})
+    }
+
     @Composable
     private fun Home() = HomeScreen(
         vm = HomeViewModel(repo, RunRepository(db.runDao())),
         units = UnitSystem.Metric,
         onResume = {},
         onStartTemplate = {},
+        onOpenTemplate = {},
         onOpenTemplates = {},
         onOpenSession = {},
         onOpenRun = {},
@@ -111,6 +137,7 @@ class ScreenScreenshotTest {
         onEditExercise = {},
         onNewExercise = {},
         onStartTemplate = {},
+        onOpenTemplate = {},
     )
 
     @Composable
