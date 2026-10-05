@@ -16,3 +16,4 @@
 *.exe binary
 *.apk binary
 *.jar binary
+*.ttf binary

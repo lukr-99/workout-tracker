@@ -107,3 +107,5 @@ constraints, and [CONTEXT.md](CONTEXT.md) for the words the app uses.
 ## License
 
 [PolyForm Noncommercial 1.0.0](LICENSE.md) — free for personal and non-commercial use; selling or other commercial use requires permission.
+
+The app bundles the Barlow and Barlow Condensed fonts (Copyright 2017 The Barlow Project Authors) under the SIL Open Font License 1.1. The licence ships in the app as `assets/licenses/barlow-OFL.txt`.
