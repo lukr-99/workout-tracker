@@ -161,10 +161,21 @@ fun App(container: AppContainer) {
                         Tab.HOME -> HomeScreen(
                             vm = homeVm,
                             units = settings.units,
-                            onStart = { startWorkout() },
+                            onResume = { startWorkout() },
                             onStartTemplate = { startWorkout(it) },
-                            onOpenLibrary = { nav.push(Route.Library) },
+                            onOpenTemplates = { nav.switch(Tab.LIBRARY) },
                             onOpenSession = { nav.push(Route.WorkoutDetail(it)) },
+                            onOpenRun = { nav.push(Route.RunDetail(it)) },
+                            onOpenSettings = { nav.push(Route.Settings) },
+                        )
+                        Tab.LIBRARY -> LibraryScreen(
+                            vm = libraryVm,
+                            units = settings.units,
+                            onEditTemplate = { nav.push(Route.TemplateEditor(it)) },
+                            onNewTemplate = { nav.push(Route.TemplateEditor(null)) },
+                            onEditExercise = { nav.push(Route.ExerciseEditor(it)) },
+                            onNewExercise = { nav.push(Route.ExerciseEditor(null, initialName = it)) },
+                            onStartTemplate = { startWorkout(it) },
                         )
                         Tab.RUNS -> RunsScreen(
                             vm = runVm,
@@ -181,12 +192,6 @@ fun App(container: AppContainer) {
                             units = settings.units,
                             onOpenExercise = { nav.push(Route.ProgressDetail(it)) },
                             onOpenSession = { nav.push(Route.WorkoutDetail(it)) },
-                        )
-                        Tab.SETTINGS -> SettingsScreen(
-                            vm = settingsVm,
-                            updates = updatesVm,
-                            onOpenData = { nav.push(Route.DataTransfer) },
-                            onOpenPrivacy = { nav.push(Route.PrivacyPolicy) },
                         )
                     }
                 }
@@ -226,18 +231,15 @@ fun App(container: AppContainer) {
                             units = settings.units,
                             onBack = { nav.pop() },
                         )
-                        Route.Library -> LibraryScreen(
-                            vm = libraryVm,
-                            units = settings.units,
-                            onBack = { nav.pop() },
-                            onEditTemplate = { nav.push(Route.TemplateEditor(it)) },
-                            onNewTemplate = { nav.push(Route.TemplateEditor(null)) },
-                            onEditExercise = { nav.push(Route.ExerciseEditor(it)) },
-                            onNewExercise = {
-                                nav.push(Route.ExerciseEditor(null, initialName = it))
-                            },
-                            onStartTemplate = { startWorkout(it) },
-                        )
+                        Route.Settings -> Box(Modifier.fillMaxSize().padding(horizontal = 18.dp).padding(top = 12.dp)) {
+                            SettingsScreen(
+                                vm = settingsVm,
+                                updates = updatesVm,
+                                onOpenData = { nav.push(Route.DataTransfer) },
+                                onOpenPrivacy = { nav.push(Route.PrivacyPolicy) },
+                                onBack = { nav.pop() },
+                            )
+                        }
                         is Route.TemplateEditor -> TemplateEditorScreen(
                             vm = libraryVm,
                             templateId = overlay.templateId,
@@ -346,10 +348,10 @@ private fun FloatingNav(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             NavItem(Tab.HOME, current, Modifier.weight(1f)) { onSelect(Tab.HOME) }
-            NavItem(Tab.RUNS, current, Modifier.weight(1f)) { onSelect(Tab.RUNS) }
+            NavItem(Tab.LIBRARY, current, Modifier.weight(1f)) { onSelect(Tab.LIBRARY) }
             StartAction(resumeMode, onStart, Modifier.weight(1f))
+            NavItem(Tab.RUNS, current, Modifier.weight(1f)) { onSelect(Tab.RUNS) }
             NavItem(Tab.PROGRESS, current, Modifier.weight(1f)) { onSelect(Tab.PROGRESS) }
-            NavItem(Tab.SETTINGS, current, Modifier.weight(1f)) { onSelect(Tab.SETTINGS) }
         }
     }
 }
@@ -370,7 +372,7 @@ private fun NavItem(tab: Tab, current: Tab, modifier: Modifier, onClick: () -> U
         ) { Icon(tab.icon, tab.label, tint = tint, modifier = Modifier.size(20.dp)) }
         Spacer(Modifier.height(2.dp))
         Text(
-            tab.label, color = tint, fontSize = 9.5.sp,
+            tab.label, color = tint, fontSize = 12.sp,
             fontWeight = if (on) FontWeight.SemiBold else FontWeight.Medium,
             maxLines = 1, softWrap = false,
         )
@@ -396,7 +398,7 @@ private fun StartAction(resumeMode: Boolean, onStart: () -> Unit, modifier: Modi
         Spacer(Modifier.height(2.dp))
         Text(
             if (resumeMode) "Resume" else "Start",
-            color = MaterialTheme.colorScheme.primary, fontSize = 9.5.sp,
+            color = MaterialTheme.colorScheme.primary, fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),

@@ -46,6 +46,9 @@ import com.lukr99.workout.ui.components.ExerciseThumbnail
 import com.lukr99.workout.ui.components.FilterChip
 import com.lukr99.workout.ui.components.NoteLine
 import com.lukr99.workout.ui.components.SearchField
+import com.lukr99.workout.ui.components.SegmentedControl
+import com.lukr99.workout.ui.components.ScreenHeader
+import com.lukr99.workout.ui.components.RoundIconButton
 import com.lukr99.workout.ui.components.Tag
 import com.lukr99.workout.ui.theme.EmberTheme
 
@@ -54,40 +57,34 @@ import com.lukr99.workout.ui.theme.EmberTheme
 fun LibraryScreen(
     vm: LibraryViewModel,
     units: UnitSystem,
-    onBack: () -> Unit,
     onEditTemplate: (String) -> Unit,
     onNewTemplate: () -> Unit,
     onEditExercise: (String) -> Unit,
     onNewExercise: (String) -> Unit,
     onStartTemplate: (String) -> Unit,
 ) {
-    var tab by remember { mutableStateOf(LibTab.Templates) }
+    var tab by remember { mutableStateOf(LibTab.Catalog) }
     val templates by vm.templates.collectAsState()
     val exercises by vm.exercises.collectAsState()
     val filter by vm.filter.collectAsState()
 
     Column(Modifier.fillMaxWidth()) {
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Text("Library", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
-            Spacer(Modifier.weight(1f))
-            IconButton(onClick = { if (tab == LibTab.Templates) onNewTemplate() else onNewExercise("") }) {
-                Icon(Icons.Rounded.Add, "New", tint = MaterialTheme.colorScheme.primary)
-            }
+        ScreenHeader("Library", "${exercises.size} exercises · ${templates.size} templates") {
+            RoundIconButton(
+                Icons.Rounded.Add,
+                if (tab == LibTab.Templates) "New template" else "New exercise",
+                { if (tab == LibTab.Templates) onNewTemplate() else onNewExercise("") },
+                filled = true,
+            )
         }
-
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            FilterChip("Templates", tab == LibTab.Templates, { tab = LibTab.Templates })
-            FilterChip("Catalog", tab == LibTab.Catalog, { tab = LibTab.Catalog })
-        }
+        Spacer(Modifier.size(12.dp))
+        SegmentedControl(
+            options = listOf(LibTab.Catalog, LibTab.Templates),
+            selected = tab,
+            onSelect = { tab = it },
+            label = { if (it == LibTab.Catalog) "Exercises" else "Templates" },
+        )
+        Spacer(Modifier.size(4.dp))
 
         when (tab) {
             LibTab.Templates -> TemplateList(
@@ -130,7 +127,7 @@ private fun TemplateList(
     }
     LazyColumn(
         Modifier.fillMaxWidth(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 40.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 8.dp, bottom = 120.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         items(templates, key = { it.id }) { template ->
@@ -181,7 +178,7 @@ private fun CatalogList(
         exercises.flatMap { it.equipment.split(',') }.map(String::trim)
             .filter(String::isNotBlank).distinctBy(String::lowercase).sorted()
     }
-    Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp)) {
+    Column(Modifier.fillMaxWidth()) {
         Spacer(Modifier.size(8.dp))
         SearchField(value = searchText, onValueChange = onSearch, placeholder = "Search exercises")
         Spacer(Modifier.size(8.dp))
@@ -239,7 +236,7 @@ private fun CatalogList(
         } else {
             LazyColumn(
                 Modifier.fillMaxWidth(),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 60.dp),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 120.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(exercises, key = { it.id }) { ex ->

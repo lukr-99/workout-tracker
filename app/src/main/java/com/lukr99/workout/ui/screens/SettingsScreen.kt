@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -42,6 +43,7 @@ import com.lukr99.workout.data.health.HealthConnectAvailability
 import com.lukr99.workout.settings.ThemeMode
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.SettingsViewModel
+import com.lukr99.workout.ui.components.RoundIconButton
 import com.lukr99.workout.ui.components.FilterChip
 import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.LocalToast
@@ -58,6 +60,7 @@ fun SettingsScreen(
     updates: UpdatesViewModel,
     onOpenData: () -> Unit,
     onOpenPrivacy: () -> Unit,
+    onBack: () -> Unit,
 ) {
     val settings by vm.settings.collectAsState()
     val updateState by updates.state.collectAsState()
@@ -91,6 +94,7 @@ fun SettingsScreen(
             .padding(bottom = 120.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        RoundIconButton(Icons.AutoMirrored.Rounded.ArrowBack, "Back", onBack)
         ScreenHeader("Settings", "Preferences & data")
 
         SettingSection("Appearance") {
