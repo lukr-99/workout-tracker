@@ -36,6 +36,9 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 ### Changed
 
+- **Light mode works on every screen.** Labels, hints and status colours used to stay dark-mode
+  grey or pale yellow in light mode. Every screen now reads its colours from one light or dark
+  set, in the warmer palette of the redesign. The ember orange stays the same.
 - The live exercise card moved "Move up", "Move down", "Superset with previous" and "Remove" into a
   menu, giving the exercise name room on narrow phones.
 - The template editor uses the same exercise picker as the live workout, with filters and search.

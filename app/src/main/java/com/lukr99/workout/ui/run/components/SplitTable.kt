@@ -21,8 +21,8 @@ import androidx.compose.ui.unit.dp
 import com.lukr99.workout.domain.run.Pace
 import com.lukr99.workout.domain.run.Split
 import com.lukr99.workout.settings.UnitSystem
+import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
-import com.lukr99.workout.ui.theme.TextMid
 
 /**
  * Per-km/mi split table for the run detail screen: each split's pace as `m:ss` with a bar scaled to
@@ -70,7 +70,7 @@ fun SplitTable(
                     "${Pace.formatPace(displayPace)} /$unitLabel",
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
-                    color = if (split.paceSecPerKm == fastest) MaterialTheme.colorScheme.primary else TextMid,
+                    color = if (split.paceSecPerKm == fastest) MaterialTheme.colorScheme.primary else EmberTheme.colors.textSecondary,
                 )
             }
         }

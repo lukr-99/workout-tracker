@@ -37,10 +37,8 @@ import com.lukr99.workout.domain.SetTag
 import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.effectiveTags
 import com.lukr99.workout.settings.UnitSystem
+import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
-import com.lukr99.workout.ui.theme.Positive
-import com.lukr99.workout.ui.theme.TextMid
-import com.lukr99.workout.ui.theme.Warning
 
 /**
  * The set-logging workhorse (02-design-system.md): `badge · REPS · × · KG · ✓`. Reworked in Phase 4
@@ -87,7 +85,7 @@ fun SetRow(
                 display = formatReps(set.reps),
                 modifier = Modifier.weight(1f),
             ) { editingWeight = false }
-            Text("×", color = TextMid)
+            Text("×", color = EmberTheme.colors.textSecondary)
             ValueCell(
                 display = formatWeight(Format.toDisplay(set.weightKg, units)),
                 modifier = Modifier.weight(1.25f),
@@ -107,7 +105,7 @@ fun SetRow(
             Modifier
                 .size(38.dp)
                 .clip(CircleShape)
-                .background(if (done) Positive.copy(alpha = 0.18f) else MaterialTheme.colorScheme.surface)
+                .background(if (done) EmberTheme.colors.success.copy(alpha = 0.18f) else MaterialTheme.colorScheme.surface)
                 .clickable {
                     if (!done) haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
                     onToggleDone()
@@ -117,7 +115,7 @@ fun SetRow(
             Icon(
                 Icons.Rounded.Check,
                 contentDescription = if (done) "mark set not done" else "mark set done",
-                tint = if (done) Positive else TextMid,
+                tint = if (done) EmberTheme.colors.success else EmberTheme.colors.textSecondary,
                 modifier = Modifier
                     .size(20.dp)
                     .graphicsLayer { scaleX = checkScale; scaleY = checkScale },
@@ -130,7 +128,7 @@ fun SetRow(
         Text(
             previousHint,
             style = MaterialTheme.typography.labelSmall,
-            color = TextMid,
+            color = EmberTheme.colors.textSecondary,
             modifier = Modifier.padding(start = 48.dp, top = 1.dp, bottom = 2.dp),
         )
     }
@@ -166,10 +164,10 @@ fun SetRow(
 @Composable
 fun SetTagChips(set: StrengthSet, modifier: Modifier = Modifier) {
     val visibleTags = buildList {
-        if (set.isPr) add("PR" to Positive)
+        if (set.isPr) add("PR" to EmberTheme.colors.success)
         set.effectiveTags.forEach { tag ->
             add(tag.label to when (tag) {
-                SetTag.Warmup -> Warning
+                SetTag.Warmup -> EmberTheme.colors.warning
                 SetTag.Failed -> MaterialTheme.colorScheme.error
                 SetTag.ToFailure -> MaterialTheme.colorScheme.primary
                 else -> MaterialTheme.colorScheme.secondary
@@ -235,7 +233,7 @@ private fun ColumnLabel(text: String, modifier: Modifier) {
         Text(
             text,
             style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp),
-            color = TextMid,
+            color = EmberTheme.colors.textSecondary,
             fontWeight = FontWeight.SemiBold,
         )
     }
@@ -244,12 +242,12 @@ private fun ColumnLabel(text: String, modifier: Modifier) {
 @Composable
 private fun SetBadge(index: Int, set: StrengthSet, onClick: () -> Unit) {
     val (label, tint) = when {
-        set.isPr -> "PR" to Positive
+        set.isPr -> "PR" to EmberTheme.colors.success
         SetTag.Failed in set.effectiveTags -> "!" to MaterialTheme.colorScheme.error
-        set.isWarmup || SetTag.Warmup in set.effectiveTags -> "W" to Warning
+        set.isWarmup || SetTag.Warmup in set.effectiveTags -> "W" to EmberTheme.colors.warning
         SetTag.ToFailure in set.effectiveTags -> "TF" to MaterialTheme.colorScheme.primary
         SetTag.Drop in set.effectiveTags -> "D" to MaterialTheme.colorScheme.secondary
-        else -> "${index + 1}" to TextMid
+        else -> "${index + 1}" to EmberTheme.colors.textSecondary
     }
     Box(
         Modifier

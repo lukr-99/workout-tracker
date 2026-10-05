@@ -38,9 +38,8 @@ import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.ProgressChart
 import com.lukr99.workout.ui.components.StatTile
 import com.lukr99.workout.ui.components.VolumeBars
+import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Accents
-import com.lukr99.workout.ui.theme.Positive
-import com.lukr99.workout.ui.theme.TextMid
 
 /** Per-exercise progress detail — the spline e1RM trend + per-session volume bars. */
 @Composable
@@ -112,7 +111,7 @@ fun ProgressDetailScreen(
 
             Text(
                 "Tap and drag the chart to scrub through sessions.",
-                style = MaterialTheme.typography.labelSmall, color = TextMid,
+                style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary,
             )
         }
     }
@@ -131,7 +130,7 @@ private fun RecordsCard(records: ExerciseRecords, units: UnitSystem) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Records", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
             androidx.compose.foundation.layout.Spacer(Modifier.weight(1f))
-            Text("PR", style = MaterialTheme.typography.labelSmall, color = Positive, fontWeight = FontWeight.Bold)
+            Text("PR", style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.success, fontWeight = FontWeight.Bold)
         }
 
         records.heaviestSet?.let {
@@ -149,16 +148,16 @@ private fun RecordsCard(records: ExerciseRecords, units: UnitSystem) {
 
         if (records.repMaxes.isNotEmpty()) {
             androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outline)
-            Text("Rep maxes", style = MaterialTheme.typography.labelMedium, color = TextMid)
+            Text("Rep maxes", style = MaterialTheme.typography.labelMedium, color = EmberTheme.colors.textSecondary)
             records.repMaxes.sortedBy { it.reps }.forEach { rm ->
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text("${rm.reps}RM", style = MaterialTheme.typography.bodyMedium, color = TextMid, modifier = Modifier.width(52.dp))
+                    Text("${rm.reps}RM", style = MaterialTheme.typography.bodyMedium, color = EmberTheme.colors.textSecondary, modifier = Modifier.width(52.dp))
                     Text(
                         "${Format.weight(rm.weightKg, units)} ${Format.unitLabel(units)}",
                         style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier.weight(1f),
                     )
-                    Text(Format.shortDate(rm.source.dateUtc), style = MaterialTheme.typography.labelSmall, color = TextMid)
+                    Text(Format.shortDate(rm.source.dateUtc), style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
                 }
             }
         }
@@ -169,8 +168,8 @@ private fun RecordsCard(records: ExerciseRecords, units: UnitSystem) {
 private fun RecordRow(label: String, value: String, source: RecordSource) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
-            Text(label, style = MaterialTheme.typography.bodyMedium, color = TextMid)
-            Text(Format.shortDate(source.dateUtc), style = MaterialTheme.typography.labelSmall, color = TextMid)
+            Text(label, style = MaterialTheme.typography.bodyMedium, color = EmberTheme.colors.textSecondary)
+            Text(Format.shortDate(source.dateUtc), style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
         }
         Text(value, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
     }

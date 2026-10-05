@@ -37,12 +37,10 @@ import com.lukr99.workout.ui.components.ScreenHeader
 import com.lukr99.workout.ui.components.Sparkline
 import com.lukr99.workout.ui.components.StatTile
 import com.lukr99.workout.ui.components.VolumeBars
+import com.lukr99.workout.ui.theme.EmberColors
+import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Accents
-import com.lukr99.workout.ui.theme.Danger
 import com.lukr99.workout.ui.theme.Numbers
-import com.lukr99.workout.ui.theme.Positive
-import com.lukr99.workout.ui.theme.TextMid
-import com.lukr99.workout.ui.theme.Warning
 
 /** Progress analytics home — KPIs + weekly volume trend + per-exercise strength list. */
 @Composable
@@ -119,7 +117,7 @@ private fun MuscleRecoveryCard(recovery: RecoverySnapshot, units: UnitSystem) {
             Text(
                 "${recovery.averageReadiness.toInt()}% ready",
                 style = MaterialTheme.typography.labelMedium,
-                color = readinessTint(recovery.averageReadiness),
+                color = readinessTint(recovery.averageReadiness, EmberTheme.colors),
             )
         }
 
@@ -142,17 +140,17 @@ private fun MuscleRecoveryCard(recovery: RecoverySnapshot, units: UnitSystem) {
                             Box(
                                 Modifier.fillMaxWidth((m.readiness / 100.0).toFloat().coerceIn(0f, 1f))
                                     .height(8.dp).clip(RoundedCornerShape(4.dp))
-                                    .background(readinessTint(m.readiness)),
+                                    .background(readinessTint(m.readiness, EmberTheme.colors)),
                             )
                         }
                         Text(
                             "  ${m.readiness.toInt()}%",
-                            style = Numbers.copy(fontSize = 12.sp), color = TextMid,
+                            style = Numbers.copy(fontSize = 12.sp), color = EmberTheme.colors.textSecondary,
                             modifier = Modifier.width(40.dp),
                         )
                         Text(
                             "${m.weeklySetCount.toInt()} sets/wk",
-                            style = MaterialTheme.typography.labelSmall, color = TextMid,
+                            style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary,
                             modifier = Modifier.width(66.dp),
                         )
                     }
@@ -162,10 +160,10 @@ private fun MuscleRecoveryCard(recovery: RecoverySnapshot, units: UnitSystem) {
     }
 }
 
-private fun readinessTint(readiness: Double) = when {
-    readiness >= 66 -> Positive
-    readiness >= 33 -> Warning
-    else -> Danger
+private fun readinessTint(readiness: Double, colors: EmberColors) = when {
+    readiness >= 66 -> colors.success
+    readiness >= 33 -> colors.warning
+    else -> colors.danger
 }
 
 @Composable
@@ -178,14 +176,14 @@ private fun ExerciseRow(summary: ExerciseProgressSummary, units: UnitSystem, onC
         Column(Modifier.weight(1f)) {
             Text(summary.name, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, maxLines = 1)
             Row(verticalAlignment = Alignment.Bottom) {
-                Text("Est 1RM ", style = MaterialTheme.typography.labelSmall, color = TextMid)
+                Text("Est 1RM ", style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
                 Text(Format.weightWithUnit(summary.bestE1rmKg, units), style = Numbers.copy(fontSize = 14.sp), color = MaterialTheme.colorScheme.onBackground)
                 if (summary.deltaKg != 0.0) {
                     val up = summary.deltaKg > 0
                     Text(
                         "  ${if (up) "▲" else "▼"} ${Format.weight(kotlin.math.abs(summary.deltaKg), units)}",
                         style = MaterialTheme.typography.labelSmall,
-                        color = if (up) Positive else MaterialTheme.colorScheme.error,
+                        color = if (up) EmberTheme.colors.success else MaterialTheme.colorScheme.error,
                     )
                 }
             }

@@ -53,7 +53,7 @@ import com.lukr99.workout.ui.components.PrBanner
 import com.lukr99.workout.ui.components.RestTimerBar
 import com.lukr99.workout.ui.components.MusicMiniControls
 import com.lukr99.workout.ui.components.WorkoutNoteRow
-import com.lukr99.workout.ui.theme.TextMid
+import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
  * The live logging loop — start/resume → add exercises → log sets → rest → finish/discard. The
@@ -147,7 +147,7 @@ fun LiveWorkoutScreen(
                     Text(
                         "Volume ${Format.volume(vm.estimatedVolumeKg(), units)} ${Format.unitLabel(units)}",
                         style = MaterialTheme.typography.labelSmall,
-                        color = TextMid,
+                        color = EmberTheme.colors.textSecondary,
                     )
                 }
                 MusicMiniControls()
@@ -236,7 +236,7 @@ fun LiveWorkoutScreen(
                     item {
                         Text(
                             "No exercises yet — add one to start logging.",
-                            style = MaterialTheme.typography.bodyLarge, color = TextMid,
+                            style = MaterialTheme.typography.bodyLarge, color = EmberTheme.colors.textSecondary,
                             modifier = Modifier.padding(top = 8.dp),
                         )
                     }
@@ -412,7 +412,7 @@ private fun SupersetEditorSheet(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text("Edit superset", style = MaterialTheme.typography.titleLarge)
-            Text("Exercises stay together and are performed as one round.", color = TextMid)
+            Text("Exercises stay together and are performed as one round.", color = EmberTheme.colors.textSecondary)
             members.forEachIndexed { index, entry ->
                 Row(
                     Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))

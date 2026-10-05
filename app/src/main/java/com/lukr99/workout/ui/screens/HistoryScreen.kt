@@ -32,8 +32,8 @@ import com.lukr99.workout.ui.HistoryViewModel
 import com.lukr99.workout.ui.components.EmptyHint
 import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.ScreenHeader
+import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
-import com.lukr99.workout.ui.theme.TextMid
 
 /** Past-session list, searchable, drilling into [WorkoutDetailScreen]. */
 @Composable
@@ -57,13 +57,13 @@ fun HistoryScreen(
                     .background(MaterialTheme.colorScheme.surfaceVariant).padding(horizontal = 12.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(Icons.Rounded.Search, null, tint = TextMid, modifier = Modifier.size(18.dp))
+                Icon(Icons.Rounded.Search, null, tint = EmberTheme.colors.textSecondary, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.size(8.dp))
                 BasicTextField(
                     value = search, onValueChange = vm::setSearch, singleLine = true, modifier = Modifier.weight(1f),
                     textStyle = MaterialTheme.typography.bodyLarge.merge(TextStyle(color = MaterialTheme.colorScheme.onBackground)),
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
-                    decorationBox = { inner -> if (search.isEmpty()) Text("Search workouts…", color = TextMid, style = MaterialTheme.typography.bodyLarge); inner() },
+                    decorationBox = { inner -> if (search.isEmpty()) Text("Search workouts…", color = EmberTheme.colors.textSecondary, style = MaterialTheme.typography.bodyLarge); inner() },
                 )
             }
         }
@@ -86,7 +86,7 @@ private fun HistoryRow(summary: WorkoutSessionSummary, units: UnitSystem, onClic
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(summary.name, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.weight(1f))
-            Text(Format.date(summary.completedDateUtc ?: summary.startedAtUtc), style = MaterialTheme.typography.labelSmall, color = TextMid)
+            Text(Format.date(summary.completedDateUtc ?: summary.startedAtUtc), style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             Metric(summary.exerciseCount.toString(), "exercises")
@@ -95,7 +95,7 @@ private fun HistoryRow(summary: WorkoutSessionSummary, units: UnitSystem, onClic
             if (summary.cardioMinutes > 0) Metric(summary.cardioMinutes.toString(), "cardio min")
         }
         if (summary.bodyPartsSummary.isNotBlank()) {
-            Text(summary.bodyPartsSummary, style = MaterialTheme.typography.labelSmall, color = TextMid)
+            Text(summary.bodyPartsSummary, style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
         }
     }
 }
@@ -104,6 +104,6 @@ private fun HistoryRow(summary: WorkoutSessionSummary, units: UnitSystem, onClic
 private fun Metric(value: String, label: String) {
     Row(verticalAlignment = Alignment.Bottom) {
         Text(value, style = Numbers, color = MaterialTheme.colorScheme.onBackground)
-        Text(" $label", style = MaterialTheme.typography.labelSmall, color = TextMid)
+        Text(" $label", style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
     }
 }

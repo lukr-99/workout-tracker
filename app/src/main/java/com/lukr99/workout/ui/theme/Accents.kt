@@ -7,7 +7,7 @@ import androidx.compose.ui.graphics.Color
  * See 02-design-system.md.
  */
 object Accents {
-    val StrengthVolume = Ember
+    val StrengthVolume = Color(0xFFF97316)
     val Cardio = Color(0xFF22D3EE)  // teal
     val E1rm = Color(0xFFA78BFA)    // violet
     val Reps = Color(0xFF34D399)    // green

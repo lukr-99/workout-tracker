@@ -58,7 +58,7 @@ import com.lukr99.workout.ui.components.SetRow
 import com.lukr99.workout.ui.components.Tag
 import com.lukr99.workout.ui.stats
 import com.lukr99.workout.ui.statsSummary
-import com.lukr99.workout.ui.theme.TextMid
+import com.lukr99.workout.ui.theme.EmberTheme
 
 /** One exercise in the live workout: header, notes, sets (or cardio) and its start/finish action. */
 @Composable
@@ -150,7 +150,7 @@ fun LiveEntryCard(
                     Text(
                         "Best set ${best.reps} × ${Format.weightWithUnit(best.weightKg, entryUnits)}",
                         style = MaterialTheme.typography.labelMedium,
-                        color = TextMid,
+                        color = EmberTheme.colors.textSecondary,
                     )
                 }
             } else if (entry.isStrength) {
@@ -243,7 +243,7 @@ private fun EntryHeader(
                     else -> "Not started"
                 },
                 style = MaterialTheme.typography.labelSmall,
-                color = if (entry.completedAtUtc != null) MaterialTheme.colorScheme.primary else TextMid,
+                color = if (entry.completedAtUtc != null) MaterialTheme.colorScheme.primary else EmberTheme.colors.textSecondary,
             )
         }
         if (entry.isStrength) {
@@ -256,13 +256,13 @@ private fun EntryHeader(
                 Icon(
                     if (collapsed) Icons.Rounded.ExpandMore else Icons.Rounded.ExpandLess,
                     if (collapsed) "Expand finished exercise" else "Collapse finished exercise",
-                    tint = TextMid,
+                    tint = EmberTheme.colors.textSecondary,
                 )
             }
         }
         if (hasGuide) {
             IconButton(onClick = actions.onShowGuide) {
-                Icon(Icons.Rounded.Info, "How to do ${entry.exerciseSnapshotName}", tint = TextMid)
+                Icon(Icons.Rounded.Info, "How to do ${entry.exerciseSnapshotName}", tint = EmberTheme.colors.textSecondary)
             }
         }
         EntryMenu(
@@ -284,7 +284,7 @@ private fun EntryMenu(
     var open by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { open = true }) {
-            Icon(Icons.Rounded.MoreVert, "More actions for this exercise", tint = TextMid)
+            Icon(Icons.Rounded.MoreVert, "More actions for this exercise", tint = EmberTheme.colors.textSecondary)
         }
         // Each item closes the menu before acting, so a removed card never keeps an open menu.
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {

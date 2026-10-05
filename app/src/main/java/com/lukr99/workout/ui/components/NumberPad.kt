@@ -36,8 +36,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
-import com.lukr99.workout.ui.theme.TextMid
 
 /**
  * The big, mobile-first numeric editor (Phase 4 user feedback: the −/+ steppers were poor touch
@@ -91,7 +91,7 @@ fun NumberPadSheet(
             Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text(title, style = MaterialTheme.typography.labelMedium, color = TextMid)
+            Text(title, style = MaterialTheme.typography.labelMedium, color = EmberTheme.colors.textSecondary)
 
             // Live value readout
             Row(
@@ -109,7 +109,7 @@ fun NumberPadSheet(
                     Text(
                         unitLabel,
                         style = Numbers.copy(fontSize = 18.sp),
-                        color = TextMid,
+                        color = EmberTheme.colors.textSecondary,
                         modifier = Modifier.padding(bottom = 8.dp),
                     )
                 }
@@ -184,7 +184,7 @@ private fun KeyButton(label: String, modifier: Modifier = Modifier, onClick: () 
             Icon(
                 Icons.AutoMirrored.Rounded.Backspace,
                 "delete",
-                tint = TextMid,
+                tint = EmberTheme.colors.textSecondary,
                 modifier = Modifier.padding(2.dp),
             )
         } else {

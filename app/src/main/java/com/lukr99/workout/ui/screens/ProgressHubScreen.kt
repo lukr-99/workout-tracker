@@ -27,7 +27,7 @@ import com.lukr99.workout.ui.HistoryViewModel
 import com.lukr99.workout.ui.ProgressViewModel
 import com.lukr99.workout.ui.run.RunViewModel
 import com.lukr99.workout.ui.run.RunningProgressSection
-import com.lukr99.workout.ui.theme.TextMid
+import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
  * The "look back" hub (Run Mode shell change): strength **Progress**, the new **Running** analytics,
@@ -87,7 +87,7 @@ private fun Segment(label: String, selected: Boolean, modifier: Modifier, onClic
             label,
             style = MaterialTheme.typography.labelLarge,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-            color = if (selected) MaterialTheme.colorScheme.onBackground else TextMid,
+            color = if (selected) MaterialTheme.colorScheme.onBackground else EmberTheme.colors.textSecondary,
             textAlign = TextAlign.Center,
         )
     }

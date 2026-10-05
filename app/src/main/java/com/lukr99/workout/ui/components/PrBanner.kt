@@ -25,9 +25,8 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
-import com.lukr99.workout.ui.theme.Positive
-import com.lukr99.workout.ui.theme.TextMid
 
 /**
  * The live PR celebration (Phase 4 motion item): a `positive`-glowing card whose estimated-1RM value
@@ -51,16 +50,16 @@ fun PrBanner(
             // Opaque surface first, then a positive wash — the old 16%-alpha-only fill was nearly
             // invisible over the app background.
             .background(MaterialTheme.colorScheme.surface)
-            .background(Positive.copy(alpha = 0.18f))
-            .border(1.5.dp, Positive.copy(alpha = 0.75f), RoundedCornerShape(16.dp))
+            .background(EmberTheme.colors.success.copy(alpha = 0.18f))
+            .border(1.5.dp, EmberTheme.colors.success.copy(alpha = 0.75f), RoundedCornerShape(16.dp))
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Icon(Icons.Rounded.EmojiEvents, null, tint = Positive, modifier = Modifier.size(28.dp))
+        Icon(Icons.Rounded.EmojiEvents, null, tint = EmberTheme.colors.success, modifier = Modifier.size(28.dp))
         Column(Modifier.weight(1f)) {
-            Text(headline, style = MaterialTheme.typography.titleMedium, color = Positive, fontWeight = FontWeight.Bold)
-            Text(exerciseName, style = MaterialTheme.typography.labelMedium, color = TextMid)
+            Text(headline, style = MaterialTheme.typography.titleMedium, color = EmberTheme.colors.success, fontWeight = FontWeight.Bold)
+            Text(exerciseName, style = MaterialTheme.typography.labelMedium, color = EmberTheme.colors.textSecondary)
         }
         Row(verticalAlignment = Alignment.Bottom) {
             Text(
@@ -71,7 +70,7 @@ fun PrBanner(
             Text(
                 " $unitLabel e1RM",
                 style = MaterialTheme.typography.labelSmall,
-                color = TextMid,
+                color = EmberTheme.colors.textSecondary,
                 modifier = Modifier.padding(bottom = 3.dp),
             )
         }

@@ -19,10 +19,8 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.dp
 import com.lukr99.workout.domain.recovery.RecoverySnapshot
-import com.lukr99.workout.ui.theme.Danger
-import com.lukr99.workout.ui.theme.Positive
-import com.lukr99.workout.ui.theme.TextMid
-import com.lukr99.workout.ui.theme.Warning
+import com.lukr99.workout.ui.theme.EmberColors
+import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
  * The deferred Phase 2 component, built in Phase 4: a stylised front/back muscle map whose regions
@@ -32,9 +30,10 @@ import com.lukr99.workout.ui.theme.Warning
 @Composable
 fun BodyHeatmap(recovery: RecoverySnapshot, modifier: Modifier = Modifier) {
     val base = MaterialTheme.colorScheme.surfaceVariant
+    val colors = EmberTheme.colors
     val resolve: (List<String>) -> Color = { names ->
         val vals = names.mapNotNull { recovery.forBodyPart(it)?.readiness }
-        readinessColor(if (vals.isEmpty()) null else vals.average(), base)
+        readinessColor(if (vals.isEmpty()) null else vals.average(), base, colors)
     }
 
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -49,7 +48,7 @@ private fun FigureColumn(label: String, modifier: Modifier, draw: DrawScope.() -
         Canvas(
             Modifier.fillMaxWidth().aspectRatio(0.52f),
         ) { draw() }
-        Text(label, style = MaterialTheme.typography.labelSmall, color = TextMid)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
     }
 }
 
@@ -133,10 +132,10 @@ private fun DrawScope.drawBack(colorOf: (List<String>) -> Color, base: Color) {
 }
 
 /** Readiness → tint: 100 green, ~50 amber, 0 red; null (untrained) → neutral base. */
-private fun readinessColor(readiness: Double?, base: Color): Color {
+private fun readinessColor(readiness: Double?, base: Color, colors: EmberColors): Color {
     if (readiness == null) return base
     val f = (readiness / 100.0).coerceIn(0.0, 1.0).toFloat()
-    val hue = if (f < 0.5f) lerp(Danger, Warning, f * 2f) else lerp(Warning, Positive, (f - 0.5f) * 2f)
+    val hue = if (f < 0.5f) lerp(colors.danger, colors.warning, f * 2f) else lerp(colors.warning, colors.success, (f - 0.5f) * 2f)
     // Blend toward the base a touch so it sits in the dark surface rather than glowing raw.
     return lerp(base, hue, 0.82f)
 }

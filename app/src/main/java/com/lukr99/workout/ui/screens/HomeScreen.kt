@@ -39,8 +39,8 @@ import com.lukr99.workout.ui.components.EmptyHint
 import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.ScreenHeader
 import com.lukr99.workout.ui.components.StatTile
+import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
-import com.lukr99.workout.ui.theme.TextMid
 
 /** Home dashboard — resume card, quick-start templates, KPIs, recent sessions, Library entry. */
 @Composable
@@ -133,7 +133,7 @@ private fun ResumeCard(session: WorkoutSession, onResume: () -> Unit) {
             Text(session.name, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
             Text(
                 "${session.entries.size} exercises · started ${Format.relativeDay(session.startedAtUtc)}",
-                style = MaterialTheme.typography.labelSmall, color = TextMid,
+                style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary,
             )
         }
         Icon(
@@ -187,9 +187,9 @@ private fun QuickStart(
                 ) {
                     Column(Modifier.weight(1f)) {
                         Text(template.name, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Medium)
-                        Text("${template.exercises.size} exercises", style = MaterialTheme.typography.labelSmall, color = TextMid)
+                        Text("${template.exercises.size} exercises", style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
                     }
-                    Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = TextMid)
+                    Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = EmberTheme.colors.textSecondary)
                 }
             }
         }
@@ -207,7 +207,7 @@ private fun RecentRow(summary: WorkoutSessionSummary, units: UnitSystem, onClick
             Text(summary.name, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
             Text(
                 "${Format.relativeDay(summary.completedDateUtc ?: summary.startedAtUtc)} · ${summary.sessionTypeLabel} · ${summary.exerciseCount} exercises",
-                style = MaterialTheme.typography.labelSmall, color = TextMid,
+                style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary,
             )
         }
         Column(horizontalAlignment = Alignment.End) {
@@ -215,7 +215,7 @@ private fun RecentRow(summary: WorkoutSessionSummary, units: UnitSystem, onClick
                 Format.volume(summary.totalVolumeKg, units),
                 style = Numbers.copy(fontSize = 16.sp), color = MaterialTheme.colorScheme.onBackground,
             )
-            Text(Format.unitLabel(units), style = MaterialTheme.typography.labelSmall, color = TextMid)
+            Text(Format.unitLabel(units), style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
         }
     }
 }

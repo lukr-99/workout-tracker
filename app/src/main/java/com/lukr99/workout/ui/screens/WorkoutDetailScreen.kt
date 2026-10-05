@@ -63,8 +63,8 @@ import com.lukr99.workout.ui.components.SetColumnHeader
 import com.lukr99.workout.ui.components.SetTagChips
 import com.lukr99.workout.ui.components.Tag
 import com.lukr99.workout.ui.components.ValueCell
+import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
-import com.lukr99.workout.ui.theme.TextMid
 import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.asImageBitmap
 
@@ -101,7 +101,7 @@ fun WorkoutDetailScreen(
     val session = draft
     if (session == null) {
         Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-            Text("Loading…", color = TextMid)
+            Text("Loading…", color = EmberTheme.colors.textSecondary)
         }
         return
     }
@@ -126,7 +126,7 @@ fun WorkoutDetailScreen(
                     textStyle = MaterialTheme.typography.titleLarge.merge(TextStyle(color = MaterialTheme.colorScheme.onBackground)),
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
                 )
-                Text(Format.fullDate(session.completedDateUtc ?: session.startedAtUtc), style = MaterialTheme.typography.labelSmall, color = TextMid)
+                Text(Format.fullDate(session.completedDateUtc ?: session.startedAtUtc), style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
             }
             IconButton(onClick = {
                 scope.launch {
@@ -172,7 +172,7 @@ fun WorkoutDetailScreen(
                             Text(
                                 entry.statsSummary(entryUnits, includeUnperformed = true),
                                 style = MaterialTheme.typography.labelSmall,
-                                color = TextMid,
+                                color = EmberTheme.colors.textSecondary,
                             )
                         }
                         if (entry.isStrength) {
@@ -195,12 +195,12 @@ fun WorkoutDetailScreen(
                             Icon(
                                 Icons.AutoMirrored.Rounded.NoteAdd,
                                 if (entry.notes.isBlank()) "Add note" else "Edit note",
-                                tint = TextMid,
+                                tint = EmberTheme.colors.textSecondary,
                                 modifier = Modifier.size(18.dp),
                             )
                         }
                         IconButton(onClick = { draft = session.copy(entries = session.entries.filterNot { it.id == entry.id }) }) {
-                            Icon(Icons.Rounded.Delete, "Remove exercise", tint = TextMid, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Rounded.Delete, "Remove exercise", tint = EmberTheme.colors.textSecondary, modifier = Modifier.size(18.dp))
                         }
                     }
                     ExerciseNotesPanel(
@@ -307,7 +307,7 @@ fun WorkoutDetailScreen(
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 Text("Share preview", style = MaterialTheme.typography.titleLarge)
-                Text("This exact image will be shared.", color = TextMid)
+                Text("This exact image will be shared.", color = EmberTheme.colors.textSecondary)
                 Image(
                     bitmap = preview.bitmap.asImageBitmap(),
                     contentDescription = "Workout share image preview",
@@ -380,7 +380,7 @@ private fun EditSetRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Box(Modifier.size(32.dp), contentAlignment = Alignment.Center) {
-            Text("${index + 1}", style = Numbers, color = TextMid)
+            Text("${index + 1}", style = Numbers, color = EmberTheme.colors.textSecondary)
         }
         Row(
             Modifier.weight(1f),
@@ -388,7 +388,7 @@ private fun EditSetRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             ValueCell(display = set.reps.toString(), modifier = Modifier.weight(1f)) { editingWeight = false }
-            Text("×", color = TextMid)
+            Text("×", color = EmberTheme.colors.textSecondary)
             ValueCell(
                 display = Format.weight(set.weightKg, units),
                 modifier = Modifier.weight(1.25f),
@@ -398,12 +398,12 @@ private fun EditSetRow(
             Icon(
                 Icons.AutoMirrored.Rounded.NoteAdd,
                 if (set.notes.isBlank()) "Add note to set ${index + 1}" else "Edit note on set ${index + 1}",
-                tint = if (set.notes.isBlank()) TextMid else MaterialTheme.colorScheme.primary,
+                tint = if (set.notes.isBlank()) EmberTheme.colors.textSecondary else MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(16.dp),
             )
         }
         IconButton(onClick = onRemove, modifier = Modifier.size(38.dp)) {
-            Icon(Icons.Rounded.Delete, "Remove set", tint = TextMid, modifier = Modifier.size(16.dp))
+            Icon(Icons.Rounded.Delete, "Remove set", tint = EmberTheme.colors.textSecondary, modifier = Modifier.size(16.dp))
         }
     }
     SetTagChips(set, Modifier.fillMaxWidth().padding(start = 48.dp, top = 3.dp))

@@ -49,8 +49,8 @@ import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.components.EmptyHint
 import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.ScreenHeader
+import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
-import com.lukr99.workout.ui.theme.TextMid
 
 /**
  * Run Mode hub — the tab that replaces History's old slot. Recent runs + saved routes + a prominent
@@ -225,17 +225,17 @@ private fun RouteRow(
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )
-            Text("Tap to run this route", style = MaterialTheme.typography.labelSmall, color = TextMid)
+            Text("Tap to run this route", style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
         }
         Text(
             Format.distance(route.distanceMeters, units),
             style = MaterialTheme.typography.labelLarge,
-            color = TextMid,
+            color = EmberTheme.colors.textSecondary,
         )
         Box {
             Icon(
                 Icons.Rounded.MoreVert, "Route options",
-                tint = TextMid,
+                tint = EmberTheme.colors.textSecondary,
                 modifier = Modifier.padding(start = 8.dp).size(22.dp)
                     .clip(RoundedCornerShape(11.dp)).clickable { menu = true },
             )
@@ -285,7 +285,7 @@ private fun RunRow(run: Run, units: UnitSystem, onClick: () -> Unit) {
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.weight(1f),
             )
-            Text(Format.date(run.startedAtUtc), style = MaterialTheme.typography.labelSmall, color = TextMid)
+            Text(Format.date(run.startedAtUtc), style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             Metric(Format.distance(run.distanceMeters, units), "distance")
@@ -306,7 +306,7 @@ private fun Metric(value: String, label: String) {
         Row(verticalAlignment = Alignment.Bottom) {
             Text(value, style = Numbers, color = MaterialTheme.colorScheme.onBackground)
             Spacer(Modifier.size(4.dp))
-            Text(label, style = MaterialTheme.typography.labelSmall, color = TextMid)
+            Text(label, style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
         }
     }
 }

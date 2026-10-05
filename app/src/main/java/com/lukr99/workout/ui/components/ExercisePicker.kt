@@ -37,8 +37,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
+import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
-import com.lukr99.workout.ui.theme.TextMid
 import kotlinx.coroutines.delay
 
 /**
@@ -99,7 +99,7 @@ fun ExercisePicker(
                 .background(MaterialTheme.colorScheme.surfaceVariant).padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(Icons.Rounded.Search, null, tint = TextMid, modifier = Modifier.size(18.dp))
+            Icon(Icons.Rounded.Search, null, tint = EmberTheme.colors.textSecondary, modifier = Modifier.size(18.dp))
             Spacer(Modifier.size(8.dp))
             BasicTextField(
                 value = query,
@@ -111,7 +111,7 @@ fun ExercisePicker(
                 ),
                 cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
                 decorationBox = { inner ->
-                    if (query.isEmpty()) Text("Search…", color = TextMid, style = MaterialTheme.typography.bodyLarge)
+                    if (query.isEmpty()) Text("Search…", color = EmberTheme.colors.textSecondary, style = MaterialTheme.typography.bodyLarge)
                     inner()
                 },
             )
@@ -167,7 +167,7 @@ fun ExercisePicker(
                         Text(
                             if (query.isBlank()) "No exercises match these filters."
                             else "No results for “${query.trim()}”.",
-                            color = TextMid,
+                            color = EmberTheme.colors.textSecondary,
                         )
                         if (onCreate != null) {
                             TextButton(onClick = { onCreate(query.trim()) }) {
@@ -189,12 +189,12 @@ fun ExercisePicker(
                     Spacer(Modifier.size(10.dp))
                     Column(Modifier.weight(1f)) {
                         Text(ex.name, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onBackground)
-                        Text(ex.bodyPartsSummary, style = MaterialTheme.typography.labelSmall, color = TextMid)
+                        Text(ex.bodyPartsSummary, style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
                         if (ex.notes.isNotBlank()) {
                             NoteLine(Icons.Rounded.PushPin, label = null, text = ex.notes, description = "Exercise note", maxLines = 1)
                         }
                     }
-                    Text(ex.category.name, style = Numbers.copy(fontSize = 11.sp), color = TextMid)
+                    Text(ex.category.name, style = Numbers.copy(fontSize = 11.sp), color = EmberTheme.colors.textSecondary)
                 }
             }
         }

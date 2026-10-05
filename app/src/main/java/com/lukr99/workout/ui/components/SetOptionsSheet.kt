@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.lukr99.workout.domain.SetTag
 import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.effectiveTags
-import com.lukr99.workout.ui.theme.TextMid
+import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
  * Per-set options (Phase 4): set type chips plus inline RIR / RPE editing (previously only set type
@@ -61,26 +61,26 @@ fun SetOptionsSheet(
         ) {
             Text("Set options", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
 
-            Text("Tags · choose any that apply", style = MaterialTheme.typography.labelMedium, color = TextMid)
+            Text("Tags · choose any that apply", style = MaterialTheme.typography.labelMedium, color = EmberTheme.colors.textSecondary)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(SetTag.entries) { tag ->
                     FilterChip(tag.label, tag in set.effectiveTags, onClick = { onToggleTag(tag) })
                 }
             }
 
-            Text("Effort", style = MaterialTheme.typography.labelMedium, color = TextMid)
+            Text("Effort", style = MaterialTheme.typography.labelMedium, color = EmberTheme.colors.textSecondary)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("RIR", style = MaterialTheme.typography.labelSmall, color = TextMid)
+                    Text("RIR", style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
                     ValueCell(display = set.rir?.let { trim(it) } ?: "–", modifier = Modifier.fillMaxWidth()) { editingRpe = false }
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("RPE", style = MaterialTheme.typography.labelSmall, color = TextMid)
+                    Text("RPE", style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
                     ValueCell(display = set.rpe?.let { trim(it) } ?: "–", modifier = Modifier.fillMaxWidth()) { editingRpe = true }
                 }
             }
 
-            Text("Note", style = MaterialTheme.typography.labelMedium, color = TextMid)
+            Text("Note", style = MaterialTheme.typography.labelMedium, color = EmberTheme.colors.textSecondary)
             NoteLine(
                 if (set.notes.isBlank()) Icons.AutoMirrored.Rounded.NoteAdd else Icons.AutoMirrored.Rounded.Notes,
                 label = null,
