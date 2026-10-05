@@ -6,6 +6,14 @@ import androidx.room.testing.MigrationTestHelper
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.lukr99.workout.data.migrations.WorkoutMigrations
+import com.lukr99.workout.data.migrations.Migration0002SessionSource
+import com.lukr99.workout.data.migrations.Migration0003ExerciseImageUrl
+import com.lukr99.workout.data.migrations.Migration0004ExercisePhotoPath
+import com.lukr99.workout.data.migrations.Migration0005RunTables
+import com.lukr99.workout.data.migrations.Migration0006RunSegmentBreaks
+import com.lukr99.workout.data.migrations.Migration0007LiveLoggingMetadata
+import com.lukr99.workout.data.migrations.Migration0008ExerciseGuides
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -54,15 +62,7 @@ class WorkoutMigrationTest {
             ApplicationProvider.getApplicationContext(),
             WorkoutDb::class.java,
             DatabaseName,
-        ).addMigrations(
-            WorkoutDb.MIGRATION_1_2,
-            WorkoutDb.MIGRATION_2_3,
-            WorkoutDb.MIGRATION_3_4,
-            WorkoutDb.MIGRATION_4_5,
-            WorkoutDb.MIGRATION_5_6,
-            WorkoutDb.MIGRATION_6_7,
-            WorkoutDb.MIGRATION_7_8,
-        )
+        ).addMigrations(*WorkoutMigrations.ALL)
             .allowMainThreadQueries()
             .build()
         try {
@@ -117,13 +117,7 @@ class WorkoutMigrationTest {
             ApplicationProvider.getApplicationContext(),
             WorkoutDb::class.java,
             DatabaseName,
-        ).addMigrations(
-            WorkoutDb.MIGRATION_3_4,
-            WorkoutDb.MIGRATION_4_5,
-            WorkoutDb.MIGRATION_5_6,
-            WorkoutDb.MIGRATION_6_7,
-            WorkoutDb.MIGRATION_7_8,
-        )
+        ).addMigrations(*WorkoutMigrations.ALL)
             .allowMainThreadQueries()
             .build()
         try {
@@ -167,21 +161,13 @@ class WorkoutMigrationTest {
         }
 
         // Validate the migrated schema against the checked-in 5.json (schema identity).
-        helper.runMigrationsAndValidate(DatabaseName, 5, true, WorkoutDb.MIGRATION_4_5)
+        helper.runMigrationsAndValidate(DatabaseName, 5, true, Migration0005RunTables)
 
         val database = Room.databaseBuilder(
             ApplicationProvider.getApplicationContext(),
             WorkoutDb::class.java,
             DatabaseName,
-        ).addMigrations(
-            WorkoutDb.MIGRATION_1_2,
-            WorkoutDb.MIGRATION_2_3,
-            WorkoutDb.MIGRATION_3_4,
-            WorkoutDb.MIGRATION_4_5,
-            WorkoutDb.MIGRATION_5_6,
-            WorkoutDb.MIGRATION_6_7,
-            WorkoutDb.MIGRATION_7_8,
-        )
+        ).addMigrations(*WorkoutMigrations.ALL)
             .allowMainThreadQueries()
             .build()
         try {
@@ -243,21 +229,13 @@ class WorkoutMigrationTest {
         }
 
         // Validate the migrated schema against the checked-in 6.json (schema identity).
-        helper.runMigrationsAndValidate(DatabaseName, 6, true, WorkoutDb.MIGRATION_5_6)
+        helper.runMigrationsAndValidate(DatabaseName, 6, true, Migration0006RunSegmentBreaks)
 
         val database = Room.databaseBuilder(
             ApplicationProvider.getApplicationContext(),
             WorkoutDb::class.java,
             DatabaseName,
-        ).addMigrations(
-            WorkoutDb.MIGRATION_1_2,
-            WorkoutDb.MIGRATION_2_3,
-            WorkoutDb.MIGRATION_3_4,
-            WorkoutDb.MIGRATION_4_5,
-            WorkoutDb.MIGRATION_5_6,
-            WorkoutDb.MIGRATION_6_7,
-            WorkoutDb.MIGRATION_7_8,
-        )
+        ).addMigrations(*WorkoutMigrations.ALL)
             .allowMainThreadQueries()
             .build()
         try {
@@ -314,13 +292,13 @@ class WorkoutMigrationTest {
             close()
         }
 
-        helper.runMigrationsAndValidate(DatabaseName, 7, true, WorkoutDb.MIGRATION_6_7)
+        helper.runMigrationsAndValidate(DatabaseName, 7, true, Migration0007LiveLoggingMetadata)
 
         val database = Room.databaseBuilder(
             ApplicationProvider.getApplicationContext(),
             WorkoutDb::class.java,
             DatabaseName,
-        ).addMigrations(WorkoutDb.MIGRATION_6_7, WorkoutDb.MIGRATION_7_8)
+        ).addMigrations(*WorkoutMigrations.ALL)
             .allowMainThreadQueries()
             .build()
         try {
@@ -360,7 +338,7 @@ class WorkoutMigrationTest {
             close()
         }
 
-        helper.runMigrationsAndValidate(DatabaseName, 8, true, WorkoutDb.MIGRATION_7_8).use { db ->
+        helper.runMigrationsAndValidate(DatabaseName, 8, true, Migration0008ExerciseGuides).use { db ->
             db.query(
                 "SELECT notes, secondaryBodyPartsJson, instructions, videoUrl FROM exercises WHERE id = 'ex8'",
             ).use { cursor ->
@@ -369,6 +347,84 @@ class WorkoutMigrationTest {
                 assertEquals("[\"Biceps\"]", cursor.getString(1))
                 assertEquals("", cursor.getString(2))
                 assertEquals(true, cursor.isNull(3))
+            }
+        }
+    }
+
+    @Test
+    fun migratesSchemaOneToTwoAddingSessionSource() {
+        helper.createDatabase(DatabaseName, 1).apply {
+            execSQL(
+                """
+                INSERT INTO sessions (
+                    id, templateId, name, status, startedAtUtc, endedAtUtc, completedDateUtc,
+                    durationSeconds, notes, perceivedEffort, bodyweightKg
+                ) VALUES ('s1', NULL, 'Push', 1, 1000, 2000, 2000, 1, 'kept', 8, 82.5)
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(DatabaseName, 2, true, Migration0002SessionSource).use { db ->
+            db.query("SELECT name, notes, perceivedEffort, source, externalKey FROM sessions WHERE id = 's1'").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("Push", cursor.getString(0))
+                assertEquals("kept", cursor.getString(1))
+                assertEquals(8, cursor.getInt(2))
+                assertEquals(0, cursor.getInt(3))
+                assertEquals(true, cursor.isNull(4))
+            }
+        }
+    }
+
+    @Test
+    fun migratesSchemaTwoToThreeAddingExerciseImage() {
+        helper.createDatabase(DatabaseName, 2).apply {
+            execSQL(
+                """
+                INSERT INTO exercises (
+                    id, name, category, primaryBodyPart, secondaryBodyPartsJson,
+                    equipment, notes, source, externalSourceId, isArchived, defaultRestSeconds
+                ) VALUES ('ex2', 'Row', 0, 'Back', '["Biceps"]', 'Cable', 'Seat 4', 2, NULL, 1, 90)
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(DatabaseName, 3, true, Migration0003ExerciseImageUrl).use { db ->
+            db.query("SELECT name, notes, isArchived, imageUrl, imageAttribution FROM exercises WHERE id = 'ex2'").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("Row", cursor.getString(0))
+                assertEquals("Seat 4", cursor.getString(1))
+                assertEquals(1, cursor.getInt(2))
+                assertEquals(true, cursor.isNull(3))
+                assertEquals(true, cursor.isNull(4))
+            }
+        }
+    }
+
+    @Test
+    fun migratesSchemaThreeToFourAddingPhotoPath() {
+        helper.createDatabase(DatabaseName, 3).apply {
+            execSQL(
+                """
+                INSERT INTO exercises (
+                    id, name, category, primaryBodyPart, secondaryBodyPartsJson,
+                    equipment, notes, source, externalSourceId, isArchived, defaultRestSeconds,
+                    imageUrl, imageAttribution
+                ) VALUES ('ex3', 'Squat', 0, 'Legs', '[]', 'Barbell', '', 0, NULL, 0, NULL,
+                    'https://example.test/squat.jpg', 'Fixture')
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(DatabaseName, 4, true, Migration0004ExercisePhotoPath).use { db ->
+            db.query("SELECT imageUrl, imageAttribution, localImagePath FROM exercises WHERE id = 'ex3'").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("https://example.test/squat.jpg", cursor.getString(0))
+                assertEquals("Fixture", cursor.getString(1))
+                assertEquals(true, cursor.isNull(2))
             }
         }
     }
