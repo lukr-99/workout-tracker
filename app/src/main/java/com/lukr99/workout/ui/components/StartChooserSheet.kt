@@ -2,6 +2,10 @@ package com.lukr99.workout.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
+import com.lukr99.workout.ui.AppTags
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -54,8 +58,8 @@ fun StartChooserSheet(
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )
-            ChooserRow(Icons.Rounded.FitnessCenter, "Lift", "Log a strength workout", onLift)
-            ChooserRow(Icons.AutoMirrored.Rounded.DirectionsRun, "Run", "Track a run with GPS + map", onRun)
+            ChooserRow(Icons.Rounded.FitnessCenter, "Lift", "Log a strength workout", onLift, AppTags.START_LIFT)
+            ChooserRow(Icons.AutoMirrored.Rounded.DirectionsRun, "Run", "Track a run with GPS + map", onRun, AppTags.START_RUN)
         }
     }
 }
@@ -86,16 +90,19 @@ fun ResumeChooserSheet(
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )
-            ChooserRow(Icons.Rounded.FitnessCenter, "Lift", "Back to your live workout", onLift)
-            ChooserRow(Icons.AutoMirrored.Rounded.DirectionsRun, "Run", "Back to your live run", onRun)
+            ChooserRow(Icons.Rounded.FitnessCenter, "Lift", "Back to your live workout", onLift, AppTags.START_LIFT)
+            ChooserRow(Icons.AutoMirrored.Rounded.DirectionsRun, "Run", "Back to your live run", onRun, AppTags.START_RUN)
         }
     }
 }
 
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
-private fun ChooserRow(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
+private fun ChooserRow(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit, tag: String) {
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
+        // A bottom sheet is its own window, so it needs testTagsAsResourceId again for its tags.
+        Modifier.semantics { testTagsAsResourceId = true }.testTag(tag)
+            .fillMaxWidth().clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .clickable(onClick = onClick)
             .padding(16.dp),

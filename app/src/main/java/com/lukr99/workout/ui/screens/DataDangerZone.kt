@@ -16,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -55,6 +56,7 @@ fun DataDangerZone(
         OutlinedButton(
             onClick = { confirming = true },
             enabled = blocker == null && !working,
+            modifier = Modifier.testTag(DataTags.DELETE_ALL),
             border = BorderStroke(1.dp, if (blocker == null) danger else MaterialTheme.colorScheme.outline),
         ) { Text("Delete all data", color = if (blocker == null) danger else MaterialTheme.colorScheme.onSurfaceVariant) }
     }

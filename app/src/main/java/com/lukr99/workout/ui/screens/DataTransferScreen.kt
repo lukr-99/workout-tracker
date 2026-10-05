@@ -24,6 +24,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.lukr99.workout.data.transfer.ImportCommitResult
 import com.lukr99.workout.data.transfer.RestoreMode
@@ -72,14 +73,17 @@ fun DataTransferScreen(
                     importLauncher.launch(arrayOf("application/json", "text/csv", "text/*"))
                 },
                 enabled = !state.isWorking,
+                modifier = Modifier.testTag(DataTags.IMPORT),
             ) { Text("Import file") }
             OutlinedButton(
                 onClick = { jsonSaveLauncher.launch("workout-backup.json") },
                 enabled = !state.isWorking,
+                modifier = Modifier.testTag(DataTags.SAVE_JSON),
             ) { Text("Save JSON") }
             OutlinedButton(
                 onClick = { csvSaveLauncher.launch("workout-history.csv") },
                 enabled = !state.isWorking,
+                modifier = Modifier.testTag(DataTags.SAVE_CSV),
             ) { Text("Save CSV") }
         }
 
@@ -92,6 +96,7 @@ fun DataTransferScreen(
                     }
                 },
                 enabled = !state.isWorking,
+                modifier = Modifier.testTag(DataTags.SHARE_JSON),
             ) { Text("Share JSON") }
             OutlinedButton(
                 onClick = {
@@ -101,6 +106,7 @@ fun DataTransferScreen(
                     }
                 },
                 enabled = !state.isWorking,
+                modifier = Modifier.testTag(DataTags.SHARE_CSV),
             ) { Text("Share CSV") }
         }
 
