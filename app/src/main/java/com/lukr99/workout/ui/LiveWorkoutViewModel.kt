@@ -11,18 +11,27 @@ import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.ExerciseFilter
 import com.lukr99.workout.domain.PreviousEntryNote
-import com.lukr99.workout.domain.SetType
 import com.lukr99.workout.domain.SetTag
 import com.lukr99.workout.domain.StrengthSet
-import com.lukr99.workout.domain.WeightDisplayUnit
 import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutSessionStatus
 import com.lukr99.workout.domain.newId
+import com.lukr99.workout.domain.completedAt
+import com.lukr99.workout.domain.lastSetsFor
+import com.lukr99.workout.domain.setIdsMarkedDone
+import com.lukr99.workout.domain.withEntry
+import com.lukr99.workout.domain.withEntryFinished
+import com.lukr99.workout.domain.withEntryMoved
+import com.lukr99.workout.domain.withEntryStarted
+import com.lukr99.workout.domain.withSet
+import com.lukr99.workout.domain.withSetAdded
+import com.lukr99.workout.domain.withSetDone
+import com.lukr99.workout.domain.withTagToggled
+import com.lukr99.workout.domain.withWeightUnitToggled
 import com.lukr99.workout.domain.effectiveTags
 import com.lukr99.workout.domain.progression.DoubleProgression
 import com.lukr99.workout.domain.progression.SuggestionStatus
-import com.lukr99.workout.domain.records.RecordKind
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -35,7 +44,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -64,8 +72,8 @@ class LiveWorkoutViewModel(
     private val doneSetIdsState = MutableStateFlow<Set<String>>(emptySet())
     val doneSetIds: StateFlow<Set<String>> = doneSetIdsState.asStateFlow()
 
-    private val restState = MutableStateFlow(RestState())
-    val rest: StateFlow<RestState> = restState.asStateFlow()
+    private val restTimer = RestTimer(viewModelScope)
+    val rest: StateFlow<RestState> = restTimer.state
 
     /** Fires when a just-completed set beats a stored record; the screen renders the PR treatment. */
     private val prEventState = MutableStateFlow<PrEvent?>(null)
@@ -98,7 +106,6 @@ class LiveWorkoutViewModel(
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
-    private var restJob: Job? = null
     private val persistMutex = Mutex()
     private var persistJob: Job? = null
     private var finalizing = false
@@ -108,7 +115,7 @@ class LiveWorkoutViewModel(
         viewModelScope.launch {
             val session = repo.createWorkoutSession(templateId = templateId)
             draftState.value = session
-            doneSetIdsState.value = doneIdsFrom(session)
+            doneSetIdsState.value = session.setIdsMarkedDone
         }
     }
 
@@ -117,22 +124,13 @@ class LiveWorkoutViewModel(
         viewModelScope.launch {
             repo.getActiveSession()?.let {
                 draftState.value = it
-                doneSetIdsState.value = doneIdsFrom(it)
+                doneSetIdsState.value = it.setIdsMarkedDone
             }
         }
     }
 
-    /**
-     * Rebuild the done-set overlay from a persisted draft. Completion is stored as [StrengthSet
-     * .performedAtUtc], so a resumed session (after backgrounding or process death) shows the same
-     * checkmarks it had.
-     */
-    private fun doneIdsFrom(session: WorkoutSession?): Set<String> =
-        session?.entries.orEmpty()
-            .flatMap { it.strengthSets }
-            .filter { it.performedAtUtc != null }
-            .map { it.id }
-            .toSet()
+    // A resumed workout (after backgrounding or process death) shows the same checkmarks, because
+    // completion is stored on each set as performedAtUtc.
 
     /** Flush the working draft to the repository — called when the live screen is left/backgrounded. */
     fun flush() = persist()
@@ -145,16 +143,11 @@ class LiveWorkoutViewModel(
 
     fun setWorkoutNote(text: String) = mutate { it.copy(notes = text.trim()) }
 
-    fun setEntryNote(entryId: String, text: String) = mutate { session ->
-        session.copy(entries = session.entries.map { if (it.id == entryId) it.copy(notes = text.trim()) else it })
-    }
+    fun setEntryNote(entryId: String, text: String) =
+        mutate { it.withEntry(entryId) { entry -> entry.copy(notes = text.trim()) } }
 
-    fun setSetNote(entryId: String, setId: String, text: String) = mutate { session ->
-        session.copy(entries = session.entries.map { entry ->
-            if (entry.id != entryId) entry
-            else entry.copy(strengthSets = entry.strengthSets.map { if (it.id == setId) it.copy(notes = text.trim()) else it })
-        })
-    }
+    fun setSetNote(entryId: String, setId: String, text: String) =
+        mutate { it.withSet(entryId, setId) { set -> set.copy(notes = text.trim()) } }
 
     fun addExercise(exercise: Exercise) {
         viewModelScope.launch {
@@ -164,7 +157,7 @@ class LiveWorkoutViewModel(
                 when {
                     suggested != null -> base.copy(strengthSets = suggested)
                     else -> {
-                        val prefill = lastPerformance(exercise.id)
+                        val prefill = repo.getSessions().lastSetsFor(exercise.id)
                         if (prefill.isNotEmpty()) base.copy(strengthSets = prefill) else base
                     }
                 }
@@ -199,17 +192,8 @@ class LiveWorkoutViewModel(
     }
 
     fun moveEntry(entryId: String, up: Boolean) = mutate { session ->
-        val list = session.entries.toMutableList()
-        val i = list.indexOfFirst { it.id == entryId }
-        if (i < 0) return@mutate session
-        val j = if (up) i - 1 else i + 1
-        if (j !in list.indices) return@mutate session
-        list.add(j, list.removeAt(i))
-        session.copy(
-            entries = normalizeSupersetGroups(
-                list.mapIndexed { index, e -> e.copy(sortOrder = index) },
-            ),
-        )
+        val moved = session.withEntryMoved(entryId, up)
+        moved.copy(entries = normalizeSupersetGroups(moved.entries))
     }
 
     /** Join/ungroup this exercise with the previous consecutive entry. */
@@ -230,81 +214,27 @@ class LiveWorkoutViewModel(
     }
 
     fun toggleEntryWeightUnit(entryId: String, fallback: com.lukr99.workout.settings.UnitSystem) = mutate {
-        it.copy(entries = it.entries.map { entry ->
-            if (entry.id != entryId) entry else {
-                val currentlyPounds = when (entry.weightUnitOverride) {
-                    WeightDisplayUnit.Pounds -> true
-                    WeightDisplayUnit.Kilograms -> false
-                    null -> fallback == com.lukr99.workout.settings.UnitSystem.Imperial
-                }
-                entry.copy(
-                    weightUnitOverride = if (currentlyPounds) {
-                        WeightDisplayUnit.Kilograms
-                    } else {
-                        WeightDisplayUnit.Pounds
-                    },
-                )
-            }
-        })
+        it.withEntry(entryId) { entry ->
+            entry.withWeightUnitToggled(poundsByDefault = fallback == com.lukr99.workout.settings.UnitSystem.Imperial)
+        }
     }
 
-    fun startEntry(entryId: String) = mutate { session ->
-        val now = System.currentTimeMillis()
-        session.copy(entries = session.entries.map { entry ->
-            if (entry.id == entryId && entry.startedAtUtc == null) entry.copy(startedAtUtc = now) else entry
-        })
-    }
+    fun startEntry(entryId: String) = mutate { it.withEntryStarted(entryId, System.currentTimeMillis()) }
 
-    fun finishEntry(entryId: String) = mutate { session ->
-        val now = System.currentTimeMillis()
-        session.copy(entries = session.entries.map { entry ->
-            if (entry.id != entryId) entry else entry.copy(
-                startedAtUtc = entry.startedAtUtc
-                    ?: entry.strengthSets.mapNotNull(StrengthSet::performedAtUtc).minOrNull()
-                    ?: now,
-                completedAtUtc = now,
-            )
-        })
-    }
+    fun finishEntry(entryId: String) = mutate { it.withEntryFinished(entryId, System.currentTimeMillis()) }
 
-    fun reopenEntry(entryId: String) = mutate { session ->
-        session.copy(entries = session.entries.map { entry ->
-            if (entry.id == entryId) entry.copy(completedAtUtc = null) else entry
-        })
-    }
+    fun reopenEntry(entryId: String) = mutate { it.withEntry(entryId) { entry -> entry.copy(completedAtUtc = null) } }
 
-    fun addSet(entryId: String) = mutate { session ->
-        session.copy(entries = session.entries.map { entry ->
-            if (entry.id != entryId) return@map entry
-            val template = entry.strengthSets.lastOrNull()
-            val next = StrengthSet(
-                id = newId(),
-                workoutEntryId = entryId,
-                setNumber = entry.strengthSets.size + 1,
-                reps = template?.reps ?: 0,
-                weightKg = template?.weightKg ?: 0.0,
-                setType = SetType.Normal,
-            )
-            entry.copy(strengthSets = entry.strengthSets + next)
-        })
-    }
+    fun addSet(entryId: String) = mutate { it.withEntry(entryId, WorkoutEntry::withSetAdded) }
 
-    fun removeSet(entryId: String, setId: String) = mutate { session ->
-        session.copy(entries = session.entries.map { entry ->
-            if (entry.id != entryId) entry
-            else entry.copy(strengthSets = entry.strengthSets.filterNot { it.id == setId })
-        })
+    fun removeSet(entryId: String, setId: String) = mutate {
+        it.withEntry(entryId) { entry -> entry.copy(strengthSets = entry.strengthSets.filterNot { set -> set.id == setId }) }
     }
 
     // --- Set field edits (in-memory only; flushed on done/finish) -------------------------------
 
     fun updateSet(entryId: String, setId: String, transform: (StrengthSet) -> StrengthSet) =
-        mutate(persist = false) { session ->
-            session.copy(entries = session.entries.map { entry ->
-                if (entry.id != entryId) entry
-                else entry.copy(strengthSets = entry.strengthSets.map { if (it.id == setId) transform(it) else it })
-            })
-        }
+        mutate(persist = false) { it.withSet(entryId, setId, transform) }
 
     fun setReps(entryId: String, setId: String, reps: Int) =
         updateSet(entryId, setId) { it.copy(reps = reps.coerceAtLeast(0)) }
@@ -320,31 +250,15 @@ class LiveWorkoutViewModel(
 
     /** Edit a cardio entry's duration/distance/calories in the live draft (persisted on finish). */
     fun updateCardio(entryId: String, transform: (com.lukr99.workout.domain.CardioEntryData) -> com.lukr99.workout.domain.CardioEntryData) =
-        mutate(persist = false) { session ->
-            session.copy(entries = session.entries.map { entry ->
-                if (entry.id != entryId) entry
-                else entry.copy(cardioData = transform(entry.cardioData ?: com.lukr99.workout.domain.CardioEntryData(workoutEntryId = entry.id)))
-            })
+        mutate(persist = false) {
+            it.withEntry(entryId) { entry ->
+                entry.copy(cardioData = transform(entry.cardioData ?: com.lukr99.workout.domain.CardioEntryData(workoutEntryId = entry.id)))
+            }
         }
 
     /** Toggle one tag without disturbing the others; the legacy single type stays export-friendly. */
-    fun toggleSetTag(entryId: String, setId: String, tag: SetTag) = mutate {
-        it.copy(entries = it.entries.map { entry ->
-            if (entry.id != entryId) entry
-            else entry.copy(strengthSets = entry.strengthSets.map { set ->
-                if (set.id != setId) set else {
-                    val tags = set.effectiveTags.toMutableSet().apply {
-                        if (!add(tag)) remove(tag)
-                    }.toSet()
-                    set.copy(
-                        tags = tags,
-                        isWarmup = SetTag.Warmup in tags,
-                        setType = legacyType(tags),
-                    )
-                }
-            })
-        })
-    }
+    fun toggleSetTag(entryId: String, setId: String, tag: SetTag) =
+        mutate { it.withSet(entryId, setId) { set -> set.withTagToggled(tag) } }
 
     /** Mark/unmark a set done. Both directions persist the draft; marking done starts the rest timer. */
     fun toggleSetDone(entryId: String, setId: String) {
@@ -353,16 +267,7 @@ class LiveWorkoutViewModel(
         // Stamp completion onto the set itself so the checkmark (and the typed reps/weight) survive
         // leaving the screen or the OS reclaiming the process — doneSetIds alone is in-memory only.
         val stamp = if (currentlyDone) null else System.currentTimeMillis()
-        mutate(persist = false) { session ->
-            session.copy(entries = session.entries.map { entry ->
-                if (entry.id != entryId) entry else entry.copy(
-                    startedAtUtc = if (!currentlyDone) entry.startedAtUtc ?: stamp else entry.startedAtUtc,
-                    strengthSets = entry.strengthSets.map { set ->
-                        if (set.id == setId) set.copy(performedAtUtc = stamp) else set
-                    },
-                )
-            })
-        }
+        mutate(persist = false) { it.withSetDone(entryId, setId, stamp) }
         if (!currentlyDone) {
             val entry = draftState.value?.entries?.firstOrNull { it.id == entryId }
             val restSecs = entry?.let { restSecondsFor(it) } ?: defaultRest
@@ -386,43 +291,23 @@ class LiveWorkoutViewModel(
             val achievement = insights.evaluateSetRecord(entry.exerciseId, set)
             if (!achievement.isPersonalRecord) return@launch
             // Flag the set as a PR in the draft (persist so history keeps the badge).
-            mutate {
-                it.copy(entries = it.entries.map { e ->
-                    if (e.id != entryId) e
-                    else e.copy(strengthSets = e.strengthSets.map { s -> if (s.id == setId) s.copy(isPr = true) else s })
-                })
-            }
+            mutate { it.withSet(entryId, setId) { s -> s.copy(isPr = true) } }
             prEventState.value = PrEvent(
                 id = System.nanoTime(),
                 exerciseName = entry.exerciseSnapshotName,
                 estimated1RmKg = Estimates.epley(set.weightKg, set.reps),
-                headline = achievement.headline(),
+                headline = achievement.headline,
             )
         }
     }
 
     // --- Rest timer ----------------------------------------------------------------------------
 
-    fun startRest(seconds: Int) {
-        restJob?.cancel()
-        restState.value = RestState(running = true, remaining = seconds, total = seconds)
-        restJob = viewModelScope.launch {
-            while (restState.value.running && restState.value.remaining > 0) {
-                delay(1_000)
-                restState.update { it.copy(remaining = (it.remaining - 1).coerceAtLeast(0)) }
-            }
-            if (restState.value.remaining <= 0) restState.update { it.copy(running = false) }
-        }
-    }
+    fun startRest(seconds: Int) = restTimer.start(seconds)
 
-    fun addRest(seconds: Int) = restState.update {
-        it.copy(remaining = (it.remaining + seconds).coerceAtLeast(0), total = maxOf(it.total, it.remaining + seconds))
-    }
+    fun addRest(seconds: Int) = restTimer.add(seconds)
 
-    fun skipRest() {
-        restJob?.cancel()
-        restState.value = RestState()
-    }
+    fun skipRest() = restTimer.skip()
 
     // --- Finish / discard ----------------------------------------------------------------------
 
@@ -432,27 +317,8 @@ class LiveWorkoutViewModel(
         finalizing = true
         viewModelScope.launch {
             try {
-                val now = System.currentTimeMillis()
                 persistJob?.cancelAndJoin()
-                persistMutex.withLock {
-                    repo.saveWorkoutSession(
-                        session.copy(
-                            status = WorkoutSessionStatus.Completed,
-                            endedAtUtc = now,
-                            completedDateUtc = now,
-                            entries = session.entries.filter {
-                                it.strengthSets.isNotEmpty() || it.cardioData != null
-                            }.map { entry ->
-                                entry.copy(
-                                    startedAtUtc = entry.startedAtUtc
-                                        ?: entry.strengthSets.mapNotNull(StrengthSet::performedAtUtc).minOrNull()
-                                        ?: now,
-                                    completedAtUtc = entry.completedAtUtc ?: now,
-                                )
-                            },
-                        ),
-                    )
-                }
+                persistMutex.withLock { repo.saveWorkoutSession(session.completedAt(System.currentTimeMillis())) }
                 clear()
                 onDone()
             } finally {
@@ -494,27 +360,6 @@ class LiveWorkoutViewModel(
         return fromCatalog ?: defaultRest
     }
 
-    private suspend fun lastPerformance(exerciseId: String): List<StrengthSet> {
-        if (exerciseId.isBlank()) return emptyList()
-        val session = repo.getSessions(includeDiscarded = false)
-            .filter { it.status == WorkoutSessionStatus.Completed }
-            .sortedByDescending { it.completedDateUtc ?: it.startedAtUtc }
-            .firstOrNull { s -> s.entries.any { it.exerciseId == exerciseId && it.strengthSets.isNotEmpty() } }
-            ?: return emptyList()
-        val sets = session.entries.first { it.exerciseId == exerciseId && it.strengthSets.isNotEmpty() }.strengthSets
-        return sets.mapIndexed { i, s ->
-            StrengthSet(
-                id = newId(),
-                setNumber = i + 1,
-                reps = s.reps,
-                weightKg = s.weightKg,
-                isWarmup = s.isWarmup,
-                setType = s.setType,
-                tags = s.tags,
-            )
-        }
-    }
-
     private fun clear() {
         draftState.value = null
         doneSetIdsState.value = emptySet()
@@ -543,20 +388,6 @@ class LiveWorkoutViewModel(
         }
     }
 
-    data class RestState(
-        val running: Boolean = false,
-        val remaining: Int = 0,
-        val total: Int = 0,
-    )
-
-    /** A new personal record achieved live; consumed by the screen after the celebration plays. */
-    data class PrEvent(
-        val id: Long,
-        val exerciseName: String,
-        val estimated1RmKg: Double,
-        val headline: String,
-    )
-
     companion object {
         fun factory(container: AppContainer): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
@@ -564,23 +395,4 @@ class LiveWorkoutViewModel(
                 LiveWorkoutViewModel(container.repository, container.settings, container.insights) as T
         }
     }
-}
-
-private fun legacyType(tags: Set<SetTag>): SetType = when {
-    SetTag.Warmup in tags -> SetType.Warmup
-    SetTag.Drop in tags -> SetType.Drop
-    SetTag.ToFailure in tags -> SetType.Failure
-    SetTag.Negative in tags -> SetType.Negative
-    SetTag.BackOff in tags -> SetType.BackOff
-    else -> SetType.Normal
-}
-
-/** Human summary of the strongest achievement in a PR (e1RM beats heaviest beats volume). */
-private fun com.lukr99.workout.domain.records.RecordAchievements.headline(): String = when {
-    RecordKind.Estimated1Rm in kinds -> "New estimated 1RM"
-    RecordKind.HeaviestSet in kinds -> "Heaviest set ever"
-    repMaxReps.isNotEmpty() -> "New ${repMaxReps.min()}-rep max"
-    RecordKind.SetVolume in kinds -> "Best set volume"
-    RecordKind.SessionVolume in kinds -> "Best session volume"
-    else -> "New personal record"
 }
