@@ -25,7 +25,7 @@ settings/ (DataStore)    update/ (GitHub release updater)
 | `data/` | `WorkoutRepository` and `RunRepository` (the only Room users, with entity mapping in `WorkoutEntityMapping.kt`), numbered Room migrations in `data/migrations/`, import and export, backup, Health Connect, wger sync, images, location service, routing, map tiles, music. | `domain/`, `settings/` |
 | `settings/` | `SettingsStore`: theme, units, default rest (Preferences DataStore). | nothing |
 | `update/` | The updater chain: `GitHubReleaseSource`, `VersionPolicy`, `ArtifactSelector`, `VerifiedDownloader` (HTTPS, size, SHA-256), `PackageSignatureCheck`, `FileProviderInstallerLauncher`, joined by `UpdateService`. Only the Android adapters touch Android. | nothing else in the app |
-| `ui/` | `App.kt` shell and custom `Navigator`, one ViewModel per area, screens in `ui/screens/` and `ui/run/`, shared pieces in `ui/components/`, tokens in `ui/theme/`. | everything above |
+| `ui/` | `App.kt` shell and custom `Navigator`, one ViewModel per area, screens in `ui/screens/` and `ui/run/`, shared pieces in `ui/components/` (`ScreenHeader`, `SearchField`, `SegmentedControl`, `FilterChip`, `BodyPartTag`), the theme in `ui/theme/`. | everything above |
 
 The composition root is `data/AppContainer.kt`, created once by `WorkoutApp`. ViewModels get their
 dependencies through `factory(container)`. `WorkoutApp` also gives WorkManager its configuration,
@@ -40,6 +40,15 @@ from `WorkoutApp`, and nothing else may:
 
 `LiveRunScreen` still builds its own `RunCues` (speech and vibration tied to the screen). The
 redesign replaces that screen and moves it into the container.
+
+## Theme
+
+`WorkoutTheme` provides two things from one colour set: `EmberTheme.colors` (the CodePrint
+semantic roles: background, surface, text levels, primary, success, danger and so on) and the
+Material scheme derived from it. `EmberPalette` holds the light and dark sets. UI code reads
+`EmberTheme.colors` or `MaterialTheme.colorScheme`, never a raw `Color`, so every screen works in
+both themes. The only fixed hues are the body-part dots in `Accents`, which always sit next to the
+part's name.
 
 ## Data flow
 
