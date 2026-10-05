@@ -33,8 +33,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
-import com.lukr99.workout.ui.theme.TextMid
 
 /**
  * Smooth spline area chart with a scrub handle (ring-set `MetricChart` lineage — 02-design-system.md).
@@ -71,7 +71,7 @@ fun ProgressChart(
             Text(
                 "  ${points[selected].label}",
                 style = MaterialTheme.typography.labelSmall,
-                color = TextMid,
+                color = EmberTheme.colors.textSecondary,
                 modifier = Modifier.padding(bottom = 4.dp),
             )
         }
@@ -180,7 +180,7 @@ fun VolumeBars(
                 Text(
                     bar.label,
                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                    color = TextMid,
+                    color = EmberTheme.colors.textSecondary,
                     maxLines = 1,
                 )
             }

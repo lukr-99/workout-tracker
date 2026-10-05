@@ -14,7 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import com.lukr99.workout.ui.theme.TextMid
+import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
  * A flat rounded section surface used instead of boxing everything in Material cards
@@ -59,5 +59,5 @@ fun SectionCard(
 /** A muted "nothing here yet" placeholder line, used across empty states. */
 @Composable
 fun EmptyHint(text: String, modifier: Modifier = Modifier) {
-    Text(text, style = MaterialTheme.typography.bodyLarge, color = TextMid, modifier = modifier)
+    Text(text, style = MaterialTheme.typography.bodyLarge, color = EmberTheme.colors.textSecondary, modifier = modifier)
 }

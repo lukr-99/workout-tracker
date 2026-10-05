@@ -20,7 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.lukr99.workout.ui.components.ScreenHeader
 import com.lukr99.workout.ui.components.SectionCard
-import com.lukr99.workout.ui.theme.TextMid
+import com.lukr99.workout.ui.theme.EmberTheme
 
 /** Shared in-app policy and Android Health Connect permission-rationale destination. */
 @Composable
@@ -87,7 +87,7 @@ fun PrivacyPolicyScreen(
         Text(
             "Last updated: July 26, 2026",
             style = MaterialTheme.typography.labelSmall,
-            color = TextMid,
+            color = EmberTheme.colors.textSecondary,
         )
     }
 }
@@ -104,7 +104,7 @@ private fun PolicySection(title: String, content: @Composable () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             androidx.compose.runtime.CompositionLocalProvider(
-                androidx.compose.material3.LocalContentColor provides TextMid,
+                androidx.compose.material3.LocalContentColor provides EmberTheme.colors.textSecondary,
                 androidx.compose.material3.LocalTextStyle provides MaterialTheme.typography.bodyMedium,
                 content = content,
             )

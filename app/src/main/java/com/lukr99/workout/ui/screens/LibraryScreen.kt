@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
@@ -27,16 +26,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
@@ -47,8 +45,9 @@ import com.lukr99.workout.ui.components.EmptyHint
 import com.lukr99.workout.ui.components.ExerciseThumbnail
 import com.lukr99.workout.ui.components.FilterChip
 import com.lukr99.workout.ui.components.NoteLine
+import com.lukr99.workout.ui.components.SearchField
 import com.lukr99.workout.ui.components.Tag
-import com.lukr99.workout.ui.theme.TextMid
+import com.lukr99.workout.ui.theme.EmberTheme
 
 /** Library surface — Templates (with editor) and the exercise Catalog (search/filter, archive). */
 @Composable
@@ -145,7 +144,7 @@ private fun TemplateList(
                     Text(template.name, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
                     Text(
                         template.exercises.joinToString(", ") { it.exerciseName }.ifBlank { "No exercises" },
-                        style = MaterialTheme.typography.labelSmall, color = TextMid, maxLines = 1,
+                        style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary, maxLines = 1,
                     )
                 }
                 IconButton(onClick = { onStart(template.id) }) {
@@ -184,26 +183,7 @@ private fun CatalogList(
     }
     Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp)) {
         Spacer(Modifier.size(8.dp))
-        Row(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant).padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(Icons.Rounded.Search, null, tint = TextMid, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.size(8.dp))
-            BasicTextField(
-                value = searchText,
-                onValueChange = onSearch,
-                singleLine = true,
-                modifier = Modifier.weight(1f),
-                textStyle = MaterialTheme.typography.bodyLarge.merge(TextStyle(color = MaterialTheme.colorScheme.onBackground)),
-                cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
-                decorationBox = { inner ->
-                    if (searchText.isEmpty()) Text("Search exercises…", color = TextMid, style = MaterialTheme.typography.bodyLarge)
-                    inner()
-                },
-            )
-        }
+        SearchField(value = searchText, onValueChange = onSearch, placeholder = "Search exercises")
         Spacer(Modifier.size(8.dp))
         Row(
             Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
@@ -274,9 +254,9 @@ private fun CatalogList(
                         Column(Modifier.weight(1f)) {
                             Text(
                                 ex.name, style = MaterialTheme.typography.titleMedium,
-                                color = if (ex.isArchived) TextMid else MaterialTheme.colorScheme.onBackground,
+                                color = if (ex.isArchived) EmberTheme.colors.textSecondary else MaterialTheme.colorScheme.onBackground,
                             )
-                            Text(ex.bodyPartsSummary, style = MaterialTheme.typography.labelSmall, color = TextMid)
+                            Text(ex.bodyPartsSummary, style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
                             if (ex.notes.isNotBlank()) {
                                 NoteLine(Icons.Rounded.PushPin, label = null, text = ex.notes, description = "Exercise note", maxLines = 1)
                             }
@@ -291,7 +271,7 @@ private fun CatalogList(
                             }
                         } else {
                             IconButton(onClick = { onArchive(ex.id) }) {
-                                Icon(Icons.Rounded.Archive, "Archive", tint = TextMid, modifier = Modifier.size(20.dp))
+                                Icon(Icons.Rounded.Archive, "Archive", tint = EmberTheme.colors.textSecondary, modifier = Modifier.size(20.dp))
                             }
                         }
                     }

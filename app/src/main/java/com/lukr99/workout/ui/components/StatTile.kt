@@ -15,9 +15,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
-import com.lukr99.workout.ui.theme.Positive
-import com.lukr99.workout.ui.theme.TextMid
 
 /**
  * Label (caption, muted) over a big tabular number, with an optional delta chip. A flat raised
@@ -42,7 +41,7 @@ fun StatTile(
         Text(
             label.uppercase(),
             style = MaterialTheme.typography.labelSmall,
-            color = TextMid,
+            color = EmberTheme.colors.textSecondary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
@@ -57,7 +56,7 @@ fun StatTile(
                 Text(
                     " $unit",
                     style = MaterialTheme.typography.labelLarge,
-                    color = TextMid,
+                    color = EmberTheme.colors.textSecondary,
                     modifier = Modifier.padding(bottom = 3.dp),
                 )
             }
@@ -66,7 +65,7 @@ fun StatTile(
             Text(
                 delta,
                 style = MaterialTheme.typography.labelSmall,
-                color = if (deltaPositive) Positive else MaterialTheme.colorScheme.error,
+                color = if (deltaPositive) EmberTheme.colors.success else MaterialTheme.colorScheme.error,
             )
         }
     }

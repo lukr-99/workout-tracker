@@ -51,8 +51,8 @@ import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.NoteEditorSheet
 import com.lukr99.workout.ui.components.NoteLine
 import com.lukr99.workout.ui.components.Tag
+import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
-import com.lukr99.workout.ui.theme.TextMid
 
 /** Create or edit a workout template: name, note and ordered exercises, each with its own note. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -221,7 +221,7 @@ private fun TemplateRowCard(
             .background(MaterialTheme.colorScheme.surface).padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("${index + 1}", style = Numbers, color = TextMid, modifier = Modifier.size(20.dp))
+            Text("${index + 1}", style = Numbers, color = EmberTheme.colors.textSecondary, modifier = Modifier.size(20.dp))
             Column(Modifier.weight(1f)) {
                 Text(row.name, color = MaterialTheme.colorScheme.onBackground)
                 if (row.bodyPart.isNotBlank()) Tag(row.bodyPart, accent = MaterialTheme.colorScheme.secondary)
@@ -230,18 +230,18 @@ private fun TemplateRowCard(
                 Icon(
                     Icons.AutoMirrored.Rounded.NoteAdd,
                     if (row.notes.isBlank()) "Add note to ${row.name}" else "Edit note on ${row.name}",
-                    tint = if (row.notes.isBlank()) TextMid else MaterialTheme.colorScheme.primary,
+                    tint = if (row.notes.isBlank()) EmberTheme.colors.textSecondary else MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(18.dp),
                 )
             }
             IconButton(onClick = onMoveUp, enabled = canMoveUp) {
-                Icon(Icons.Rounded.ArrowUpward, "Move ${row.name} up", tint = TextMid, modifier = Modifier.size(18.dp))
+                Icon(Icons.Rounded.ArrowUpward, "Move ${row.name} up", tint = EmberTheme.colors.textSecondary, modifier = Modifier.size(18.dp))
             }
             IconButton(onClick = onMoveDown, enabled = canMoveDown) {
-                Icon(Icons.Rounded.ArrowDownward, "Move ${row.name} down", tint = TextMid, modifier = Modifier.size(18.dp))
+                Icon(Icons.Rounded.ArrowDownward, "Move ${row.name} down", tint = EmberTheme.colors.textSecondary, modifier = Modifier.size(18.dp))
             }
             IconButton(onClick = onRemove) {
-                Icon(Icons.Rounded.Delete, "Remove ${row.name}", tint = TextMid, modifier = Modifier.size(18.dp))
+                Icon(Icons.Rounded.Delete, "Remove ${row.name}", tint = EmberTheme.colors.textSecondary, modifier = Modifier.size(18.dp))
             }
         }
         if (row.notes.isNotBlank()) {

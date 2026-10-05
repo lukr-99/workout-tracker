@@ -46,8 +46,8 @@ import com.lukr99.workout.ui.components.FilterChip
 import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.ScreenHeader
+import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
-import com.lukr99.workout.ui.theme.TextMid
 import java.text.DateFormat
 import java.util.Date
 
@@ -94,7 +94,7 @@ fun SettingsScreen(
         ScreenHeader("Settings", "Preferences & data")
 
         SettingSection("Appearance") {
-            Text("Theme", color = TextMid, style = MaterialTheme.typography.labelLarge)
+            Text("Theme", color = EmberTheme.colors.textSecondary, style = MaterialTheme.typography.labelLarge)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ThemeMode.entries.forEach { mode ->
                     FilterChip(mode.name, settings.themeMode == mode, { vm.setTheme(mode) })
@@ -151,7 +151,7 @@ fun SettingsScreen(
                     Text(
                         health.error ?: healthAvailabilityDetail(health.availability, health.connected),
                         style = MaterialTheme.typography.labelSmall,
-                        color = if (health.error != null) MaterialTheme.colorScheme.error else TextMid,
+                        color = if (health.error != null) MaterialTheme.colorScheme.error else EmberTheme.colors.textSecondary,
                     )
                 }
                 if (health.refreshing || health.operation != null) {
@@ -211,7 +211,7 @@ fun SettingsScreen(
                     Text(
                         if (backup.enabled) backupFolderLabel(backup.treeUri) else "Choose a device or cloud folder",
                         style = MaterialTheme.typography.labelSmall,
-                        color = TextMid,
+                        color = EmberTheme.colors.textSecondary,
                     )
                 }
                 if (backupBusy) {
@@ -230,14 +230,14 @@ fun SettingsScreen(
                 }
             }
 
-            Text("Frequency", color = TextMid, style = MaterialTheme.typography.labelLarge)
+            Text("Frequency", color = EmberTheme.colors.textSecondary, style = MaterialTheme.typography.labelLarge)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val selected = if (backup.enabled) backup.intervalHours else backupOptions.intervalHours
                 FilterChip("Daily", selected == 24L, { vm.setBackupInterval(24) })
                 FilterChip("Weekly", selected == 168L, { vm.setBackupInterval(168) })
             }
 
-            Text("Backups kept", color = TextMid, style = MaterialTheme.typography.labelLarge)
+            Text("Backups kept", color = EmberTheme.colors.textSecondary, style = MaterialTheme.typography.labelLarge)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val selected = if (backup.enabled) backup.retentionCount else backupOptions.retentionCount
                 listOf(3, 7, 14).forEach { count ->
@@ -251,7 +251,7 @@ fun SettingsScreen(
                 color = if (backup.lastResult == BackupResult.Failed || backupError != null) {
                     MaterialTheme.colorScheme.error
                 } else {
-                    TextMid
+                    EmberTheme.colors.textSecondary
                 },
             )
         }
@@ -274,7 +274,7 @@ fun SettingsScreen(
                         color = if (syncState is SettingsViewModel.CatalogSyncState.Failed) {
                             MaterialTheme.colorScheme.error
                         } else {
-                            TextMid
+                            EmberTheme.colors.textSecondary
                         },
                     )
                 }
@@ -306,7 +306,7 @@ fun SettingsScreen(
         Text(
             "Ember · ${updateState.currentVersion}",
             style = MaterialTheme.typography.labelSmall,
-            color = TextMid,
+            color = EmberTheme.colors.textSecondary,
             modifier = Modifier.padding(start = 4.dp),
         )
     }
@@ -331,7 +331,7 @@ private fun UpdateSection(
                 Text(
                     state.status.ifBlank { "v${state.currentVersion}" },
                     style = MaterialTheme.typography.labelSmall,
-                    color = TextMid,
+                    color = EmberTheme.colors.textSecondary,
                 )
             }
             if (state.busy) {
@@ -371,7 +371,7 @@ private fun UpdateSection(
                 Text(
                     offer.notes.ifBlank { "A new version is available." }.take(600),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextMid,
+                    color = EmberTheme.colors.textSecondary,
                 )
             },
         )
@@ -419,9 +419,9 @@ private fun SettingsLink(title: String, subtitle: String, onClick: () -> Unit) {
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )
-            Text(subtitle, style = MaterialTheme.typography.labelSmall, color = TextMid)
+            Text(subtitle, style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
         }
-        Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = TextMid)
+        Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = EmberTheme.colors.textSecondary)
     }
 }
 

@@ -18,7 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lukr99.workout.domain.CardioEntryData
-import com.lukr99.workout.ui.theme.TextMid
+import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
  * Cardio duration / distance / calories editor (Phase 4 — cardio entries were read-only). Each field
@@ -79,7 +79,7 @@ private fun CardioLabel(text: String, modifier: Modifier) {
         Text(
             text,
             style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp),
-            color = TextMid,
+            color = EmberTheme.colors.textSecondary,
             fontWeight = FontWeight.SemiBold,
         )
     }

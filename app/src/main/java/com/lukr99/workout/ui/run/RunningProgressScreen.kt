@@ -25,10 +25,10 @@ import com.lukr99.workout.ui.components.ProgressChart
 import com.lukr99.workout.ui.components.SectionCard
 import com.lukr99.workout.ui.components.StatTile
 import com.lukr99.workout.ui.components.VolumeBars
-import com.lukr99.workout.ui.theme.TextMid
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
  * The Running section of the Progress tab (R2): totals + streak, weekly distance bars, an average-pace
@@ -95,12 +95,12 @@ fun RunningProgressSection(
 @Composable
 private fun PrRow(label: String, value: String?) {
     Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, color = TextMid, modifier = Modifier.weight(1f))
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = EmberTheme.colors.textSecondary, modifier = Modifier.weight(1f))
         Text(
             value ?: "—",
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold,
-            color = if (value != null) MaterialTheme.colorScheme.onBackground else TextMid,
+            color = if (value != null) MaterialTheme.colorScheme.onBackground else EmberTheme.colors.textSecondary,
         )
     }
 }
