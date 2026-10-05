@@ -9,46 +9,39 @@ import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseAnalyticsPoint
 import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.ExerciseFilter
-import com.lukr99.workout.domain.ExerciseSource
-import com.lukr99.workout.domain.GuideLink
 import com.lukr99.workout.domain.PreviousEntryNote
 import com.lukr99.workout.domain.Progression
-import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutSessionStatus
 import com.lukr99.workout.domain.WorkoutSessionSummary
 import com.lukr99.workout.domain.WorkoutTemplate
-import com.lukr99.workout.domain.WorkoutTemplateExercise
 import com.lukr99.workout.domain.newId
+import com.lukr99.workout.domain.normalized
+import com.lukr99.workout.domain.toEntries
+import com.lukr99.workout.domain.toNewEntry
+import com.lukr99.workout.domain.toTemplate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.builtins.serializer
-import kotlinx.serialization.json.Json
 
 /**
- * The single API over persistence — the **only** class that touches Room and files
- * (see 01-architecture.md). It maps the Room `@Entity`/`@Relation` shapes to/from the portable
- * `domain/` model, applies the MAUI behaviour surface, and enforces the history-safe rules from
- * 03-data-model.md:
+ * The single API over workout persistence: the **only** class that touches Room for exercises,
+ * templates and workouts. It keeps the history-safe rules:
  *
- * - **Snapshot on log** — [newEntryForExercise] copies the exercise's name/category/body-part onto
- *   the entry, so later catalog edits never rewrite the past.
- * - **Template → session** — [createWorkoutSession] copies template exercises into entries; the
- *   session keeps no live FK to the template.
- * - **Archive, not delete** — [archiveExercise] flags rows; catalog exercises are never removed.
+ * - **Snapshot on log.** [newEntryForExercise] copies the exercise's name, category and body part
+ *   onto the entry, so later catalog edits never rewrite the past.
+ * - **Template to workout.** [createWorkoutSession] copies template exercises into entries. The
+ *   workout keeps no live link to the template.
+ * - **Archive, not delete.** [archiveExercise] flags rows. Catalog exercises are never removed.
  *
- * Ported from `WorkoutTracker.Core/Data/WorkoutTrackerRepository.cs`.
+ * The rules themselves live elsewhere so they can be tested without a database: entity mapping in
+ * `WorkoutEntityMapping.kt`, the copies in `domain/WorkoutSnapshots.kt`, catalog filtering in
+ * [ExerciseFilter] and the external catalog merge in [ExternalExerciseMerge].
  */
 class WorkoutRepository(
     private val dao: WorkoutDao,
     private val transactions: TransactionRunner = DirectTransactionRunner,
 ) {
-
-    private val json = Json { ignoreUnknownKeys = true }
-    private val stringListSerializer = ListSerializer(String.serializer())
-    private val intListSerializer = ListSerializer(Int.serializer())
 
     // --- Seeding -------------------------------------------------------------------------------
 
@@ -63,10 +56,10 @@ class WorkoutRepository(
 
     /** Catalog stream with the MAUI in-memory filter (search / body-part / category / archived). */
     fun observeExercises(filter: ExerciseFilter = ExerciseFilter()): Flow<List<Exercise>> =
-        dao.observeExercises().map { rows -> rows.map { it.toDomain() }.applyFilter(filter) }
+        dao.observeExercises().map { rows -> filter.apply(rows.map { it.toDomain() }) }
 
     suspend fun getExercises(filter: ExerciseFilter = ExerciseFilter()): List<Exercise> =
-        dao.getAllExercises().map { it.toDomain() }.applyFilter(filter)
+        filter.apply(dao.getAllExercises().map { it.toDomain() })
 
     suspend fun getExercise(id: String): Exercise? = dao.getExercise(id)?.toDomain()
 
@@ -85,66 +78,13 @@ class WorkoutRepository(
     suspend fun mergeExternalExercises(exercises: List<Exercise>): Int =
         mergeExternalExercisesDetailed(exercises).changed
 
-    /**
-     * Additively merge an external catalog without replacing user-owned data.
-     *
-     * Only rows previously tagged [ExerciseSource.Synced] can be updated. Existing values win;
-     * sync may fill blank fields and append secondary body parts, but it never renames, unarchives,
-     * changes defaults, or overwrites notes. Name collisions with custom/seed rows are skipped.
-     */
+    /** Additively merge an external catalog. [ExternalExerciseMerge] decides what changes. */
     suspend fun mergeExternalExercisesDetailed(
         exercises: List<Exercise>,
     ): ExternalExerciseMergeSummary = inTransaction {
-        val existing = dao.getAllExercises().map { it.toDomain() }
-        val byExternalId = existing
-            .filter { !it.externalSourceId.isNullOrBlank() }
-            .associateByTo(linkedMapOf()) { it.externalSourceId!!.trim().lowercase() }
-        val byName = existing.associateByTo(linkedMapOf()) { it.name.trim().lowercase() }
-        val seenExternalIds = mutableSetOf<String>()
-        var summary = ExternalExerciseMergeSummary()
-
-        for (raw in exercises) {
-            val externalId = raw.externalSourceId?.trim()?.takeIf(String::isNotBlank)
-            if (externalId == null || !seenExternalIds.add(externalId.lowercase())) {
-                summary += ExternalExerciseMergeSummary(skipped = 1)
-                continue
-            }
-
-            val incoming = raw.normalized().copy(
-                source = ExerciseSource.Synced,
-                externalSourceId = externalId,
-            )
-            val externalKey = externalId.lowercase()
-            val externalMatch = byExternalId[externalKey]
-            val nameMatch = byName[incoming.name.lowercase()]
-
-            when {
-                externalMatch != null && externalMatch.source != ExerciseSource.Synced -> {
-                    summary += ExternalExerciseMergeSummary(skipped = 1)
-                }
-                externalMatch != null -> {
-                    val merged = externalMatch.addExternalFields(incoming)
-                    if (merged == externalMatch) {
-                        summary += ExternalExerciseMergeSummary(skipped = 1)
-                    } else {
-                        dao.upsertExercise(merged.toEntity())
-                        byExternalId[externalKey] = merged
-                        byName[merged.name.lowercase()] = merged
-                        summary += ExternalExerciseMergeSummary(updated = 1)
-                    }
-                }
-                nameMatch != null -> {
-                    summary += ExternalExerciseMergeSummary(skipped = 1)
-                }
-                else -> {
-                    dao.upsertExercise(incoming.toEntity())
-                    byExternalId[externalKey] = incoming
-                    byName[incoming.name.lowercase()] = incoming
-                    summary += ExternalExerciseMergeSummary(added = 1)
-                }
-            }
-        }
-        summary
+        val plan = ExternalExerciseMerge.plan(dao.getAllExercises().map { it.toDomain() }, exercises)
+        plan.upserts.forEach { dao.upsertExercise(it.toEntity()) }
+        plan.summary
     }
 
     /**
@@ -172,16 +112,8 @@ class WorkoutRepository(
     }
 
     /** A fresh entry with the exercise's identity snapshotted onto it (the "snapshot on log" rule). */
-    fun newEntryForExercise(exercise: Exercise, sortOrder: Int = 0): WorkoutEntry = WorkoutEntry(
-        exerciseId = exercise.id,
-        exerciseSnapshotName = exercise.name,
-        exerciseSnapshotCategory = exercise.category,
-        exerciseSnapshotPrimaryBodyPart = exercise.primaryBodyPart,
-        sortOrder = sortOrder,
-        entryType = exercise.category,
-        strengthSets = if (exercise.category == ExerciseCategory.Strength) listOf(StrengthSet(setNumber = 1)) else emptyList(),
-        cardioData = if (exercise.category == ExerciseCategory.Cardio) CardioEntryData() else null,
-    )
+    fun newEntryForExercise(exercise: Exercise, sortOrder: Int = 0): WorkoutEntry =
+        exercise.toNewEntry(sortOrder)
 
     // --- Templates -----------------------------------------------------------------------------
 
@@ -240,20 +172,7 @@ class WorkoutRepository(
             getTemplate(templateId)?.let { template ->
                 session = session.copy(
                     name = name?.trim().takeUnless { it.isNullOrBlank() } ?: template.name,
-                    entries = template.exercises.sortedBy { it.sortOrder }.mapIndexed { index, ex ->
-                        WorkoutEntry(
-                            workoutSessionId = sessionId,
-                            exerciseId = ex.exerciseId,
-                            exerciseSnapshotName = ex.exerciseName,
-                            exerciseSnapshotCategory = ex.category,
-                            exerciseSnapshotPrimaryBodyPart = ex.bodyPart,
-                            sortOrder = index,
-                            entryType = ex.category,
-                            notes = ex.notes,
-                            strengthSets = if (ex.category == ExerciseCategory.Strength) listOf(StrengthSet(setNumber = 1)) else emptyList(),
-                            cardioData = if (ex.category == ExerciseCategory.Cardio) CardioEntryData() else null,
-                        )
-                    },
+                    entries = template.toEntries(sessionId),
                 )
             }
         }
@@ -399,24 +318,7 @@ class WorkoutRepository(
     /** Turn a completed session into a reusable template (ported from MAUI). */
     suspend fun duplicateWorkoutAsTemplate(sessionId: String, templateName: String? = null): WorkoutTemplate {
         val session = getSession(sessionId) ?: error("Workout session not found.")
-        val template = WorkoutTemplate(
-            name = templateName?.trim().takeUnless { it.isNullOrBlank() } ?: "${session.name} Copy",
-            notes = "Created from workout on ${com.lukr99.workout.domain.formatIsoDate(session.completedDateUtc ?: session.startedAtUtc)}",
-            exercises = session.entries
-                .sortedBy { it.sortOrder }
-                .filter { it.exerciseId.isNotBlank() }
-                .mapIndexed { index, entry ->
-                    WorkoutTemplateExercise(
-                        exerciseId = entry.exerciseId,
-                        exerciseName = entry.exerciseSnapshotName,
-                        category = entry.entryType,
-                        bodyPart = entry.exerciseSnapshotPrimaryBodyPart,
-                        sortOrder = index,
-                        notes = entry.notes,
-                    )
-                },
-        )
-        return saveTemplate(template)
+        return saveTemplate(session.toTemplate(templateName))
     }
 
     private suspend fun completedSessions(): List<WorkoutSession> =
@@ -440,255 +342,4 @@ class WorkoutRepository(
     /** Execute a multi-record service operation atomically. */
     suspend fun <T> inTransaction(block: suspend WorkoutRepository.() -> T): T =
         transactions.run { block(this@WorkoutRepository) }
-
-    // --- Mapping: entity <-> domain ------------------------------------------------------------
-
-    private fun ExerciseEntity.toDomain() = Exercise(
-        id = id,
-        name = name,
-        category = category,
-        primaryBodyPart = primaryBodyPart,
-        secondaryBodyParts = decodeList(secondaryBodyPartsJson),
-        equipment = equipment,
-        notes = notes,
-        source = source,
-        externalSourceId = externalSourceId,
-        isArchived = isArchived,
-        defaultRestSeconds = defaultRestSeconds,
-        imageUrl = imageUrl,
-        imageAttribution = imageAttribution,
-        localImagePath = localImagePath,
-        instructions = instructions,
-        videoUrl = videoUrl,
-    )
-
-    private fun Exercise.toEntity() = ExerciseEntity(
-        id = id,
-        name = name,
-        category = category,
-        primaryBodyPart = primaryBodyPart,
-        secondaryBodyPartsJson = encodeList(secondaryBodyParts),
-        equipment = equipment,
-        notes = notes,
-        source = source,
-        externalSourceId = externalSourceId,
-        isArchived = isArchived,
-        defaultRestSeconds = defaultRestSeconds,
-        imageUrl = imageUrl,
-        imageAttribution = imageAttribution,
-        localImagePath = localImagePath,
-        instructions = instructions,
-        videoUrl = videoUrl,
-    )
-
-    private fun TemplateWithExercises.toDomain() = WorkoutTemplate(
-        id = template.id,
-        name = template.name,
-        notes = template.notes,
-        exercises = exercises.sortedBy { it.sortOrder }.map {
-            WorkoutTemplateExercise(
-                id = it.id,
-                exerciseId = it.exerciseId,
-                exerciseName = it.exerciseName,
-                category = it.category,
-                bodyPart = it.bodyPart,
-                sortOrder = it.sortOrder,
-                notes = it.notes,
-            )
-        },
-    )
-
-    private fun WorkoutSession.toEntity() = SessionEntity(
-        id = id,
-        templateId = templateId,
-        name = name,
-        status = status,
-        startedAtUtc = startedAtUtc,
-        endedAtUtc = endedAtUtc,
-        completedDateUtc = completedDateUtc,
-        durationSeconds = durationSeconds,
-        notes = notes,
-        perceivedEffort = perceivedEffort,
-        bodyweightKg = bodyweightKg,
-        source = source,
-        externalKey = externalKey,
-    )
-
-    private fun WorkoutEntry.toEntity() = EntryEntity(
-        id = id,
-        workoutSessionId = workoutSessionId,
-        exerciseId = exerciseId,
-        exerciseSnapshotName = exerciseSnapshotName.ifBlank { "Exercise" },
-        exerciseSnapshotCategory = exerciseSnapshotCategory,
-        exerciseSnapshotPrimaryBodyPart = exerciseSnapshotPrimaryBodyPart,
-        sortOrder = sortOrder,
-        entryType = entryType,
-        notes = notes,
-        supersetGroup = supersetGroup,
-        weightUnitOverride = weightUnitOverride,
-        startedAtUtc = startedAtUtc,
-        completedAtUtc = completedAtUtc,
-    )
-
-    private fun StrengthSet.toEntity() = StrengthSetEntity(
-        id = id,
-        workoutEntryId = workoutEntryId,
-        setNumber = setNumber,
-        reps = reps,
-        weightKg = weightKg,
-        rir = rir,
-        rpe = rpe,
-        performedAtUtc = performedAtUtc,
-        notes = notes,
-        isWarmup = isWarmup,
-        isPr = isPr,
-        durationSeconds = durationSeconds,
-        setType = setType,
-        tagsJson = encodeIntList(tags.map { it.ordinal }.sorted()),
-    )
-
-    private fun CardioEntryData.toEntity() = CardioDataEntity(
-        workoutEntryId = workoutEntryId,
-        durationSeconds = durationSeconds,
-        distanceKm = distanceKm,
-        calories = calories,
-        notes = notes,
-    )
-
-    private fun SessionWithEntries.toDomain() = WorkoutSession(
-        id = session.id,
-        templateId = session.templateId,
-        name = session.name,
-        startedAtUtc = session.startedAtUtc,
-        endedAtUtc = session.endedAtUtc,
-        completedDateUtc = session.completedDateUtc,
-        durationSeconds = session.durationSeconds,
-        notes = session.notes,
-        status = session.status,
-        perceivedEffort = session.perceivedEffort,
-        bodyweightKg = session.bodyweightKg,
-        source = session.source,
-        externalKey = session.externalKey,
-        entries = entries.sortedBy { it.entry.sortOrder }.map { it.toDomain() },
-    )
-
-    private fun EntryWithSets.toDomain() = WorkoutEntry(
-        id = entry.id,
-        workoutSessionId = entry.workoutSessionId,
-        exerciseId = entry.exerciseId,
-        exerciseSnapshotName = entry.exerciseSnapshotName,
-        exerciseSnapshotCategory = entry.exerciseSnapshotCategory,
-        exerciseSnapshotPrimaryBodyPart = entry.exerciseSnapshotPrimaryBodyPart,
-        sortOrder = entry.sortOrder,
-        entryType = entry.entryType,
-        notes = entry.notes,
-        supersetGroup = entry.supersetGroup,
-        weightUnitOverride = entry.weightUnitOverride,
-        startedAtUtc = entry.startedAtUtc,
-        completedAtUtc = entry.completedAtUtc,
-        strengthSets = strengthSets.sortedBy { it.setNumber }.map { it.toDomain() },
-        cardioData = cardio?.toDomain(),
-    )
-
-    private fun StrengthSetEntity.toDomain() = StrengthSet(
-        id = id,
-        workoutEntryId = workoutEntryId,
-        setNumber = setNumber,
-        reps = reps,
-        weightKg = weightKg,
-        rir = rir,
-        rpe = rpe,
-        performedAtUtc = performedAtUtc,
-        notes = notes,
-        isWarmup = isWarmup,
-        isPr = isPr,
-        durationSeconds = durationSeconds,
-        setType = setType,
-        tags = decodeIntList(tagsJson).mapNotNull { com.lukr99.workout.domain.SetTag.entries.getOrNull(it) }.toSet(),
-    )
-
-    private fun CardioDataEntity.toDomain() = CardioEntryData(
-        workoutEntryId = workoutEntryId,
-        durationSeconds = durationSeconds,
-        distanceKm = distanceKm,
-        calories = calories,
-        notes = notes,
-    )
-
-    // --- Helpers -------------------------------------------------------------------------------
-
-    private fun List<Exercise>.applyFilter(filter: ExerciseFilter): List<Exercise> {
-        var result = asSequence()
-        if (!filter.includeArchived) result = result.filter { !it.isArchived }
-
-        val needle = filter.searchText.trim()
-        if (needle.isNotBlank()) {
-            result = result.filter {
-                it.name.contains(needle, ignoreCase = true) ||
-                    it.primaryBodyPart.contains(needle, ignoreCase = true) ||
-                    it.equipment.contains(needle, ignoreCase = true)
-            }
-        }
-
-        val bodyPart = filter.bodyPart.trim()
-        if (bodyPart.isNotBlank()) {
-            result = result.filter {
-                it.primaryBodyPart.equals(bodyPart, ignoreCase = true) ||
-                    it.secondaryBodyParts.any { part -> part.equals(bodyPart, ignoreCase = true) }
-            }
-        }
-
-        filter.category?.let { category -> result = result.filter { it.category == category } }
-        val equipment = filter.equipment.trim()
-        if (equipment.isNotBlank()) {
-            result = result.filter {
-                it.equipment.split(',').any { item -> item.trim().equals(equipment, ignoreCase = true) }
-            }
-        }
-        return result.sortedWith(compareBy({ it.category.ordinal }, { it.name })).toList()
-    }
-
-    private fun Exercise.normalized(): Exercise = copy(
-        id = id.ifBlank { newId() },
-        name = name.ifBlank { "Custom Exercise" }.trim(),
-        primaryBodyPart = primaryBodyPart.ifBlank {
-            if (category == ExerciseCategory.Cardio) "Cardio" else "Full Body"
-        }.trim(),
-        secondaryBodyParts = secondaryBodyParts
-            .filter { it.isNotBlank() }
-            .map { it.trim() }
-            .distinctBy { it.lowercase() },
-        imageUrl = imageUrl?.trim()?.ifBlank { null },
-        imageAttribution = imageAttribution?.trim()?.ifBlank { null },
-        localImagePath = localImagePath?.trim()?.ifBlank { null },
-        instructions = instructions.trim(),
-        videoUrl = GuideLink.normalize(videoUrl),
-    )
-
-    private fun Exercise.addExternalFields(incoming: Exercise): Exercise = copy(
-        primaryBodyPart = primaryBodyPart.ifBlank { incoming.primaryBodyPart },
-        secondaryBodyParts = (secondaryBodyParts + incoming.secondaryBodyParts)
-            .filter(String::isNotBlank)
-            .map(String::trim)
-            .distinctBy(String::lowercase),
-        equipment = equipment.ifBlank { incoming.equipment },
-        notes = notes.ifBlank { incoming.notes },
-        // Rows synced before v8 kept the description in notes; do not show it twice.
-        instructions = instructions.ifBlank {
-            incoming.instructions.takeUnless { it.trim() == notes.trim() }.orEmpty()
-        },
-        videoUrl = videoUrl ?: incoming.videoUrl,
-        imageUrl = imageUrl ?: incoming.imageUrl,
-        imageAttribution = imageAttribution ?: incoming.imageAttribution,
-    )
-
-    private fun encodeList(list: List<String>): String = json.encodeToString(stringListSerializer, list)
-    private fun decodeList(value: String?): List<String> =
-        if (value.isNullOrBlank()) emptyList()
-        else runCatching { json.decodeFromString(stringListSerializer, value) }.getOrDefault(emptyList())
-
-    private fun encodeIntList(list: List<Int>): String = json.encodeToString(intListSerializer, list)
-    private fun decodeIntList(value: String?): List<Int> =
-        if (value.isNullOrBlank()) emptyList()
-        else runCatching { json.decodeFromString(intListSerializer, value) }.getOrDefault(emptyList())
 }
