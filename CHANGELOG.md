@@ -72,6 +72,8 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 - **A new Home.** It shows today's date, your workout in progress with a Resume button, this
   week's days with a mark for each workout and run, the week's workouts, weight lifted and
   distance run, your templates with a start button, and your recent workouts and runs together.
+- The Library lists exercises in one card with a body-part dot, the equipment and your pinned
+  note, opens on Exercises, and its body-part filters show the same colour dots.
 - **New fonts.** Titles and numbers use Barlow Condensed and everything else Barlow, bundled with
   the app so it looks the same offline.
 - **Light mode works on every screen.** Labels, hints and status colours used to stay dark-mode

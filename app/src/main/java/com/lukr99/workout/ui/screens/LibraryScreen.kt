@@ -1,21 +1,24 @@
 package com.lukr99.workout.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Archive
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -26,12 +29,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,15 +44,16 @@ import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.LibraryViewModel
+import com.lukr99.workout.ui.components.BodyPartTag
 import com.lukr99.workout.ui.components.EmptyHint
 import com.lukr99.workout.ui.components.ExerciseThumbnail
 import com.lukr99.workout.ui.components.FilterChip
 import com.lukr99.workout.ui.components.NoteLine
+import com.lukr99.workout.ui.components.RoundIconButton
+import com.lukr99.workout.ui.components.ScreenHeader
 import com.lukr99.workout.ui.components.SearchField
 import com.lukr99.workout.ui.components.SegmentedControl
-import com.lukr99.workout.ui.components.ScreenHeader
-import com.lukr99.workout.ui.components.RoundIconButton
-import com.lukr99.workout.ui.components.Tag
+import com.lukr99.workout.ui.theme.Accents
 import com.lukr99.workout.ui.theme.EmberTheme
 
 /** Library surface — Templates (with editor) and the exercise Catalog (search/filter, archive). */
@@ -133,9 +137,10 @@ private fun TemplateList(
     ) {
         items(templates, key = { it.id }) { template ->
             Row(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
-                    .background(MaterialTheme.colorScheme.surface)
-                    .clickable(onClickLabel = "Preview ${template.name}") { onEdit(template.id) }.padding(14.dp),
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp))
+                    .background(EmberTheme.colors.surface)
+                    .border(1.dp, EmberTheme.colors.border, RoundedCornerShape(18.dp))
+                    .clickable(onClickLabel = "Preview ${template.name}") { onEdit(template.id) }.padding(start = 14.dp, top = 12.dp, bottom = 12.dp, end = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
@@ -145,9 +150,7 @@ private fun TemplateList(
                         style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary, maxLines = 1,
                     )
                 }
-                IconButton(onClick = { onStart(template.id) }) {
-                    Icon(Icons.Rounded.PlayArrow, "Start", tint = MaterialTheme.colorScheme.primary)
-                }
+                RoundIconButton(Icons.Rounded.PlayArrow, "Start ${template.name}", { onStart(template.id) }, size = 42.dp)
             }
         }
     }
@@ -203,7 +206,7 @@ private fun CatalogList(
             bodyParts.forEach { part ->
                 FilterChip(part, selectedBodyPart.equals(part, true), {
                     onBodyPart(if (selectedBodyPart.equals(part, true)) "" else part)
-                })
+                }, dot = Accents.bodyPart(part))
             }
             FilterChip("Archived", includeArchived, { onIncludeArchived(!includeArchived) })
         }
@@ -238,41 +241,61 @@ private fun CatalogList(
             LazyColumn(
                 Modifier.fillMaxWidth(),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 120.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                items(exercises, key = { it.id }) { ex ->
-                    Row(
-                        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.surface)
-                            .clickable { onEdit(ex.id) }.padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        ExerciseThumbnail(ex)
-                        Spacer(Modifier.size(10.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                ex.name, style = MaterialTheme.typography.titleMedium,
-                                color = if (ex.isArchived) EmberTheme.colors.textSecondary else MaterialTheme.colorScheme.onBackground,
-                            )
-                            Text(ex.bodyPartsSummary, style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
-                            if (ex.notes.isNotBlank()) {
-                                NoteLine(Icons.Rounded.PushPin, label = null, text = ex.notes, description = "Exercise note", maxLines = 1)
-                            }
-                        }
-                        if (ex.equipment.isNotBlank()) {
-                            Tag(ex.equipment, accent = MaterialTheme.colorScheme.secondary)
-                            Spacer(Modifier.size(6.dp))
-                        }
-                        if (ex.isArchived) {
-                            IconButton(onClick = { onRestore(ex) }) {
-                                Icon(Icons.Rounded.Unarchive, "Restore", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                            }
-                        } else {
-                            IconButton(onClick = { onArchive(ex.id) }) {
-                                Icon(Icons.Rounded.Archive, "Archive", tint = EmberTheme.colors.textSecondary, modifier = Modifier.size(20.dp))
-                            }
-                        }
+                itemsIndexed(exercises, key = { _, ex -> ex.id }) { index, ex ->
+                    CatalogRow(
+                        ex = ex,
+                        first = index == 0,
+                        last = index == exercises.lastIndex,
+                        onEdit = { onEdit(ex.id) },
+                        onArchive = { onArchive(ex.id) },
+                        onRestore = { onRestore(ex) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** One catalog exercise. Rows join into one card: the first and last round the corners. */
+@Composable
+private fun CatalogRow(ex: Exercise, first: Boolean, last: Boolean, onEdit: () -> Unit, onArchive: () -> Unit, onRestore: () -> Unit) {
+    val colors = EmberTheme.colors
+    val shape = RoundedCornerShape(
+        topStart = if (first) 20.dp else 0.dp, topEnd = if (first) 20.dp else 0.dp,
+        bottomStart = if (last) 20.dp else 0.dp, bottomEnd = if (last) 20.dp else 0.dp,
+    )
+    Column(Modifier.fillMaxWidth().clip(shape).background(colors.surface)) {
+        if (!first) Box(Modifier.fillMaxWidth().height(1.dp).background(colors.border))
+        Row(
+            Modifier.fillMaxWidth().clickable(onClickLabel = "Edit ${ex.name}", onClick = onEdit).padding(start = 14.dp, top = 10.dp, bottom = 10.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            ExerciseThumbnail(ex)
+            Column(Modifier.weight(1f)) {
+                Text(
+                    ex.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (ex.isArchived) colors.textSecondary else colors.textPrimary,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    BodyPartTag(ex.primaryBodyPart)
+                    if (ex.equipment.isNotBlank()) {
+                        Text(ex.equipment, style = MaterialTheme.typography.labelLarge, color = colors.textTertiary, maxLines = 1)
                     }
+                }
+                if (ex.notes.isNotBlank()) {
+                    NoteLine(Icons.Rounded.PushPin, label = null, text = ex.notes, description = "Exercise note", maxLines = 1)
+                }
+            }
+            if (ex.isArchived) {
+                IconButton(onClick = onRestore) {
+                    Icon(Icons.Rounded.Unarchive, "Restore ${ex.name}", tint = colors.primaryText, modifier = Modifier.size(20.dp))
+                }
+            } else {
+                IconButton(onClick = onArchive) {
+                    Icon(Icons.Rounded.Archive, "Archive ${ex.name}", tint = colors.textSecondary, modifier = Modifier.size(20.dp))
                 }
             }
         }

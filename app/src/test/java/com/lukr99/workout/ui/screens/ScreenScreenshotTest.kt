@@ -36,6 +36,7 @@ import com.lukr99.workout.ui.LiveWorkoutViewModel
 import com.lukr99.workout.ui.ProgressViewModel
 import com.lukr99.workout.ui.theme.WorkoutTheme
 import java.util.concurrent.Executor
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Rule
@@ -44,6 +45,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import org.robolectric.annotation.SQLiteMode
+import org.robolectric.shadows.ShadowLooper
 
 /**
  * Whole screens with realistic data, in light and dark: the safety net for the redesign. Each
@@ -169,6 +171,9 @@ class ScreenScreenshotTest {
                 Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) { content() }
             }
         }
+        compose.waitForIdle()
+        // Let debounced searches (the Library waits 250 ms) run before the capture.
+        ShadowLooper.idleMainLooper(400, TimeUnit.MILLISECONDS)
         compose.waitForIdle()
         compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
     }
