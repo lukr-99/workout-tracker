@@ -18,7 +18,7 @@ server and no analytics. These inputs cross into the app and are treated as untr
 | Input | Where | Checks today |
 |---|---|---|
 | Update APK | GitHub Releases API, then the system installer | HTTPS. Download checked against the size GitHub reports. Android rejects an APK not signed with the same key. No checksum yet, and the first `.apk` asset is taken (CodePrint 3/5). |
-| JSON backup or export | File picker or the backup folder | Parsed with an allowlist of format versions, planned and previewed before any write. No size limit yet (CodePrint 2/5). |
+| JSON backup or export | File picker or the backup folder | Refused over 64 MB. Parsed with an allowlist of format versions, planned and previewed before any write, committed in one transaction. Each photo must decode as an image and be at most 8 MB, and is written under a name the app chooses. |
 | Lyfta CSV | File picker | Parsed into drafts and validated by `WorkoutFactory` before saving. |
 | GPX run | File picker | XML parser with DTDs and external entities turned off (`GpxCodec`). |
 | wger catalog | `wger.de` over HTTPS | Paging limited to the configured origin. Only fills blank fields on rows that came from wger. |
@@ -44,11 +44,12 @@ Secrets never go into git:
 
 ## Recovery
 
-- **Backup and restore:** turn on automatic backup in Settings, or export JSON from Settings, Data.
-  Restore by importing that file. The bundle does not include settings or personal exercise
-  photos yet (CodePrint 2/5).
-- **Deleting data:** there is no in-app "delete everything" yet (CodePrint 2/5). Uninstalling the
-  app removes all of its data, and Android settings can clear it.
+- **Backup and restore:** turn on automatic backup in Settings, or Save JSON from Settings, Data.
+  A backup holds everything, settings and photos included. Restore by importing it: Merge adds to
+  what is there, Replace everything puts the backup back exactly. A failed restore changes nothing.
+- **Deleting data:** Settings, Data, danger zone, Delete all data, then type "delete". Uninstalling
+  the app also removes all of its data. Backup files and Health Connect data are not touched.
+- The full contract is in [docs/data-contract.md](docs/data-contract.md).
 - **Rollback:** a database migration cannot be undone. To go back to an older version, export,
   reinstall and import. Older builds reject newer export versions.
 - **Lost signing key:** without the keystore, no update can install in place. Every update would

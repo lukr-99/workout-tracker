@@ -78,12 +78,14 @@ constraints, and [CONTEXT.md](CONTEXT.md) for the words the app uses.
   personal exercise photos in the app's files.
 - Schema changes use additive Room migrations with no destructive fallback. Every schema from 1 to
   8 is checked in under `app/schemas/` and covered by migration tests.
-- **Manual backup:** Settings, Data, export JSON (format 1.7), and import it to restore. The import
-  shows a preview and merges into the existing data.
+- **Manual backup:** Settings, Data, Save JSON. The file (format 1.8) holds everything: workouts,
+  runs, routes, templates, exercises, photos and settings.
 - **Automatic backup:** daily or weekly into a folder you choose, keeping the newest N files.
-- **Not covered yet:** settings and personal photos are not in the backup, and there is no
-  in-app "delete all data". Both are tracked as GoalMaker item CodePrint 2/5.
-- Recovery steps are in [SECURITY.md](SECURITY.md#recovery).
+- **Restore:** import the file. You see a preview first, then choose Merge (add to what is there)
+  or Replace everything (put the backup back exactly). A failed restore changes nothing.
+- **Delete all data:** in the danger zone at the end of the Data screen.
+- What is stored where, and the full rules, are in [docs/data-contract.md](docs/data-contract.md).
+  Recovery steps are in [SECURITY.md](SECURITY.md#recovery).
 
 ## Delivery
 

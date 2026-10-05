@@ -47,15 +47,20 @@ CodePrint 5/5):
 - **Runs:** `LocationService` is a foreground service that holds a partial wake lock while a run
   records. `RunSessionController` feeds fixes to the pure `domain/run/RunTracker`, and
   `RunRepository` stores runs, trace points, routes and route points.
-- **Export and import:** `DataTransferService` writes the `ExportBundle` JSON (format 1.7) and a
-  flat CSV. It imports our own bundles and Lyfta CSV, and plans every import (preview, merge,
-  counts) before writing. Single runs import and export as GPX from the Runs screen (`GpxCodec`).
+- **Export and import:** `DataTransferService` writes the `ExportBundle` JSON (format 1.8), a full
+  backup with settings and photos, and a flat CSV. It imports our own bundles and Lyfta CSV, and
+  plans every import (preview, merge or replace, counts) before writing. A commit is one
+  transaction, with photos staged to new files first (`PhotoArchive`, `SettingsArchive`). Single
+  runs import and export as GPX from the Runs screen (`GpxCodec`). The full contract is in
+  [docs/data-contract.md](docs/data-contract.md).
+- **Delete all data:** `UserDataEraser` stops automatic backup, empties the database, photos and
+  settings, and reseeds the starter catalog.
 - **Automatic backup:** WorkManager runs `BackupWorker` daily or weekly. It writes the same JSON
   bundle into a folder the owner picks (Storage Access Framework) and keeps the newest N files
   (`workout-backup-*.json`).
 - **Health Connect:** optional. Exports finished workouts and runs, and imports workouts as
   sessions.
-- **Settings:** Preferences DataStore. Not part of the export yet (GoalMaker item CodePrint 2/5).
+- **Settings:** Preferences DataStore, included in every backup and restored by a replace-restore.
 
 ## Capability modules
 
