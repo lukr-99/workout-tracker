@@ -41,6 +41,11 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
   both values side by side, quick steps (2.5 kg or 5 lb, 1 rep), a button that copies the set
   before, and Next and Done set. Done set saves the set and starts the rest timer.
 - The rest timer floats at the bottom and says which set is next.
+- **Templates learn from your workouts.** When you finish a workout that started from a template
+  and did it differently (added or skipped an exercise, more or fewer sets), Ember lists the
+  changes and asks whether to update the template, keep it as it is, or save the changes as a new
+  template. The finish sheet also shows the time, weight lifted, sets and PRs.
+- A template with a plan starts each exercise with its planned number of sets and its supersets.
 - **Add exercises on the go.** The picker lists your recent exercises first with what you did last
   time, lets you tick several and add them at once, and can add them as a superset.
 - **Create an exercise without leaving the workout.** Type a name the library does not have and

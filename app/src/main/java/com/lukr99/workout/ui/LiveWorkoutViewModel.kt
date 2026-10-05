@@ -94,6 +94,7 @@ class LiveWorkoutViewModel(
 
     /** Read-only look-ups into earlier workouts, for the sheets (history, recents, last time). */
     val history = EntryHistory(repo, insights)
+    val templates = TemplateSync(repo)
 
     /** The live workout's id and exercise ids; "last time" data reloads only when these change. */
     private val onScreen = draftState
@@ -306,14 +307,16 @@ class LiveWorkoutViewModel(
 
     // --- Finish / discard ----------------------------------------------------------------------
 
-    fun finish(onDone: () -> Unit) {
+    /** Saves the workout as finished, then runs [afterSave] with it (the template update, if any). */
+    fun finish(afterSave: suspend (WorkoutSession) -> Unit = {}, onDone: () -> Unit) {
         val session = draftState.value ?: return onDone()
         if (finalizing) return
         finalizing = true
         viewModelScope.launch {
             try {
                 persistJob?.cancelAndJoin()
-                persistMutex.withLock { repo.saveWorkoutSession(session.completedAt(System.currentTimeMillis())) }
+                val saved = persistMutex.withLock { repo.saveWorkoutSession(session.completedAt(System.currentTimeMillis())) }
+                runCatching { afterSave(saved) }
                 clear()
                 onDone()
             } finally {
