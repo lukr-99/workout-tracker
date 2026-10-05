@@ -6,6 +6,8 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-10-05
+
 ### Added
 
 - **What's new after an update.** Home shows a short card about the release once, until you tap
