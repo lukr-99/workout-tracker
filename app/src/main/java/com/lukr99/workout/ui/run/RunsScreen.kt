@@ -22,6 +22,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.DirectionsRun
 import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -54,7 +55,7 @@ import com.lukr99.workout.domain.run.Pace
 import com.lukr99.workout.domain.run.Route
 import com.lukr99.workout.domain.run.Run
 import com.lukr99.workout.settings.UnitSystem
-import com.lukr99.workout.ui.components.EmptyHint
+import com.lukr99.workout.ui.components.EmptyState
 import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.ScreenHeader
 import com.lukr99.workout.ui.run.components.MiniRoute
@@ -130,7 +131,9 @@ fun RunsScreen(
 
         item { SectionLabel("Recent runs") }
         if (runs.isEmpty()) {
-            item { EmptyHint("No runs yet. Tap Start a run to record your first.") }
+            item {
+                EmptyState(Icons.AutoMirrored.Rounded.DirectionsRun, "No runs yet", "Tap Start a run above to record one with GPS, or import a GPX file from another app.")
+            }
         } else {
             items(runs, key = { it.id }) { run -> RunRow(run, units) { onOpenRun(run.id) } }
         }

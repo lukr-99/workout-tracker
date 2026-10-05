@@ -10,12 +10,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.SearchOff
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.lukr99.workout.domain.WorkoutSessionSummary
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.HistoryViewModel
-import com.lukr99.workout.ui.components.EmptyHint
+import com.lukr99.workout.ui.components.EmptyState
 import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.SearchField
 import com.lukr99.workout.ui.theme.EmberTheme
@@ -48,7 +51,13 @@ fun HistoryScreen(
             SearchField(value = search, onValueChange = vm::setSearch, placeholder = "Search workouts")
         }
         if (history.isEmpty()) {
-            item { EmptyHint("No workouts logged yet.") }
+            item {
+                if (search.isBlank()) {
+                    EmptyState(Icons.Rounded.History, "No workouts yet", "Workouts you finish show up here, newest first. Tap Start below to log one.")
+                } else {
+                    EmptyState(Icons.Rounded.SearchOff, "No workouts match “${search.trim()}”", "Search looks at workout names. Try a shorter word.")
+                }
+            }
         } else {
             items(history, key = { it.id }) { summary ->
                 HistoryRow(summary, units) { onOpen(summary.id) }
