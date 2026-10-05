@@ -1,6 +1,7 @@
 package com.lukr99.workout.data
 
 import android.content.Context
+import androidx.core.content.pm.PackageInfoCompat
 import com.lukr99.workout.data.backup.BackupRunner
 import com.lukr99.workout.data.backup.BackupScheduler
 import com.lukr99.workout.data.backup.SafBackupGateway
@@ -26,7 +27,9 @@ import com.lukr99.workout.data.transfer.DataStoreSettingsArchive
 import com.lukr99.workout.data.transfer.DataTransferService
 import com.lukr99.workout.data.transfer.SettingsArchive
 import com.lukr99.workout.data.transfer.UserDataEraser
+import com.lukr99.workout.settings.OrientationStore
 import com.lukr99.workout.settings.SettingsStore
+import com.lukr99.workout.settings.WhatsNewGate
 import com.lukr99.workout.update.FileProviderInstallerLauncher
 import com.lukr99.workout.update.GitHubReleaseSource
 import com.lukr99.workout.update.HttpsUpdateHttp
@@ -113,6 +116,16 @@ class AppContainer(context: Context) {
     }
     val documents: AndroidDocumentGateway by lazy { AndroidDocumentGateway(context) }
     val settings: SettingsStore by lazy { SettingsStore(context) }
+
+    /** The "what's new" card on Home, shown once after an update that has a note. */
+    val whatsNew: WhatsNewGate by lazy {
+        val info = context.packageManager.getPackageInfo(context.packageName, 0)
+        WhatsNewGate(
+            store = OrientationStore(context),
+            current = PackageInfoCompat.getLongVersionCode(info).toInt(),
+            freshInstall = info.firstInstallTime == info.lastUpdateTime,
+        )
+    }
     val healthConnect: HealthConnectService by lazy {
         HealthConnectService(repository, AndroidHealthConnectGateway(context))
     }

@@ -103,7 +103,9 @@ Verify what's installed: `adb shell dumpsys package com.lukr99.workout | findstr
 ## Publishing a release the updater will find
 
 1. Bump `versionCode` and `versionName` in `app/build.gradle.kts`, and rename `[Unreleased]` in
-   `CHANGELOG.md` to `[<versionName>] - <date>`. Merge that to `main`.
+   `CHANGELOG.md` to `[<versionName>] - <date>`. If the release has something a user would
+   notice, add a `WhatsNewNote` with the new `versionCode` to `domain/WhatsNew.kt`: three to five
+   short lines. Home shows it once after the update. Merge that to `main`.
 2. On a clean `main`, run `.\tools\publish-release.ps1`. It:
    - builds `assembleRelease`;
    - checks the APK is signed with the release key (certificate SHA-256 `1db09253...19e3`);

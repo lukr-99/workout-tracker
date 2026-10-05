@@ -8,8 +8,10 @@ import com.lukr99.workout.data.WorkoutRepository
 import com.lukr99.workout.data.run.RunRepository
 import com.lukr99.workout.domain.DashboardSnapshot
 import com.lukr99.workout.domain.TrainingWeek
+import com.lukr99.workout.domain.WhatsNewNote
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutTemplate
+import com.lukr99.workout.settings.WhatsNewGate
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -18,6 +20,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
@@ -27,6 +30,7 @@ import kotlinx.coroutines.launch
 class HomeViewModel(
     private val repo: WorkoutRepository,
     runs: RunRepository,
+    private val whatsNewGate: WhatsNewGate? = null,
     private val now: () -> Long = System::currentTimeMillis,
     private val zone: () -> ZoneId = ZoneId::systemDefault,
 ) : ViewModel() {
@@ -39,6 +43,14 @@ class HomeViewModel(
 
     val templates: StateFlow<List<WorkoutTemplate>> =
         repo.observeTemplates().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** The "what's new" card for this build, or null when there is nothing to show. */
+    val whatsNew: StateFlow<WhatsNewNote?> = (whatsNewGate?.due ?: flowOf(null))
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun dismissWhatsNew() {
+        viewModelScope.launch { whatsNewGate?.dismiss() }
+    }
 
     private val history = repo.observeHistory()
     private val runList = runs.observeRuns()
@@ -82,7 +94,7 @@ class HomeViewModel(
         fun factory(container: AppContainer): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                HomeViewModel(container.repository, container.runRepository) as T
+                HomeViewModel(container.repository, container.runRepository, container.whatsNew) as T
         }
     }
 }

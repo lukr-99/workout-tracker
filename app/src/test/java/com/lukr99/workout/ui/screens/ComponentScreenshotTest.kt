@@ -1,5 +1,7 @@
 package com.lukr99.workout.ui.screens
 
+import androidx.compose.material.icons.rounded.TouchApp
+import androidx.compose.material.icons.rounded.ContentPaste
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
@@ -175,6 +177,25 @@ class ComponentScreenshotTest {
             ),
         )
         FinishWorkoutSheet(session, template, UnitSystem.Metric, volumeKg = 3_100.0, nowUtcMillis = 52 * 60_000L, onFinish = { _, _ -> }, onDismiss = {})
+    }
+
+    @Test fun orientationDark() = capture("orientation_dark", dark = true) { Orientation() }
+    @Test fun orientationLight() = capture("orientation_light", dark = false) { Orientation() }
+
+    /** The what's-new card, an empty state with an action, and a gesture hint. */
+    @Composable
+    private fun Orientation() = androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
+        com.lukr99.workout.ui.components.WhatsNewCard(com.lukr99.workout.domain.WhatsNew.notes.last(), onDismiss = {})
+        com.lukr99.workout.ui.components.EmptyState(
+            androidx.compose.material.icons.Icons.Rounded.ContentPaste,
+            "No templates yet",
+            "A template is a saved list of exercises to start a workout from, with a plan for each one if you like.",
+            action = "New template",
+        )
+        com.lukr99.workout.ui.components.InlineHint(
+            androidx.compose.material.icons.Icons.Rounded.TouchApp,
+            "Tap a set's number for tags, effort, a note, or to remove it.",
+        )
     }
 
     @Test fun settingsCardsDark() = capture("settings_cards_dark", dark = true) { SettingsCards() }

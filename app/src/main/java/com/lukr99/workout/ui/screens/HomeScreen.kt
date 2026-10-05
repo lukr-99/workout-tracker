@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.DirectionsRun
 import androidx.compose.material.icons.rounded.FitnessCenter
+import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Settings
@@ -48,10 +49,11 @@ import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.HomeRecent
 import com.lukr99.workout.ui.HomeViewModel
-import com.lukr99.workout.ui.components.EmptyHint
+import com.lukr99.workout.ui.components.EmptyState
 import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.RoundIconButton
 import com.lukr99.workout.ui.components.ScreenHeader
+import com.lukr99.workout.ui.components.WhatsNewCard
 import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
 import java.time.LocalDate
@@ -77,6 +79,7 @@ fun HomeScreen(
     val templates by vm.templates.collectAsState()
     val week by vm.week.collectAsState()
     val recent by vm.recent.collectAsState()
+    val whatsNew by vm.whatsNew.collectAsState()
 
     LaunchedEffect(Unit) { vm.refresh() }
 
@@ -90,6 +93,7 @@ fun HomeScreen(
                 RoundIconButton(Icons.Rounded.Settings, "Settings", onOpenSettings)
             }
         }
+        whatsNew?.let { note -> item(key = "whats-new") { WhatsNewCard(note, vm::dismissWhatsNew) } }
         active?.let { session -> item { ResumeCard(session, onResume) } }
         item { SectionLabel("This week") { Streak(snapshot.consistency.currentWeeklyStreak) } }
         item { WeekCard(week, units) }
@@ -99,7 +103,13 @@ fun HomeScreen(
         }
         item { SectionLabel("Recent") {} }
         if (recent.isEmpty()) {
-            item { EmptyHint("Nothing yet. Press Start to log your first workout or run.") }
+            item {
+                EmptyState(
+                    Icons.Rounded.History,
+                    "No workouts or runs yet",
+                    "Tap the orange Start button below to log a workout or record a run.",
+                )
+            }
         } else {
             items(recent, key = { (if (it.isRun) "run-" else "lift-") + it.id }) { row ->
                 RecentRow(row, units) { if (row.isRun) onOpenRun(row.id) else onOpenSession(row.id) }
