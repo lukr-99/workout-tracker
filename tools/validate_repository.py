@@ -32,10 +32,12 @@ TEXT_EXTENSIONS = {
     ".yml",
 }
 IGNORED_DIRECTORY_NAMES = {
+    ".codex",
     ".git",
     ".gradle",
     ".idea",
     ".pytest_cache",
+    ".vs",
     ".vscode",
     "__pycache__",
     "artifacts",
