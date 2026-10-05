@@ -62,6 +62,9 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
   - a Maestro launch smoke flow;
   - the CodePrint `emulator`, `ui-check` and `agent-doctor` scripts.
   - The bundled exercise image index moved to `src/main/resources`, so tests read the same file.
+- Code layout follows CodePrint: one type per file, one numbered file per database migration, the
+  backup worker built through the app's own WorkManager setup, and the largest data and view model
+  files split by job, with new JVM tests for each piece. The app behaves the same.
 
 ### Fixed
 
