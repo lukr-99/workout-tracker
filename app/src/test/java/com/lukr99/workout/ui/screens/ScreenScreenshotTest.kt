@@ -83,6 +83,7 @@ class ScreenScreenshotTest {
         repo = WorkoutRepository(db.workoutDao(), RoomTransactionRunner(db))
         repo.ensureSeeded()
         ScreenFixtures.fill(repo)
+        ScreenFixtures.fillRuns(RunRepository(db.runDao()))
     }
 
     // No @After close: leaving a screen saves its live draft, which runs after the test body. The
@@ -128,7 +129,6 @@ class ScreenScreenshotTest {
     @Composable
     private fun Runs() {
         val runs = RunRepository(db.runDao())
-        remember { runBlocking { ScreenFixtures.fillRuns(runs) } }
         RunsScreen(
             vm = RunViewModel(runs, AndroidDocumentGateway(context), ShareCardRenderer(context), OfflineTileCache(context)),
             units = UnitSystem.Metric,
