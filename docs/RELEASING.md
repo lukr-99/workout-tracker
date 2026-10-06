@@ -57,7 +57,7 @@ The keystore is **not in git** and cannot be regenerated to match. Lose it and y
 another update that upgrades an installed copy in place — every user (i.e. you) would have to
 uninstall (losing data) and reinstall from scratch. Keep **at least two** independent copies:
 
-- Flash drive: `G:\android-keystores\workout-tracker\` (both files) — good for carrying between
+- Flash drive: `E:\android-keystores\workout-tracker\` (both files). Good for carrying between
   stations, not sufficient as the only copy.
 - Plus one more: a cloud drive or a password manager's secure-file storage.
 
@@ -119,8 +119,8 @@ Verify what's installed: `adb shell dumpsys package com.lukr99.workout | findstr
 Installed copies from 2.5.2 and older pick the first `.apk` asset and ignore the checksum. They
 update fine from a release made this way, and from then on they verify.
 
-## Current state (2026-10-05)
+## Current state (2026-10-06)
 
-- Latest release: **v2.5.2** (`Ember-2.5.2.apk`, no checksum file; it predates the verified
-  updater).
+- Latest release: **v2.6.0** (`Ember-2.6.0.apk` and `Ember-2.6.0.apk.sha256`), published
+  2026-10-05. It is the first release the updater verifies by checksum.
 - Keystore created and backed up to the flash drive; **still needs a second backup copy**.
