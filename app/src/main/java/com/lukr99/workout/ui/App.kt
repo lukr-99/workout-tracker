@@ -53,6 +53,7 @@ import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.ResumeChooserSheet
 import com.lukr99.workout.ui.components.StartChooserSheet
 import com.lukr99.workout.ui.components.ToastHost
+import com.lukr99.workout.ui.components.rememberReduceMotion
 import com.lukr99.workout.ui.components.rememberToastState
 import com.lukr99.workout.ui.run.LiveRunScreen
 import com.lukr99.workout.ui.run.LiveRunViewModel
@@ -110,6 +111,7 @@ fun App(container: AppContainer) {
     val hasResumableLift = activeSession?.entries?.isNotEmpty() == true
     val resumeMode = runActive || hasResumableLift
     val overlay = nav.top
+    val reduceMotion = rememberReduceMotion()
     var chooserOpen by remember { mutableStateOf(false) }
     var resumeChooserOpen by remember { mutableStateOf(false) }
     var previewTemplateId by remember { mutableStateOf<String?>(null) }
@@ -160,7 +162,7 @@ fun App(container: AppContainer) {
                     .padding(horizontal = 18.dp)
                     .padding(top = 12.dp),
             ) {
-                Crossfade(targetState = nav.tab.value, animationSpec = tween(220), label = "tab") { tab ->
+                Crossfade(targetState = nav.tab.value, animationSpec = tween(if (reduceMotion) 0 else 220), label = "tab") { tab ->
                     when (tab) {
                         Tab.HOME -> HomeScreen(
                             vm = homeVm,

@@ -63,6 +63,7 @@ class SettingsViewModel(
 
     fun setTheme(mode: ThemeMode) = viewModelScope.launch { store.setThemeMode(mode) }.let { }
     fun setUnits(units: UnitSystem) = viewModelScope.launch { store.setUnits(units) }.let { }
+    fun setReduceMotion(on: Boolean) = viewModelScope.launch { store.setReduceMotion(on) }.let { }
     fun setDefaultRest(seconds: Int) = viewModelScope.launch {
         store.setDefaultRestSeconds(seconds)
     }.let { }

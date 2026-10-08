@@ -16,6 +16,7 @@ class DataStoreSettingsArchive(private val store: SettingsStore) : SettingsArchi
             themeMode = current.themeMode.name,
             units = current.units.name,
             defaultRestSeconds = current.defaultRestSeconds,
+            reduceMotion = current.reduceMotion,
         )
     }
 
@@ -26,6 +27,7 @@ class DataStoreSettingsArchive(private val store: SettingsStore) : SettingsArchi
                 themeMode = ThemeMode.entries.firstOrNull { it.name == snapshot.themeMode } ?: defaults.themeMode,
                 units = UnitSystem.entries.firstOrNull { it.name == snapshot.units } ?: defaults.units,
                 defaultRestSeconds = snapshot.defaultRestSeconds,
+                reduceMotion = snapshot.reduceMotion,
             ),
         )
     }

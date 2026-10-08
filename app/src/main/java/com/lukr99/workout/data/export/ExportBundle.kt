@@ -38,7 +38,7 @@ data class ExportBundle(
     val photos: List<ExercisePhoto> = emptyList(),
 ) {
     companion object {
-        const val CURRENT_VERSION = "1.9"
-        val SUPPORTED_VERSIONS = setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9")
+        const val CURRENT_VERSION = "1.10"
+        val SUPPORTED_VERSIONS = setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "1.10")
     }
 }

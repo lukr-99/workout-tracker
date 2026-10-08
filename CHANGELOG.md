@@ -44,6 +44,9 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
   of closing it.
 - **Light maps.** Maps follow the app's theme, so light mode gets a light map, and the live run has
   a button to switch between light and dark.
+- **Reduce motion** in Settings, Appearance: jumps and highlights happen at once and tabs switch
+  without fading, on top of Android's own "remove animations". Backups keep it (export format 1.10;
+  older backups still import).
 
 ### Fixed
 

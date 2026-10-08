@@ -52,6 +52,7 @@ import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.RoundIconButton
 import com.lukr99.workout.ui.components.SegmentedControl
+import com.lukr99.workout.ui.components.rememberReduceMotion
 import com.lukr99.workout.ui.theme.EmberTheme
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
@@ -104,7 +105,7 @@ fun SettingsScreen(
     val list = rememberLazyListState()
     val chips = rememberLazyListState()
     val lineY = with(LocalDensity.current) { 80.dp.roundToPx() }
-    val reduceMotion = remember { animationsOff(context) }
+    val reduceMotion = rememberReduceMotion()
     val jump = remember { sections.map { Animatable(0f) } }
     val scrollHint = remember { sections.map { Animatable(0f) } }
     var jumping by remember { mutableStateOf<Int?>(null) }
@@ -176,6 +177,12 @@ fun SettingsScreen(
                                 onSelect = vm::setTheme,
                                 label = { it.name },
                                 modifier = Modifier.padding(bottom = 8.dp),
+                            )
+                            ToggleRow(
+                                "Reduce motion",
+                                "Jumps and highlights happen at once, with no sliding or fading.",
+                                checked = settings.reduceMotion,
+                                onChange = vm::setReduceMotion,
                             )
                         }
                         SettingsSection.Workouts -> {
@@ -285,7 +292,3 @@ fun SettingsScreen(
         )
     }
 }
-
-/** True when the system animator scale is 0, the "remove animations" accessibility setting. */
-private fun animationsOff(context: android.content.Context): Boolean =
-    android.provider.Settings.Global.getFloat(context.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
