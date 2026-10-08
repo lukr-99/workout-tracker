@@ -29,7 +29,6 @@ import com.lukr99.workout.data.run.ShareCardRenderer
 import com.lukr99.workout.data.services.WorkoutDataService
 import com.lukr99.workout.data.services.WorkoutInsightsService
 import com.lukr99.workout.data.transfer.AndroidDocumentGateway
-import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.settings.SettingsStore
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.HistoryViewModel
@@ -109,7 +108,7 @@ class ScreenScreenshotTest {
         val data = runBlocking { HomeViewModel(repo, RunRepository(db.runDao())).preview(template) }
         compose.setContent {
             WorkoutTheme(dark = true) {
-                TemplatePreviewSheet(template, data, UnitSystem.Metric, onEdit = {}, onStart = {}, onDismiss = {})
+                TemplatePreviewSheet(template, data, UnitSystem.Metric, defaultRestSeconds = 120, onEdit = {}, onStart = {}, onDismiss = {})
             }
         }
         compose.waitForIdle()
