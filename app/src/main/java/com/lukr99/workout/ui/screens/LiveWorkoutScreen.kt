@@ -107,6 +107,8 @@ fun LiveWorkoutScreen(
 
     var sheet by remember { mutableStateOf<LiveSheet?>(null) }
     var expandedFinishedEntries by remember { mutableStateOf(emptySet<String>()) }
+    // Exercises further down start folded to one row; opening one keeps it open for this visit.
+    var openedEntries by remember { mutableStateOf(emptySet<String>()) }
     val catalog by vm.catalogById.collectAsState()
     val previousNotes by vm.previousNotes.collectAsState()
     val previousSets by vm.previousSets.collectAsState()
@@ -140,6 +142,7 @@ fun LiveWorkoutScreen(
             val entries = session?.entries.orEmpty()
             val supersetMembers = entries.filter { it.supersetGroup != null }
                 .groupBy { checkNotNull(it.supersetGroup) }
+            val compactIds = compactEntryIds(entries, doneIds) - openedEntries
             LazyColumn(
                 Modifier.weight(1f).fillMaxWidth(),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(
@@ -155,6 +158,10 @@ fun LiveWorkoutScreen(
                     )
                 }
                 itemsIndexed(entries, key = { _, entry -> entry.id }) { index, entry ->
+                    if (entry.id in compactIds) {
+                        CompactEntryRow(entry, onOpen = { openedEntries = openedEntries + entry.id })
+                        return@itemsIndexed
+                    }
                     val catalogExercise = catalog[entry.exerciseId]
                     LiveEntryCard(
                         entry = entry,
