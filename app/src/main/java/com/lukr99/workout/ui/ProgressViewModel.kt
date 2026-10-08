@@ -9,12 +9,13 @@ import com.lukr99.workout.data.services.WorkoutDataService
 import com.lukr99.workout.data.services.WorkoutInsightsService
 import com.lukr99.workout.domain.Estimates
 import com.lukr99.workout.domain.ExerciseCategory
+import com.lukr99.workout.domain.ProgressContext
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutSessionStatus
-import com.lukr99.workout.domain.records.ExerciseRecords
 import com.lukr99.workout.domain.query.WorkoutCriterion
 import com.lukr99.workout.domain.query.WorkoutQuery
 import com.lukr99.workout.domain.query.asFilter
+import com.lukr99.workout.domain.records.ExerciseRecords
 import com.lukr99.workout.domain.stats.DimensionKeys
 import com.lukr99.workout.domain.stats.MetricKeys
 import com.lukr99.workout.domain.stats.StatsRequest
@@ -83,6 +84,7 @@ class ProgressViewModel(
             uiState.value = ProgressUiState(
                 loaded = true,
                 overview = overview,
+                context = ProgressContext.of(sessions, System.currentTimeMillis(), java.time.ZoneId.systemDefault()),
                 weeklyVolume = weekly,
                 exercises = buildExerciseSummaries(sessions),
                 recovery = insights.recovery(),

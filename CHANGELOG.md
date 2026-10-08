@@ -35,6 +35,9 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 - **Templates on Home say when you last did them** ("3 days ago · Bench Press, ...").
 - **The Start a run card shows the GPS fix** once location is allowed: "Looking for GPS",
   "GPS ready ±4 m", or "Weak GPS" with a hint. It listens only while Runs is open.
+- **The Progress tiles have context.** Workouts says how many this month; Volume covers the last 4
+  weeks and compares them with the 4 before; PR sets count the last 30 days; Streak shows your
+  best. Weekly volume says how much you lifted this week.
 
 ### Fixed
 
