@@ -52,7 +52,11 @@ fun ProgressDetailScreen(
     val state by vm.state.collectAsState()
     val records by vm.records.collectAsState()
     val detail = state.exercises.firstOrNull { it.exerciseId == exerciseId }
-    LaunchedEffect(exerciseId) { vm.loadRecords(exerciseId) }
+    LaunchedEffect(exerciseId) {
+        // Opened from a live workout, the Progress tab may not have loaded its data yet.
+        if (!vm.state.value.loaded) vm.refresh()
+        vm.loadRecords(exerciseId)
+    }
 
     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
         Row(

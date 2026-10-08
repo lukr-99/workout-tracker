@@ -34,6 +34,7 @@ internal fun LiveWorkoutSheets(
     catalog: Map<String, Exercise>,
     onSheet: (LiveSheet?) -> Unit,
     onEditExercise: (String) -> Unit,
+    onOpenHistory: (String) -> Unit,
     onClose: () -> Unit,
     toast: (String) -> Unit,
 ) {
@@ -92,15 +93,24 @@ internal fun LiveWorkoutSheets(
                 entry = entry,
                 units = units,
                 options = ExerciseMenuOptions(
-                    canSupersetWithPrevious = index > 0,
-                    groupedWithPrevious = index > 0 && entry.supersetGroup != null && entry.supersetGroup == entries[index - 1].supersetGroup,
+                    inSuperset = entry.supersetGroup != null,
+                    nextName = entries.getOrNull(index + 1)?.exerciseSnapshotName,
+                    previousName = entries.getOrNull(index - 1)?.exerciseSnapshotName,
                     canMoveUp = index > 0,
                     canMoveDown = index < entries.lastIndex,
                     hasGuide = catalogExercise != null,
                 ),
                 loadOutings = { vm.history.outings(entry.exerciseId) },
                 onReplace = { onSheet(LiveSheet.Replace(entry.id)) },
-                onToggleSuperset = { vm.toggleSupersetWithPrevious(entry.id) },
+                onSuperset = {
+                    val next = entries.getOrNull(index + 1)
+                    when {
+                        entry.supersetGroup != null -> vm.removeFromSuperset(entry.id)
+                        next != null -> vm.toggleSupersetWithPrevious(next.id)
+                        else -> vm.toggleSupersetWithPrevious(entry.id)
+                    }
+                },
+                onFullHistory = entry.exerciseId.takeIf { it.isNotBlank() }?.let { id -> { onOpenHistory(id) } },
                 onMoveUp = { vm.moveEntry(entry.id, up = true) },
                 onMoveDown = { vm.moveEntry(entry.id, up = false) },
                 onEditNote = { onSheet(LiveSheet.Note(NoteTarget.Entry(entry.id))) },

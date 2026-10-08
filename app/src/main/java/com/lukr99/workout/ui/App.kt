@@ -7,7 +7,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -39,15 +38,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lukr99.workout.data.AppContainer
-import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.LocalExerciseImageResolver
 import com.lukr99.workout.ui.components.LocalSpotify
+import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.ResumeChooserSheet
 import com.lukr99.workout.ui.components.StartChooserSheet
 import com.lukr99.workout.ui.components.ToastHost
@@ -59,22 +61,19 @@ import com.lukr99.workout.ui.run.RoutePlannerViewModel
 import com.lukr99.workout.ui.run.RunDetailScreen
 import com.lukr99.workout.ui.run.RunViewModel
 import com.lukr99.workout.ui.run.RunsScreen
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.testTagsAsResourceId
-import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.screens.DataTransferScreen
 import com.lukr99.workout.ui.screens.ExerciseEditorScreen
 import com.lukr99.workout.ui.screens.HomeScreen
 import com.lukr99.workout.ui.screens.LibraryScreen
 import com.lukr99.workout.ui.screens.LiveWorkoutScreen
+import com.lukr99.workout.ui.screens.PrivacyPolicyScreen
 import com.lukr99.workout.ui.screens.ProgressDetailScreen
 import com.lukr99.workout.ui.screens.ProgressHubScreen
-import com.lukr99.workout.ui.screens.PrivacyPolicyScreen
-import com.lukr99.workout.ui.settings.SettingsScreen
-import com.lukr99.workout.ui.screens.TemplatePreviewSheet
 import com.lukr99.workout.ui.screens.TemplateEditorScreen
+import com.lukr99.workout.ui.screens.TemplatePreviewSheet
 import com.lukr99.workout.ui.screens.WorkoutDetailScreen
+import com.lukr99.workout.ui.settings.SettingsScreen
+import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
  * App root. The 5-item shell — `Home · Runs · (＋ Start) · Progress · Settings` — with the center
@@ -218,6 +217,7 @@ fun App(container: AppContainer) {
                             units = settings.units,
                             onClose = { liveVm.flush(); nav.pop() },
                             onEditExercise = { nav.push(Route.ExerciseEditor(it)) },
+                            onOpenHistory = { liveVm.flush(); nav.push(Route.ProgressDetail(it)) },
                         )
                         Route.LiveRun -> LiveRunScreen(
                             vm = liveRunVm,
