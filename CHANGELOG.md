@@ -6,6 +6,8 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-10-08
+
 ### Added
 
 - **Repeat a workout.** An empty workout lists your latest workouts (one per name) with a Copy
