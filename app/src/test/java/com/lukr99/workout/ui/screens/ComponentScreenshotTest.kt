@@ -156,7 +156,21 @@ class ComponentScreenshotTest {
 
     @Test
     fun emptyWorkoutLight() = capture("empty_workout_start_light", dark = false) {
-        EmptyWorkoutStart(recent = catalog, onAddExercises = {}, onQuickAdd = {})
+        EmptyWorkoutStart(
+            recent = catalog,
+            repeatable = listOf("Push day" to 1, "Pull day" to 3).map { (name, daysAgo) ->
+                WorkoutSession(
+                    name = name,
+                    startedAtUtc = System.currentTimeMillis() - daysAgo * 86_400_000L,
+                    entries = catalog.take(5).map { WorkoutEntry(exerciseId = it.id, exerciseSnapshotName = it.name) },
+                )
+            },
+            templates = listOf("Push day", "Pull day", "Legs").map { WorkoutTemplate(name = it) },
+            onAddExercises = {},
+            onQuickAdd = {},
+            onRepeat = {},
+            onSwitch = {},
+        )
     }
 
     @Test

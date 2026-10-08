@@ -9,15 +9,19 @@ import com.lukr99.workout.data.services.WorkoutInsightsService
 import com.lukr99.workout.domain.Estimates
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseFilter
-import com.lukr99.workout.domain.replacedWith
 import com.lukr99.workout.domain.PreviousEntryNote
 import com.lukr99.workout.domain.SetTag
 import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutSessionStatus
+import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.domain.completedAt
+import com.lukr99.workout.domain.effectiveTags
+import com.lukr99.workout.domain.repeating
+import com.lukr99.workout.domain.replacedWith
 import com.lukr99.workout.domain.setIdsMarkedDone
+import com.lukr99.workout.domain.switchedTo
 import com.lukr99.workout.domain.withEntriesAdded
 import com.lukr99.workout.domain.withEntry
 import com.lukr99.workout.domain.withEntryFinished
@@ -28,7 +32,6 @@ import com.lukr99.workout.domain.withSetAdded
 import com.lukr99.workout.domain.withSetDone
 import com.lukr99.workout.domain.withTagToggled
 import com.lukr99.workout.domain.withWeightUnitToggled
-import com.lukr99.workout.domain.effectiveTags
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -174,6 +177,10 @@ class LiveWorkoutViewModel(
         }
     }
 
+    /** The empty workout's shortcuts: start over from a past workout's sets, or from a template. */
+    fun repeatWorkout(past: WorkoutSession) = mutate { it.repeating(past) }
+    fun switchToTemplate(template: WorkoutTemplate) = mutate { it.switchedTo(template) }
+
     /** Saves a new exercise from the quick form to the library and adds it to the workout. */
     fun createAndAdd(exercise: Exercise) {
         viewModelScope.launch { addExercise(repo.saveExercise(exercise)) }
@@ -298,11 +305,8 @@ class LiveWorkoutViewModel(
     }
 
     // --- Rest timer ----------------------------------------------------------------------------
-
     fun startRest(seconds: Int) = restTimer.start(seconds)
-
     fun addRest(seconds: Int) = restTimer.add(seconds)
-
     fun skipRest() = restTimer.skip()
 
     // --- Finish / discard ----------------------------------------------------------------------

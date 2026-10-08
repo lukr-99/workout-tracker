@@ -4,14 +4,15 @@ import com.lukr99.workout.data.export.ExportBundle
 import com.lukr99.workout.data.images.ExerciseNameNormalizer
 import com.lukr99.workout.domain.Analytics
 import com.lukr99.workout.domain.CardioEntryData
+import com.lukr99.workout.domain.DEFAULT_WORKOUT_NAME
 import com.lukr99.workout.domain.DashboardSnapshot
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseAnalyticsPoint
 import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.ExerciseFilter
 import com.lukr99.workout.domain.PreviousEntryNote
-import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.Progression
+import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutSessionStatus
@@ -184,7 +185,7 @@ class WorkoutRepository(
         var session = WorkoutSession(
             id = sessionId,
             templateId = templateId,
-            name = name?.trim().takeUnless { it.isNullOrBlank() } ?: "Quick Workout",
+            name = name?.trim().takeUnless { it.isNullOrBlank() } ?: DEFAULT_WORKOUT_NAME,
             startedAtUtc = System.currentTimeMillis(),
             status = WorkoutSessionStatus.Active,
         )
@@ -238,7 +239,7 @@ class WorkoutRepository(
         val id = session.id.ifBlank { newId() }
         var normalized = session.copy(
             id = id,
-            name = session.name.ifBlank { "Quick Workout" }.trim(),
+            name = session.name.ifBlank { DEFAULT_WORKOUT_NAME }.trim(),
         )
 
         if (normalized.status == WorkoutSessionStatus.Completed) {

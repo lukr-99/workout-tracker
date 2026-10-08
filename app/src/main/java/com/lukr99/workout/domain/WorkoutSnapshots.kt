@@ -5,6 +5,9 @@ package com.lukr99.workout.domain
  * to the catalog or a template never rewrites a workout that already happened.
  */
 
+/** The name a workout gets when it is not started from a template and nobody named it. */
+const val DEFAULT_WORKOUT_NAME = "Quick Workout"
+
 /** A fresh exercise in a workout with the exercise's name, category and body part copied onto it. */
 fun Exercise.toNewEntry(sortOrder: Int = 0): WorkoutEntry = WorkoutEntry(
     exerciseId = id,
@@ -66,6 +69,53 @@ fun WorkoutSession.toTemplate(templateName: String? = null): WorkoutTemplate = W
                 notes = entry.notes,
             )
         },
+)
+
+/**
+ * This workout with [past]'s exercises, in order and with its supersets, each starting with the
+ * sets done last time: the same reps, weight and tags, none of them logged yet. Notes stay behind,
+ * since they were about that day. It takes [past]'s name while this one still has the default.
+ */
+fun WorkoutSession.repeating(past: WorkoutSession): WorkoutSession = copy(
+    name = if (name == DEFAULT_WORKOUT_NAME) past.name else name,
+    entries = past.entries
+        .sortedBy { it.sortOrder }
+        .filter { it.exerciseId.isNotBlank() }
+        .mapIndexed { index, entry ->
+            WorkoutEntry(
+                workoutSessionId = id,
+                exerciseId = entry.exerciseId,
+                exerciseSnapshotName = entry.exerciseSnapshotName,
+                exerciseSnapshotCategory = entry.exerciseSnapshotCategory,
+                exerciseSnapshotPrimaryBodyPart = entry.exerciseSnapshotPrimaryBodyPart,
+                sortOrder = index,
+                entryType = entry.entryType,
+                supersetGroup = entry.supersetGroup,
+                weightUnitOverride = entry.weightUnitOverride,
+                strengthSets = entry.strengthSets.sortedBy { it.setNumber }.mapIndexed { i, set ->
+                    StrengthSet(
+                        setNumber = i + 1,
+                        reps = set.reps,
+                        weightKg = set.weightKg,
+                        isWarmup = set.isWarmup,
+                        durationSeconds = set.durationSeconds,
+                        setType = set.setType,
+                        tags = set.tags,
+                    )
+                }.ifEmpty { firstSetsFor(entry.entryType) },
+                cardioData = firstCardioFor(entry.entryType),
+            )
+        },
+)
+
+/**
+ * This workout started from [template] after all: its name, its link to the template (so finishing
+ * can offer to update it), and its exercises as a template start would have them.
+ */
+fun WorkoutSession.switchedTo(template: WorkoutTemplate): WorkoutSession = copy(
+    templateId = template.id,
+    name = template.name,
+    entries = template.toEntries(id),
 )
 
 private fun firstSetsFor(category: ExerciseCategory): List<StrengthSet> =
