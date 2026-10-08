@@ -47,9 +47,14 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 - **Reduce motion** in Settings, Appearance: jumps and highlights happen at once and tabs switch
   without fading, on top of Android's own "remove animations". Backups keep it (export format 1.10;
   older backups still import).
+- **Health Connect can take each workout as you finish it.** A switch under Health Connect (on by
+  default) sends every finished workout and run. Runs already went on their own; now workouts do
+  too, and the switch can stop both.
 
 ### Fixed
 
+- "Send workouts and runs" to Health Connect sent only workouts. It now sends runs too, and is
+  called "Send everything now".
 - An exercise's progress page opened before visiting the Progress tab showed "No sets logged yet".
 - **Sets you did not tick no longer count as lifted.** The live header counts ticked sets only, so
   a copied workout no longer shows "9.4k kg · 0 sets" before you start. Finishing with unticked

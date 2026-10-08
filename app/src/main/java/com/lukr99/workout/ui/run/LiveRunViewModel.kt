@@ -15,9 +15,11 @@ import com.lukr99.workout.domain.run.LiveRunState
 import com.lukr99.workout.domain.run.Polyline
 import com.lukr99.workout.domain.run.RunStats
 import com.lukr99.workout.domain.run.TracePoint
+import com.lukr99.workout.settings.DevicePrefs
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -33,6 +35,7 @@ class LiveRunViewModel(
     private val controller: RunSessionController,
     private val healthConnect: HealthConnectService,
     private val repo: RunRepository,
+    private val devicePrefs: DevicePrefs? = null,
 ) : AndroidViewModel(application) {
 
     val state: StateFlow<LiveRunState> = controller.state
@@ -85,7 +88,8 @@ class LiveRunViewModel(
         val run = controller.finish()
         // Best-effort mirror to Health Connect (idempotent; no-op without permission). Never blocks
         // or fails the save — the run is already persisted locally by the controller.
-        runCatching { healthConnect.exportRuns(listOf(run)) }
+        // Only when the Health Connect auto-send switch is on (it is unless turned off).
+        if (devicePrefs?.healthAutoSend?.first() != false) runCatching { healthConnect.exportRuns(listOf(run)) }
         // The run is already saved, so getRunsWithTraces includes it — diff for new PRs.
         return runCatching { RunStats.summarize(run, repo.getRunsWithTraces()) }
             .getOrDefault(
@@ -113,6 +117,7 @@ class LiveRunViewModel(
                     container.runSessionController,
                     container.healthConnect,
                     container.runRepository,
+                    container.devicePrefs,
                 ) as T
             }
         }

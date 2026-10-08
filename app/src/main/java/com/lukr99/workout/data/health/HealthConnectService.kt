@@ -42,6 +42,20 @@ class HealthConnectService internal constructor(
     }
 
     /**
+     * Send one just-finished workout, for the automatic send. Best-effort like [exportRuns]: no
+     * permission or a failed write is reported as skipped and never fails the saved workout.
+     * Idempotent, since Health Connect upserts on the workout's fingerprint.
+     */
+    suspend fun exportWorkout(session: WorkoutSession): HealthConnectSyncSummary {
+        if (availability() != HealthConnectAvailability.Available) return HealthConnectSyncSummary(unsupported = 1)
+        if (!hasPermissions() || session.source == WorkoutSessionSource.HealthConnect) return HealthConnectSyncSummary(skipped = 1)
+        return runCatching {
+            gateway.writeExerciseSessions(listOf(HealthConnectMapper.toHealthRecord(session)))
+            HealthConnectSyncSummary(exported = 1)
+        }.getOrElse { HealthConnectSyncSummary(skipped = 1) }
+    }
+
+    /**
      * Write runs to Health Connect as Running [ExerciseSessionRecord]s with an ExerciseRoute +
      * distance/energy (R2). Idempotent by the run's stable id (Health Connect upserts on
      * `clientRecordId`), so re-exporting the same run updates rather than duplicates. Runs imported

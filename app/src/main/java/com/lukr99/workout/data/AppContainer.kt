@@ -28,6 +28,7 @@ import com.lukr99.workout.data.transfer.DataStoreSettingsArchive
 import com.lukr99.workout.data.transfer.DataTransferService
 import com.lukr99.workout.data.transfer.SettingsArchive
 import com.lukr99.workout.data.transfer.UserDataEraser
+import com.lukr99.workout.settings.DevicePrefs
 import com.lukr99.workout.settings.OrientationStore
 import com.lukr99.workout.settings.SettingsStore
 import com.lukr99.workout.settings.WhatsNewGate
@@ -120,6 +121,9 @@ class AppContainer(context: Context) {
     }
     val documents: AndroidDocumentGateway by lazy { AndroidDocumentGateway(context) }
     val settings: SettingsStore by lazy { SettingsStore(context) }
+
+    /** This phone's own switches (Health Connect auto-send, update checks); not in backups. */
+    val devicePrefs: DevicePrefs by lazy { DevicePrefs(context) }
 
     /** The "what's new" card on Home, shown once after an update that has a note. */
     val whatsNew: WhatsNewGate by lazy {

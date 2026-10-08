@@ -75,6 +75,7 @@ import com.lukr99.workout.ui.screens.TemplatePreviewSheet
 import com.lukr99.workout.ui.screens.WorkoutDetailScreen
 import com.lukr99.workout.ui.settings.SettingsScreen
 import com.lukr99.workout.ui.theme.EmberTheme
+import kotlinx.coroutines.flow.first
 
 /**
  * App root. The 5-item shell — `Home · Runs · (＋ Start) · Progress · Settings` — with the center
@@ -220,6 +221,9 @@ fun App(container: AppContainer) {
                             onClose = { liveVm.flush(); nav.pop() },
                             onEditExercise = { nav.push(Route.ExerciseEditor(it)) },
                             onOpenHistory = { liveVm.flush(); nav.push(Route.ProgressDetail(it)) },
+                            onWorkoutSaved = { saved ->
+                                if (container.devicePrefs.healthAutoSend.first()) container.healthConnect.exportWorkout(saved)
+                            },
                         )
                         Route.LiveRun -> LiveRunScreen(
                             vm = liveRunVm,

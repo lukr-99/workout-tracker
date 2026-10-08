@@ -91,6 +91,20 @@ class HealthConnectServiceTest {
     }
 
     @Test
+    fun aFinishedWorkoutIsSentOnItsOwnButNotAnImportedOne() = runTest {
+        val gateway = FakeGateway()
+        val service = HealthConnectService(repository, gateway)
+        val workout = WorkoutSession(id = "w1", name = "Push", startedAtUtc = 1_000, endedAtUtc = 61_000, status = WorkoutSessionStatus.Completed)
+
+        assertEquals(1, service.exportWorkout(workout).exported)
+        assertEquals(1, gateway.written.size)
+
+        val imported = workout.copy(id = "w2", source = WorkoutSessionSource.HealthConnect)
+        assertEquals(1, service.exportWorkout(imported).skipped)
+        assertEquals(1, gateway.written.size)
+    }
+
+    @Test
     fun platformAvailabilityCanBeQueriedWithoutAssumingProviderInstallation() = runTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val availability = AndroidHealthConnectGateway(context).availability()

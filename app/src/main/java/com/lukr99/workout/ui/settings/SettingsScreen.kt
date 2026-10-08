@@ -77,6 +77,7 @@ fun SettingsScreen(
     val settings by vm.settings.collectAsState()
     val updateState by updates.state.collectAsState()
     val health by vm.healthConnectUi.collectAsState()
+    val healthAutoSend by vm.healthAutoSend.collectAsState()
     val backup by vm.backupState.collectAsState()
     val backupOptions by vm.backupOptions.collectAsState()
     val backupBusy by vm.backupBusy.collectAsState()
@@ -225,7 +226,13 @@ fun SettingsScreen(
                                     }
                                 } else {
                                     SettingsRow("Connected", status, first = true, hintIsError = health.error != null)
-                                    ButtonRow("Send workouts and runs", "Exports what Health Connect does not have yet.", "Export", busy = health.operation != null, onClick = vm::exportToHealthConnect)
+                                    ToggleRow(
+                                        "Send finished workouts and runs",
+                                        "Each one goes to Health Connect when you finish it.",
+                                        checked = healthAutoSend,
+                                        onChange = vm::setHealthAutoSend,
+                                    )
+                                    ButtonRow("Send everything now", "Workouts and runs Health Connect does not have yet.", "Export", busy = health.operation != null, onClick = vm::exportToHealthConnect)
                                     ButtonRow("Bring workouts in", "Imports workouts from other apps as sessions.", "Import", busy = health.operation != null, onClick = vm::importFromHealthConnect)
                                 }
                                 HealthConnectAvailability.ProviderUpdateRequired ->
