@@ -15,6 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.NoteAdd
 import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.ArrowUpward
@@ -64,7 +65,9 @@ internal fun ExerciseMenuSheet(
     options: ExerciseMenuOptions,
     loadOutings: suspend () -> List<ExerciseOuting>,
     onReplace: () -> Unit,
-    onToggleSuperset: () -> Unit,
+    onSuperset: () -> Unit,
+    /** Opens this exercise's full history, or null when there is none to show. */
+    onFullHistory: (() -> Unit)?,
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
     onEditNote: () -> Unit,
@@ -90,18 +93,25 @@ internal fun ExerciseMenuSheet(
             BodyPartTag(entry.exerciseSnapshotPrimaryBodyPart)
             if (entry.isStrength) {
                 History(outings, units)
+                if (onFullHistory != null && !outings.isNullOrEmpty()) {
+                    Row(
+                        Modifier.padding(top = 4.dp).heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp))
+                            .clickable(role = Role.Button, onClick = act(onFullHistory)).padding(end = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text("Full history", fontWeight = FontWeight.SemiBold, color = colors.primaryText)
+                        Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = colors.primaryText, modifier = Modifier.size(20.dp))
+                    }
+                }
             }
             Column(Modifier.padding(top = 8.dp)) {
                 if (entry.isStrength) {
                     Action(Icons.Rounded.SwapHoriz, "Replace exercise", "Machine taken? Swap it and keep your logged sets.", onClick = act(onReplace))
                 }
-                if (options.canSupersetWithPrevious) {
-                    Action(
-                        if (options.groupedWithPrevious) Icons.Rounded.LinkOff else Icons.Rounded.Link,
-                        if (options.groupedWithPrevious) "Ungroup from previous" else "Superset with previous",
-                        null,
-                        onClick = act(onToggleSuperset),
-                    )
+                when {
+                    options.inSuperset -> Action(Icons.Rounded.LinkOff, "Leave the superset", "Do it on its own again.", onClick = act(onSuperset))
+                    options.nextName != null -> Action(Icons.Rounded.Link, "Superset with next", "Pair it with ${options.nextName}.", onClick = act(onSuperset))
+                    options.previousName != null -> Action(Icons.Rounded.Link, "Superset with previous", "Pair it with ${options.previousName}.", onClick = act(onSuperset))
                 }
                 if (options.canMoveUp) Action(Icons.Rounded.ArrowUpward, "Move up", null, onClick = act(onMoveUp))
                 if (options.canMoveDown) Action(Icons.Rounded.ArrowDownward, "Move down", null, onClick = act(onMoveDown))

@@ -118,14 +118,14 @@ class ComponentScreenshotTest {
             strengthSets = listOf(StrengthSet(reps = 8, weightKg = 82.5, performedAtUtc = 1L)),
         ),
         units = UnitSystem.Metric,
-        options = ExerciseMenuOptions(canSupersetWithPrevious = true, groupedWithPrevious = false, canMoveUp = true, canMoveDown = true, hasGuide = true),
+        options = ExerciseMenuOptions(inSuperset = false, nextName = "Incline Dumbbell Press", previousName = null, canMoveUp = true, canMoveDown = true, hasGuide = true),
         loadOutings = {
             listOf(
                 ExerciseOuting(1_759_000_000_000, listOf(StrengthSet(reps = 8, weightKg = 80.0), StrengthSet(reps = 7, weightKg = 80.0)), 101.3),
                 ExerciseOuting(1_758_600_000_000, listOf(StrengthSet(reps = 8, weightKg = 77.5), StrengthSet(reps = 8, weightKg = 77.5)), 98.2),
             )
         },
-        onReplace = {}, onToggleSuperset = {}, onMoveUp = {}, onMoveDown = {}, onEditNote = {}, onShowGuide = {}, onRemove = {}, onDismiss = {},
+        onReplace = {}, onSuperset = {}, onFullHistory = {}, onMoveUp = {}, onMoveDown = {}, onEditNote = {}, onShowGuide = {}, onRemove = {}, onDismiss = {},
     )
 
     private val catalog = listOf(

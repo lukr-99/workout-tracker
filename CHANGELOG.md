@@ -27,6 +27,13 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 - **The template editor is quicker to arrange.** Hold the dots on a card to drag it to a new place.
   A superset has an Ungroup button on its header, and reps have - and + that move the whole range
   (6-8 becomes 7-9). Tap the reps to set the range exactly.
+- **The exercise menu** in a live workout links to the exercise's full history, and offers
+  "Superset with next" with the name of the exercise it pairs with. An exercise already in a
+  superset offers "Leave the superset" instead.
+
+### Fixed
+
+- An exercise's progress page opened before visiting the Progress tab showed "No sets logged yet".
 
 ## [2.6.0] - 2026-10-05
 
