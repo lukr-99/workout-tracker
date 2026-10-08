@@ -164,11 +164,10 @@ internal fun LiveWorkoutSheets(
                 session = session,
                 template = template,
                 units = units,
-                volumeKg = vm.estimatedVolumeKg(),
                 nowUtcMillis = System.currentTimeMillis(),
-                onFinish = { choice, name ->
+                onFinish = { choice, name, countUnticked ->
                     val from = template
-                    vm.finish(afterSave = { saved -> if (from != null) vm.templates.apply(saved, from, choice, name) }) {
+                    vm.finish(countUnticked, afterSave = { saved -> if (from != null) vm.templates.apply(saved, from, choice, name) }) {
                         onClose()
                         toast(
                             when {

@@ -33,6 +33,7 @@ import com.lukr99.workout.domain.withSetAdded
 import com.lukr99.workout.domain.withSetDone
 import com.lukr99.workout.domain.withSetDuplicated
 import com.lukr99.workout.domain.withTagToggled
+import com.lukr99.workout.domain.withUntickedSets
 import com.lukr99.workout.domain.withWeightUnitToggled
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -311,15 +312,15 @@ class LiveWorkoutViewModel(
 
     // --- Finish / discard ----------------------------------------------------------------------
 
-    /** Saves the workout as finished, then runs [afterSave] with it (the template update, if any). */
-    fun finish(afterSave: suspend (WorkoutSession) -> Unit = {}, onDone: () -> Unit) {
+    /** Saves the workout as finished, unticked sets counted or left out, then runs [afterSave] (the template update, if any). */
+    fun finish(countUnticked: Boolean, afterSave: suspend (WorkoutSession) -> Unit = {}, onDone: () -> Unit) {
         val session = draftState.value ?: return onDone()
         if (finalizing) return
         finalizing = true
         viewModelScope.launch {
             try {
                 persistJob?.cancelAndJoin()
-                val saved = persistMutex.withLock { repo.saveWorkoutSession(session.completedAt(System.currentTimeMillis())) }
+                val saved = persistMutex.withLock { repo.saveWorkoutSession(System.currentTimeMillis().let { session.withUntickedSets(countUnticked, it).completedAt(it) }) }
                 runCatching { afterSave(saved) }
                 clear()
                 onDone()
@@ -353,9 +354,8 @@ class LiveWorkoutViewModel(
     }
 
     // --- Helpers -------------------------------------------------------------------------------
-
-    fun estimatedVolumeKg(): Double =
-        draftState.value?.entries?.sumOf { Estimates.volume(it.strengthSets) } ?: 0.0
+    fun estimatedVolumeKg(): Double = // ticked sets only, matching the set count beside it
+        draftState.value?.entries?.sumOf { e -> Estimates.volume(e.strengthSets.filter { it.performedAtUtc != null }) } ?: 0.0
 
     private fun restSecondsFor(entry: WorkoutEntry): Int {
         val fromCatalog = exercises.value.firstOrNull { it.id == entry.exerciseId }?.defaultRestSeconds

@@ -130,6 +130,28 @@ fun WorkoutSession.withSetDone(entryId: String, setId: String, doneAt: Long?): W
 val WorkoutSession.setIdsMarkedDone: Set<String>
     get() = entries.flatMap { it.strengthSets }.filter { it.performedAtUtc != null }.map { it.id }.toSet()
 
+/** Strength sets in this workout that were not ticked as done. */
+val WorkoutSession.untickedSetCount: Int
+    get() = entries.sumOf { entry -> entry.strengthSets.count { it.performedAtUtc == null } }
+
+/**
+ * What finishing does with sets that were not ticked: [countThem] ticks those with reps at [now]
+ * (blank ones go), otherwise they are left out. Either way the sets are numbered again, and
+ * [completedAt] then drops exercises left without sets.
+ */
+fun WorkoutSession.withUntickedSets(countThem: Boolean, now: Long): WorkoutSession = copy(
+    entries = entries.map { entry ->
+        val kept = entry.strengthSets.mapNotNull { set ->
+            when {
+                set.performedAtUtc != null -> set
+                countThem && (set.reps > 0 || (set.durationSeconds ?: 0) > 0) -> set.copy(performedAtUtc = now)
+                else -> null
+            }
+        }
+        entry.copy(strengthSets = kept.mapIndexed { i, set -> set.copy(setNumber = i + 1) })
+    },
+)
+
 /**
  * The finished workout as it is saved: exercises without sets or cardio data are dropped, and every
  * exercise gets a start and an end.

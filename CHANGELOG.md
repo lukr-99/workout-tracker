@@ -36,6 +36,10 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 ### Fixed
 
 - An exercise's progress page opened before visiting the Progress tab showed "No sets logged yet".
+- **Sets you did not tick no longer count as lifted.** The live header counts ticked sets only, so
+  a copied workout no longer shows "9.4k kg · 0 sets" before you start. Finishing with unticked
+  sets asks whether to leave them out or count them as done. If you ticked nothing at all, counting
+  them is the default, so a workout logged without ticks is never lost.
 
 ## [2.6.0] - 2026-10-05
 

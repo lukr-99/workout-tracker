@@ -43,10 +43,14 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lukr99.workout.domain.Estimates
 import com.lukr99.workout.domain.TemplateChange
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.domain.changesIn
+import com.lukr99.workout.domain.setIdsMarkedDone
+import com.lukr99.workout.domain.untickedSetCount
+import com.lukr99.workout.domain.withUntickedSets
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.TemplateChoice
 import com.lukr99.workout.ui.components.Format
@@ -64,17 +68,22 @@ internal fun FinishWorkoutSheet(
     session: WorkoutSession,
     template: WorkoutTemplate?,
     units: UnitSystem,
-    volumeKg: Double,
     nowUtcMillis: Long,
-    onFinish: (TemplateChoice, String) -> Unit,
+    /** The template choice, the new template's name, and whether unticked sets count as done. */
+    onFinish: (TemplateChoice, String, Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val colors = EmberTheme.colors
-    val changes = remember(session, template) { template?.changesIn(session).orEmpty() }
+    val unticked = session.untickedSetCount
+    // Someone who never ticks would lose the whole workout, so then counting is the default.
+    var countUnticked by remember { mutableStateOf(session.setIdsMarkedDone.isEmpty()) }
+    val finished = remember(session, countUnticked) { session.withUntickedSets(countUnticked, nowUtcMillis) }
+    val changes = remember(finished, template) { template?.changesIn(finished).orEmpty() }
     var choice by remember { mutableStateOf(TemplateChoice.Update) }
     var newName by remember(template) { mutableStateOf(template?.let { "${it.name} copy" }.orEmpty()) }
-    val sets = session.entries.sumOf { e -> e.strengthSets.count { it.performedAtUtc != null } }
-    val prs = session.entries.sumOf { e -> e.strengthSets.count { it.isPr } }
+    val sets = finished.entries.sumOf { e -> e.strengthSets.count { it.performedAtUtc != null } }
+    val prs = finished.entries.sumOf { e -> e.strengthSets.count { it.isPr } }
+    val volumeKg = finished.entries.sumOf { Estimates.volume(it.strengthSets) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -89,6 +98,20 @@ internal fun FinishWorkoutSheet(
                 Stat(Format.volume(volumeKg, units), Format.unitLabel(units), "Lifted", Modifier.weight(1f))
                 Stat(sets.toString(), "", "Sets", Modifier.weight(1f))
                 Stat(prs.toString(), "", "PRs", Modifier.weight(1f), highlight = prs > 0)
+            }
+            if (unticked > 0) {
+                Text(
+                    "${unticked} ${if (unticked == 1) "SET" else "SETS"} NOT TICKED",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 1.sp,
+                    color = colors.textSecondary,
+                    modifier = Modifier.padding(top = 18.dp, bottom = 8.dp),
+                )
+                Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Choice("Leave them out", "Only sets you ticked are saved.", !countUnticked) { countUnticked = false }
+                    Choice("Count them as done", "Sets with reps are saved as done. Empty ones go.", countUnticked) { countUnticked = true }
+                }
             }
             if (template != null && changes.isNotEmpty()) {
                 Text(
@@ -123,7 +146,7 @@ internal fun FinishWorkoutSheet(
             Row(Modifier.padding(top = 18.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Pill("Keep going", filled = false, Modifier.weight(1f), onDismiss)
                 Pill("Finish", filled = true, Modifier.weight(1f)) {
-                    onFinish(if (template != null && changes.isNotEmpty()) choice else TemplateChoice.Keep, newName)
+                    onFinish(if (template != null && changes.isNotEmpty()) choice else TemplateChoice.Keep, newName, countUnticked)
                 }
             }
         }
