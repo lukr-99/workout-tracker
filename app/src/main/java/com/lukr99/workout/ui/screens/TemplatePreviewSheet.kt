@@ -34,6 +34,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lukr99.workout.domain.TemplatePlanShape
 import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.domain.WorkoutTemplateExercise
 import com.lukr99.workout.settings.UnitSystem
@@ -43,19 +44,25 @@ import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
 
-/** A template before you start it: its note, the plan per exercise with last time's best set, then Edit or Start. */
+/**
+ * A template before you start it: how long it takes, its note, the plan per exercise (a superset's
+ * exercises share a step, 4a and 4b) with last time's best set, then Edit or Start.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TemplatePreviewSheet(
     template: WorkoutTemplate,
     data: TemplatePreviewData,
     units: UnitSystem,
+    defaultRestSeconds: Int,
     onEdit: () -> Unit,
     onStart: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val colors = EmberTheme.colors
     val exercises = template.exercises.sortedBy { it.sortOrder }
+    val labels = TemplatePlanShape.labels(exercises)
+    val minutes = TemplatePlanShape.estimatedMinutes(exercises, defaultRestSeconds)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -66,6 +73,7 @@ fun TemplatePreviewSheet(
             Text(
                 listOfNotNull(
                     "${exercises.size} ${if (exercises.size == 1) "exercise" else "exercises"}",
+                    "about $minutes min".takeIf { minutes > 0 },
                     data.lastDoneUtc?.let { "last done ${Format.relativeDay(it).replaceFirstChar(Char::lowercase)}" },
                 ).joinToString(" · "),
                 style = MaterialTheme.typography.bodyLarge,
@@ -87,7 +95,7 @@ fun TemplatePreviewSheet(
             exercises.forEachIndexed { index, ex ->
                 val groupAbove = index > 0 && ex.supersetGroup != null && exercises[index - 1].supersetGroup == ex.supersetGroup
                 val groupBelow = index < exercises.lastIndex && ex.supersetGroup != null && exercises[index + 1].supersetGroup == ex.supersetGroup
-                PlanRow(index, ex, groupAbove, groupBelow, data, units)
+                PlanRow(labels[index], ex, groupAbove, groupBelow, data, units)
             }
             Row(Modifier.padding(top = 18.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Box(
@@ -111,7 +119,7 @@ fun TemplatePreviewSheet(
 
 @Composable
 private fun PlanRow(
-    index: Int,
+    label: String,
     ex: WorkoutTemplateExercise,
     groupAbove: Boolean,
     groupBelow: Boolean,
@@ -133,7 +141,7 @@ private fun PlanRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text("${index + 1}", style = Numbers.copy(fontSize = 16.sp), color = colors.textTertiary, modifier = Modifier.width(22.dp))
+        Text(label, style = Numbers.copy(fontSize = 16.sp), color = if (groupAbove || groupBelow) colors.primaryText else colors.textTertiary, modifier = Modifier.width(26.dp))
         Column(Modifier.weight(1f)) {
             Text(ex.exerciseName, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
             BodyPartTag(ex.bodyPart)

@@ -306,6 +306,7 @@ fun App(container: AppContainer) {
                     template = template,
                     data = data,
                     units = settings.units,
+                    defaultRestSeconds = settings.defaultRestSeconds,
                     onEdit = { previewTemplateId = null; nav.push(Route.TemplateEditor(template.id)) },
                     onStart = { previewTemplateId = null; startWorkout(template.id) },
                     onDismiss = { previewTemplateId = null },

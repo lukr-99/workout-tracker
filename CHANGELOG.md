@@ -30,6 +30,8 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 - **The exercise menu** in a live workout links to the exercise's full history, and offers
   "Superset with next" with the name of the exercise it pairs with. An exercise already in a
   superset offers "Leave the superset" instead.
+- **The template preview says how long the plan takes** ("about 55 min"), counted from its sets,
+  reps and rest. A superset's exercises share one step, labelled 4a and 4b.
 
 ### Fixed
 
