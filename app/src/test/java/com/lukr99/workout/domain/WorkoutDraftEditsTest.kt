@@ -135,4 +135,55 @@ class WorkoutDraftEditsTest {
         val single = workout.withEntriesAdded(listOf(fly), asSuperset = true)
         assertNull(single.entries.last().supersetGroup)
     }
+
+    @Test
+    fun duplicatingASetPutsAnUnloggedCopyRightAfterIt() {
+        val entry = WorkoutEntry(
+            id = "e",
+            strengthSets = listOf(
+                StrengthSet(id = "a", setNumber = 1, reps = 10, weightKg = 60.0),
+                StrengthSet(
+                    id = "b", setNumber = 2, reps = 8, weightKg = 80.0, performedAtUtc = 5L, notes = "Tight",
+                    isPr = true, rir = 1.0, rpe = 9.0, tags = setOf(SetTag.ToFailure),
+                ),
+                StrengthSet(id = "c", setNumber = 3, reps = 6, weightKg = 80.0),
+            ),
+        )
+
+        val sets = entry.withSetDuplicated("b").strengthSets
+
+        assertEquals(listOf("a", "b", null, "c"), sets.map { it.id.takeIf { id -> id in setOf("a", "b", "c") } })
+        assertEquals(listOf(1, 2, 3, 4), sets.map { it.setNumber })
+        val copy = sets[2]
+        assertEquals(8 to 80.0, copy.reps to copy.weightKg)
+        assertEquals(setOf(SetTag.ToFailure), copy.tags)
+        assertEquals(null, copy.performedAtUtc)
+        assertEquals("", copy.notes)
+        assertEquals(false, copy.isPr)
+        assertEquals(null, copy.rir)
+        assertEquals(entry, entry.withSetDuplicated("missing"))
+    }
+
+    @Test
+    fun repsInReserveSetsRirAndRpeTogether() {
+        val set = StrengthSet().withRepsInReserve(1)
+        assertEquals(1.0, set.rir)
+        assertEquals(9.0, set.rpe)
+        assertEquals(1, set.repsInReserve)
+
+        assertEquals(4.0, StrengthSet().withRepsInReserve(7).rir)
+        val cleared = set.withRepsInReserve(null)
+        assertEquals(null, cleared.rir)
+        assertEquals(null, cleared.rpe)
+        assertEquals(null, cleared.repsInReserve)
+    }
+
+    @Test
+    fun repsInReserveReadsOlderRpeOnlySets() {
+        assertEquals(2, StrengthSet(rpe = 8.0).repsInReserve)
+        // RPE 8.5 is one to two reps left; it rounds up to 2.
+        assertEquals(2, StrengthSet(rpe = 8.5).repsInReserve)
+        assertEquals(4, StrengthSet(rpe = 5.0).repsInReserve)
+        assertEquals(0, StrengthSet(rir = 0.0).repsInReserve)
+    }
 }
