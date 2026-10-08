@@ -94,6 +94,18 @@ object Pace {
         return gain
     }
 
+    /** Below this far into a split, its pace is mostly GPS noise and the live screen shows a dash. */
+    const val MIN_CURRENT_SPLIT_METERS = 100.0
+
+    /**
+     * The split being run now: its number and the pace held over it so far. Null before
+     * [MIN_CURRENT_SPLIT_METERS] into it.
+     */
+    fun currentSplit(points: List<TracePoint>, splitMeters: Double = METERS_PER_KM): Split? {
+        val last = splits(points, splitMeters).lastOrNull() ?: return null
+        return last.takeIf { !it.isFull && it.distanceMeters >= MIN_CURRENT_SPLIT_METERS }
+    }
+
     /**
      * Split the trace into [splitMeters] segments (a km or a mile), each with the pace held over it.
      * The crossing time at each boundary is linearly interpolated along the segment it falls in, so

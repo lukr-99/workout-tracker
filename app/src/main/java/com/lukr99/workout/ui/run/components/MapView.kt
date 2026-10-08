@@ -3,7 +3,9 @@ package com.lukr99.workout.ui.run.components
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
@@ -11,6 +13,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.lukr99.workout.data.map.MapStyle
+import com.lukr99.workout.ui.theme.EmberTheme
 import org.maplibre.android.MapLibre
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
@@ -34,7 +37,8 @@ import org.maplibre.android.maps.Style
 fun RunMap(
     userLocationEnabled: Boolean,
     modifier: Modifier = Modifier,
-    styleUrl: String = MapStyle.DARK_VECTOR_STYLE_URL,
+    /** The basemap; null follows the app theme (dark or light). Changing it restyles the live map. */
+    styleUrl: String? = null,
     recenterSignal: Int = 0,
     compassSignal: Int = 0,
     headingFollow: Boolean = true,
@@ -48,6 +52,8 @@ fun RunMap(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val style = styleUrl ?: MapStyle.forTheme(EmberTheme.colors.isDark)
+    val currentStyle by rememberUpdatedState(style)
 
     // Holds the async-created map/style so effects can act on them once ready.
     val holder = remember { MapHolder(traceColor, fitTrace) }
@@ -70,8 +76,9 @@ fun RunMap(
                     holder.onTap?.invoke(latLng.latitude, latLng.longitude)
                     holder.onTap != null
                 }
-                map.setStyle(Style.Builder().fromUri(styleUrl)) { style ->
-                    holder.onStyleReady(style, context, userLocationEnabled)
+                holder.styleUrl = currentStyle
+                map.setStyle(Style.Builder().fromUri(currentStyle)) { loaded ->
+                    holder.onStyleReady(loaded, context, userLocationEnabled)
                 }
             }
         }
@@ -95,6 +102,14 @@ fun RunMap(
             mapView.onStop()
             mapView.onDestroy()
         }
+    }
+
+    // A new basemap reloads the style; onStyleReady adds the route layers back and redraws them.
+    LaunchedEffect(style) {
+        val map = holder.map ?: return@LaunchedEffect
+        if (holder.styleUrl == style) return@LaunchedEffect
+        holder.styleUrl = style
+        map.setStyle(Style.Builder().fromUri(style)) { loaded -> holder.onStyleReady(loaded, context, userLocationEnabled) }
     }
 
     // Turn the location layer on when permission is granted (idempotent; safe before the map loads).

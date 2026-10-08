@@ -26,6 +26,8 @@ import org.maplibre.geojson.Point
 internal class MapHolder(private val traceColor: Int, private val fitTrace: Boolean) {
     var map: MapLibreMap? = null
     var style: Style? = null
+    /** The basemap the map was last asked to load, so a theme change reloads only when it differs. */
+    var styleUrl: String? = null
     var onTap: ((Double, Double) -> Unit)? = null
     var onBearing: ((Float) -> Unit)? = null
     private var locationActive = false
