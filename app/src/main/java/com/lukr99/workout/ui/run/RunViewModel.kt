@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.lukr99.workout.data.AppContainer
+import com.lukr99.workout.data.location.GpsWatcher
 import com.lukr99.workout.data.map.OfflineTileCache
 import com.lukr99.workout.data.run.RunRepository
 import com.lukr99.workout.data.run.ShareCardRenderer
@@ -16,10 +17,12 @@ import com.lukr99.workout.domain.run.Polyline
 import com.lukr99.workout.domain.run.Route
 import com.lukr99.workout.domain.run.Run
 import com.lukr99.workout.domain.run.RunStats
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -33,7 +36,11 @@ class RunViewModel(
     private val documents: AndroidDocumentGateway,
     private val shareCards: ShareCardRenderer,
     private val offlineCache: OfflineTileCache,
+    private val gps: GpsWatcher? = null,
 ) : ViewModel() {
+
+    /** GPS accuracy in metres while collected, for the Start a run card; empty without a watcher. */
+    val gpsAccuracy: Flow<Double?> = gps?.accuracy() ?: emptyFlow()
 
     val runs: StateFlow<List<Run>> =
         repo.observeRuns().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -187,6 +194,7 @@ class RunViewModel(
                     container.documents,
                     container.shareCardRenderer,
                     container.offlineTileCache,
+                    container.gpsWatcher,
                 ) as T
         }
     }

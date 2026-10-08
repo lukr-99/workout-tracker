@@ -77,6 +77,7 @@ fun HomeScreen(
     val snapshot by vm.snapshot.collectAsState()
     val active by vm.activeSession.collectAsState()
     val templates by vm.templates.collectAsState()
+    val lastDone by vm.templateLastDone.collectAsState()
     val week by vm.week.collectAsState()
     val recent by vm.recent.collectAsState()
     val whatsNew by vm.whatsNew.collectAsState()
@@ -99,7 +100,7 @@ fun HomeScreen(
         item { WeekCard(week, units) }
         if (templates.isNotEmpty()) {
             item { SectionLabel("Start from a template") { TextLink("All templates", onOpenTemplates) } }
-            item { TemplateCard(templates.take(4), onStartTemplate, onOpenTemplate) }
+            item { TemplateCard(templates.take(4), lastDone, onStartTemplate, onOpenTemplate) }
         }
         item { SectionLabel("Recent") {} }
         if (recent.isEmpty()) {
@@ -270,7 +271,7 @@ private fun WeekTotal(value: String, unit: String, label: String, modifier: Modi
 }
 
 @Composable
-private fun TemplateCard(templates: List<WorkoutTemplate>, onStart: (String) -> Unit, onOpen: (String) -> Unit) {
+private fun TemplateCard(templates: List<WorkoutTemplate>, lastDone: Map<String, Long>, onStart: (String) -> Unit, onOpen: (String) -> Unit) {
     val colors = EmberTheme.colors
     Column(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(colors.surface)
@@ -286,8 +287,10 @@ private fun TemplateCard(templates: List<WorkoutTemplate>, onStart: (String) -> 
                 Column(Modifier.weight(1f)) {
                     Text(template.name, style = MaterialTheme.typography.titleMedium, color = colors.textPrimary)
                     Text(
-                        template.exercises.sortedBy { it.sortOrder }.joinToString { it.exerciseName }
-                            .ifBlank { "No exercises yet" },
+                        listOfNotNull(
+                            lastDone[template.id]?.let { Format.relativeDay(it) },
+                            template.exercises.sortedBy { it.sortOrder }.joinToString { it.exerciseName }.ifBlank { "No exercises yet" },
+                        ).joinToString(" · "),
                         style = MaterialTheme.typography.labelLarge,
                         color = colors.textSecondary,
                         maxLines = 1,

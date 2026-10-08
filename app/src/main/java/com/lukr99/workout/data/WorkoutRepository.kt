@@ -167,6 +167,13 @@ class WorkoutRepository(
             .filter { it.templateId == templateId }
             .maxOfOrNull { it.completedDateUtc ?: it.startedAtUtc }
 
+    /** When each template was last finished, by template id, from one pass over finished workouts. */
+    suspend fun getTemplatesLastDone(): Map<String, Long> =
+        dao.getCompletedSessions().map { it.toDomain() }
+            .filter { !it.templateId.isNullOrBlank() }
+            .groupBy { it.templateId.orEmpty() }
+            .mapValues { (_, sessions) -> sessions.maxOf { it.completedDateUtc ?: it.startedAtUtc } }
+
     /** Last time's sets for each of [exerciseIds], from the newest finished workout that logged it. */
     suspend fun getLastSets(exerciseIds: Collection<String>): Map<String, List<StrengthSet>> {
         val ids = exerciseIds.filter(String::isNotBlank).toSet()

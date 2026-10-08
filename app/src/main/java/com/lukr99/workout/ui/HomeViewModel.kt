@@ -15,6 +15,7 @@ import com.lukr99.workout.settings.WhatsNewGate
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -54,6 +56,13 @@ class HomeViewModel(
 
     private val history = repo.observeHistory()
     private val runList = runs.observeRuns()
+
+    /** When each template was last finished, by template id; templates never done are left out. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val templateLastDone: StateFlow<Map<String, Long>> =
+        combine(templates, history) { list, _ -> list }
+            .mapLatest { repo.getTemplatesLastDone() }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     val week: StateFlow<TrainingWeek> =
         combine(history, runList) { workouts, runs -> TrainingWeek.of(today(), zone(), workouts, runs) }
