@@ -28,6 +28,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,6 +54,8 @@ import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.ResumeChooserSheet
 import com.lukr99.workout.ui.components.StartChooserSheet
 import com.lukr99.workout.ui.components.ToastHost
+import com.lukr99.workout.ui.components.UpdateCard
+import com.lukr99.workout.ui.components.rememberReduceMotion
 import com.lukr99.workout.ui.components.rememberToastState
 import com.lukr99.workout.ui.run.LiveRunScreen
 import com.lukr99.workout.ui.run.LiveRunViewModel
@@ -74,6 +77,7 @@ import com.lukr99.workout.ui.screens.TemplatePreviewSheet
 import com.lukr99.workout.ui.screens.WorkoutDetailScreen
 import com.lukr99.workout.ui.settings.SettingsScreen
 import com.lukr99.workout.ui.theme.EmberTheme
+import kotlinx.coroutines.flow.first
 
 /**
  * App root. The 5-item shell — `Home · Runs · (＋ Start) · Progress · Settings` — with the center
@@ -99,7 +103,9 @@ fun App(container: AppContainer) {
     val dataVm: DataTransferViewModel = viewModel(
         factory = DataTransferViewModel.factory(container.dataTransfer, container.documents, container.dataEraser),
     )
-    val updatesVm: UpdatesViewModel = viewModel(factory = UpdatesViewModel.factory(container.updates))
+    val updatesVm: UpdatesViewModel = viewModel(factory = UpdatesViewModel.factory(container.updates, container.devicePrefs))
+    val updateState by updatesVm.state.collectAsState()
+    LaunchedEffect(Unit) { updatesVm.checkIfDue() }
 
     val settings by settingsVm.settings.collectAsState()
     val activeSession by homeVm.activeSession.collectAsState()
@@ -110,6 +116,7 @@ fun App(container: AppContainer) {
     val hasResumableLift = activeSession?.entries?.isNotEmpty() == true
     val resumeMode = runActive || hasResumableLift
     val overlay = nav.top
+    val reduceMotion = rememberReduceMotion()
     var chooserOpen by remember { mutableStateOf(false) }
     var resumeChooserOpen by remember { mutableStateOf(false) }
     var previewTemplateId by remember { mutableStateOf<String?>(null) }
@@ -160,7 +167,7 @@ fun App(container: AppContainer) {
                     .padding(horizontal = 18.dp)
                     .padding(top = 12.dp),
             ) {
-                Crossfade(targetState = nav.tab.value, animationSpec = tween(220), label = "tab") { tab ->
+                Crossfade(targetState = nav.tab.value, animationSpec = tween(if (reduceMotion) 0 else 220), label = "tab") { tab ->
                     when (tab) {
                         Tab.HOME -> HomeScreen(
                             vm = homeVm,
@@ -172,6 +179,17 @@ fun App(container: AppContainer) {
                             onOpenSession = { nav.push(Route.WorkoutDetail(it)) },
                             onOpenRun = { nav.push(Route.RunDetail(it)) },
                             onOpenSettings = { nav.push(Route.Settings) },
+                            updateCard = updateState.offer?.let { offer ->
+                                {
+                                    UpdateCard(
+                                        version = offer.version,
+                                        busy = updateState.busy,
+                                        status = updateState.status,
+                                        onUpdate = updatesVm::downloadAndInstall,
+                                        onLater = updatesVm::dismissOffer,
+                                    )
+                                }
+                            },
                         )
                         Tab.LIBRARY -> LibraryScreen(
                             vm = libraryVm,
@@ -218,6 +236,9 @@ fun App(container: AppContainer) {
                             onClose = { liveVm.flush(); nav.pop() },
                             onEditExercise = { nav.push(Route.ExerciseEditor(it)) },
                             onOpenHistory = { liveVm.flush(); nav.push(Route.ProgressDetail(it)) },
+                            onWorkoutSaved = { saved ->
+                                if (container.devicePrefs.healthAutoSend.first()) container.healthConnect.exportWorkout(saved)
+                            },
                         )
                         Route.LiveRun -> LiveRunScreen(
                             vm = liveRunVm,

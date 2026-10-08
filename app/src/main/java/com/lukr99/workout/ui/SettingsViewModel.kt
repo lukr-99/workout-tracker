@@ -10,10 +10,12 @@ import com.lukr99.workout.data.backup.BackupState
 import com.lukr99.workout.data.health.HealthConnectAvailability
 import com.lukr99.workout.data.health.HealthConnectService
 import com.lukr99.workout.data.health.HealthConnectSyncSummary
+import com.lukr99.workout.data.run.RunRepository
 import com.lukr99.workout.data.sync.WgerSyncOptions
 import com.lukr99.workout.data.sync.WgerSyncService
 import com.lukr99.workout.data.sync.WgerSyncSummary
 import com.lukr99.workout.settings.AppSettings
+import com.lukr99.workout.settings.DevicePrefs
 import com.lukr99.workout.settings.SettingsStore
 import com.lukr99.workout.settings.ThemeMode
 import com.lukr99.workout.settings.UnitSystem
@@ -33,7 +35,15 @@ class SettingsViewModel(
     private val wgerSync: WgerSyncService,
     private val healthConnect: HealthConnectService,
     private val backup: BackupScheduler,
+    private val devicePrefs: DevicePrefs,
+    private val runs: RunRepository,
 ) : ViewModel() {
+
+    /** Whether finished workouts and runs go to Health Connect by themselves. */
+    val healthAutoSend: StateFlow<Boolean> =
+        devicePrefs.healthAutoSend.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+
+    fun setHealthAutoSend(on: Boolean) = viewModelScope.launch { devicePrefs.setHealthAutoSend(on) }.let { }
 
     val settings: StateFlow<AppSettings> =
         store.settings.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppSettings())
@@ -63,6 +73,7 @@ class SettingsViewModel(
 
     fun setTheme(mode: ThemeMode) = viewModelScope.launch { store.setThemeMode(mode) }.let { }
     fun setUnits(units: UnitSystem) = viewModelScope.launch { store.setUnits(units) }.let { }
+    fun setReduceMotion(on: Boolean) = viewModelScope.launch { store.setReduceMotion(on) }.let { }
     fun setDefaultRest(seconds: Int) = viewModelScope.launch {
         store.setDefaultRestSeconds(seconds)
     }.let { }
@@ -121,7 +132,7 @@ class SettingsViewModel(
     }
 
     fun exportToHealthConnect() = runHealthSync(HealthSyncOperation.Export) {
-        healthConnect.exportCompletedSessions()
+        healthConnect.exportCompletedSessions() + healthConnect.exportRuns(runs.getRuns())
     }
 
     fun consumeHealthSummary() {
@@ -232,6 +243,8 @@ class SettingsViewModel(
                         container.wgerSync,
                         container.healthConnect,
                         container.backup,
+                        container.devicePrefs,
+                        container.runRepository,
                     ) as T
             }
     }

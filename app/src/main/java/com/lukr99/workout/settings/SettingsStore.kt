@@ -2,6 +2,7 @@ package com.lukr99.workout.settings
 
 import android.content.Context
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -29,6 +30,10 @@ class SettingsStore(private val context: Context) {
         it[Keys.Units] = units.name
     }
 
+    suspend fun setReduceMotion(on: Boolean) = context.settingsDataStore.edit {
+        it[Keys.ReduceMotion] = on
+    }
+
     suspend fun setDefaultRestSeconds(seconds: Int) = context.settingsDataStore.edit {
         it[Keys.RestSeconds] = seconds.coerceIn(0, 3_600)
     }
@@ -38,6 +43,7 @@ class SettingsStore(private val context: Context) {
         it[Keys.ThemeMode] = settings.themeMode.name
         it[Keys.Units] = settings.units.name
         it[Keys.RestSeconds] = settings.defaultRestSeconds.coerceIn(0, 3_600)
+        it[Keys.ReduceMotion] = settings.reduceMotion
     }
 
     private fun Preferences.toSettings(): AppSettings = AppSettings(
@@ -46,11 +52,13 @@ class SettingsStore(private val context: Context) {
         units = this[Keys.Units]?.let { runCatching { UnitSystem.valueOf(it) }.getOrNull() }
             ?: UnitSystem.Metric,
         defaultRestSeconds = this[Keys.RestSeconds] ?: 120,
+        reduceMotion = this[Keys.ReduceMotion] ?: false,
     )
 
     private object Keys {
         val ThemeMode = stringPreferencesKey("theme_mode")
         val Units = stringPreferencesKey("units")
         val RestSeconds = intPreferencesKey("default_rest_seconds")
+        val ReduceMotion = booleanPreferencesKey("reduce_motion")
     }
 }

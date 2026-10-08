@@ -68,6 +68,7 @@ fun LiveWorkoutScreen(
     onClose: () -> Unit,
     onEditExercise: (String) -> Unit,
     onOpenHistory: (String) -> Unit = {},
+    onWorkoutSaved: suspend (WorkoutSession) -> Unit = {},
 ) {
     val toast = LocalToast.current
     val draft by vm.draft.collectAsState()
@@ -291,6 +292,7 @@ fun LiveWorkoutScreen(
         onSheet = { sheet = it },
         onEditExercise = onEditExercise,
         onOpenHistory = onOpenHistory,
+        onWorkoutSaved = onWorkoutSaved,
         onClose = onClose,
         toast = { toast(it) },
     )

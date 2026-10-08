@@ -35,6 +35,7 @@ internal fun LiveWorkoutSheets(
     onSheet: (LiveSheet?) -> Unit,
     onEditExercise: (String) -> Unit,
     onOpenHistory: (String) -> Unit,
+    onWorkoutSaved: suspend (WorkoutSession) -> Unit,
     onClose: () -> Unit,
     toast: (String) -> Unit,
 ) {
@@ -167,7 +168,10 @@ internal fun LiveWorkoutSheets(
                 nowUtcMillis = System.currentTimeMillis(),
                 onFinish = { choice, name, countUnticked ->
                     val from = template
-                    vm.finish(countUnticked, afterSave = { saved -> if (from != null) vm.templates.apply(saved, from, choice, name) }) {
+                    vm.finish(countUnticked, afterSave = { saved ->
+                        if (from != null) vm.templates.apply(saved, from, choice, name)
+                        onWorkoutSaved(saved)
+                    }) {
                         onClose()
                         toast(
                             when {

@@ -52,6 +52,7 @@ import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.RoundIconButton
 import com.lukr99.workout.ui.components.SegmentedControl
+import com.lukr99.workout.ui.components.rememberReduceMotion
 import com.lukr99.workout.ui.theme.EmberTheme
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
@@ -75,7 +76,9 @@ fun SettingsScreen(
 ) {
     val settings by vm.settings.collectAsState()
     val updateState by updates.state.collectAsState()
+    val autoCheck by updates.autoCheck.collectAsState()
     val health by vm.healthConnectUi.collectAsState()
+    val healthAutoSend by vm.healthAutoSend.collectAsState()
     val backup by vm.backupState.collectAsState()
     val backupOptions by vm.backupOptions.collectAsState()
     val backupBusy by vm.backupBusy.collectAsState()
@@ -104,7 +107,7 @@ fun SettingsScreen(
     val list = rememberLazyListState()
     val chips = rememberLazyListState()
     val lineY = with(LocalDensity.current) { 80.dp.roundToPx() }
-    val reduceMotion = remember { animationsOff(context) }
+    val reduceMotion = rememberReduceMotion()
     val jump = remember { sections.map { Animatable(0f) } }
     val scrollHint = remember { sections.map { Animatable(0f) } }
     var jumping by remember { mutableStateOf<Int?>(null) }
@@ -177,6 +180,12 @@ fun SettingsScreen(
                                 label = { it.name },
                                 modifier = Modifier.padding(bottom = 8.dp),
                             )
+                            ToggleRow(
+                                "Reduce motion",
+                                "Jumps and highlights happen at once, with no sliding or fading.",
+                                checked = settings.reduceMotion,
+                                onChange = vm::setReduceMotion,
+                            )
                         }
                         SettingsSection.Workouts -> {
                             SettingsRow("Weight unit", "Logged weights are stored in kilograms either way.", first = true)
@@ -218,7 +227,13 @@ fun SettingsScreen(
                                     }
                                 } else {
                                     SettingsRow("Connected", status, first = true, hintIsError = health.error != null)
-                                    ButtonRow("Send workouts and runs", "Exports what Health Connect does not have yet.", "Export", busy = health.operation != null, onClick = vm::exportToHealthConnect)
+                                    ToggleRow(
+                                        "Send finished workouts and runs",
+                                        "Each one goes to Health Connect when you finish it.",
+                                        checked = healthAutoSend,
+                                        onChange = vm::setHealthAutoSend,
+                                    )
+                                    ButtonRow("Send everything now", "Workouts and runs Health Connect does not have yet.", "Export", busy = health.operation != null, onClick = vm::exportToHealthConnect)
                                     ButtonRow("Bring workouts in", "Imports workouts from other apps as sessions.", "Import", busy = health.operation != null, onClick = vm::importFromHealthConnect)
                                 }
                                 HealthConnectAvailability.ProviderUpdateRequired ->
@@ -257,6 +272,12 @@ fun SettingsScreen(
                                 busyLabel = "Checking…",
                                 onClick = updates::check,
                             )
+                            ToggleRow(
+                                "Check automatically",
+                                "Looks once a day when you open Ember, and says so on Home when an update is ready.",
+                                checked = autoCheck,
+                                onChange = updates::setAutoCheck,
+                            )
                             LinkRow("All releases on GitHub", "Release notes and the manual download.", outside = true) {
                                 runCatching { uriHandler.openUri(UpdatesViewModel.RELEASES_URL) }
                             }
@@ -285,7 +306,3 @@ fun SettingsScreen(
         )
     }
 }
-
-/** True when the system animator scale is 0, the "remove animations" accessibility setting. */
-private fun animationsOff(context: android.content.Context): Boolean =
-    android.provider.Settings.Global.getFloat(context.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
