@@ -204,7 +204,23 @@ class ComponentScreenshotTest {
                 WorkoutEntry(exerciseId = "fly", exerciseSnapshotName = "Cable fly", sortOrder = 1, strengthSets = List(3) { StrengthSet(reps = 12, weightKg = 15.0, performedAtUtc = 1L) }),
             ),
         )
-        FinishWorkoutSheet(session, template, UnitSystem.Metric, volumeKg = 3_100.0, nowUtcMillis = 52 * 60_000L, onFinish = { _, _ -> }, onDismiss = {})
+        FinishWorkoutSheet(session, template, UnitSystem.Metric, nowUtcMillis = 52 * 60_000L, onFinish = { _, _, _ -> }, onDismiss = {})
+    }
+
+    @Test
+    fun finishWithUntickedSetsLight() = captureScreen("finish_unticked_light", dark = false) {
+        val session = WorkoutSession(
+            name = "Sunday Workout",
+            startedAtUtc = 0L,
+            entries = listOf(
+                WorkoutEntry(
+                    exerciseId = "bench", exerciseSnapshotName = "Bench press",
+                    strengthSets = List(4) { StrengthSet(reps = 8, weightKg = 80.0, performedAtUtc = if (it < 2) 1L else null) },
+                ),
+                WorkoutEntry(exerciseId = "fly", exerciseSnapshotName = "Cable fly", sortOrder = 1, strengthSets = List(3) { StrengthSet(reps = 12, weightKg = 15.0) }),
+            ),
+        )
+        FinishWorkoutSheet(session, template = null, units = UnitSystem.Metric, nowUtcMillis = 40 * 60_000L, onFinish = { _, _, _ -> }, onDismiss = {})
     }
 
     @Test fun orientationDark() = capture("orientation_dark", dark = true) { Orientation() }

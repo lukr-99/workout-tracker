@@ -186,4 +186,41 @@ class WorkoutDraftEditsTest {
         assertEquals(4, StrengthSet(rpe = 5.0).repsInReserve)
         assertEquals(0, StrengthSet(rir = 0.0).repsInReserve)
     }
+
+    private val mixed = WorkoutSession(
+        entries = listOf(
+            WorkoutEntry(
+                id = "bench",
+                strengthSets = listOf(
+                    StrengthSet(id = "b1", setNumber = 1, reps = 8, weightKg = 80.0, performedAtUtc = 5L),
+                    StrengthSet(id = "b2", setNumber = 2, reps = 8, weightKg = 80.0),
+                    StrengthSet(id = "b3", setNumber = 3, reps = 0),
+                ),
+            ),
+            WorkoutEntry(id = "fly", strengthSets = listOf(StrengthSet(id = "f1", reps = 12, weightKg = 15.0))),
+        ),
+    )
+
+    @Test
+    fun untickedSetsAreCounted() {
+        assertEquals(3, mixed.untickedSetCount)
+    }
+
+    @Test
+    fun leavingUntickedSetsOutKeepsOnlyTheTickedOnes() {
+        val finished = mixed.withUntickedSets(countThem = false, now = 9L).completedAt(9L)
+
+        assertEquals(listOf("bench"), finished.entries.map { it.id })
+        assertEquals(listOf("b1"), finished.entries.single().strengthSets.map { it.id })
+    }
+
+    @Test
+    fun countingUntickedSetsTicksThoseWithRepsAndDropsBlankOnes() {
+        val finished = mixed.withUntickedSets(countThem = true, now = 9L)
+
+        assertEquals(listOf("b1", "b2"), finished.entries[0].strengthSets.map { it.id })
+        assertEquals(listOf(5L, 9L), finished.entries[0].strengthSets.map { it.performedAtUtc })
+        assertEquals(listOf(1, 2), finished.entries[0].strengthSets.map { it.setNumber })
+        assertEquals(listOf(9L), finished.entries[1].strengthSets.map { it.performedAtUtc })
+    }
 }
