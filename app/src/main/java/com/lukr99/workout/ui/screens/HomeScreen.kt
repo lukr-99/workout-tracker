@@ -73,6 +73,8 @@ fun HomeScreen(
     onOpenSession: (String) -> Unit,
     onOpenRun: (String) -> Unit,
     onOpenSettings: () -> Unit,
+    /** The "new version ready" card from the automatic update check, when there is one. */
+    updateCard: (@Composable () -> Unit)? = null,
 ) {
     val snapshot by vm.snapshot.collectAsState()
     val active by vm.activeSession.collectAsState()
@@ -94,6 +96,7 @@ fun HomeScreen(
                 RoundIconButton(Icons.Rounded.Settings, "Settings", onOpenSettings)
             }
         }
+        updateCard?.let { card -> item(key = "update") { card() } }
         whatsNew?.let { note -> item(key = "whats-new") { WhatsNewCard(note, vm::dismissWhatsNew) } }
         active?.let { session -> item { ResumeCard(session, onResume) } }
         item { SectionLabel("This week") { Streak(snapshot.consistency.currentWeeklyStreak) } }

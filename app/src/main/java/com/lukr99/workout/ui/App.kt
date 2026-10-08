@@ -28,6 +28,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,6 +54,7 @@ import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.ResumeChooserSheet
 import com.lukr99.workout.ui.components.StartChooserSheet
 import com.lukr99.workout.ui.components.ToastHost
+import com.lukr99.workout.ui.components.UpdateCard
 import com.lukr99.workout.ui.components.rememberReduceMotion
 import com.lukr99.workout.ui.components.rememberToastState
 import com.lukr99.workout.ui.run.LiveRunScreen
@@ -101,7 +103,9 @@ fun App(container: AppContainer) {
     val dataVm: DataTransferViewModel = viewModel(
         factory = DataTransferViewModel.factory(container.dataTransfer, container.documents, container.dataEraser),
     )
-    val updatesVm: UpdatesViewModel = viewModel(factory = UpdatesViewModel.factory(container.updates))
+    val updatesVm: UpdatesViewModel = viewModel(factory = UpdatesViewModel.factory(container.updates, container.devicePrefs))
+    val updateState by updatesVm.state.collectAsState()
+    LaunchedEffect(Unit) { updatesVm.checkIfDue() }
 
     val settings by settingsVm.settings.collectAsState()
     val activeSession by homeVm.activeSession.collectAsState()
@@ -175,6 +179,17 @@ fun App(container: AppContainer) {
                             onOpenSession = { nav.push(Route.WorkoutDetail(it)) },
                             onOpenRun = { nav.push(Route.RunDetail(it)) },
                             onOpenSettings = { nav.push(Route.Settings) },
+                            updateCard = updateState.offer?.let { offer ->
+                                {
+                                    UpdateCard(
+                                        version = offer.version,
+                                        busy = updateState.busy,
+                                        status = updateState.status,
+                                        onUpdate = updatesVm::downloadAndInstall,
+                                        onLater = updatesVm::dismissOffer,
+                                    )
+                                }
+                            },
                         )
                         Tab.LIBRARY -> LibraryScreen(
                             vm = libraryVm,

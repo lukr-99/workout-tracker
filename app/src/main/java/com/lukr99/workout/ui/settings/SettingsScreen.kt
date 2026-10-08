@@ -76,6 +76,7 @@ fun SettingsScreen(
 ) {
     val settings by vm.settings.collectAsState()
     val updateState by updates.state.collectAsState()
+    val autoCheck by updates.autoCheck.collectAsState()
     val health by vm.healthConnectUi.collectAsState()
     val healthAutoSend by vm.healthAutoSend.collectAsState()
     val backup by vm.backupState.collectAsState()
@@ -270,6 +271,12 @@ fun SettingsScreen(
                                 busy = updateState.busy,
                                 busyLabel = "Checking…",
                                 onClick = updates::check,
+                            )
+                            ToggleRow(
+                                "Check automatically",
+                                "Looks once a day when you open Ember, and says so on Home when an update is ready.",
+                                checked = autoCheck,
+                                onChange = updates::setAutoCheck,
                             )
                             LinkRow("All releases on GitHub", "Release notes and the manual download.", outside = true) {
                                 runCatching { uriHandler.openUri(UpdatesViewModel.RELEASES_URL) }

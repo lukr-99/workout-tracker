@@ -241,6 +241,10 @@ class ComponentScreenshotTest {
         onPause = {}, onResume = {}, onFinish = {},
     )
 
+    @Test fun updateCardLight() = capture("update_card_light", dark = false) {
+        com.lukr99.workout.ui.components.UpdateCard("2.7.0", busy = false, status = "", onUpdate = {}, onLater = {})
+    }
+
     @Test fun orientationDark() = capture("orientation_dark", dark = true) { Orientation() }
     @Test fun orientationLight() = capture("orientation_light", dark = false) { Orientation() }
 

@@ -50,6 +50,8 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 - **Health Connect can take each workout as you finish it.** A switch under Health Connect (on by
   default) sends every finished workout and run. Runs already went on their own; now workouts do
   too, and the switch can stop both.
+- **Ember looks for updates by itself.** Once a day when you open it, it checks GitHub; when a
+  signed update is ready, Home shows a card with Update and Later. Turn it off under Updates.
 
 ### Fixed
 
