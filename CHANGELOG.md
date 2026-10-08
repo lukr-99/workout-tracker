@@ -14,6 +14,12 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 - **Switch to a template** from an empty workout. The workout takes the template's name, plan and
   link, so finishing can still offer to update the template.
 
+### Changed
+
+- **Exercises further down a workout are folded to one row** with their body part and how many
+  sets are planned, so the exercise you are on stays in view. Tap a row to open it. The exercise
+  with the next set, and its superset partners, stay open.
+
 ## [2.6.0] - 2026-10-05
 
 ### Added

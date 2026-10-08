@@ -38,4 +38,33 @@ class LiveNextSetTest {
         assertEquals("set 2 of 3", nextSetLabel(listOf(bench), setOf("b1")))
         assertNull(nextSetLabel(listOf(fly), setOf("f1")))
     }
+
+    @Test
+    fun onlyExercisesAfterTheCurrentOneAreCompact() {
+        assertEquals(setOf("fly", "bike"), compactEntryIds(listOf(bench, fly, bike), emptySet()))
+        // Once bench is done, fly holds the next set and opens.
+        val done = setOf("b1", "b2", "b3")
+        assertEquals(setOf("bike"), compactEntryIds(listOf(bench.copy(completedAtUtc = 1L), fly, bike), done))
+    }
+
+    @Test
+    fun startedOrTickedExercisesStayOpen() {
+        val started = fly.copy(startedAtUtc = 5L)
+        assertEquals(setOf("bike"), compactEntryIds(listOf(bench, started, bike), emptySet()))
+        // A set ticked out of order also keeps its exercise open.
+        assertEquals(setOf("bike"), compactEntryIds(listOf(bench, fly, bike), setOf("f1")))
+    }
+
+    @Test
+    fun aSupersetPartnerOfTheCurrentExerciseStaysOpen() {
+        val pairedBench = bench.copy(supersetGroup = 1)
+        val pairedFly = fly.copy(supersetGroup = 1)
+        assertEquals(setOf("bike"), compactEntryIds(listOf(pairedBench, pairedFly, bike), emptySet()))
+    }
+
+    @Test
+    fun withOnlyCardioTheFirstOpenExerciseStaysOpen() {
+        val row = bike.copy(id = "row")
+        assertEquals(setOf("row"), compactEntryIds(listOf(bike, row), emptySet()))
+    }
 }

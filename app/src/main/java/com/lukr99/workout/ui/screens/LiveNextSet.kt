@@ -15,3 +15,19 @@ internal fun nextSetLabel(entries: List<WorkoutEntry>, doneIds: Set<String>): St
     val started = entry.strengthSets.any { it.id in doneIds }
     return if (started) "set ${entry.strengthSets.indexOf(set) + 1} of ${entry.strengthSets.size}" else entry.exerciseSnapshotName
 }
+
+/**
+ * Exercises the live workout shows as one compact row: not started, nothing ticked, not finished,
+ * and not the exercise with the next set (or a superset partner of it), which stays open to log.
+ */
+internal fun compactEntryIds(entries: List<WorkoutEntry>, doneIds: Set<String>): Set<String> {
+    // Cardio has no sets to point at, so without a next set the first open exercise stays open.
+    val current = nextSet(entries, doneIds)?.first ?: entries.firstOrNull { it.completedAtUtc == null }
+    return entries.filter { entry ->
+        entry.startedAtUtc == null &&
+            entry.completedAtUtc == null &&
+            entry.strengthSets.none { it.id in doneIds } &&
+            entry.id != current?.id &&
+            (entry.supersetGroup == null || entry.supersetGroup != current?.supersetGroup)
+    }.mapTo(mutableSetOf()) { it.id }
+}
