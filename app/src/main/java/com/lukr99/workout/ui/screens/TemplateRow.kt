@@ -15,4 +15,20 @@ internal data class TemplateRow(
     val repsMax: Int? = null,
     val restSeconds: Int? = null,
     val supersetGroup: Int? = null,
-)
+) {
+    /**
+     * The rep range moved by [by] as a whole, so 6–8 becomes 7–9. With no reps planned, + starts at
+     * [START_REPS] and - leaves it empty. Reps never go below 1.
+     */
+    fun withRepsShifted(by: Int): TemplateRow {
+        val low = repsMin ?: repsMax
+        val high = repsMax ?: repsMin
+        if (low == null || high == null) return if (by > 0) copy(repsMin = START_REPS, repsMax = START_REPS) else this
+        val step = by.coerceAtLeast(1 - low)
+        return copy(repsMin = low + step, repsMax = high + step)
+    }
+
+    companion object {
+        const val START_REPS = 8
+    }
+}
