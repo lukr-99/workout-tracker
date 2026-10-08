@@ -41,9 +41,9 @@ android {
         applicationId = "com.lukr99.workout"
         minSdk = 26
         targetSdk = 35
-        versionCode = 10
+        versionCode = 11
         // Native rework release line. The frozen MAUI proof-of-concept already used v1.0.0.
-        versionName = "2.6.0"
+        versionName = "2.7.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
