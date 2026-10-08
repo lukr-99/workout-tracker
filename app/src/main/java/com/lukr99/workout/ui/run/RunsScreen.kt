@@ -1,5 +1,7 @@
 package com.lukr99.workout.ui.run
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -51,6 +53,11 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import com.lukr99.workout.domain.run.Pace
 import com.lukr99.workout.domain.run.Route
 import com.lukr99.workout.domain.run.Run
@@ -81,6 +88,16 @@ fun RunsScreen(
     val context = LocalContext.current
 
     var renaming by remember { mutableStateOf<Route?>(null) }
+    // The GPS line on the Start card listens only while Runs is in front and location is allowed.
+    fun locationAllowed() = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+    var permitted by remember { mutableStateOf(locationAllowed()) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { permitted = locationAllowed() }
+    var hasFix by remember { mutableStateOf(false) }
+    var accuracy by remember { mutableStateOf<Double?>(null) }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(permitted) {
+        if (permitted) lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) { vm.gpsAccuracy.collect { hasFix = true; accuracy = it } }
+    }
     var deleting by remember { mutableStateOf<Route?>(null) }
 
     // Surface transient GPX-import / offline-cache messages as a toast, then clear.
@@ -101,7 +118,7 @@ fun RunsScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item { ScreenHeader("Runs", weekSummary(runs, units)) }
-        item { StartRunButton(onStartRun) }
+        item { StartRunButton(gpsLabel(permitted, hasFix, accuracy), onStartRun) }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 SecondaryButton(Icons.Rounded.Map, "Plan a route", Modifier.weight(1f), onPlanRoute)
@@ -256,7 +273,7 @@ private fun RouteCard(
 }
 
 @Composable
-private fun StartRunButton(onStartRun: () -> Unit) {
+private fun StartRunButton(subtitle: String, onStartRun: () -> Unit) {
     val colors = EmberTheme.colors
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(colors.primary)
@@ -269,7 +286,7 @@ private fun StartRunButton(onStartRun: () -> Unit) {
         }
         Column {
             Text("Start a run", style = MaterialTheme.typography.titleLarge, color = colors.onPrimary)
-            Text("GPS route, pace and splits", style = MaterialTheme.typography.labelLarge, color = colors.onPrimary.copy(alpha = 0.8f))
+            Text(subtitle, style = MaterialTheme.typography.labelLarge, color = colors.onPrimary.copy(alpha = 0.8f))
         }
     }
 }

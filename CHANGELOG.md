@@ -32,6 +32,9 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
   superset offers "Leave the superset" instead.
 - **The template preview says how long the plan takes** ("about 55 min"), counted from its sets,
   reps and rest. A superset's exercises share one step, labelled 4a and 4b.
+- **Templates on Home say when you last did them** ("3 days ago · Bench Press, ...").
+- **The Start a run card shows the GPS fix** once location is allowed: "Looking for GPS",
+  "GPS ready ±4 m", or "Weak GPS" with a hint. It listens only while Runs is open.
 
 ### Fixed
 
