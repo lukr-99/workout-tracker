@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.NoteAdd
 import androidx.compose.material.icons.automirrored.rounded.Notes
+import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -19,36 +20,31 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.lukr99.workout.domain.MAX_REPS_IN_RESERVE
 import com.lukr99.workout.domain.SetTag
 import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.effectiveTags
+import com.lukr99.workout.domain.repsInReserve
 import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
- * Per-set options (Phase 4): set type chips plus inline RIR / RPE editing (previously only set type
- * was editable). RIR/RPE open the shared numpad; entering 0 clears the value.
+ * Per-set options: tags, effort as "reps left in the tank" chips (tap the chosen one again to clear
+ * it), the set's note, and Duplicate or Remove.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SetOptionsSheet(
     set: StrengthSet,
     onToggleTag: (SetTag) -> Unit,
-    onRir: (Double?) -> Unit,
-    onRpe: (Double?) -> Unit,
+    onRepsInReserve: (Int?) -> Unit,
     onEditNote: () -> Unit,
+    onDuplicate: () -> Unit,
     onRemove: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    // null = closed, false = editing RIR, true = editing RPE
-    var editingRpe by remember { mutableStateOf<Boolean?>(null) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -68,17 +64,23 @@ fun SetOptionsSheet(
                 }
             }
 
-            Text("Effort", style = MaterialTheme.typography.labelMedium, color = EmberTheme.colors.textSecondary)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("RIR", style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
-                    ValueCell(display = set.rir?.let { trim(it) } ?: "–", modifier = Modifier.fillMaxWidth()) { editingRpe = false }
-                }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("RPE", style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
-                    ValueCell(display = set.rpe?.let { trim(it) } ?: "–", modifier = Modifier.fillMaxWidth()) { editingRpe = true }
+            Text("Reps left in the tank", style = MaterialTheme.typography.labelMedium, color = EmberTheme.colors.textSecondary)
+            val reserve = set.repsInReserve
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                (0..MAX_REPS_IN_RESERVE).forEach { reps ->
+                    val label = if (reps == MAX_REPS_IN_RESERVE) "$reps+" else "$reps"
+                    FilterChip(label, reps == reserve, onClick = { onRepsInReserve(if (reps == reserve) null else reps) })
                 }
             }
+            Text(
+                when (reserve) {
+                    null -> "How many more reps you could have done. Leave it empty if you did not track it."
+                    MAX_REPS_IN_RESERVE -> "Same as RPE ${10 - reserve} or easier. Tap it again to clear."
+                    else -> "Same as RPE ${10 - reserve}. Tap it again to clear."
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = EmberTheme.colors.textSecondary,
+            )
 
             Text("Note", style = MaterialTheme.typography.labelMedium, color = EmberTheme.colors.textSecondary)
             NoteLine(
@@ -89,33 +91,17 @@ fun SetOptionsSheet(
                 onClick = onEditNote,
             )
 
-            TextButton(onClick = { onRemove(); onDismiss() }, modifier = Modifier.align(Alignment.Start)) {
-                Icon(Icons.Rounded.Delete, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.padding(end = 6.dp))
-                Text("Remove set", color = MaterialTheme.colorScheme.error)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = { onDuplicate(); onDismiss() }) {
+                    Icon(Icons.Rounded.ContentCopy, null, modifier = Modifier.padding(end = 6.dp))
+                    Text("Duplicate")
+                }
+                TextButton(onClick = { onRemove(); onDismiss() }) {
+                    Icon(Icons.Rounded.Delete, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.padding(end = 6.dp))
+                    Text("Remove set", color = MaterialTheme.colorScheme.error)
+                }
             }
         }
-    }
-
-    when (editingRpe) {
-        false -> NumberPadSheet(
-            title = "Reps in reserve (0 clears)",
-            initial = set.rir ?: 0.0,
-            quickStep = 1.0,
-            allowDecimal = true,
-            maxValue = 10.0,
-            onValue = { onRir(it.takeIf { v -> v > 0.0 }) },
-            onDismiss = { editingRpe = null },
-        )
-        true -> NumberPadSheet(
-            title = "RPE (0 clears)",
-            initial = set.rpe ?: 0.0,
-            quickStep = 0.5,
-            allowDecimal = true,
-            maxValue = 10.0,
-            onValue = { onRpe(it.takeIf { v -> v > 0.0 }) },
-            onDismiss = { editingRpe = null },
-        )
-        else -> Unit
     }
 }
 
@@ -128,8 +114,3 @@ val SetTag.label: String
         SetTag.Negative -> "Negative"
         SetTag.BackOff -> "Back-off"
     }
-
-private fun trim(v: Double): String {
-    val r = Math.round(v * 10.0) / 10.0
-    return if (r % 1.0 == 0.0) r.toLong().toString() else r.toString()
-}

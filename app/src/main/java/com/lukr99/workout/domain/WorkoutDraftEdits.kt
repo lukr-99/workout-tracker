@@ -63,6 +63,41 @@ fun WorkoutEntry.withSetAdded(): WorkoutEntry {
     return copy(strengthSets = strengthSets + next)
 }
 
+/**
+ * This exercise with a copy of set [setId] right after it: the same reps, weight, tags and type, not
+ * logged yet and without the note, PR or effort, which belong to the set that was done.
+ */
+fun WorkoutEntry.withSetDuplicated(setId: String): WorkoutEntry {
+    val index = strengthSets.indexOfFirst { it.id == setId }
+    if (index < 0) return this
+    val copy = strengthSets[index].copy(
+        id = newId(),
+        performedAtUtc = null,
+        notes = "",
+        isPr = false,
+        rir = null,
+        rpe = null,
+    )
+    val sets = strengthSets.toMutableList().apply { add(index + 1, copy) }
+    return copy(strengthSets = sets.mapIndexed { i, set -> set.copy(setNumber = i + 1) })
+}
+
+/** The most reps left in the tank the effort chips offer; it reads as "4+". */
+const val MAX_REPS_IN_RESERVE = 4
+
+/**
+ * Reps left in the tank, 0 to [MAX_REPS_IN_RESERVE], from RIR, or from RPE for sets logged with RPE
+ * only. Null when the set has no effort.
+ */
+val StrengthSet.repsInReserve: Int?
+    get() = (rir ?: rpe?.let { 10.0 - it })?.let { Math.round(it).toInt().coerceIn(0, MAX_REPS_IN_RESERVE) }
+
+/** This set with [reps] left in the tank, or no effort when null. RPE follows as 10 minus RIR. */
+fun StrengthSet.withRepsInReserve(reps: Int?): StrengthSet {
+    val rir = reps?.coerceIn(0, MAX_REPS_IN_RESERVE)
+    return copy(rir = rir?.toDouble(), rpe = rir?.let { 10.0 - it })
+}
+
 /** Switches the weight unit of one exercise between kilograms and pounds. */
 fun WorkoutEntry.withWeightUnitToggled(poundsByDefault: Boolean): WorkoutEntry {
     val currentlyPounds = when (weightUnitOverride) {

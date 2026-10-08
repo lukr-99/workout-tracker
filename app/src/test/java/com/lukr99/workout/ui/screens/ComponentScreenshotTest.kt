@@ -1,10 +1,10 @@
 package com.lukr99.workout.ui.screens
 
-import androidx.compose.material.icons.rounded.TouchApp
-import androidx.compose.material.icons.rounded.ContentPaste
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.rounded.ContentPaste
+import androidx.compose.material.icons.rounded.TouchApp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -36,6 +36,7 @@ import com.lukr99.workout.ui.components.ExercisePicker
 import com.lukr99.workout.ui.components.QuickCreateSheet
 import com.lukr99.workout.ui.components.SetEntrySheet
 import com.lukr99.workout.ui.components.SetEntryState
+import com.lukr99.workout.ui.components.SetOptionsSheet
 import com.lukr99.workout.ui.settings.ButtonRow
 import com.lukr99.workout.ui.settings.LinkRow
 import com.lukr99.workout.ui.settings.SettingsCard
@@ -146,6 +147,19 @@ class ComponentScreenshotTest {
             hint = { if (it.id == "incline") "Last 30 × 10" else null },
             onCreate = {},
             onPickMany = { _, _ -> },
+        )
+    }
+
+    @Test
+    fun setOptionsLight() = captureScreen("set_options_light", dark = false) {
+        SetOptionsSheet(
+            set = StrengthSet(reps = 8, weightKg = 82.5, rir = 1.0, rpe = 9.0, tags = setOf(SetTag.ToFailure), notes = "Left shoulder a bit tight."),
+            onToggleTag = {},
+            onRepsInReserve = {},
+            onEditNote = {},
+            onDuplicate = {},
+            onRemove = {},
+            onDismiss = {},
         )
     }
 

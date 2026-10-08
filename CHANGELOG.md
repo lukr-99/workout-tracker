@@ -13,12 +13,17 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
   weight ready to tick. It takes that name unless you already renamed the workout.
 - **Switch to a template** from an empty workout. The workout takes the template's name, plan and
   link, so finishing can still offer to update the template.
+- **Duplicate a set** from set options. The copy goes right after it with the same reps, weight
+  and tags, ready to tick.
 
 ### Changed
 
 - **Exercises further down a workout are folded to one row** with their body part and how many
   sets are planned, so the exercise you are on stays in view. Tap a row to open it. The exercise
   with the next set, and its superset partners, stay open.
+- **Effort is one tap.** Set options show "reps left in the tank" as chips from 0 to 4+, with the
+  matching RPE underneath. Tap the chosen chip again to clear it. 0 now works, which the old
+  number pad treated as "clear".
 
 ## [2.6.0] - 2026-10-05
 

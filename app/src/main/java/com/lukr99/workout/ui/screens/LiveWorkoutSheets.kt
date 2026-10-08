@@ -115,9 +115,9 @@ internal fun LiveWorkoutSheets(
             SetOptionsSheet(
                 set = set,
                 onToggleTag = { vm.toggleSetTag(sheet.entryId, sheet.setId, it) },
-                onRir = { vm.setRir(sheet.entryId, sheet.setId, it) },
-                onRpe = { vm.setRpe(sheet.entryId, sheet.setId, it) },
+                onRepsInReserve = { vm.setRepsInReserve(sheet.entryId, sheet.setId, it) },
                 onEditNote = { onSheet(LiveSheet.Note(NoteTarget.Set(sheet.entryId, sheet.setId))) },
+                onDuplicate = { vm.duplicateSet(sheet.entryId, sheet.setId) },
                 onRemove = { vm.removeSet(sheet.entryId, sheet.setId) },
                 onDismiss = close,
             )

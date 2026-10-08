@@ -27,9 +27,11 @@ import com.lukr99.workout.domain.withEntry
 import com.lukr99.workout.domain.withEntryFinished
 import com.lukr99.workout.domain.withEntryMoved
 import com.lukr99.workout.domain.withEntryStarted
+import com.lukr99.workout.domain.withRepsInReserve
 import com.lukr99.workout.domain.withSet
 import com.lukr99.workout.domain.withSetAdded
 import com.lukr99.workout.domain.withSetDone
+import com.lukr99.workout.domain.withSetDuplicated
 import com.lukr99.workout.domain.withTagToggled
 import com.lukr99.workout.domain.withWeightUnitToggled
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -229,6 +231,7 @@ class LiveWorkoutViewModel(
     fun reopenEntry(entryId: String) = mutate { it.withEntry(entryId) { entry -> entry.copy(completedAtUtc = null) } }
 
     fun addSet(entryId: String) = mutate { it.withEntry(entryId, WorkoutEntry::withSetAdded) }
+    fun duplicateSet(entryId: String, setId: String) = mutate { it.withEntry(entryId) { e -> e.withSetDuplicated(setId) } }
 
     fun removeSet(entryId: String, setId: String) = mutate {
         it.withEntry(entryId) { entry -> entry.copy(strengthSets = entry.strengthSets.filterNot { set -> set.id == setId }) }
@@ -245,11 +248,8 @@ class LiveWorkoutViewModel(
     fun setWeight(entryId: String, setId: String, weightKg: Double) =
         updateSet(entryId, setId) { it.copy(weightKg = weightKg.coerceAtLeast(0.0)) }
 
-    fun setRir(entryId: String, setId: String, rir: Double?) =
-        updateSet(entryId, setId) { it.copy(rir = rir) }
-
-    fun setRpe(entryId: String, setId: String, rpe: Double?) =
-        updateSet(entryId, setId) { it.copy(rpe = rpe) }
+    fun setRepsInReserve(entryId: String, setId: String, reps: Int?) =
+        updateSet(entryId, setId) { it.withRepsInReserve(reps) }
 
     /** Edit a cardio entry's duration/distance/calories in the live draft (persisted on finish). */
     fun updateCardio(entryId: String, transform: (com.lukr99.workout.domain.CardioEntryData) -> com.lukr99.workout.domain.CardioEntryData) =
