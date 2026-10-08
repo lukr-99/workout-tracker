@@ -6,8 +6,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -60,15 +62,28 @@ fun ProgressScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StatTile("Workouts", state.overview.workouts.toString(), modifier = Modifier.weight(1f))
-                StatTile("Volume", Format.volume(state.overview.volumeKg, units), unit = Format.unitLabel(units), modifier = Modifier.weight(1f))
+            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                val month = state.context.workoutsThisMonth
+                StatTile(
+                    "Workouts", state.overview.workouts.toString(), modifier = Modifier.weight(1f).fillMaxHeight(),
+                    delta = if (month > 0) "+$month this month" else "None this month",
+                    deltaPositive = if (month > 0) true else null,
+                )
+                val change = state.context.volumeChangePercent
+                StatTile(
+                    "Volume, 4 wk", Format.volume(state.context.volumeLast4WeeksKg, units), unit = Format.unitLabel(units), modifier = Modifier.weight(1f).fillMaxHeight(),
+                    delta = change?.let { if (it >= 0) "+$it% vs 4 wk before" else "$it% vs 4 wk before" } ?: "last 4 weeks",
+                    deltaPositive = change?.let { it >= 0 },
+                )
             }
         }
         item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StatTile("PR sets", state.overview.prSets.toString(), modifier = Modifier.weight(1f))
-                StatTile("Streak", state.overview.streakWeeks.toString(), unit = "weeks", modifier = Modifier.weight(1f))
+            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                StatTile("PR sets", state.context.prSetsLast30Days.toString(), modifier = Modifier.weight(1f).fillMaxHeight(), delta = "last 30 days")
+                StatTile(
+                    "Streak", state.overview.streakWeeks.toString(), unit = "wk", modifier = Modifier.weight(1f).fillMaxHeight(),
+                    delta = state.context.bestStreakWeeks.takeIf { it > 0 }?.let { "best $it wk" },
+                )
             }
         }
 
@@ -82,7 +97,14 @@ fun ProgressScreen(
                     .background(EmberTheme.colors.surface).border(1.dp, EmberTheme.colors.border, RoundedCornerShape(20.dp)).padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text("Weekly volume", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text("Weekly volume", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.weight(1f))
+                    Text(
+                        "${Format.volume(state.context.volumeThisWeekKg, units)} ${Format.unitLabel(units)} this week",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = EmberTheme.colors.textSecondary,
+                    )
+                }
                 VolumeBars(
                     bars = state.weeklyVolume.map { BarPoint(it.label, it.volumeKg) },
                     valueFormat = { Format.volume(it, units) },

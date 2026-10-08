@@ -29,8 +29,10 @@ fun StatTile(
     value: String,
     modifier: Modifier = Modifier,
     unit: String? = null,
+    /** A context line under the value, like "+3 this month". */
     delta: String? = null,
-    deltaPositive: Boolean = true,
+    /** Green when true, red when false, plain when null (for lines like "last 30 days"). */
+    deltaPositive: Boolean? = null,
 ) {
     Column(
         modifier
@@ -67,7 +69,11 @@ fun StatTile(
             Text(
                 delta,
                 style = MaterialTheme.typography.labelSmall,
-                color = if (deltaPositive) EmberTheme.colors.success else MaterialTheme.colorScheme.error,
+                color = when (deltaPositive) {
+                    true -> EmberTheme.colors.success
+                    false -> MaterialTheme.colorScheme.error
+                    null -> EmberTheme.colors.textSecondary
+                },
             )
         }
     }

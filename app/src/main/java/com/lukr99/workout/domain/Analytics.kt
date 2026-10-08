@@ -94,6 +94,18 @@ object Analytics {
         return streak
     }
 
+    /** The longest run of consecutive ISO weeks with at least one workout, at any time. */
+    fun bestWeeklyStreak(dateMillis: List<Long>): Int {
+        val weeks = dateMillis.map { weekStart(toUtcDate(it)) }.distinct().sorted()
+        var best = 0
+        var run = 0
+        weeks.forEachIndexed { i, week ->
+            run = if (i > 0 && weeks[i - 1].plusDays(7) == week) run + 1 else 1
+            best = maxOf(best, run)
+        }
+        return best
+    }
+
     private fun describeSessionType(entries: List<WorkoutEntry>): String {
         val hasStrength = entries.any { it.entryType == ExerciseCategory.Strength }
         val hasCardio = entries.any { it.entryType == ExerciseCategory.Cardio }
