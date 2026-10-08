@@ -223,6 +223,24 @@ class ComponentScreenshotTest {
         FinishWorkoutSheet(session, template = null, units = UnitSystem.Metric, nowUtcMillis = 40 * 60_000L, onFinish = { _, _, _ -> }, onDismiss = {})
     }
 
+    @Test fun liveRunCardDark() = capture("live_run_card_dark", dark = true) { RunCard() }
+    @Test fun liveRunCardLight() = capture("live_run_card_light", dark = false) { RunCard() }
+
+    @Composable
+    private fun RunCard() = com.lukr99.workout.ui.run.LiveRunCard(
+        state = com.lukr99.workout.domain.run.LiveRunState(
+            phase = com.lukr99.workout.domain.run.RunTracker.Phase.Recording,
+            movingSeconds = 26 * 60 + 41,
+            distanceMeters = 4_820.0,
+            avgPaceSecPerKm = 332.0,
+        ),
+        units = UnitSystem.Metric,
+        routeName = "River loop",
+        offRouteMeters = 6.0,
+        split = com.lukr99.workout.domain.run.Split(index = 5, distanceMeters = 820.0, durationSeconds = 448, paceSecPerKm = 328.0, isFull = false),
+        onPause = {}, onResume = {}, onFinish = {},
+    )
+
     @Test fun orientationDark() = capture("orientation_dark", dark = true) { Orientation() }
     @Test fun orientationLight() = capture("orientation_light", dark = false) { Orientation() }
 

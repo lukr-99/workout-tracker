@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -21,12 +20,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.MyLocation
 import androidx.compose.material.icons.rounded.Navigation
-import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -53,8 +53,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.lukr99.workout.data.map.MapStyle
 import com.lukr99.workout.data.run.RunCues
-import com.lukr99.workout.domain.run.LiveRunState
 import com.lukr99.workout.domain.run.Pace
 import com.lukr99.workout.domain.run.RouteDeviation
 import com.lukr99.workout.domain.run.RunStats
@@ -66,6 +66,7 @@ import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.MusicMiniControls
 import com.lukr99.workout.ui.components.rememberReduceMotion
 import com.lukr99.workout.ui.run.components.RunMap
+import com.lukr99.workout.ui.theme.EmberTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -88,6 +89,7 @@ fun LiveRunScreen(
     val state by vm.state.collectAsState()
     val trace by vm.trace.collectAsState()
     val planned by vm.plannedRoute.collectAsState()
+    val routeName by vm.plannedName.collectAsState()
     val emberColor = MaterialTheme.colorScheme.primary
 
     fun hasFineLocation(): Boolean =
@@ -103,6 +105,9 @@ fun LiveRunScreen(
     var countdown by remember { mutableStateOf<Int?>(null) }
     var confirmingFinish by remember { mutableStateOf(false) }
     var finishSummary by remember { mutableStateOf<RunStats.RunSummary?>(null) }
+    // The basemap follows the app theme until the map style button picks the other one.
+    val themeDark = EmberTheme.colors.isDark
+    var darkMap by remember(themeDark) { mutableStateOf(themeDark) }
     val reduceMotion = rememberReduceMotion()
 
     // Audio/haptic cues (split announcements, countdown ticks, finish flourish). Freed on leave.
@@ -111,7 +116,8 @@ fun LiveRunScreen(
 
     // Fire a unit-aware split cue whenever the run crosses a km/mi mark. The pure trigger
     // ([SplitCue]) decides which marks were crossed between the last and current distance.
-    val splitMeters = if (units == UnitSystem.Imperial) Pace.METERS_PER_MILE else Pace.METERS_PER_KM
+    val splitMeters = splitMetersFor(units)
+    val currentSplit = remember(trace, splitMeters) { Pace.currentSplit(trace, splitMeters) }
     var lastCuedMeters by remember { mutableDoubleStateOf(0.0) }
     LaunchedEffect(state.distanceMeters, state.phase) {
         val curr = state.distanceMeters
@@ -173,6 +179,7 @@ fun LiveRunScreen(
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         RunMap(
             userLocationEnabled = locationGranted,
+            styleUrl = MapStyle.forTheme(darkMap),
             recenterSignal = recenterSignal,
             compassSignal = compassSignal,
             headingFollow = headingFollow,
@@ -183,17 +190,12 @@ fun LiveRunScreen(
             modifier = Modifier.fillMaxSize(),
         )
 
-        CircleIconButton(Icons.Rounded.Close, "Close", Modifier.align(Alignment.TopStart).padding(12.dp)) { onClose() }
-
-        // Live metrics panel (top) once recording.
-        if (!idle) {
-            MetricsPanel(
-                state = state,
-                units = units,
-                offRouteMeters = offRouteMeters,
-                modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp, start = 64.dp, end = 16.dp),
-            )
-        }
+        // While recording, leaving keeps the run going in the background, so it reads as minimise.
+        CircleIconButton(
+            if (idle) Icons.Rounded.Close else Icons.Rounded.ExpandMore,
+            if (idle) "Close" else "Minimise run",
+            Modifier.align(Alignment.TopStart).padding(12.dp),
+        ) { onClose() }
 
         // Right-edge side stack: the small music button above the recenter control.
         Column(
@@ -221,6 +223,11 @@ fun LiveRunScreen(
                     recenterSignal++
                 }
             }
+            CircleIconButton(
+                if (darkMap) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
+                if (darkMap) "Light map" else "Dark map",
+                Modifier,
+            ) { darkMap = !darkMap }
         }
 
         // Bottom controls.
@@ -230,8 +237,12 @@ fun LiveRunScreen(
                 idle -> StartButton(Modifier.align(Alignment.Center)) {
                     if (hasFineLocation()) countdown = 3 else requestPermissions()
                 }
-                else -> RecordingControls(
-                    paused = state.phase == RunTracker.Phase.Paused,
+                else -> LiveRunCard(
+                    state = state,
+                    units = units,
+                    routeName = routeName.takeIf { planned.isNotEmpty() },
+                    offRouteMeters = offRouteMeters,
+                    split = currentSplit,
                     onPause = vm::pause,
                     onResume = vm::resume,
                     onFinish = { confirmingFinish = true },
@@ -299,122 +310,6 @@ private fun CountdownOverlay(countdown: Int?) {
 
 /** Post-save summary: headline metrics + any personal records the run just set. */
 @Composable
-private fun FinishSummarySheet(
-    summary: RunStats.RunSummary,
-    units: UnitSystem,
-    onDone: () -> Unit,
-) {
-    Box(
-        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.6f)),
-        contentAlignment = Alignment.BottomCenter,
-    ) {
-        Column(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(22.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            Text("Run saved", color = MaterialTheme.colorScheme.onSurface, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                Metric("Distance", Format.distance(summary.distanceMeters, units))
-                Metric("Time", Pace.formatDuration(summary.movingSeconds))
-                Metric("Pace", paceLabel(summary.avgPaceSecPerKm, units))
-            }
-            if (summary.newRecords.isNotEmpty()) {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    summary.newRecords.forEach { pr ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("🏅", fontSize = 16.sp)
-                            Text(
-                                "  New record · ${prLabel(pr)}",
-                                color = MaterialTheme.colorScheme.primary,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                        }
-                    }
-                }
-            }
-            Box(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
-                    .background(MaterialTheme.colorScheme.primary).clickable(onClick = onDone)
-                    .padding(vertical = 15.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text("Done", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
-            }
-        }
-    }
-}
-
-private fun prLabel(pr: RunStats.PrKind): String = when (pr) {
-    RunStats.PrKind.Fastest1k -> "Fastest 1K"
-    RunStats.PrKind.Fastest5k -> "Fastest 5K"
-    RunStats.PrKind.Fastest10k -> "Fastest 10K"
-    RunStats.PrKind.FastestHalf -> "Fastest half marathon"
-    RunStats.PrKind.LongestRun -> "Longest run"
-    RunStats.PrKind.MostElevation -> "Most elevation"
-    RunStats.PrKind.BestAvgPace -> "Best average pace"
-}
-
-@Composable
-private fun MetricsPanel(state: LiveRunState, units: UnitSystem, offRouteMeters: Double?, modifier: Modifier) {
-    Column(
-        modifier.clip(RoundedCornerShape(18.dp))
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f))
-            .padding(horizontal = 18.dp, vertical = 14.dp),
-    ) {
-        Text(
-            Format.distance(state.distanceMeters, units),
-            color = MaterialTheme.colorScheme.onSurface,
-            fontSize = 40.sp,
-            fontWeight = FontWeight.Bold,
-        )
-        Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-            Metric("Time", Pace.formatDuration(state.movingSeconds))
-            Metric("Pace", paceLabel(state.avgPaceSecPerKm, units))
-            Metric("Elev", "${state.elevationGainM.toInt()} m")
-        }
-        // Off-route is a gentle heads-up only — never a warning, never blocking.
-        if (offRouteMeters != null && offRouteMeters > OFF_ROUTE_THRESHOLD_M) {
-            Text(
-                "${offRouteMeters.toInt()} m off route",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(top = 6.dp),
-            )
-        }
-        if (state.autoPaused) {
-            Text(
-                "Auto-paused",
-                color = MaterialTheme.colorScheme.primary,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(top = 6.dp),
-            )
-        }
-    }
-}
-
-@Composable
-private fun Metric(label: String, value: String) {
-    Column {
-        Text(label.uppercase(), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
-        Text(value, color = MaterialTheme.colorScheme.onSurface, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-    }
-}
-
-/** Only surface an off-route hint once you're clearly off the line — never for GPS wobble. */
-private const val OFF_ROUTE_THRESHOLD_M = 35.0
-
-private fun paceLabel(secPerKm: Double, units: UnitSystem): String {
-    val perUnit = if (units == UnitSystem.Imperial) Pace.paceSecPerMile(secPerKm) else secPerKm
-    val suffix = if (units == UnitSystem.Imperial) "/mi" else "/km"
-    return "${Pace.formatPace(perUnit)} $suffix"
-}
-
-@Composable
 private fun StartButton(modifier: Modifier, onClick: () -> Unit) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
@@ -431,108 +326,6 @@ private fun StartButton(modifier: Modifier, onClick: () -> Unit) {
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(top = 8.dp),
         )
-    }
-}
-
-@Composable
-private fun RecordingControls(
-    paused: Boolean,
-    onPause: () -> Unit,
-    onResume: () -> Unit,
-    onFinish: () -> Unit,
-    modifier: Modifier,
-) {
-    Row(modifier, horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-        // Finish (square stop) — left, secondary surface.
-        ControlButton(
-            icon = Icons.Rounded.Stop,
-            label = "Finish",
-            container = MaterialTheme.colorScheme.surface,
-            content = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f),
-            onClick = onFinish,
-        )
-        // Pause/Resume — primary ember.
-        ControlButton(
-            icon = if (paused) Icons.Rounded.PlayArrow else Icons.Rounded.Pause,
-            label = if (paused) "Resume" else "Pause",
-            container = MaterialTheme.colorScheme.primary,
-            content = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.weight(1f),
-            onClick = if (paused) onResume else onPause,
-        )
-    }
-}
-
-@Composable
-private fun ControlButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    container: Color,
-    content: Color,
-    modifier: Modifier,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier.clip(RoundedCornerShape(28.dp)).background(container).clickable(onClick = onClick)
-            .padding(vertical = 16.dp),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(icon, label, tint = content, modifier = Modifier.size(22.dp))
-        Text("  $label", color = content, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable
-private fun FinishSheet(
-    state: LiveRunState,
-    units: UnitSystem,
-    onDiscard: () -> Unit,
-    onSave: () -> Unit,
-    onCancel: () -> Unit,
-) {
-    Box(
-        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.55f)).clickable(onClick = onCancel),
-        contentAlignment = Alignment.BottomCenter,
-    ) {
-        Column(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
-                .background(MaterialTheme.colorScheme.surface)
-                .clickable(enabled = false) {}
-                .padding(22.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            Text("Finish run?", color = MaterialTheme.colorScheme.onSurface, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                Metric("Distance", Format.distance(state.distanceMeters, units))
-                Metric("Time", Pace.formatDuration(state.movingSeconds))
-                Metric("Pace", paceLabel(state.avgPaceSecPerKm, units))
-            }
-            Box(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
-                    .background(MaterialTheme.colorScheme.primary).clickable(onClick = onSave)
-                    .padding(vertical = 15.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text("Save run", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
-            }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SecondaryButton("Keep running", Modifier.weight(1f), onCancel)
-                SecondaryButton("Discard", Modifier.weight(1f), onDiscard)
-            }
-        }
-    }
-}
-
-@Composable
-private fun SecondaryButton(label: String, modifier: Modifier, onClick: () -> Unit) {
-    Box(
-        modifier.clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.surfaceVariant)
-            .clickable(onClick = onClick).padding(vertical = 13.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -577,7 +370,7 @@ private fun LocationRationale(onEnable: () -> Unit, modifier: Modifier) {
         }
         Text(
             "Ember uses your location to draw your route and measure distance and pace. It only tracks " +
-                "while a run is active — never in the background.",
+                "while a run is active, never in the background.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

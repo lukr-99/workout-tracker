@@ -4,16 +4,15 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.lukr99.workout.data.AppContainer
-import androidx.lifecycle.viewModelScope
 import com.lukr99.workout.data.health.HealthConnectService
 import com.lukr99.workout.data.location.LocationService
 import com.lukr99.workout.data.location.RunSessionController
 import com.lukr99.workout.data.run.RunRepository
 import com.lukr99.workout.domain.run.LiveRunState
 import com.lukr99.workout.domain.run.Polyline
-import com.lukr99.workout.domain.run.Run
 import com.lukr99.workout.domain.run.RunStats
 import com.lukr99.workout.domain.run.TracePoint
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,6 +42,10 @@ class LiveRunViewModel(
     /** Faint reference line when a run was started from a saved route (empty otherwise). */
     val plannedRoute: StateFlow<List<Pair<Double, Double>>> = _plannedRoute.asStateFlow()
 
+    private val _plannedName = MutableStateFlow<String?>(null)
+    /** The saved route's name for the "On route" badge, or null without a route. */
+    val plannedName: StateFlow<String?> = _plannedName.asStateFlow()
+
     /**
      * Arm the next run with a saved route (or clear it). The route is only ever a **reference** — the
      * run records its own trace and is never forced onto the route. Call before showing the run screen.
@@ -50,11 +53,13 @@ class LiveRunViewModel(
     fun prepareRoute(routeId: String?) {
         if (routeId == null) {
             _plannedRoute.value = emptyList()
+            _plannedName.value = null
             controller.armRoute(null)
             return
         }
         viewModelScope.launch {
             val route = repo.getRoute(routeId)
+            _plannedName.value = route?.name?.ifBlank { "your route" }
             _plannedRoute.value = route?.let { r ->
                 r.points.takeIf { it.isNotEmpty() }?.map { it.lat to it.lon }
                     ?: Polyline.decode(r.encodedPolyline)

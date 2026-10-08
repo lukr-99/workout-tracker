@@ -2,6 +2,7 @@ package com.lukr99.workout.domain.run
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -113,5 +114,20 @@ class PaceTest {
         assertEquals("0:45", Pace.formatDuration(45))
         assertEquals("12:30", Pace.formatDuration(750))
         assertEquals("1:01:05", Pace.formatDuration(3665))
+    }
+
+    @Test
+    fun currentSplit_isTheRunningRemainder() {
+        // 1.5 km at 4 m/s: split 2 is 500 m in, at 250 s/km.
+        val split = Pace.currentSplit(straightTrace(1_500.0, 50.0, 4.0))!!
+        assertEquals(2, split.index)
+        assertEquals(500.0, split.distanceMeters, 1.0)
+        assertEquals(250.0, split.paceSecPerKm, 1.0)
+    }
+
+    @Test
+    fun currentSplit_waitsForAHundredMetres() {
+        assertNull(Pace.currentSplit(straightTrace(1_050.0, 50.0, 4.0)))
+        assertNull(Pace.currentSplit(straightTrace(1_000.0, 50.0, 4.0)))
     }
 }

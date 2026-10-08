@@ -38,6 +38,12 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 - **The Progress tiles have context.** Workouts says how many this month; Volume covers the last 4
   weeks and compares them with the 4 before; PR sets count the last 30 days; Streak shows your
   best. Weekly volume says how much you lifted this week.
+- **A new live run screen.** One card at the bottom shows the distance big, an "On route" badge
+  when you run a saved route (or how far off it you are), time, average pace and the current
+  split's pace, with Pause and Finish. While recording, the top button minimises the run instead
+  of closing it.
+- **Light maps.** Maps follow the app's theme, so light mode gets a light map, and the live run has
+  a button to switch between light and dark.
 
 ### Fixed
 

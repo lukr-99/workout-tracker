@@ -18,6 +18,15 @@ object MapStyle {
     const val DARK_VECTOR_STYLE_URL: String = "https://tiles.openfreemap.org/styles/dark"
 
     /**
+     * Keyless light vector style from the same OpenFreeMap tiles, for light mode. Both styles read
+     * the same vector tiles, so a region saved offline serves either.
+     */
+    const val LIGHT_VECTOR_STYLE_URL: String = "https://tiles.openfreemap.org/styles/positron"
+
+    /** The style that matches the app's theme. */
+    fun forTheme(dark: Boolean): String = if (dark) DARK_VECTOR_STYLE_URL else LIGHT_VECTOR_STYLE_URL
+
+    /**
      * Camera zoom while following the runner. Deliberately close (street-level) so the road and the
      * ember trace right around you are legible mid-run — the common ask is "let me see the path I'm
      * actually on", not the whole city. Pinch still overrides it; the recenter button restores it.
