@@ -24,6 +24,9 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 - **Effort is one tap.** Set options show "reps left in the tank" as chips from 0 to 4+, with the
   matching RPE underneath. Tap the chosen chip again to clear it. 0 now works, which the old
   number pad treated as "clear".
+- **The template editor is quicker to arrange.** Hold the dots on a card to drag it to a new place.
+  A superset has an Ungroup button on its header, and reps have - and + that move the whole range
+  (6-8 becomes 7-9). Tap the reps to set the range exactly.
 
 ## [2.6.0] - 2026-10-05
 

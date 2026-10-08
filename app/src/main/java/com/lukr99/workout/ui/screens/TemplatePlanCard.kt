@@ -21,6 +21,7 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.DragIndicator
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.LinkOff
 import androidx.compose.material.icons.rounded.MoreVert
@@ -31,6 +32,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -66,19 +68,30 @@ internal fun TemplatePlanCard(row: TemplateRow, joinedAbove: Boolean, joinedBelo
     Column(
         Modifier.fillMaxWidth().clip(shape).background(colors.surface).border(1.dp, colors.border, shape)
             .drawBehind { if (row.supersetGroup != null && (joinedAbove || joinedBelow)) drawRect(rail, size = Size(3.dp.toPx(), size.height)) }
-            .padding(start = 14.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
+            .padding(start = 8.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
     ) {
         if (row.supersetGroup != null && joinedBelow && !joinedAbove) {
-            Text(
-                "SUPERSET · DONE AS ONE ROUND",
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp,
-                color = colors.primaryText,
-                modifier = Modifier.padding(bottom = 6.dp),
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "SUPERSET · DONE AS ONE ROUND",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
+                    color = colors.primaryText,
+                    modifier = Modifier.weight(1f),
+                )
+                actions.onUngroup?.let { ungroup ->
+                    TextButton(onClick = ungroup) { Text("Ungroup", fontWeight = FontWeight.SemiBold, color = colors.primaryText) }
+                }
+            }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                actions.dragHandle.size(width = 28.dp, height = 44.dp).semantics { contentDescription = "Hold to move ${row.name}" },
+                contentAlignment = Alignment.CenterStart,
+            ) {
+                Icon(Icons.Rounded.DragIndicator, null, tint = colors.textTertiary, modifier = Modifier.size(22.dp))
+            }
             Column(Modifier.weight(1f)) {
                 Text(row.name, style = MaterialTheme.typography.titleMedium, color = colors.textPrimary)
                 BodyPartTag(row.bodyPart)
@@ -92,7 +105,14 @@ internal fun TemplatePlanCard(row: TemplateRow, joinedAbove: Boolean, joinedBelo
                 onMinus = { actions.onChange(row.copy(targetSets = row.targetSets?.minus(1)?.takeIf { it > 0 })) },
                 onPlus = { actions.onChange(row.copy(targetSets = ((row.targetSets ?: 0) + 1).coerceAtMost(20))) },
             )
-            ValueBox("Reps", repsText(row), weight = 1.2f, onClick = actions.onEditReps)
+            Stepper(
+                label = "Reps",
+                value = repsText(row),
+                weight = 1.2f,
+                onValueClick = actions.onEditReps,
+                onMinus = { actions.onChange(row.withRepsShifted(-1)) },
+                onPlus = { actions.onChange(row.withRepsShifted(1)) },
+            )
             Stepper(
                 label = "Rest",
                 value = row.restSeconds?.let { Format.clock(it) } ?: "Auto",
@@ -119,9 +139,16 @@ private fun repsText(row: TemplateRow): String = when {
 }
 
 @Composable
-private fun RowScope.Stepper(label: String, value: String, onMinus: () -> Unit, onPlus: () -> Unit) {
+private fun RowScope.Stepper(
+    label: String,
+    value: String,
+    onMinus: () -> Unit,
+    onPlus: () -> Unit,
+    weight: Float = 1f,
+    onValueClick: (() -> Unit)? = null,
+) {
     val colors = EmberTheme.colors
-    Column(Modifier.weight(1f)) {
+    Column(Modifier.weight(weight)) {
         Text(label.uppercase(), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = colors.textSecondary)
         Row(
             Modifier.padding(top = 4.dp).fillMaxWidth().height(44.dp).clip(RoundedCornerShape(12.dp)).background(colors.surfaceRaised)
@@ -129,7 +156,16 @@ private fun RowScope.Stepper(label: String, value: String, onMinus: () -> Unit, 
             verticalAlignment = Alignment.CenterVertically,
         ) {
             StepKey(Icons.Rounded.Remove, "Less ${label.lowercase()}", onMinus)
-            Text(value, style = Numbers.copy(fontSize = 17.sp), color = colors.textPrimary, maxLines = 1, modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            Text(
+                value,
+                style = Numbers.copy(fontSize = 17.sp),
+                color = colors.textPrimary,
+                maxLines = 1,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.weight(1f).then(
+                    if (onValueClick == null) Modifier else Modifier.clickable(role = Role.Button, onClickLabel = "Set the ${label.lowercase()}", onClick = onValueClick),
+                ),
+            )
             StepKey(Icons.Rounded.Add, "More ${label.lowercase()}", onPlus)
         }
     }
@@ -142,22 +178,6 @@ private fun StepKey(icon: androidx.compose.ui.graphics.vector.ImageVector, label
         contentAlignment = Alignment.Center,
     ) {
         Icon(icon, null, tint = EmberTheme.colors.textSecondary, modifier = Modifier.size(18.dp))
-    }
-}
-
-@Composable
-private fun RowScope.ValueBox(label: String, value: String, weight: Float, onClick: () -> Unit) {
-    val colors = EmberTheme.colors
-    Column(Modifier.weight(weight)) {
-        Text(label.uppercase(), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = colors.textSecondary)
-        Box(
-            Modifier.padding(top = 4.dp).fillMaxWidth().height(44.dp).clip(RoundedCornerShape(12.dp)).background(colors.surfaceRaised)
-                .border(1.dp, colors.border, RoundedCornerShape(12.dp))
-                .clickable(role = Role.Button, onClickLabel = "Set the rep range", onClick = onClick),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(value, style = Numbers.copy(fontSize = 17.sp), color = colors.textPrimary)
-        }
     }
 }
 

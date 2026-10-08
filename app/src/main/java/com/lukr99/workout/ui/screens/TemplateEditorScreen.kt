@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -37,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -45,6 +47,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.lukr99.workout.domain.creation.TemplateDraft
 import com.lukr99.workout.domain.creation.TemplateExerciseDraft
 import com.lukr99.workout.domain.newId
@@ -53,6 +56,8 @@ import com.lukr99.workout.ui.components.ExercisePicker
 import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.NoteEditorSheet
 import com.lukr99.workout.ui.components.RoundIconButton
+import com.lukr99.workout.ui.components.rememberReorderState
+import com.lukr99.workout.ui.components.reorderHandle
 import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
@@ -146,26 +151,53 @@ fun TemplateEditorScreen(
             }
         }
 
+        val listState = rememberLazyListState()
+        val reorder = rememberReorderState(
+            listState,
+            canMove = { key -> rows.any { it.rowId == key } },
+            onMove = { from, to ->
+                val a = rows.indexOfFirst { it.rowId == from }
+                val b = rows.indexOfFirst { it.rowId == to }
+                if (a >= 0 && b >= 0) rows.add(b, rows.removeAt(a))
+            },
+            onDrop = { replaceAll(TemplateRowGroups.tidy(rows)) },
+        )
         LazyColumn(
             Modifier.weight(1f).fillMaxWidth(),
+            state = listState,
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 40.dp),
         ) {
             item(key = "name") { Field("Name", name, "Push day", singleLine = true) { name = it } }
             item(key = "notes") { Field("Template note", notes, "Heavy bench first. Short rests on the accessories.", singleLine = false) { notes = it } }
             item(key = "exercises-title") {
-                Text(
-                    "EXERCISES · ${rows.size}",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 1.sp,
-                    color = colors.textSecondary,
-                    modifier = Modifier.padding(top = 20.dp, bottom = 8.dp),
-                )
+                Row(Modifier.padding(top = 20.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "EXERCISES · ${rows.size}",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 1.sp,
+                        color = colors.textSecondary,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (rows.size > 1) {
+                        Text("Hold the dots to move", style = MaterialTheme.typography.labelLarge, color = colors.textSecondary)
+                    }
+                }
             }
             itemsIndexed(rows, key = { _, row -> row.rowId }) { index, row ->
                 val joinedAbove = TemplateRowGroups.joinedToPrevious(rows, index)
                 val joinedBelow = index < rows.lastIndex && TemplateRowGroups.joinedToPrevious(rows, index + 1)
-                Box(Modifier.padding(top = if (joinedAbove) 4.dp else 10.dp)) {
+                val dragging = reorder.draggingKey == row.rowId
+                Box(
+                    Modifier
+                        .zIndex(if (dragging) 1f else 0f)
+                        .graphicsLayer {
+                            translationY = if (dragging) reorder.draggingOffset else 0f
+                            shadowElevation = if (dragging) 12.dp.toPx() else 0f
+                        }
+                        .then(if (dragging) Modifier else Modifier.animateItem())
+                        .padding(top = if (joinedAbove) 4.dp else 10.dp),
+                ) {
                     TemplatePlanCard(
                         row = row,
                         joinedAbove = joinedAbove,
@@ -182,6 +214,8 @@ fun TemplateEditorScreen(
                                 else -> null
                             },
                             onRemove = { replaceAll(TemplateRowGroups.leave(rows, index).filterIndexed { i, _ -> i != index }) },
+                            onUngroup = row.supersetGroup?.let { group -> { replaceAll(TemplateRowGroups.ungroup(rows, group)) } },
+                            dragHandle = Modifier.reorderHandle(reorder, row.rowId),
                         ),
                     )
                 }
