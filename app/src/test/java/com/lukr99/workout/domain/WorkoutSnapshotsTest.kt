@@ -66,4 +66,64 @@ class WorkoutSnapshotsTest {
         assertEquals("Push day", named.name)
         assertEquals(listOf("Bench"), named.exercises.map { it.exerciseName })
     }
+
+    @Test
+    fun repeatingAWorkoutCopiesItsSetsButNothingIsLogged() {
+        val past = WorkoutSession(
+            id = "old",
+            name = "Push day",
+            notes = "Felt tired",
+            entries = listOf(
+                WorkoutEntry(
+                    id = "e2", exerciseId = "dips", exerciseSnapshotName = "Dips", sortOrder = 1, notes = "Shoulder ok",
+                    supersetGroup = 1,
+                    strengthSets = listOf(StrengthSet(id = "s9", setNumber = 1, reps = 10, performedAtUtc = 5L, rpe = 8.0, isPr = true)),
+                ),
+                WorkoutEntry(
+                    id = "e1", exerciseId = "bench", exerciseSnapshotName = "Bench", sortOrder = 0,
+                    strengthSets = listOf(
+                        StrengthSet(setNumber = 2, reps = 8, weightKg = 80.0, performedAtUtc = 9L),
+                        StrengthSet(setNumber = 1, reps = 10, weightKg = 60.0, tags = setOf(SetTag.Warmup)),
+                    ),
+                ),
+                WorkoutEntry(exerciseId = "", exerciseSnapshotName = "Deleted exercise"),
+            ),
+        )
+        val today = WorkoutSession(id = "new", name = DEFAULT_WORKOUT_NAME)
+
+        val repeated = today.repeating(past)
+
+        assertEquals("Push day", repeated.name)
+        assertEquals("", repeated.notes)
+        assertEquals(listOf("bench", "dips"), repeated.entries.map { it.exerciseId })
+        assertTrue(repeated.entries.all { it.workoutSessionId == "new" && it.notes.isEmpty() && it.id !in setOf("e1", "e2") })
+        val bench = repeated.entries[0].strengthSets
+        assertEquals(listOf(10 to 60.0, 8 to 80.0), bench.map { it.reps to it.weightKg })
+        assertEquals(setOf(SetTag.Warmup), bench[0].tags)
+        assertTrue(repeated.entries.flatMap { it.strengthSets }.all { it.performedAtUtc == null && it.rpe == null && !it.isPr })
+        assertEquals(1, repeated.entries[1].supersetGroup)
+    }
+
+    @Test
+    fun repeatingKeepsANameTheOwnerGave() {
+        val past = WorkoutSession(name = "Push day", entries = listOf(WorkoutEntry(exerciseId = "bench")))
+
+        assertEquals("Morning lift", WorkoutSession(name = "Morning lift").repeating(past).name)
+    }
+
+    @Test
+    fun switchingToATemplateLinksItAndLoadsItsPlan() {
+        val template = WorkoutTemplate(
+            id = "t1",
+            name = "Legs",
+            exercises = listOf(WorkoutTemplateExercise(exerciseId = "squat", exerciseName = "Squat", targetSets = 3, repsMax = 5)),
+        )
+
+        val switched = WorkoutSession(id = "new").switchedTo(template)
+
+        assertEquals("t1", switched.templateId)
+        assertEquals("Legs", switched.name)
+        assertEquals(listOf(5, 5, 5), switched.entries.single().strengthSets.map { it.reps })
+        assertEquals("new", switched.entries.single().workoutSessionId)
+    }
 }

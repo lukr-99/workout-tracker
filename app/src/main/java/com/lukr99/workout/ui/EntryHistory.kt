@@ -7,7 +7,9 @@ import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.ExerciseOuting
 import com.lukr99.workout.domain.PreviousEntryNote
 import com.lukr99.workout.domain.StrengthSet
+import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutSessionStatus
+import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.domain.lastSetsFor
 import com.lukr99.workout.domain.newId
 import com.lukr99.workout.domain.progression.DoubleProgression
@@ -60,4 +62,18 @@ class EntryHistory(
             .distinct()
             .take(limit)
             .toList()
+
+    /**
+     * The newest finished workouts to repeat, one per name so a weekly "Push day" shows once, and
+     * only those with exercises to copy.
+     */
+    suspend fun repeatable(limit: Int = 3): List<WorkoutSession> =
+        repo.getSessions()
+            .filter { it.status == WorkoutSessionStatus.Completed && it.entries.any { e -> e.exerciseId.isNotBlank() } }
+            .sortedByDescending { it.completedDateUtc ?: it.startedAtUtc }
+            .distinctBy { it.name.trim().lowercase() }
+            .take(limit)
+
+    /** The templates an empty workout can switch to. */
+    suspend fun templates(): List<WorkoutTemplate> = repo.getTemplates()
 }

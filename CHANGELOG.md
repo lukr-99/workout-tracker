@@ -6,6 +6,14 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 ## [Unreleased]
 
+### Added
+
+- **Repeat a workout.** An empty workout lists your latest workouts (one per name) with a Copy
+  button. Copy loads that workout's exercises, supersets and sets, with last time's reps and
+  weight ready to tick. It takes that name unless you already renamed the workout.
+- **Switch to a template** from an empty workout. The workout takes the template's name, plan and
+  link, so finishing can still offer to update the template.
+
 ## [2.6.0] - 2026-10-05
 
 ### Added

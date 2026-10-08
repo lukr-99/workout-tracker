@@ -41,6 +41,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lukr99.workout.domain.WorkoutSession
+import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.LiveWorkoutViewModel
 import com.lukr99.workout.ui.components.Format
@@ -109,6 +111,8 @@ fun LiveWorkoutScreen(
     val previousNotes by vm.previousNotes.collectAsState()
     val previousSets by vm.previousSets.collectAsState()
     val recentIds by produceState(emptyList<String>()) { value = vm.history.recentExerciseIds() }
+    val repeatable by produceState(emptyList<WorkoutSession>()) { value = vm.history.repeatable() }
+    val templates by produceState(emptyList<WorkoutTemplate>()) { value = vm.history.templates() }
     val currentSetId = nextSet(draft?.entries.orEmpty(), doneIds)?.second?.id
     var nowUtcMillis by remember { mutableStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
@@ -206,6 +210,10 @@ fun LiveWorkoutScreen(
                             recent = recentIds.mapNotNull(catalog::get).filterNot { it.isArchived },
                             onAddExercises = { sheet = LiveSheet.AddExercise },
                             onQuickAdd = { vm.addExercise(it); toast("${it.name} added") },
+                            repeatable = repeatable,
+                            templates = templates,
+                            onRepeat = { vm.repeatWorkout(it); toast("Copied ${it.name}") },
+                            onSwitch = { vm.switchToTemplate(it); toast("Switched to ${it.name}") },
                         )
                     }
                 } else {
