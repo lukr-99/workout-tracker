@@ -8,6 +8,7 @@ import android.graphics.RadialGradient
 import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.Typeface
+import android.graphics.drawable.Drawable
 
 /**
  * The shared look of the workout and run share images: the dark Ember palette, a warm glow, the
@@ -16,6 +17,7 @@ import android.graphics.Typeface
  */
 object ShareCardStyle {
     const val MARGIN = 72f
+    private const val LOGO_SIZE = 60f
 
     val BG = Color.rgb(0x0F, 0x0D, 0x0C)
     val SURFACE = Color.rgb(0x1A, 0x17, 0x15)
@@ -26,6 +28,7 @@ object ShareCardStyle {
     val EMBER = Color.rgb(0xF9, 0x73, 0x16)
     val EMBER_TEXT = Color.rgb(0xFF, 0x8A, 0x3D)
     val ON_EMBER = Color.rgb(0x1C, 0x0B, 0x00)
+    private val LOGO_BG = Color.rgb(0x0B, 0x0D, 0x10)
 
     fun paint(color: Int, size: Float, bold: Boolean = true) = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         this.color = color
@@ -46,14 +49,43 @@ object ShareCardStyle {
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), glow)
     }
 
-    /** Brand mark on the left and [dateText] on the right, on one baseline. Returns the baseline. */
-    fun drawHeader(canvas: Canvas, width: Int, dateText: String): Float {
-        val baseline = MARGIN + 40f
-        canvas.drawCircle(MARGIN + 13f, baseline - 13f, 13f, paint(EMBER, 0f))
-        canvas.drawText("EMBER", MARGIN + 40f, baseline, paint(TEXT, 36f).apply { letterSpacing = 0.18f })
+    /**
+     * The Ember logo (the launcher's dumbbell glyph on its dark tile) and wordmark on the left,
+     * [dateText] on the right. Returns the text baseline. [logo] is the launcher foreground drawable.
+     */
+    fun drawHeader(canvas: Canvas, width: Int, dateText: String, logo: Drawable?): Float {
+        val tile = RectF(MARGIN, MARGIN - 6f, MARGIN + LOGO_SIZE, MARGIN - 6f + LOGO_SIZE)
+        val baseline = tile.centerY() + 13f
+        drawLogo(canvas, tile, logo)
+        canvas.drawText("EMBER", tile.right + 22f, baseline, paint(TEXT, 36f).apply { letterSpacing = 0.18f })
         val date = paint(TEXT_TERTIARY, 30f).apply { textAlign = Paint.Align.RIGHT; letterSpacing = 0.06f }
         canvas.drawText(dateText.uppercase(), width - MARGIN, baseline, date)
         return baseline
+    }
+
+    /** The app icon in miniature: a rounded dark tile with the ember glyph cropped to fill it. */
+    private fun drawLogo(canvas: Canvas, tile: RectF, logo: Drawable?) {
+        val radius = tile.width() * 0.26f
+        canvas.drawRoundRect(tile, radius, radius, paint(LOGO_BG, 0f))
+        canvas.drawRoundRect(
+            tile, radius, radius,
+            paint(BORDER, 0f).apply { style = Paint.Style.STROKE; strokeWidth = 2f },
+        )
+        if (logo == null) {
+            canvas.drawCircle(tile.centerX(), tile.centerY(), tile.width() / 5f, paint(EMBER, 0f))
+            return
+        }
+        // The glyph spans about half of the 108-unit adaptive-icon canvas; show its middle 72 units.
+        val scale = tile.width() / 72f
+        val half = 54f * scale
+        val save = canvas.save()
+        canvas.clipRect(tile)
+        logo.setBounds(
+            (tile.centerX() - half).toInt(), (tile.centerY() - half).toInt(),
+            (tile.centerX() + half).toInt(), (tile.centerY() + half).toInt(),
+        )
+        logo.draw(canvas)
+        canvas.restoreToCount(save)
     }
 
     /** A rounded stat tile: a small label over a large value that shrinks to fit the tile. */

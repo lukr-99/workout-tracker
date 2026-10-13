@@ -48,6 +48,7 @@ class WorkoutShareSummaryTest {
         assertEquals("220.5 lb x 5", WorkoutShareSummary.formatSet(set(100.0, 5), imperial = true))
         assertEquals("12 reps", WorkoutShareSummary.formatSet(set(0.0, 12), imperial = false))
         assertEquals("1 rep", WorkoutShareSummary.formatSet(set(0.0, 1), imperial = false))
+        assertEquals("82.5 x 8", WorkoutShareSummary.formatSet(set(82.5, 8), imperial = false, withUnit = false))
     }
 
     @Test
@@ -55,10 +56,10 @@ class WorkoutShareSummaryTest {
         val lines = WorkoutShareSummary.exerciseLines(session, imperial = false)
         assertEquals(
             listOf(
-                ShareExerciseLine("Bench Press", "100 kg x 6", hasPr = false),
-                ShareExerciseLine("Overhead Press", "42.5 kg x 6", hasPr = true),
+                ShareExerciseLine("Bench Press", "100 kg x 6", hasPr = false, listOf("100 x 5", "100 x 6", "90 x 8")),
+                ShareExerciseLine("Overhead Press", "42.5 kg x 6", hasPr = true, listOf("40 x 8", "42.5 x 6")),
                 ShareExerciseLine("Treadmill", "10:00", hasPr = false),
-                ShareExerciseLine("Dips", "12 reps", hasPr = false),
+                ShareExerciseLine("Dips", "12 reps", hasPr = false, listOf("12 reps")),
             ),
             lines,
         )

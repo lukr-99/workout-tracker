@@ -9,8 +9,10 @@ object WorkoutShareSummary {
     /** Exercises with something logged, in workout order. Lifts show their best working set. */
     fun exerciseLines(session: WorkoutSession, imperial: Boolean): List<ShareExerciseLine> =
         session.entries.sortedBy { it.sortOrder }.mapNotNull { entry ->
+            val units = entryImperial(entry, imperial)
+            val sets = countedSets(entry)
             val detail = if (entry.isStrength) {
-                bestSet(countedSets(entry))?.let { formatSet(it, entryImperial(entry, imperial)) }
+                bestSet(sets)?.let { formatSet(it, units) }
             } else {
                 cardioDetail(entry.cardioData, imperial)
             } ?: return@mapNotNull null
@@ -18,6 +20,11 @@ object WorkoutShareSummary {
                 name = entry.exerciseSnapshotName.ifBlank { "Exercise" },
                 detail = detail,
                 hasPr = entry.strengthSets.any { it.isPr },
+                workingSets = if (entry.isStrength) {
+                    sets.filterNot { it.isWarmupSet }.map { formatSet(it, units, withUnit = false) }
+                } else {
+                    emptyList()
+                },
             )
         }
 
@@ -64,11 +71,12 @@ object WorkoutShareSummary {
         return working.maxWithOrNull(compareBy<StrengthSet> { it.weightKg }.thenBy { it.reps })
     }
 
-    /** `100 kg x 5`, or `12 reps` for a set with no added weight. */
-    fun formatSet(set: StrengthSet, imperial: Boolean): String {
+    /** `100 kg x 5` (or `100 x 5` without the unit), or `12 reps` for a set with no added weight. */
+    fun formatSet(set: StrengthSet, imperial: Boolean, withUnit: Boolean = true): String {
         if (set.weightKg <= 0.0) return if (set.reps == 1) "1 rep" else "${set.reps} reps"
-        val weight = if (imperial) Units.kgToLb(set.weightKg) else set.weightKg
-        return "${Units.formatWeight(weight)} ${if (imperial) "lb" else "kg"} x ${set.reps}"
+        val weight = Units.formatWeight(if (imperial) Units.kgToLb(set.weightKg) else set.weightKg)
+        val unit = if (!withUnit) "" else if (imperial) " lb" else " kg"
+        return "$weight$unit x ${set.reps}"
     }
 
     // Imported and older entries did not record performedAtUtc, so they fall back to every set.

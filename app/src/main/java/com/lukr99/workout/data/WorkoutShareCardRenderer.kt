@@ -7,7 +7,9 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import com.lukr99.workout.R
 import com.lukr99.workout.domain.Estimates
 import com.lukr99.workout.domain.ShareExerciseLine
 import com.lukr99.workout.domain.Units
@@ -21,8 +23,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Renders a completed lift to a shareable portrait card: brand header, workout name, a row of stat
- * tiles (volume, sets, time, PRs) and each exercise with its best set, PRs marked. Hands back a
+ * Renders a completed lift to a shareable card: the Ember logo header, workout name, a row of stat
+ * tiles (volume, sets, time, PRs) and each exercise with its best set, PRs marked. When there is
+ * room each exercise also lists its sets, and the card is only as tall as its content, from square
+ * up to 4:5 ([ShareListLayout]). Hands back a
  * `FileProvider`-backed `ACTION_SEND` intent. Shares its look with the run's
  * [com.lukr99.workout.data.run.ShareCardRenderer] through [ShareCardStyle]; kept out of `domain/`
  * because it needs Android's `Canvas`. The text comes from the pure [WorkoutShareSummary].
@@ -58,10 +62,6 @@ class WorkoutShareCardRenderer(
     }
 
     internal fun render(session: WorkoutSession, imperial: Boolean): Bitmap {
-        val bitmap = Bitmap.createBitmap(WIDTH, HEIGHT, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        ShareCardStyle.drawBackground(canvas, WIDTH, HEIGHT)
-
         val strengthEntries = session.entries.filter { it.isStrength }
         val volumeKg = strengthEntries.sumOf { Estimates.volume(it.strengthSets) }
         val setCount = strengthEntries.sumOf { it.strengthSets.size }
@@ -69,32 +69,60 @@ class WorkoutShareCardRenderer(
             ?: (((session.endedAtUtc ?: 0L) - session.startedAtUtc) / 1_000).coerceAtLeast(0)
         val prCount = strengthEntries.count { entry -> entry.strengthSets.any { it.isPr } }
         val dateText = DATE_FORMAT.format(Date(session.completedDateUtc ?: session.startedAtUtc))
+        val lines = WorkoutShareSummary.exerciseLines(session, imperial)
 
-        val headerBaseline = ShareCardStyle.drawHeader(canvas, WIDTH, dateText)
-        val titleBottom = drawTitle(canvas, session.name.ifBlank { "Workout" }, headerBaseline)
+        // Lay everything out first: the card's height follows the exercise list.
+        val titlePaint = ShareCardStyle.paint(ShareCardStyle.TEXT, 76f)
+        val titleLines = ShareCardStyle.wrap(session.name.ifBlank { "Workout" }, titlePaint, WIDTH - 2 * MARGIN)
+        val firstTitleBaseline = HEADER_BASELINE + 118f
+        val tilesTop = firstTitleBaseline + (titleLines.size - 1) * TITLE_LINE + 52f
+        val headingBaseline = tilesTop + TILE_HEIGHT + 88f
+        val rowsTop = headingBaseline + 26f
+        val plan = ShareListLayout.plan(
+            hasSets = lines.map { it.workingSets.isNotEmpty() },
+            rowsTop = rowsTop,
+            bottomSpace = BOTTOM_SPACE,
+            compactHeight = COMPACT_ROW,
+            expandedHeight = EXPANDED_ROW,
+            minHeight = MIN_HEIGHT,
+            maxHeight = MAX_HEIGHT,
+        )
+
+        val bitmap = Bitmap.createBitmap(WIDTH, plan.cardHeight, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        ShareCardStyle.drawBackground(canvas, WIDTH, plan.cardHeight)
+        ShareCardStyle.drawHeader(canvas, WIDTH, dateText, logo())
+        // A short workout on a square card: centre the title, tiles and list in the spare room,
+        // while the header and the bottom bar keep to the edges.
+        canvas.save()
+        canvas.translate(0f, plan.slack / 2f)
+        titleLines.forEachIndexed { i, line ->
+            canvas.drawText(line, MARGIN, firstTitleBaseline + i * TITLE_LINE, titlePaint)
+        }
 
         val volumeDisplay = if (imperial) Units.kgToLb(volumeKg) else volumeKg
         val volumeText = "${compactNumber(volumeDisplay)} ${if (imperial) "lb" else "kg"}"
-        val tiles = ShareCardStyle.tileRects(WIDTH, titleBottom + 52f, TILE_HEIGHT, 4)
+        val tiles = ShareCardStyle.tileRects(WIDTH, tilesTop, TILE_HEIGHT, 4)
         ShareCardStyle.drawTile(canvas, tiles[0], "VOLUME", volumeText)
         ShareCardStyle.drawTile(canvas, tiles[1], "SETS", setCount.toString())
         ShareCardStyle.drawTile(canvas, tiles[2], "TIME", formatDuration(durationSeconds))
         ShareCardStyle.drawTile(canvas, tiles[3], "PRS", prCount.toString(), accent = prCount > 0)
 
-        drawExercises(canvas, WorkoutShareSummary.exerciseLines(session, imperial), tiles[0].bottom + 88f)
-        ShareCardStyle.drawFooterBar(canvas, WIDTH, HEIGHT)
+        drawExercises(canvas, lines, plan, headingBaseline, rowsTop)
+        canvas.restore()
+        ShareCardStyle.drawFooterBar(canvas, WIDTH, plan.cardHeight)
         return bitmap
     }
 
-    /** Draws the workout name on up to two lines and returns the last baseline. */
-    private fun drawTitle(canvas: Canvas, name: String, headerBaseline: Float): Float {
-        val title = ShareCardStyle.paint(ShareCardStyle.TEXT, 76f)
-        val lines = ShareCardStyle.wrap(name, title, WIDTH - 2 * MARGIN)
-        lines.forEachIndexed { i, line -> canvas.drawText(line, MARGIN, headerBaseline + 118f + i * 86f, title) }
-        return headerBaseline + 118f + (lines.size - 1) * 86f
-    }
+    private fun logo() = ContextCompat.getDrawable(appContext, R.drawable.ic_launcher_foreground)
 
-    private fun drawExercises(canvas: Canvas, lines: List<ShareExerciseLine>, headingBaseline: Float) {
+    private fun drawExercises(
+        canvas: Canvas,
+        lines: List<ShareExerciseLine>,
+        plan: ShareListPlan,
+        headingBaseline: Float,
+        rowsTop: Float,
+    ) {
         val heading = ShareCardStyle.paint(ShareCardStyle.EMBER_TEXT, 28f).apply { letterSpacing = 0.12f }
         if (lines.isEmpty()) {
             canvas.drawText("SESSION COMPLETE", MARGIN, headingBaseline, heading)
@@ -108,17 +136,17 @@ class WorkoutShareCardRenderer(
         }
         canvas.drawText("EXERCISES", MARGIN, headingBaseline, heading)
 
-        val rowsTop = headingBaseline + 26f
-        val capacity = ShareListLayout.capacity(rowsTop, HEIGHT - BOTTOM_SPACE, ROW_HEIGHT)
-        val shown = ShareListLayout.visibleCount(lines.size, capacity)
         val name = ShareCardStyle.paint(ShareCardStyle.TEXT, 38f)
         val detail = ShareCardStyle.paint(ShareCardStyle.TEXT_SECONDARY, 36f).apply { textAlign = Paint.Align.RIGHT }
+        val sets = ShareCardStyle.paint(ShareCardStyle.TEXT_TERTIARY, 30f, bold = false)
         val divider = ShareCardStyle.paint(ShareCardStyle.BORDER, 0f).apply { strokeWidth = 2f }
         val right = WIDTH - MARGIN
 
-        lines.take(shown).forEachIndexed { i, line ->
-            val top = rowsTop + i * ROW_HEIGHT
-            val baseline = top + ROW_HEIGHT / 2f + 13f
+        var top = rowsTop
+        lines.take(plan.shown).forEachIndexed { i, line ->
+            val rowHeight = plan.rowHeights[i]
+            val withSets = plan.expanded && line.workingSets.isNotEmpty()
+            val baseline = if (withSets) top + 50f else top + COMPACT_ROW / 2f + 13f
             if (i > 0) canvas.drawLine(MARGIN, top, right, top, divider)
             val pillWidth = if (line.hasPr) PR_PILL_WIDTH + 16f else 0f
             val nameMax = right - MARGIN - detail.measureText(line.detail) - pillWidth - 32f
@@ -126,11 +154,15 @@ class WorkoutShareCardRenderer(
             canvas.drawText(nameText, MARGIN, baseline, name)
             if (line.hasPr) drawPrPill(canvas, MARGIN + name.measureText(nameText) + 16f, baseline)
             canvas.drawText(line.detail, right, baseline, detail)
+            if (withSets) {
+                val setsText = ShareCardStyle.ellipsize(line.workingSets.joinToString("   "), sets, right - MARGIN)
+                canvas.drawText(setsText, MARGIN, baseline + 46f, sets)
+            }
+            top += rowHeight
         }
-        val more = ShareListLayout.overflow(lines.size, capacity)
-        if (more > 0) {
-            val baseline = rowsTop + shown * ROW_HEIGHT + ROW_HEIGHT / 2f + 13f
-            canvas.drawText("+$more more", MARGIN, baseline, ShareCardStyle.paint(ShareCardStyle.TEXT_TERTIARY, 34f))
+        if (plan.overflow > 0) {
+            val baseline = top + COMPACT_ROW / 2f + 13f
+            canvas.drawText("+${plan.overflow} more", MARGIN, baseline, ShareCardStyle.paint(ShareCardStyle.TEXT_TERTIARY, 34f))
         }
     }
 
@@ -155,11 +187,17 @@ class WorkoutShareCardRenderer(
 
     private companion object {
         const val WIDTH = 1080
-        const val HEIGHT = 1350
+
+        /** Square for a short workout, up to Instagram's 4:5 portrait for a long one. */
+        const val MIN_HEIGHT = 1080
+        const val MAX_HEIGHT = 1350
         const val MARGIN = ShareCardStyle.MARGIN
+        const val HEADER_BASELINE = ShareCardStyle.MARGIN + 37f
+        const val TITLE_LINE = 86f
         const val TILE_HEIGHT = 156f
-        const val ROW_HEIGHT = 76f
-        const val BOTTOM_SPACE = 80f
+        const val COMPACT_ROW = 76f
+        const val EXPANDED_ROW = 116f
+        const val BOTTOM_SPACE = 84f
         const val PR_PILL_WIDTH = 60f
         val DATE_FORMAT = SimpleDateFormat("EEE, d MMM yyyy", Locale.getDefault())
     }

@@ -80,6 +80,39 @@ class ShareCardScreenshotTest {
     }
 
     @Test
+    fun workoutCardSingleExercise() {
+        val single = session.copy(name = "Deadlift Day", entries = session.entries.take(1))
+        WorkoutShareCardRenderer(context).render(single, imperial = false)
+            .captureRoboImage("src/test/screenshots/share_card_workout_single.png")
+    }
+
+    @Test
+    fun workoutCardMedium() {
+        val medium = session.copy(name = "Push", entries = session.entries.take(6))
+        WorkoutShareCardRenderer(context).render(medium, imperial = false)
+            .captureRoboImage("src/test/screenshots/share_card_workout_medium.png")
+    }
+
+    @Test
+    fun runCardPointToPoint() {
+        // A wandering line from one end of town to the other.
+        val trace = (0..100).map { i ->
+            val f = i / 100.0
+            TracePoint(t = noon + i * 10_000L, lat = 49.18 + 0.02 * f + 0.002 * sin(f * 9), lon = 16.58 + 0.03 * f)
+        }
+        val run = Run(
+            startedAtUtc = noon,
+            durationSeconds = 1_500,
+            movingSeconds = 1_480,
+            distanceMeters = 3_310.0,
+            avgPaceSecPerKm = 447.1,
+            trace = trace,
+        )
+        ShareCardRenderer(context).render(run, imperial = true)
+            .captureRoboImage("src/test/screenshots/share_card_run_point_to_point.png")
+    }
+
+    @Test
     fun runCard() {
         // A lopsided loop so the trace has a recognisable shape.
         val trace = (0..120).map { i ->

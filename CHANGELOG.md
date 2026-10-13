@@ -18,8 +18,12 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 ### Changed
 
 - **Better share images.** The workout image lists each exercise with its best set, marks the
-  ones with a PR, and shows "+N more" when they do not all fit. The workout and run images got a
-  new matching look with stat tiles, a warm glow and the app's ember colours.
+  ones with a PR, and shows "+N more" when they do not all fit. When there is room it also lists
+  each exercise's sets. The image is only as tall as it needs to be, from square up to 4:5, so a
+  short workout no longer leaves an empty bottom half. The workout and run images got a new
+  matching look with the Ember logo, stat tiles, a warm glow and the app's ember colours.
+- **Run images show the way round.** Arrows along the route show the direction, and a loop that
+  ends where it started gets one start and finish marker instead of two dots on top of each other.
 
 ## [2.7.0] - 2026-10-08
 

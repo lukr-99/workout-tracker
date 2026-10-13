@@ -343,7 +343,7 @@ fun WorkoutDetailScreen(
                 Image(
                     bitmap = preview.bitmap.asImageBitmap(),
                     contentDescription = "Workout share image preview",
-                    modifier = Modifier.fillMaxWidth().aspectRatio(1080f / 1350f)
+                    modifier = Modifier.fillMaxWidth().aspectRatio(preview.bitmap.width.toFloat() / preview.bitmap.height)
                         .clip(RoundedCornerShape(16.dp)),
                 )
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {

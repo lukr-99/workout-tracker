@@ -7,29 +7,26 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import com.lukr99.workout.R
 import com.lukr99.workout.data.ShareCardStyle
 import com.lukr99.workout.domain.run.Pace
 import com.lukr99.workout.domain.run.Run
-import com.lukr99.workout.domain.run.RunTrace
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlin.math.cos
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Renders a run to a shareable square image: the brand header, the run's **trace** drawn as a
- * glowing ember line with start and finish dots, and distance, time and pace tiles beneath. Hands
- * back a `FileProvider`-backed `ACTION_SEND` intent (same SAF/authority pattern as
+ * Renders a run to a shareable square image: the Ember logo header, the run's **trace** drawn as a
+ * glowing ember line with direction arrows, start and finish markers (one combined marker when a
+ * loop ends where it began), and distance, time and pace tiles beneath. Hands back a
+ * `FileProvider`-backed `ACTION_SEND` intent (same SAF/authority pattern as
  * [com.lukr99.workout.data.transfer.AndroidDocumentGateway]). Shares its look with the workout card
- * through [ShareCardStyle]. Kept out of `domain/` because it needs Android's `Canvas`; the pace math
- * reuses the pure [Pace].
- *
- * The trace is projected with a local equirectangular fit (accurate at run scale) and letterboxed to
- * preserve aspect, so the shape reads true rather than stretched.
+ * through [ShareCardStyle]; the trace math lives in the pure [TraceGeometry].
  */
 class ShareCardRenderer(
     context: Context,
@@ -57,7 +54,8 @@ class ShareCardRenderer(
         val canvas = Canvas(bitmap)
         ShareCardStyle.drawBackground(canvas, SIZE, SIZE)
 
-        val headerBaseline = ShareCardStyle.drawHeader(canvas, SIZE, DATE_FORMAT.format(Date(run.startedAtUtc)))
+        val logo = ContextCompat.getDrawable(appContext, R.drawable.ic_launcher_foreground)
+        val headerBaseline = ShareCardStyle.drawHeader(canvas, SIZE, DATE_FORMAT.format(Date(run.startedAtUtc)), logo)
         val titleBaseline = headerBaseline + 104f
         canvas.drawText("Run", MARGIN, titleBaseline, ShareCardStyle.paint(ShareCardStyle.TEXT, 72f))
 
@@ -69,53 +67,65 @@ class ShareCardRenderer(
     }
 
     private fun drawTrace(canvas: Canvas, run: Run, top: Float, bottom: Float) {
-        val pts = run.trace.map { it.lat to it.lon }
-        if (pts.size < 2) return
-
-        val lat0 = pts.map { it.first }.average()
-        val mPerLon = 111_320.0 * cos(Math.toRadians(lat0))
-        // Project to metres relative to the first point (y up-positive, flipped when drawing).
-        val xy = pts.map { (la, lo) ->
-            (lo - pts[0].second) * mPerLon to (la - pts[0].first) * 110_540.0
-        }
-        val minX = xy.minOf { it.first }; val maxX = xy.maxOf { it.first }
-        val minY = xy.minOf { it.second }; val maxY = xy.maxOf { it.second }
-        val spanX = (maxX - minX).coerceAtLeast(1.0)
-        val spanY = (maxY - minY).coerceAtLeast(1.0)
-
-        val areaW = SIZE - 2 * MARGIN
-        val areaH = bottom - top
-        val scale = minOf(areaW / spanX, areaH / spanY)
-        val drawW = (spanX * scale).toFloat()
-        val drawH = (spanY * scale).toFloat()
-        val offX = MARGIN + (areaW - drawW) / 2f
-        val offY = top + (areaH - drawH) / 2f
-
-        fun project(lat: Double, lon: Double): Pair<Float, Float> {
-            val x = (lon - pts[0].second) * mPerLon
-            val y = (lat - pts[0].first) * 110_540.0
-            return (offX + ((x - minX) * scale).toFloat()) to (offY + drawH - ((y - minY) * scale).toFloat())
-        }
+        val lines = TraceGeometry.project(run.trace, MARGIN, top, SIZE - 2 * MARGIN, bottom - top)
+        if (lines.isEmpty()) return
 
         // Break the drawn line at manual-pause boundaries (moveTo, not lineTo) so a paused-and-walked
-        // stretch shows as a gap. The same projection is shared so every segment lines up.
+        // stretch shows as a gap.
         val path = Path()
-        RunTrace.segments(run.trace).forEach { segment ->
-            segment.forEachIndexed { i, tp ->
-                val (px, py) = project(tp.lat, tp.lon)
-                if (i == 0) path.moveTo(px, py) else path.lineTo(px, py)
-            }
+        lines.forEach { line ->
+            line.forEachIndexed { i, (x, y) -> if (i == 0) path.moveTo(x, y) else path.lineTo(x, y) }
         }
-        val glow = stroke(Color.argb(60, 0xF9, 0x73, 0x16), 30f)
-        canvas.drawPath(path, glow)
+        canvas.drawPath(path, stroke(Color.argb(60, 0xF9, 0x73, 0x16), 30f))
         canvas.drawPath(path, stroke(ShareCardStyle.EMBER, 11f))
 
-        // Start as a light dot, finish as an ember dot with a dark ring.
-        val (sx, sy) = project(run.trace.first().lat, run.trace.first().lon)
-        val (ex, ey) = project(run.trace.last().lat, run.trace.last().lon)
-        canvas.drawCircle(sx, sy, 14f, ShareCardStyle.paint(ShareCardStyle.TEXT, 0f))
-        canvas.drawCircle(ex, ey, 20f, ShareCardStyle.paint(ShareCardStyle.BG, 0f))
-        canvas.drawCircle(ex, ey, 14f, ShareCardStyle.paint(ShareCardStyle.EMBER_TEXT, 0f))
+        // Arrows show which way the route goes, which a loop cannot show on its own.
+        ARROW_FRACTIONS.forEach { fraction -> TraceGeometry.poseAlong(lines, fraction)?.let { drawArrow(canvas, it) } }
+
+        val start = lines.first().first()
+        val finish = lines.last().last()
+        if (TraceGeometry.startMeetsFinish(start, finish, MARKER_MERGE_DISTANCE)) {
+            drawStartFinish(canvas, start.first, start.second)
+        } else {
+            drawStart(canvas, start.first, start.second)
+            drawFinish(canvas, finish.first, finish.second)
+        }
+    }
+
+    private fun drawArrow(canvas: Canvas, pose: TracePose) {
+        val arrow = Path().apply {
+            moveTo(14f, 0f)
+            lineTo(-10f, -13f)
+            lineTo(-4f, 0f)
+            lineTo(-10f, 13f)
+            close()
+        }
+        val save = canvas.save()
+        canvas.translate(pose.x, pose.y)
+        canvas.rotate(pose.angleDegrees)
+        canvas.drawPath(arrow, stroke(ShareCardStyle.BG, 6f))
+        canvas.drawPath(arrow, ShareCardStyle.paint(ShareCardStyle.TEXT, 0f))
+        canvas.restoreToCount(save)
+    }
+
+    /** Start: a light dot ringed in the background colour. */
+    private fun drawStart(canvas: Canvas, x: Float, y: Float) {
+        canvas.drawCircle(x, y, 20f, ShareCardStyle.paint(ShareCardStyle.BG, 0f))
+        canvas.drawCircle(x, y, 14f, ShareCardStyle.paint(ShareCardStyle.TEXT, 0f))
+    }
+
+    /** Finish: an ember dot ringed in the background colour. */
+    private fun drawFinish(canvas: Canvas, x: Float, y: Float) {
+        canvas.drawCircle(x, y, 20f, ShareCardStyle.paint(ShareCardStyle.BG, 0f))
+        canvas.drawCircle(x, y, 14f, ShareCardStyle.paint(ShareCardStyle.EMBER_TEXT, 0f))
+    }
+
+    /** Start and finish in one place: the start dot inside an ember finish ring. */
+    private fun drawStartFinish(canvas: Canvas, x: Float, y: Float) {
+        canvas.drawCircle(x, y, 27f, ShareCardStyle.paint(ShareCardStyle.BG, 0f))
+        canvas.drawCircle(x, y, 21f, ShareCardStyle.paint(ShareCardStyle.EMBER_TEXT, 0f))
+        canvas.drawCircle(x, y, 14f, ShareCardStyle.paint(ShareCardStyle.BG, 0f))
+        canvas.drawCircle(x, y, 9f, ShareCardStyle.paint(ShareCardStyle.TEXT, 0f))
     }
 
     private fun stroke(color: Int, width: Float) = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -143,6 +153,10 @@ class ShareCardRenderer(
         const val SIZE = 1080
         const val MARGIN = ShareCardStyle.MARGIN
         const val TILE_HEIGHT = 156f
+
+        /** Start and finish closer than this, in pixels, share one marker. */
+        const val MARKER_MERGE_DISTANCE = 48f
+        val ARROW_FRACTIONS = listOf(0.25f, 0.5f, 0.75f)
         val DATE_FORMAT = SimpleDateFormat("EEE, d MMM yyyy", Locale.getDefault())
     }
 }
