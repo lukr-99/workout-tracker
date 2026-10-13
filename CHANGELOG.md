@@ -15,6 +15,12 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
   The text lists the workout name, date and every set (weight x reps, warm-ups marked), ready to
   paste into a chat.
 
+### Changed
+
+- **Better share images.** The workout image lists each exercise with its best set, marks the
+  ones with a PR, and shows "+N more" when they do not all fit. The workout and run images got a
+  new matching look with stat tiles, a warm glow and the app's ember colours.
+
 ## [2.7.0] - 2026-10-08
 
 ### Added
