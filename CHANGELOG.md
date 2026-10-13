@@ -11,6 +11,9 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 - **New set tags: Finisher, Explosive, Slow down and Slow up.** Find them in set options next to
   the other tags. A Finisher set shows an F badge. Slow down means a slow lowering phase, slow up
   a slow lifting phase. Backups keep them (export format 1.11; older backups still import).
+- **Share a workout as text.** Share on a past workout now offers Share image or Share as text.
+  The text lists the workout name, date and every set (weight x reps, warm-ups marked), ready to
+  paste into a chat.
 
 ## [2.7.0] - 2026-10-08
 
