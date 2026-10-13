@@ -11,6 +11,19 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 - **New set tags: Finisher, Explosive, Slow down and Slow up.** Find them in set options next to
   the other tags. A Finisher set shows an F badge. Slow down means a slow lowering phase, slow up
   a slow lifting phase. Backups keep them (export format 1.11; older backups still import).
+- **Share a workout as text.** Share on a past workout now offers Share image or Share as text.
+  The text lists the workout name, date and every set (weight x reps, warm-ups marked), ready to
+  paste into a chat.
+
+### Changed
+
+- **Better share images.** The workout image lists each exercise with its best set, marks the
+  ones with a PR, and shows "+N more" when they do not all fit. When there is room it also lists
+  each exercise's sets. The image is only as tall as it needs to be, from square up to 4:5, so a
+  short workout no longer leaves an empty bottom half. The workout and run images got a new
+  matching look with the Ember logo, stat tiles, a warm glow and the app's ember colours.
+- **Run images show the way round.** Arrows along the route show the direction, and a loop that
+  ends where it started gets one start and finish marker instead of two dots on top of each other.
 
 ## [2.7.0] - 2026-10-08
 

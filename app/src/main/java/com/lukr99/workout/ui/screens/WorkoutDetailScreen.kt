@@ -23,6 +23,8 @@ import androidx.compose.material.icons.automirrored.rounded.NoteAdd
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,6 +50,7 @@ import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.WeightDisplayUnit
 import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.domain.WorkoutSession
+import com.lukr99.workout.domain.WorkoutShareSummary
 import com.lukr99.workout.domain.newId
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.HistoryViewModel
@@ -88,6 +91,7 @@ fun WorkoutDetailScreen(
     val shareRenderer = remember(context) { com.lukr99.workout.data.WorkoutShareCardRenderer(context) }
     var preparedShare by remember { mutableStateOf<com.lukr99.workout.data.WorkoutShareCardRenderer.PreparedShare?>(null) }
     var preparingShare by remember { mutableStateOf(false) }
+    var shareMenu by remember { mutableStateOf(false) }
 
     var draft by remember(sessionId) { mutableStateOf<WorkoutSession?>(null) }
     var seeded by remember(sessionId) { mutableStateOf(false) }
@@ -128,20 +132,48 @@ fun WorkoutDetailScreen(
                 )
                 Text(Format.fullDate(session.completedDateUtc ?: session.startedAtUtc), style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
             }
-            IconButton(onClick = {
-                scope.launch {
-                    preparingShare = true
-                    runCatching { shareRenderer.prepare(session, units == UnitSystem.Imperial) }
-                        .onSuccess { preparedShare = it }
-                        .onFailure { toast("Could not prepare the share image") }
-                    preparingShare = false
+            Box {
+                IconButton(onClick = { shareMenu = true }, enabled = !preparingShare) {
+                    Icon(
+                        Icons.Rounded.Share,
+                        if (preparingShare) "Preparing share preview" else "Share workout",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
-            }, enabled = !preparingShare) {
-                Icon(
-                    Icons.Rounded.Share,
-                    if (preparingShare) "Preparing share preview" else "Preview and share workout",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                DropdownMenu(expanded = shareMenu, onDismissRequest = { shareMenu = false }) {
+                    DropdownMenuItem(
+                        text = { Text("Share image") },
+                        onClick = {
+                            shareMenu = false
+                            scope.launch {
+                                preparingShare = true
+                                runCatching { shareRenderer.prepare(session, units == UnitSystem.Imperial) }
+                                    .onSuccess { preparedShare = it }
+                                    .onFailure { toast("Could not prepare the share image") }
+                                preparingShare = false
+                            }
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Share as text") },
+                        onClick = {
+                            shareMenu = false
+                            val text = WorkoutShareSummary.text(
+                                session,
+                                imperial = units == UnitSystem.Imperial,
+                                dateLabel = Format.fullDate(session.completedDateUtc ?: session.startedAtUtc),
+                            )
+                            val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(android.content.Intent.EXTRA_SUBJECT, session.name.ifBlank { "Workout" })
+                                putExtra(android.content.Intent.EXTRA_TEXT, text)
+                            }
+                            runCatching {
+                                context.startActivity(android.content.Intent.createChooser(intent, "Share workout"))
+                            }.onFailure { toast("Could not open the share sheet") }
+                        },
+                    )
+                }
             }
             TextButton(onClick = { vm.save(session) { onBack() } }) {
                 Text("Save", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
@@ -311,7 +343,7 @@ fun WorkoutDetailScreen(
                 Image(
                     bitmap = preview.bitmap.asImageBitmap(),
                     contentDescription = "Workout share image preview",
-                    modifier = Modifier.fillMaxWidth().aspectRatio(1080f / 1350f)
+                    modifier = Modifier.fillMaxWidth().aspectRatio(preview.bitmap.width.toFloat() / preview.bitmap.height)
                         .clip(RoundedCornerShape(16.dp)),
                 )
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
