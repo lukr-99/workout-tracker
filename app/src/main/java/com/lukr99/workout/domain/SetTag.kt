@@ -8,4 +8,18 @@ import kotlinx.serialization.Serializable
  * enum append-only because tag ordinals are persisted in Room and the portable export.
  */
 @Serializable(with = SetTagSerializer::class)
-enum class SetTag { Warmup, Drop, ToFailure, Failed, Negative, BackOff }
+enum class SetTag {
+    Warmup, Drop, ToFailure, Failed, Negative, BackOff,
+
+    /** A last, all-out set to close the exercise or the workout. */
+    Finisher,
+
+    /** Each rep lifted as fast as possible. */
+    Explosive,
+
+    /** A slow lowering phase on each rep. */
+    SlowEccentric,
+
+    /** A slow lifting phase on each rep. */
+    SlowConcentric,
+}

@@ -23,7 +23,8 @@ One round of reps at a weight, inside an exercise in a workout.
 _Avoid_: Round
 
 **Set tag**:
-A label on a set: Warm-up, Drop, To failure, Failed early, Negative, Back-off. A set can have several.
+A label on a set: Warm-up, Drop, To failure, Failed early, Negative, Back-off, Finisher, Explosive,
+Slow down (slow eccentric), Slow up (slow concentric). A set can have several.
 _Avoid_: Set type (the old single-choice field)
 
 **Superset**:
