@@ -20,6 +20,8 @@ import kotlinx.serialization.Serializable
  * settings, and personal exercise photos (see [ExercisePhoto]).
  * **Version 1.9** adds a plan to template exercises: target sets, a rep range, rest and a superset
  * group (all optional).
+ * **Version 1.11** adds the Finisher, Explosive, SlowEccentric and SlowConcentric set tags
+ * (ordinals 6 to 9), which a 1.10 reader cannot decode.
  * Older exports omit them (they default empty), and the reader accepts all earlier published
  * versions and ignores unknown fields, so older exports and future tools interoperate.
  */
@@ -38,7 +40,7 @@ data class ExportBundle(
     val photos: List<ExercisePhoto> = emptyList(),
 ) {
     companion object {
-        const val CURRENT_VERSION = "1.10"
-        val SUPPORTED_VERSIONS = setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "1.10")
+        const val CURRENT_VERSION = "1.11"
+        val SUPPORTED_VERSIONS = setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "1.10", "1.11")
     }
 }

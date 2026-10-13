@@ -113,4 +113,8 @@ val SetTag.label: String
         SetTag.Failed -> "Failed early"
         SetTag.Negative -> "Negative"
         SetTag.BackOff -> "Back-off"
+        SetTag.Finisher -> "Finisher"
+        SetTag.Explosive -> "Explosive"
+        SetTag.SlowEccentric -> "Slow down"
+        SetTag.SlowConcentric -> "Slow up"
     }

@@ -32,7 +32,7 @@ class ExportBundleJvmTest {
 
     private val bundle = ExportBundle(
         exportedAtUtc = "2024-01-01T10:00:00Z",
-        exportFormatVersion = "1.10",
+        exportFormatVersion = "1.11",
         exercises = listOf(
             Exercise(
                 id = "ex1", name = "Bench", category = ExerciseCategory.Strength,
@@ -77,7 +77,7 @@ class ExportBundleJvmTest {
                             StrengthSet(
                                 id = "set2", workoutEntryId = "e1", setNumber = 2, reps = 3,
                                 weightKg = 110.0, rir = 1.0, isPr = true, durationSeconds = null,
-                                tags = setOf(SetTag.ToFailure, SetTag.Failed),
+                                tags = setOf(SetTag.ToFailure, SetTag.Failed, SetTag.Finisher, SetTag.SlowEccentric),
                             ),
                         ),
                     ),
@@ -213,8 +213,8 @@ class ExportBundleJvmTest {
 
     @Test
     fun supportsAllPublishedVersions() {
-        assertEquals(setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "1.10"), ExportBundle.SUPPORTED_VERSIONS)
-        assertEquals("1.10", ExportBundle.CURRENT_VERSION)
+        assertEquals(setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "1.10", "1.11"), ExportBundle.SUPPORTED_VERSIONS)
+        assertEquals("1.11", ExportBundle.CURRENT_VERSION)
     }
 
     @Test

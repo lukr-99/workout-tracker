@@ -197,7 +197,7 @@ fun SetTagChips(set: StrengthSet, modifier: Modifier = Modifier) {
             add(tag.label to when (tag) {
                 SetTag.Warmup -> EmberTheme.colors.warning
                 SetTag.Failed -> MaterialTheme.colorScheme.error
-                SetTag.ToFailure -> MaterialTheme.colorScheme.primary
+                SetTag.ToFailure, SetTag.Finisher -> MaterialTheme.colorScheme.primary
                 else -> MaterialTheme.colorScheme.secondary
             })
         }
@@ -269,6 +269,7 @@ private fun SetBadge(index: Int, set: StrengthSet, onClick: () -> Unit) {
         set.isWarmup || SetTag.Warmup in set.effectiveTags -> "W" to EmberTheme.colors.warning
         SetTag.ToFailure in set.effectiveTags -> "TF" to MaterialTheme.colorScheme.primary
         SetTag.Drop in set.effectiveTags -> "D" to MaterialTheme.colorScheme.secondary
+        SetTag.Finisher in set.effectiveTags -> "F" to MaterialTheme.colorScheme.primary
         else -> "${index + 1}" to EmberTheme.colors.textSecondary
     }
     Box(
