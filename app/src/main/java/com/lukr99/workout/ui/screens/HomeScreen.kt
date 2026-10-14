@@ -32,9 +32,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -42,13 +46,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lukr99.workout.domain.DayActivity
 import com.lukr99.workout.domain.TrainingDay
 import com.lukr99.workout.domain.TrainingWeek
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.settings.UnitSystem
+import com.lukr99.workout.ui.AppTags
 import com.lukr99.workout.ui.HomeRecent
 import com.lukr99.workout.ui.HomeViewModel
+import com.lukr99.workout.ui.components.DayActivitySheet
 import com.lukr99.workout.ui.components.EmptyState
 import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.RoundIconButton
@@ -100,7 +107,7 @@ fun HomeScreen(
         whatsNew?.let { note -> item(key = "whats-new") { WhatsNewCard(note, vm::dismissWhatsNew) } }
         active?.let { session -> item { ResumeCard(session, onResume) } }
         item { SectionLabel("This week") { Streak(snapshot.consistency.currentWeeklyStreak) } }
-        item { WeekCard(week, units) }
+        item { WeekCard(week, units) { if (it.isRun) onOpenRun(it.id) else onOpenSession(it.id) } }
         if (templates.isNotEmpty()) {
             item { SectionLabel("Start from a template") { TextLink("All templates", onOpenTemplates) } }
             item { TemplateCard(templates.take(4), lastDone, onStartTemplate, onOpenTemplate) }
@@ -204,15 +211,24 @@ private fun ResumeCard(session: WorkoutSession, onResume: () -> Unit) {
     }
 }
 
+/**
+ * The week strip and its totals. Tapping a day opens its workout or run, or lists them first when
+ * the day has more than one. Rest days do nothing.
+ */
 @Composable
-private fun WeekCard(week: TrainingWeek, units: UnitSystem) {
+internal fun WeekCard(week: TrainingWeek, units: UnitSystem, onOpen: (DayActivity) -> Unit) {
     val colors = EmberTheme.colors
+    var choosing by remember { mutableStateOf<TrainingDay?>(null) }
     Column(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(colors.surface)
             .border(1.dp, colors.border, RoundedCornerShape(20.dp)).padding(horizontal = 12.dp, vertical = 14.dp),
     ) {
         Row(Modifier.fillMaxWidth()) {
-            week.days.forEach { day -> DayMark(day, Modifier.weight(1f)) }
+            week.days.forEach { day ->
+                DayMark(day, Modifier.weight(1f)) {
+                    if (day.activities.size == 1) onOpen(day.activities.single()) else choosing = day
+                }
+            }
         }
         Spacer(Modifier.height(12.dp))
         Box(Modifier.fillMaxWidth().height(1.dp).background(colors.border))
@@ -223,10 +239,18 @@ private fun WeekCard(week: TrainingWeek, units: UnitSystem) {
             WeekTotal(shortDistance(week.runMeters, units), if (units == UnitSystem.Imperial) "mi" else "km", "Run", Modifier.weight(1f))
         }
     }
+    choosing?.let { day ->
+        DayActivitySheet(
+            title = Format.longDay(day.date),
+            activities = day.activities,
+            onOpen = { choosing = null; onOpen(it) },
+            onDismiss = { choosing = null },
+        )
+    }
 }
 
 @Composable
-private fun DayMark(day: TrainingDay, modifier: Modifier) {
+private fun DayMark(day: TrainingDay, modifier: Modifier, onClick: () -> Unit) {
     val colors = EmberTheme.colors
     val name = day.date.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault())
     val what = when {
@@ -235,8 +259,19 @@ private fun DayMark(day: TrainingDay, modifier: Modifier) {
         day.ran -> "run"
         else -> "rest"
     }
+    val clickLabel = when {
+        day.activities.size > 1 -> "Choose a workout or run"
+        day.ran -> "Open run"
+        else -> "Open workout"
+    } + ", " + Format.longDay(day.date)
+    val tap = if (day.trained) {
+        Modifier.clip(RoundedCornerShape(12.dp)).clickable(role = Role.Button, onClickLabel = clickLabel, onClick = onClick)
+    } else {
+        Modifier
+    }
     Column(
-        modifier.semantics(mergeDescendants = true) { contentDescription = "$name: $what" + if (day.isToday) ", today" else "" },
+        modifier.testTag(AppTags.homeDay(day.date)).heightIn(min = 48.dp).then(tap).padding(vertical = 4.dp)
+            .semantics(mergeDescendants = true) { contentDescription = "$name: $what" + if (day.isToday) ", today" else "" },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {

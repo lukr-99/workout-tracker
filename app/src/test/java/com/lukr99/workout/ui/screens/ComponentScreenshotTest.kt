@@ -22,6 +22,7 @@ import com.lukr99.workout.data.transfer.ImportSummary
 import com.lukr99.workout.data.transfer.RestoreMode
 import com.lukr99.workout.data.transfer.StoreCounts
 import com.lukr99.workout.domain.BodyParts
+import com.lukr99.workout.domain.DayActivity
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseOuting
 import com.lukr99.workout.domain.PreviousEntryNote
@@ -32,6 +33,7 @@ import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.domain.WorkoutTemplateExercise
 import com.lukr99.workout.settings.UnitSystem
+import com.lukr99.workout.ui.components.DayActivitySheet
 import com.lukr99.workout.ui.components.ExercisePicker
 import com.lukr99.workout.ui.components.QuickCreateSheet
 import com.lukr99.workout.ui.components.SetEntrySheet
@@ -84,6 +86,19 @@ class ComponentScreenshotTest {
     @Test
     fun dangerZoneBlockedDark() = capture("data_danger_zone_blocked_dark", dark = true) {
         DataDangerZone(counts = null, blocker = "Finish or discard the live workout first.", working = false, onErase = {})
+    }
+
+    @Test
+    fun dayActivitySheetDark() = captureScreen("day_activity_sheet_dark", dark = true) {
+        DayActivitySheet(
+            title = "Tuesday 13 Oct",
+            activities = listOf(
+                DayActivity("r", isRun = true, name = "Easy 5k", atUtc = 1_760_331_600_000),
+                DayActivity("w", isRun = false, name = "Pull day", atUtc = 1_760_374_800_000),
+            ),
+            onOpen = {},
+            onDismiss = {},
+        )
     }
 
     @Test

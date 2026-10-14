@@ -32,13 +32,17 @@ data class TrainingWeek(
                 .filter { it.status == WorkoutSessionStatus.Completed }
                 .filter { dayOf(it.completedDateUtc ?: it.startedAtUtc) in week }
             val weekRuns = runs.filter { dayOf(it.startedAtUtc) in week }
-            val liftDays = finished.map { dayOf(it.completedDateUtc ?: it.startedAtUtc) }.toSet()
-            val runDays = weekRuns.map { dayOf(it.startedAtUtc) }.toSet()
+            val activities = finished.map {
+                DayActivity(it.id, isRun = false, name = it.name, atUtc = it.completedDateUtc ?: it.startedAtUtc)
+            } + weekRuns.map {
+                DayActivity(it.id, isRun = true, name = it.title, atUtc = it.startedAtUtc)
+            }
+            val byDay = activities.sortedBy(DayActivity::atUtc).groupBy { dayOf(it.atUtc) }
 
             return TrainingWeek(
                 days = (0L..6L).map { offset ->
                     val date = monday.plusDays(offset)
-                    TrainingDay(date, lifted = date in liftDays, ran = date in runDays, isToday = date == today)
+                    TrainingDay(date, isToday = date == today, activities = byDay[date].orEmpty())
                 },
                 workouts = finished.size,
                 liftedKg = finished.sumOf { it.totalVolumeKg },

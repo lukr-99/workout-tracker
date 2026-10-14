@@ -14,6 +14,8 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 - **Share a workout as text.** Share on a past workout now offers Share image or Share as text.
   The text lists the workout name, date and every set (weight x reps, warm-ups marked), ready to
   paste into a chat.
+- **Open a day from Home's week strip.** Tap a day to open its workout or run. When a day has
+  more than one, a small sheet asks which to open. Rest days do nothing.
 
 ### Changed
 
