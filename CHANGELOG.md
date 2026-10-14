@@ -25,6 +25,13 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 - **Run images show the way round.** Arrows along the route show the direction, and a loop that
   ends where it started gets one start and finish marker instead of two dots on top of each other.
 
+### Fixed
+
+- **Checking for updates works again.** Since 2.6.0, "Check now" in Settings failed with
+  "NetworkOnMainThreadException", and the automatic check and the download failed the same way.
+  Versions 2.6.0 and 2.7.0 cannot update themselves to this fix, so install it once from the
+  releases page on GitHub.
+
 ## [2.7.0] - 2026-10-08
 
 ### Added

@@ -4,6 +4,21 @@ Things that went wrong in this repository and took longer to find than to fix. S
 CodePrint's `docs/pitfalls/`, for the error text before debugging something surprising. The format
 is in CodePrint's `docs/pitfalls/README.md`. Newest first.
 
+## The update check failed with `NetworkOnMainThreadException` (2.6.0)
+
+- Symptom: Settings > Updates > "Check now" showed "Check failed: NetworkOnMainThreadException".
+  The launch check failed silently, and a download would have failed the same way.
+- Cause: the old `AppUpdater` wrapped its work in `withContext(Dispatchers.IO)`. The refactor into
+  `UpdateService` (74c2227) kept the functions `suspend` but dropped the dispatcher switch, and
+  `viewModelScope` runs on Main. A `suspend` function is not off the main thread by itself. The JVM
+  tests used fakes and never hit Android's StrictMode network check, so nothing caught it.
+- Fix: `UpdateService.check()` and `download()` switch to an injected IO dispatcher themselves, so
+  no caller can get it wrong.
+- Closed off by: `UpdateServiceTest.networkCallsLeaveTheCallingThread`, which checks that every
+  network call runs on the injected dispatcher.
+- Seen: v2.6.0 on the phone, 2026-10-14. A broken updater cannot ship its own fix: the fixed
+  version has to be installed by hand once.
+
 ## A Robolectric screenshot test fails with "uncaught exceptions before the test started"
 
 - Symptom: a Compose screenshot test fails at random with
