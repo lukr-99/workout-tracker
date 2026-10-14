@@ -5,6 +5,10 @@ import java.io.File
 import java.io.IOException
 import java.nio.file.Files
 import java.security.MessageDigest
+import java.util.concurrent.Executors
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -26,13 +30,21 @@ class UpdateServiceTest {
         dir.deleteRecursively()
     }
 
-    private fun service(current: String = "2.5.2", release: PublishedRelease = release()) = UpdateService(
+    private fun service(
+        current: String = "2.5.2",
+        release: PublishedRelease = release(),
+        io: CoroutineDispatcher = Dispatchers.Unconfined,
+    ) = UpdateService(
         currentVersion = current,
-        source = { release },
+        source = {
+            http.threads += Thread.currentThread().name
+            release
+        },
         http = http,
         downloader = VerifiedDownloader(http, dir),
         signatureCheck = { signerMatches },
         launcher = { launched += it },
+        io = io,
     )
 
     private fun release(
@@ -121,6 +133,23 @@ class UpdateServiceTest {
         assertTrue(launched.isEmpty())
     }
 
+    @Test
+    fun networkCallsLeaveTheCallingThread() = runTest {
+        // 2.6.0 ran them on the main thread: "Check failed: NetworkOnMainThreadException".
+        val executor = Executors.newSingleThreadExecutor { Thread(it, "update-io") }
+        try {
+            http.serve(apkBytes, checksum = sha256(apkBytes))
+            val svc = service(io = executor.asCoroutineDispatcher())
+
+            svc.download((svc.check() as UpdateCheck.Available).offer)
+
+            assertEquals(3, http.threads.size)
+            assertTrue("calls ran on ${http.threads}", http.threads.all { it == "update-io" })
+        } finally {
+            executor.shutdown()
+        }
+    }
+
     private suspend fun expectIo(fragment: String, block: suspend () -> Unit) {
         try {
             block()
@@ -135,6 +164,7 @@ class UpdateServiceTest {
 
     private class FakeHttp : UpdateHttp {
         val requested = mutableListOf<String>()
+        val threads = mutableListOf<String>()
         private var apk = ByteArray(0)
         private var checksum = ""
 
@@ -145,11 +175,13 @@ class UpdateServiceTest {
 
         override fun getText(url: String, maxBytes: Int): String {
             requested += url
+            threads += Thread.currentThread().name
             return checksum
         }
 
         override fun open(url: String): UpdateHttp.Download {
             requested += url
+            threads += Thread.currentThread().name
             return UpdateHttp.Download(apk.size.toLong(), ByteArrayInputStream(apk)) {}
         }
     }
