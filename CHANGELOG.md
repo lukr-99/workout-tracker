@@ -6,6 +6,8 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-10-14
+
 ### Added
 
 - **New set tags: Finisher, Explosive, Slow down and Slow up.** Find them in set options next to
