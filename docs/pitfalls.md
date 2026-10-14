@@ -147,3 +147,18 @@ is in CodePrint's `docs/pitfalls/README.md`. Newest first.
 - Fix: replaced with the CodePrint `.gitignore`.
 - Closed off by: check `git ls-files -ci --exclude-standard` is empty after editing `.gitignore`.
 - Seen: Run Mode and backup work, 2026-08; removed 2026-10-04.
+
+## A full-screen Compose `Dialog` still sits between the system bars
+
+- Symptom: a `Dialog` with `usePlatformDefaultWidth = false` and `decorFitsSystemWindows = false`
+  starts below the status bar, and its bottom bar is clipped behind the gesture bar.
+  `safeDrawingPadding()` pads nothing.
+- Cause: the dialog window keeps `fitInsetsTypes = STATUS_BARS | NAVIGATION_BARS`, so the window
+  manager shrinks its frame (`dumpsys window windows` shows `fitTypes=` and a frame like
+  `[0,63][1080,2337]`). Setting decor fits on the window is not enough.
+- Fix: from the dialog's `DialogWindowProvider`, set the layout to `MATCH_PARENT`, call
+  `WindowCompat.setDecorFitsSystemWindows(window, false)` and, on API 30+, set
+  `window.attributes.fitInsetsTypes = 0`. See `ui/components/ExercisePickerScreen.kt`.
+- Closed off by: the fix lives in one place; reuse `ExercisePickerScreen`'s helper for any new
+  full-screen dialog and check the frame with `dumpsys` on an emulator.
+- Seen: full-screen exercise picker, 2026-10-14.

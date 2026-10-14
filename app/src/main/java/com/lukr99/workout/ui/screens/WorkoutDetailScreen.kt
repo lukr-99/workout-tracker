@@ -57,7 +57,7 @@ import com.lukr99.workout.ui.HistoryViewModel
 import com.lukr99.workout.ui.statsSummary
 import com.lukr99.workout.ui.components.ConfirmDialog
 import com.lukr99.workout.ui.components.ExerciseNotesPanel
-import com.lukr99.workout.ui.components.ExercisePicker
+import com.lukr99.workout.ui.components.ExercisePickerScreen
 import com.lukr99.workout.ui.components.SetNoteLine
 import com.lukr99.workout.ui.components.WorkoutNoteRow
 import com.lukr99.workout.ui.components.Format
@@ -305,26 +305,20 @@ fun WorkoutDetailScreen(
     }
 
     if (showPicker) {
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ModalBottomSheet(
-            onDismissRequest = { showPicker = false },
-            sheetState = sheetState,
-            containerColor = MaterialTheme.colorScheme.surface,
-        ) {
-            ExercisePicker(
-                exercises = exercises,
-                onPick = { ex ->
-                    val entry = vm.newEntryForExercise(ex, session.entries.size)
-                        .copy(workoutSessionId = session.id)
-                    draft = session.copy(entries = session.entries + entry)
-                    showPicker = false
-                },
-                onCreate = {
-                    showPicker = false
-                    onCreateExercise(it)
-                },
-            )
-        }
+        ExercisePickerScreen(
+            exercises = exercises,
+            onDismiss = { showPicker = false },
+            onPick = { ex ->
+                val entry = vm.newEntryForExercise(ex, session.entries.size)
+                    .copy(workoutSessionId = session.id)
+                draft = session.copy(entries = session.entries + entry)
+                showPicker = false
+            },
+            onCreate = {
+                showPicker = false
+                onCreateExercise(it)
+            },
+        )
     }
 
     preparedShare?.let { preview ->

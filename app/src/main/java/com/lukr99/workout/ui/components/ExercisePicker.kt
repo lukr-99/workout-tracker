@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -24,8 +24,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -46,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.ExerciseFilter
+import com.lukr99.workout.ui.AppTags
 import com.lukr99.workout.ui.theme.Accents
 import com.lukr99.workout.ui.theme.EmberTheme
 import kotlinx.coroutines.delay
@@ -55,7 +59,8 @@ import kotlinx.coroutines.delay
  * and body part, recent exercises first, and a "Create" row for a name the catalog does not have.
  *
  * With [onPickMany] it is multi-select: tap rows to tick them, then add them all at once, as a
- * superset if you like. Without it a tap picks one exercise through [onPick].
+ * superset if you like. Without it a tap picks one exercise through [onPick]. With [onClose] the
+ * title row gets an X, for when the picker fills the screen ([ExercisePickerScreen]).
  */
 @Composable
 fun ExercisePicker(
@@ -67,6 +72,7 @@ fun ExercisePicker(
     recentIds: List<String> = emptyList(),
     hint: (Exercise) -> String? = { null },
     onPickMany: ((List<Exercise>, Boolean) -> Unit)? = null,
+    onClose: (() -> Unit)? = null,
 ) {
     val colors = EmberTheme.colors
     var query by remember { mutableStateOf("") }
@@ -86,11 +92,16 @@ fun ExercisePicker(
         PickerSections.of(exercises, ExerciseFilter(searchText = debouncedQuery, bodyPart = bodyPart, category = category), recentIds)
     }
 
-    // Fill most of the sheet so the list owns the vertical drag; a fixed list height let a fling
-    // reach the sheet's drag-to-dismiss and close the picker mid-scroll.
-    Column(Modifier.fillMaxWidth().fillMaxHeight(0.92f)) {
+    Column(Modifier.fillMaxSize()) {
         Column(Modifier.padding(horizontal = 18.dp)) {
-            Text(title, style = MaterialTheme.typography.titleLarge, color = colors.textPrimary)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(title, style = MaterialTheme.typography.titleLarge, color = colors.textPrimary, modifier = Modifier.weight(1f))
+                if (onClose != null) {
+                    IconButton(onClick = onClose, modifier = Modifier.testTag(AppTags.EXERCISE_PICKER_CLOSE)) {
+                        Icon(Icons.Rounded.Close, contentDescription = "Close", tint = colors.textSecondary)
+                    }
+                }
+            }
             if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodyLarge, color = colors.textSecondary)
             Spacer(Modifier.height(12.dp))
             SearchField(query, { query = it }, placeholder = if (onCreate != null) "Search or type a new name" else "Search exercises")

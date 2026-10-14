@@ -10,6 +10,8 @@ object AppTags {
     const val START_LIFT = "start_lift"
     const val START_RUN = "start_run"
     const val DAY_SHEET = "day_sheet"
+    const val EXERCISE_PICKER = "exercise_picker"
+    const val EXERCISE_PICKER_CLOSE = "exercise_picker_close"
 
     /** A day tile in Home's week strip, by its date, like `home_day_2026-10-13`. */
     fun homeDay(date: java.time.LocalDate): String = "home_day_$date"
