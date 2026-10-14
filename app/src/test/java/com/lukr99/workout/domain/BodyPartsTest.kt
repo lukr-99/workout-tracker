@@ -17,4 +17,11 @@ class BodyPartsTest {
         assertEquals(BodyParts.common, options.take(BodyParts.common.size))
         assertEquals(listOf("Neck", "Traps"), options.drop(BodyParts.common.size))
     }
+
+    @Test
+    fun common_offersCoreNextToAbs() {
+        val abs = BodyParts.common.indexOf("Abs")
+
+        assertEquals("Core", BodyParts.common[abs + 1])
+    }
 }

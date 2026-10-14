@@ -24,9 +24,7 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -52,7 +50,7 @@ import com.lukr99.workout.domain.creation.TemplateDraft
 import com.lukr99.workout.domain.creation.TemplateExerciseDraft
 import com.lukr99.workout.domain.newId
 import com.lukr99.workout.ui.LibraryViewModel
-import com.lukr99.workout.ui.components.ExercisePicker
+import com.lukr99.workout.ui.components.ExercisePickerScreen
 import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.NoteEditorSheet
 import com.lukr99.workout.ui.components.RoundIconButton
@@ -245,23 +243,18 @@ fun TemplateEditorScreen(
     }
 
     if (showPicker) {
-        ModalBottomSheet(
-            onDismissRequest = { showPicker = false },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-            containerColor = colors.surface,
-        ) {
-            ExercisePicker(
-                exercises = catalog,
-                onPick = {},
-                title = "Add exercises",
-                subtitle = "They go to the end of the template with 3 sets each.",
-                onPickMany = { picked, asSuperset ->
-                    val group = if (asSuperset && picked.size > 1) (rows.mapNotNull { it.supersetGroup }.maxOrNull() ?: 0) + 1 else null
-                    rows.addAll(picked.map { TemplateRow(newId(), it.id, it.name, it.primaryBodyPart, notes = "", targetSets = 3, supersetGroup = group) })
-                    showPicker = false
-                },
-            )
-        }
+        ExercisePickerScreen(
+            exercises = catalog,
+            onDismiss = { showPicker = false },
+            onPick = {},
+            title = "Add exercises",
+            subtitle = "They go to the end of the template with 3 sets each.",
+            onPickMany = { picked, asSuperset ->
+                val group = if (asSuperset && picked.size > 1) (rows.mapNotNull { it.supersetGroup }.maxOrNull() ?: 0) + 1 else null
+                rows.addAll(picked.map { TemplateRow(newId(), it.id, it.name, it.primaryBodyPart, notes = "", targetSets = 3, supersetGroup = group) })
+                showPicker = false
+            },
+        )
     }
 
     editingNoteFor?.let { rowId ->

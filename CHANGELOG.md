@@ -6,6 +6,17 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 ## [Unreleased]
 
+### Added
+
+- **Core as a body part.** The exercise editor, quick create and the picker filters now offer Core
+  next to Abs. Core exercises colour and light up the body map the same way Abs do.
+
+### Changed
+
+- **The exercise picker fills the screen.** Adding or replacing an exercise, in a live workout, a
+  template or a past workout, now opens a full-screen list instead of a sheet. Scrolling no longer
+  drags the picker closed. Close it with the X or the back gesture.
+
 ## [2.8.0] - 2026-10-14
 
 ### Added
