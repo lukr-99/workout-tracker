@@ -25,4 +25,7 @@ data class Run(
     val notes: String = "",
     /** Full raw trace; empty in list/summary reads, populated for detail + export. */
     val trace: List<TracePoint> = emptyList(),
-)
+) {
+    /** The first line of the notes, or "Run" when there are none. */
+    val title: String get() = notes.lineSequence().firstOrNull()?.takeIf(String::isNotBlank) ?: "Run"
+}

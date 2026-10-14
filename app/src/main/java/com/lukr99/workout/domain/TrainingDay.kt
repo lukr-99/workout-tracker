@@ -2,12 +2,13 @@ package com.lukr99.workout.domain
 
 import java.time.LocalDate
 
-/** One day of the training week on Home: whether it had a finished workout, a run, or both. */
+/** One day of the training week on Home: its finished workouts and runs, oldest first. */
 data class TrainingDay(
     val date: LocalDate,
-    val lifted: Boolean,
-    val ran: Boolean,
     val isToday: Boolean,
+    val activities: List<DayActivity> = emptyList(),
 ) {
-    val trained: Boolean get() = lifted || ran
+    val lifted: Boolean get() = activities.any { !it.isRun }
+    val ran: Boolean get() = activities.any { it.isRun }
+    val trained: Boolean get() = activities.isNotEmpty()
 }

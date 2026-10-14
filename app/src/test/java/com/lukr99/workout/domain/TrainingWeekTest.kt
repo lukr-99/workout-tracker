@@ -61,4 +61,22 @@ class TrainingWeekTest {
         assertTrue(week.days[0].lifted)
         assertEquals(1, week.workouts)
     }
+
+    @Test
+    fun eachDayListsItsWorkoutsAndRunsOldestFirst() {
+        val monday = LocalDate.of(2026, 10, 5)
+        val workouts = listOf(
+            WorkoutSessionSummary(id = "evening", name = "Pull", startedAtUtc = at(wednesday, 18), completedDateUtc = at(wednesday, 19)),
+            WorkoutSessionSummary(id = "solo", name = "Push", startedAtUtc = at(monday), completedDateUtc = at(monday)),
+            WorkoutSessionSummary(id = "live", startedAtUtc = at(wednesday), status = WorkoutSessionStatus.Active),
+        )
+        val runs = listOf(Run(id = "morning", startedAtUtc = at(wednesday, 7), notes = "Easy 5k\nfelt good"), Run(id = "plain", startedAtUtc = at(wednesday, 12)))
+
+        val week = TrainingWeek.of(wednesday, zone, workouts, runs)
+
+        assertEquals(listOf(DayActivity("solo", isRun = false, name = "Push", atUtc = at(monday))), week.days[0].activities)
+        assertEquals(listOf("morning", "plain", "evening"), week.days[2].activities.map { it.id })
+        assertEquals(listOf("Easy 5k", "Run", "Pull"), week.days[2].activities.map { it.name })
+        assertTrue(week.days[1].activities.isEmpty())
+    }
 }

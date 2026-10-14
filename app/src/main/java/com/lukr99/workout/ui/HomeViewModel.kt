@@ -74,7 +74,7 @@ class HomeViewModel(
                 HomeRecent(it.id, isRun = false, name = it.name, atUtc = it.completedDateUtc ?: it.startedAtUtc, amount = it.totalVolumeKg)
             }
             val runRows = runs.map {
-                HomeRecent(it.id, isRun = true, name = it.notes.lineSequence().firstOrNull()?.takeIf(String::isNotBlank) ?: "Run", atUtc = it.startedAtUtc, amount = it.distanceMeters)
+                HomeRecent(it.id, isRun = true, name = it.title, atUtc = it.startedAtUtc, amount = it.distanceMeters)
             }
             (lifts + runRows).sortedByDescending(HomeRecent::atUtc).take(RECENT_ROWS)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
