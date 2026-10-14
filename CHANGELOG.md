@@ -6,6 +6,11 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 ## [Unreleased]
 
+### Added
+
+- **Core as a body part.** The exercise editor, quick create and the picker filters now offer Core
+  next to Abs. Core exercises colour and light up the body map the same way Abs do.
+
 ## [2.8.0] - 2026-10-14
 
 ### Added

@@ -14,6 +14,7 @@ object BodyParts {
         "Triceps",
         "Forearms",
         "Abs",
+        "Core",
         "Glutes",
         "Quads",
         "Hamstrings",

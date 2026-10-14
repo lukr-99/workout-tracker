@@ -69,7 +69,7 @@ internal fun LiveWorkoutSheets(
         }
         is LiveSheet.QuickCreate -> QuickCreateSheet(
             initialName = sheet.name,
-            bodyParts = BodyParts.options(catalog.values.toList()).take(15),
+            bodyParts = BodyParts.options(catalog.values.toList()).take(BodyParts.common.size),
             onCreate = {
                 vm.createAndAdd(it)
                 close()
