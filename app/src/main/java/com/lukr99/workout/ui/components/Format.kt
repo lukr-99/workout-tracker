@@ -20,6 +20,8 @@ object Format {
     private val dayFormatter = DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault())
     private val dayYearFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.getDefault())
     private val shortDayFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())
+    private val longDayFormatter = DateTimeFormatter.ofPattern("EEEE d MMM", Locale.getDefault())
+    private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
 
     fun unitLabel(units: UnitSystem): String = if (units == UnitSystem.Imperial) "lb" else "kg"
 
@@ -80,6 +82,13 @@ object Format {
 
     fun shortDate(millis: Long): String =
         Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate().format(shortDayFormatter)
+
+    /** The weekday and date in full, e.g. "Monday 13 Oct". */
+    fun longDay(date: LocalDate): String = date.format(longDayFormatter)
+
+    /** The local time of day, e.g. "18:05". */
+    fun clockTime(millis: Long): String =
+        Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalTime().format(timeFormatter)
 
     /** "Today" / "Yesterday" / "3 days ago" / a date for older sessions. */
     fun relativeDay(millis: Long, nowMillis: Long = System.currentTimeMillis()): String {
