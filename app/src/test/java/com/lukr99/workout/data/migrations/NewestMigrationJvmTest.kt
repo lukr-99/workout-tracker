@@ -131,6 +131,61 @@ class NewestMigrationJvmTest {
         }
     }
 
+    @Test
+    fun aVersionNineDatabaseOpensAtTenWithUnknownLocationsAndSharedExercises() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val name = "jvm-migration-9.db"
+        context.deleteDatabase(name)
+        val file = context.getDatabasePath(name).apply { parentFile?.mkdirs() }
+
+        SQLiteDatabase.openOrCreateDatabase(file, null).use { db ->
+            createSchema(db, version = 9)
+            db.execSQL(
+                "INSERT INTO exercises (id, name, category, primaryBodyPart, secondaryBodyPartsJson, equipment, " +
+                    "notes, source, externalSourceId, isArchived, defaultRestSeconds, imageUrl, imageAttribution, " +
+                    "localImagePath, instructions, videoUrl) VALUES ('fly', 'Cable Fly', 0, 'Chest', '[]', 'Cable', " +
+                    "'', 2, NULL, 0, NULL, NULL, NULL, NULL, '', NULL)",
+            )
+            db.execSQL(
+                "INSERT INTO sessions (id, templateId, name, status, startedAtUtc, endedAtUtc, completedDateUtc, " +
+                    "durationSeconds, notes, perceivedEffort, bodyweightKg, source, externalKey) " +
+                    "VALUES ('s9', NULL, 'Push', 1, 1000, 2000, 2000, 1, '', NULL, NULL, 0, NULL)",
+            )
+            db.execSQL(
+                "INSERT INTO entries (id, workoutSessionId, exerciseId, exerciseSnapshotName, " +
+                    "exerciseSnapshotCategory, exerciseSnapshotPrimaryBodyPart, sortOrder, entryType, notes, " +
+                    "supersetGroup, weightUnitOverride, startedAtUtc, completedAtUtc) " +
+                    "VALUES ('e9', 's9', 'fly', 'Cable Fly', 0, 'Chest', 0, 0, '', NULL, NULL, NULL, NULL)",
+            )
+            db.execSQL(
+                "INSERT INTO strength_sets (id, workoutEntryId, setNumber, reps, weightKg, rir, rpe, " +
+                    "performedAtUtc, notes, isWarmup, isPr, durationSeconds, setType, tagsJson) " +
+                    "VALUES ('set9', 'e9', 1, 12, 15.0, NULL, NULL, 1500, '', 0, 0, NULL, 0, '[]')",
+            )
+            db.version = 9
+        }
+
+        val room = Room.databaseBuilder(context, WorkoutDb::class.java, name)
+            .addMigrations(*WorkoutMigrations.ALL)
+            .allowMainThreadQueries()
+            .build()
+        try {
+            val repo = WorkoutRepository(room.workoutDao(), RoomTransactionRunner(room))
+            assertEquals(listOf("home", "outdoors"), repo.getLocations().map { it.id })
+            assertNull(repo.getSession("s9")!!.locationId)
+            assertEquals(false, repo.getExercise("fly")!!.trackPerLocation)
+            assertEquals(1, repo.countWorkoutsWithoutLocation())
+
+            // The owner names the main gym and gives it the old workouts.
+            val gym = repo.saveLocation(com.lukr99.workout.domain.Location(name = "Brno gym"))
+            assertEquals(1, repo.assignUnknownWorkoutsTo(gym.id))
+            assertEquals(gym.id, repo.getLastUsedLocationId())
+            assertEquals(15.0, repo.getLastSets(listOf("fly"), gym.id).getValue("fly").single().weightKg, 1e-9)
+        } finally {
+            room.close()
+        }
+    }
+
     /** Builds the schema exactly as Room exported it for [version]. */
     private fun createSchema(db: SQLiteDatabase, version: Int) {
         val schemaFile = File("schemas/com.lukr99.workout.data.WorkoutDb/$version.json")

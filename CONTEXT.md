@@ -69,6 +69,18 @@ _Avoid_: Description, cues (in copy)
 The note written on the same exercise in the most recent finished workout that has one.
 _Avoid_: Previous note, history
 
+**Location**:
+Where a workout happens: a gym the owner names, or the built-in Home and Outdoors. A workout with
+none is at "Unknown location". Locations are archived, never deleted.
+_Avoid_: Place (in code), venue, site
+
+**Tracked per location**:
+An exercise whose last time, records and progress only count workouts at the current location,
+because the machines differ between gyms. Exercises start shared, which counts every workout.
+Switching changes only how history is read, never the history itself. In copy it is "Track per
+gym". In code it is `trackPerLocation` and `LocationScope`.
+_Avoid_: Split exercise, gym-specific exercise
+
 **Plan**:
 What a template sets up for one exercise: a number of sets, a rep range, rest and a superset group.
 It is a starting point; the workout can always differ. In code it is the template exercise's

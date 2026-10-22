@@ -8,7 +8,7 @@ import com.lukr99.workout.domain.WorkoutSessionSource
 
 @Entity(
     tableName = "sessions",
-    indices = [Index("templateId"), Index("name"), Index("status"), Index("externalKey")],
+    indices = [Index("templateId"), Index("name"), Index("status"), Index("externalKey"), Index("locationId")],
 )
 data class SessionEntity(
     @PrimaryKey val id: String,
@@ -24,4 +24,9 @@ data class SessionEntity(
     val bodyweightKg: Double? = null,
     val source: WorkoutSessionSource = WorkoutSessionSource.Local,
     val externalKey: String? = null,
+    /**
+     * v10: a `locations` row, or null for "Unknown location". Not a foreign key: locations are
+     * archived, never deleted, and an imported workout may name a place this phone has not seen.
+     */
+    val locationId: String? = null,
 )

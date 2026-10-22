@@ -1,6 +1,8 @@
 package com.lukr99.workout.data
 
 import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Upsert
@@ -105,7 +107,8 @@ interface WorkoutDao {
 
     /**
      * The newest non-blank note on [exerciseId] from a completed workout, skipping
-     * [excludeSessionId] (the live one), for the "Last time" line while logging.
+     * [excludeSessionId] (the live one), for the "Last time" line while logging. Unless
+     * [anyLocation], only workouts at [locationId] count (null matches "Unknown location").
      */
     @Query(
         """
@@ -116,11 +119,17 @@ interface WorkoutDao {
           AND sessions.status = 1
           AND sessions.id != :excludeSessionId
           AND TRIM(entries.notes) != ''
+          AND (:anyLocation OR sessions.locationId IS :locationId)
         ORDER BY atUtc DESC
         LIMIT 1
         """,
     )
-    suspend fun getLatestEntryNote(exerciseId: String, excludeSessionId: String): PreviousNoteRow?
+    suspend fun getLatestEntryNote(
+        exerciseId: String,
+        excludeSessionId: String,
+        anyLocation: Boolean,
+        locationId: String?,
+    ): PreviousNoteRow?
 
     @Upsert
     suspend fun upsertSession(session: SessionEntity)
@@ -140,6 +149,61 @@ interface WorkoutDao {
 
     @Query("DELETE FROM sessions WHERE id = :id")
     suspend fun deleteSession(id: String)
+
+    /** Moves the given workouts to [locationId] (null is "Unknown location"). */
+    @Query("UPDATE sessions SET locationId = :locationId WHERE id IN (:sessionIds)")
+    suspend fun setSessionLocation(sessionIds: List<String>, locationId: String?): Int
+
+    /** Gives every kept workout without a location [locationId]. Returns how many moved. */
+    @Query("UPDATE sessions SET locationId = :locationId WHERE locationId IS NULL AND status != 2")
+    suspend fun assignUnknownSessionLocations(locationId: String): Int
+
+    @Query("SELECT COUNT(*) FROM sessions WHERE locationId IS NULL AND status = 1")
+    suspend fun countCompletedSessionsWithoutLocation(): Int
+
+    /** The place of the newest kept workout that has one, if that place is not archived. */
+    @Query(
+        """
+        SELECT sessions.locationId FROM sessions
+        INNER JOIN locations ON locations.id = sessions.locationId
+        WHERE sessions.status != 2 AND locations.isArchived = 0
+        ORDER BY sessions.startedAtUtc DESC
+        LIMIT 1
+        """,
+    )
+    suspend fun getLastUsedLocationId(): String?
+
+    // --- Locations -----------------------------------------------------------------------------
+
+    @Query("SELECT * FROM locations ORDER BY kind, name")
+    fun observeLocations(): Flow<List<LocationEntity>>
+
+    @Query("SELECT * FROM locations ORDER BY kind, name")
+    suspend fun getLocations(): List<LocationEntity>
+
+    @Query("SELECT * FROM locations WHERE id = :id")
+    suspend fun getLocation(id: String): LocationEntity?
+
+    @Upsert
+    suspend fun upsertLocation(location: LocationEntity)
+
+    /** Adds rows that are missing and leaves existing ones (a renamed Home stays renamed). */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertMissingLocations(locations: List<LocationEntity>)
+
+    @Query("UPDATE locations SET isArchived = :archived WHERE id = :id")
+    suspend fun setLocationArchived(id: String, archived: Boolean)
+
+    @Query("DELETE FROM locations")
+    suspend fun deleteAllLocations()
+
+    // --- Per-location tracking -----------------------------------------------------------------
+
+    @Query("UPDATE exercises SET trackPerLocation = :perLocation WHERE id = :exerciseId")
+    suspend fun setTrackPerLocation(exerciseId: String, perLocation: Boolean)
+
+    @Query("UPDATE exercises SET splitPromptMuted = 1 WHERE id = :exerciseId")
+    suspend fun muteSplitPrompt(exerciseId: String)
 
     // --- Erase everything (replace-restore, delete all data) ---------------------------------
 

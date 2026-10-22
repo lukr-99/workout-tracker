@@ -2,6 +2,7 @@ package com.lukr99.workout.data.services
 
 import com.lukr99.workout.data.WorkoutRepository
 import com.lukr99.workout.domain.ExerciseFilter
+import com.lukr99.workout.domain.LocationScope
 import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutSessionStatus
@@ -26,15 +27,19 @@ import com.lukr99.workout.domain.stats.StatsEngine
 import com.lukr99.workout.domain.stats.StatsReport
 import com.lukr99.workout.domain.stats.StatsRequest
 
-/** Repository-backed entry point for Phase 3.5 analytics and coaching features. */
+/**
+ * Repository-backed entry point for Phase 3.5 analytics and coaching features. The per-exercise
+ * reads take a [LocationScope]: an exercise tracked per location only counts workouts there.
+ */
 class WorkoutInsightsService(
     private val repository: WorkoutRepository,
 ) {
     suspend fun records(
         exerciseId: String,
         repRange: IntRange = 1..12,
+        scope: LocationScope = LocationScope.Shared,
     ): ExerciseRecords = RecordsEngine.forExercise(
-        repository.getSessions(),
+        scope.apply(repository.getSessions()),
         exerciseId,
         repRange,
     )
@@ -43,8 +48,9 @@ class WorkoutInsightsService(
         exerciseId: String,
         candidate: StrengthSet,
         repRange: IntRange = 1..12,
+        scope: LocationScope = LocationScope.Shared,
     ): RecordAchievements = RecordsEngine.evaluateSet(
-        repository.getSessions(),
+        scope.apply(repository.getSessions()),
         exerciseId,
         candidate,
         repRange,
@@ -54,8 +60,9 @@ class WorkoutInsightsService(
         candidate: WorkoutSession,
         exerciseId: String,
         repRange: IntRange = 1..12,
+        scope: LocationScope = LocationScope.Shared,
     ): RecordAchievements = RecordsEngine.evaluateSession(
-        repository.getSessions(),
+        scope.apply(repository.getSessions()),
         candidate,
         exerciseId,
         repRange,
@@ -87,8 +94,9 @@ class WorkoutInsightsService(
         exerciseId: String,
         scheme: ProgressionScheme,
         deload: DeloadPolicy = DeloadPolicy(),
+        scope: LocationScope = LocationScope.Shared,
     ): ProgressionSuggestion = ProgressionSuggestionEngine.suggest(
-        repository.getSessions(),
+        scope.apply(repository.getSessions()),
         exerciseId,
         scheme,
         deload,

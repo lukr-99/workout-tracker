@@ -10,6 +10,8 @@ import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseAnalyticsPoint
 import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.ExerciseFilter
+import com.lukr99.workout.domain.Location
+import com.lukr99.workout.domain.LocationScope
 import com.lukr99.workout.domain.PreviousEntryNote
 import com.lukr99.workout.domain.Progression
 import com.lukr99.workout.domain.StrengthSet
@@ -36,6 +38,9 @@ import kotlinx.coroutines.flow.map
  * - **Template to workout.** [createWorkoutSession] copies template exercises into entries. The
  *   workout keeps no live link to the template.
  * - **Archive, not delete.** [archiveExercise] flags rows. Catalog exercises are never removed.
+ *   Locations follow the same rule ([setLocationArchived]).
+ * - **Scope by location.** Last time's sets, notes and progress for an exercise tracked per
+ *   location only read workouts at that place ([LocationScope]). The rows never change.
  *
  * The rules themselves live elsewhere so they can be tested without a database: entity mapping in
  * `WorkoutEntityMapping.kt`, the copies in `domain/WorkoutSnapshots.kt`, catalog filtering in
@@ -48,11 +53,15 @@ class WorkoutRepository(
 
     // --- Seeding -------------------------------------------------------------------------------
 
-    /** Insert the starter catalog once, on an empty DB (mirrors MAUI `InitializeAsync`). */
+    /**
+     * Insert the starter catalog once, on an empty DB (mirrors MAUI `InitializeAsync`), and the
+     * built-in Home and Outdoors locations whenever they are missing.
+     */
     suspend fun ensureSeeded() {
         if (dao.countExercises() == 0) {
             dao.upsertExercises(Seed.exercises().map { it.toEntity() })
         }
+        dao.insertMissingLocations(Location.builtIns.map { it.toEntity() })
     }
 
     // --- Exercises -----------------------------------------------------------------------------
@@ -73,6 +82,20 @@ class WorkoutRepository(
     }
 
     suspend fun archiveExercise(id: String) = dao.archiveExercise(id)
+
+    /**
+     * Track [exerciseId] per location or shared. Only a flag changes: its history is read through a
+     * different [LocationScope], so nothing is lost either way.
+     */
+    suspend fun setTrackPerLocation(exerciseId: String, perLocation: Boolean) =
+        dao.setTrackPerLocation(exerciseId, perLocation)
+
+    /** "Don't ask again" for the per-location prompt on [exerciseId]. */
+    suspend fun muteSplitPrompt(exerciseId: String) = dao.muteSplitPrompt(exerciseId)
+
+    /** Which workouts count for [exerciseId] in a workout at [locationId]. */
+    suspend fun locationScope(exerciseId: String, locationId: String?): LocationScope =
+        LocationScope.of(getExercise(exerciseId), locationId)
 
     /**
      * Compatibility count for older callers. New sync flows should use
@@ -174,17 +197,25 @@ class WorkoutRepository(
             .groupBy { it.templateId.orEmpty() }
             .mapValues { (_, sessions) -> sessions.maxOf { it.completedDateUtc ?: it.startedAtUtc } }
 
-    /** Last time's sets for each of [exerciseIds], from the newest finished workout that logged it. */
-    suspend fun getLastSets(exerciseIds: Collection<String>): Map<String, List<StrengthSet>> {
+    /**
+     * Last time's sets for each of [exerciseIds], from the newest finished workout that logged it.
+     * An exercise tracked per location only looks at workouts at [locationId].
+     */
+    suspend fun getLastSets(exerciseIds: Collection<String>, locationId: String?): Map<String, List<StrengthSet>> {
         val ids = exerciseIds.filter(String::isNotBlank).toSet()
         if (ids.isEmpty()) return emptyMap()
         val sessions = getSessions()
-        return ids.associateWith { sessions.lastSetsFor(it) }.filterValues { it.isNotEmpty() }
+        val exercises = dao.getAllExercises().filter { it.id in ids }.associate { it.id to it.toDomain() }
+        return ids.associateWith { id -> LocationScope.of(exercises[id], locationId).apply(sessions).lastSetsFor(id) }
+            .filterValues { it.isNotEmpty() }
     }
 
     // --- Sessions ------------------------------------------------------------------------------
 
-    /** Start a session, instantiating from a template if given. Returns any existing active one. */
+    /**
+     * Start a session, instantiating from a template if given. Returns any existing active one. The
+     * new workout is at the last used location ([getLastUsedLocationId]).
+     */
     suspend fun createWorkoutSession(templateId: String? = null, name: String? = null): WorkoutSession {
         dao.getActiveSession()?.let { return it.toDomain() }
 
@@ -195,6 +226,7 @@ class WorkoutRepository(
             name = name?.trim().takeUnless { it.isNullOrBlank() } ?: DEFAULT_WORKOUT_NAME,
             startedAtUtc = System.currentTimeMillis(),
             status = WorkoutSessionStatus.Active,
+            locationId = getLastUsedLocationId(),
         )
 
         if (!templateId.isNullOrBlank()) {
@@ -211,16 +243,19 @@ class WorkoutRepository(
 
     /**
      * The latest "Last time" note for each of [exerciseIds], from finished workouts other than
-     * [currentSessionId]. Exercises without an earlier note are left out of the map.
+     * [currentSessionId]. Exercises without an earlier note are left out of the map. An exercise
+     * tracked per location only reads notes from workouts at [locationId].
      */
     suspend fun getPreviousEntryNotes(
         exerciseIds: Collection<String>,
         currentSessionId: String,
+        locationId: String?,
     ): Map<String, PreviousEntryNote> = exerciseIds
         .filter(String::isNotBlank)
         .distinct()
         .mapNotNull { id ->
-            dao.getLatestEntryNote(id, currentSessionId)?.let { row ->
+            val scope = locationScope(id, locationId)
+            dao.getLatestEntryNote(id, currentSessionId, !scope.perLocation, scope.locationId)?.let { row ->
                 id to PreviousEntryNote(exerciseId = id, text = row.note.trim(), atUtc = row.atUtc)
             }
         }
@@ -264,6 +299,44 @@ class WorkoutRepository(
 
     suspend fun deleteWorkoutSession(id: String) = dao.deleteSession(id)
 
+    // --- Locations -----------------------------------------------------------------------------
+
+    /** Every location, archived ones included. Callers pick with `forPicker()`. */
+    fun observeLocations(): Flow<List<Location>> =
+        dao.observeLocations().map { rows -> rows.map { it.toDomain() } }
+
+    suspend fun getLocations(): List<Location> = dao.getLocations().map { it.toDomain() }
+
+    suspend fun getLocation(id: String): Location? = dao.getLocation(id)?.toDomain()
+
+    /** Add or rename a location. A blank name is refused. */
+    suspend fun saveLocation(location: Location): Location {
+        val name = location.name.trim()
+        require(name.isNotEmpty()) { "A location needs a name." }
+        val saved = location.copy(id = location.id.ifBlank { newId() }, name = name)
+        dao.upsertLocation(saved.toEntity())
+        return saved
+    }
+
+    /** Archived places leave the picker; workouts there keep pointing at them. */
+    suspend fun setLocationArchived(id: String, archived: Boolean) = dao.setLocationArchived(id, archived)
+
+    /** The place of the newest workout that has one, unless that place is archived. */
+    suspend fun getLastUsedLocationId(): String? = dao.getLastUsedLocationId()
+
+    /** Move [sessionIds] to [locationId] (null is "Unknown location"). Returns how many moved. */
+    suspend fun moveWorkoutsToLocation(sessionIds: Collection<String>, locationId: String?): Int {
+        val ids = sessionIds.filter(String::isNotBlank).distinct()
+        if (ids.isEmpty()) return 0
+        return inTransaction { ids.chunked(SQL_VARIABLE_CHUNK).sumOf { dao.setSessionLocation(it, locationId) } }
+    }
+
+    /** Give every workout that has no location [locationId]. Returns how many moved. */
+    suspend fun assignUnknownWorkoutsTo(locationId: String): Int = dao.assignUnknownSessionLocations(locationId)
+
+    /** Finished workouts with no location. */
+    suspend fun countWorkoutsWithoutLocation(): Int = dao.countCompletedSessionsWithoutLocation()
+
     /**
      * Removes every workout, template and exercise. Callers wrap it in a transaction together with
      * whatever replaces the data, and reseed with [ensureSeeded] when nothing replaces it.
@@ -272,6 +345,8 @@ class WorkoutRepository(
         dao.deleteAllSessions()
         dao.deleteAllTemplates()
         dao.deleteAllExercises()
+        dao.deleteAllLocations()
+        dao.insertMissingLocations(Location.builtIns.map { it.toEntity() })
     }
 
     suspend fun countExercises(): Int = dao.countExercises()
@@ -331,8 +406,10 @@ class WorkoutRepository(
     suspend fun getConsistencySnapshot() =
         Analytics.consistency(completedSessions().map { it.completedDateUtc ?: it.startedAtUtc })
 
-    suspend fun getExerciseProgress(exerciseId: String): List<ExerciseAnalyticsPoint> =
-        Progression.forExercise(completedSessions(), exerciseId)
+    suspend fun getExerciseProgress(
+        exerciseId: String,
+        scope: LocationScope = LocationScope.Shared,
+    ): List<ExerciseAnalyticsPoint> = Progression.forExercise(scope.apply(completedSessions()), exerciseId)
 
     suspend fun getDashboardSnapshot(): DashboardSnapshot {
         val completed = completedSessions()
@@ -359,11 +436,13 @@ class WorkoutRepository(
         exercises = dao.getAllExercises().map { it.toDomain() },
         templates = dao.getAllTemplates().map { it.toDomain() },
         sessions = dao.getExportableSessions().map { it.toDomain() }.sortedByDescending { it.startedAtUtc },
+        locations = getLocations(),
     )
 
     /** Restore a supported bundle into the DB, preserving ids (upsert). */
     suspend fun importBundle(bundle: ExportBundle) = inTransaction {
         dao.upsertExercises(bundle.exercises.map { it.toEntity() })
+        bundle.locations.forEach { dao.upsertLocation(it.toEntity()) }
         for (template in bundle.templates) saveTemplate(template)
         for (session in bundle.sessions) saveWorkoutSession(session)
     }
@@ -371,4 +450,9 @@ class WorkoutRepository(
     /** Execute a multi-record service operation atomically. */
     suspend fun <T> inTransaction(block: suspend WorkoutRepository.() -> T): T =
         transactions.run { block(this@WorkoutRepository) }
+
+    private companion object {
+        /** Stays under SQLite's bound-variable limit on older Android versions (999). */
+        const val SQL_VARIABLE_CHUNK = 500
+    }
 }

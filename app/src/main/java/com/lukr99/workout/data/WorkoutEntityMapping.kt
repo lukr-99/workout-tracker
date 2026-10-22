@@ -2,6 +2,7 @@ package com.lukr99.workout.data
 
 import com.lukr99.workout.domain.CardioEntryData
 import com.lukr99.workout.domain.Exercise
+import com.lukr99.workout.domain.Location
 import com.lukr99.workout.domain.SetTag
 import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.WorkoutEntry
@@ -34,6 +35,8 @@ internal fun ExerciseEntity.toDomain() = Exercise(
     localImagePath = localImagePath,
     instructions = instructions,
     videoUrl = videoUrl,
+    trackPerLocation = trackPerLocation,
+    splitPromptMuted = splitPromptMuted,
 )
 
 internal fun Exercise.toEntity() = ExerciseEntity(
@@ -53,6 +56,26 @@ internal fun Exercise.toEntity() = ExerciseEntity(
     localImagePath = localImagePath,
     instructions = instructions,
     videoUrl = videoUrl,
+    trackPerLocation = trackPerLocation,
+    splitPromptMuted = splitPromptMuted,
+)
+
+internal fun LocationEntity.toDomain() = Location(
+    id = id,
+    name = name,
+    kind = kind,
+    latitude = latitude,
+    longitude = longitude,
+    isArchived = isArchived,
+)
+
+internal fun Location.toEntity() = LocationEntity(
+    id = id,
+    name = name,
+    kind = kind,
+    latitude = latitude,
+    longitude = longitude,
+    isArchived = isArchived,
 )
 
 internal fun TemplateWithExercises.toDomain() = WorkoutTemplate(
@@ -91,6 +114,7 @@ internal fun WorkoutSession.toEntity() = SessionEntity(
     bodyweightKg = bodyweightKg,
     source = source,
     externalKey = externalKey,
+    locationId = locationId,
 )
 
 internal fun WorkoutEntry.toEntity() = EntryEntity(
@@ -148,6 +172,7 @@ internal fun SessionWithEntries.toDomain() = WorkoutSession(
     bodyweightKg = session.bodyweightKg,
     source = session.source,
     externalKey = session.externalKey,
+    locationId = session.locationId,
     entries = entries.sortedBy { it.entry.sortOrder }.map { it.toDomain() },
 )
 
