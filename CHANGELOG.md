@@ -24,6 +24,10 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 - **Progress by gym.** The progress chart of an exercise has a switch. "All gyms" draws one line
   per gym with a legend, so you can compare them. Workouts without a gym show as "Unknown
   location". An exercise with no workouts at the current gym can still be opened.
+- **Gym suggestion by GPS.** In Settings, Locations, "Set position" saves where a gym or Home is.
+  When you start a workout and location is already allowed, Ember takes one quick fix and, if you
+  are within 150 m of a saved place, picks it and shows "near <gym>". Without permission or a fix
+  nothing changes. Ember also offers once to save the spot when you train at a gym with no position.
 - **Core as a body part.** The exercise editor, quick create and the picker filters now offer Core
   next to Abs. Core exercises colour and light up the body map the same way Abs do.
 

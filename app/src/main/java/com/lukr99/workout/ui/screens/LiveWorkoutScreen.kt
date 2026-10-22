@@ -51,6 +51,7 @@ import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.MusicMiniControls
 import com.lukr99.workout.ui.components.PrBanner
 import com.lukr99.workout.ui.components.LocationChip
+import com.lukr99.workout.ui.components.PositionOfferRow
 import com.lukr99.workout.ui.components.LocationPickerSheet
 import com.lukr99.workout.ui.components.RestTimerBar
 import com.lukr99.workout.ui.components.SplitPromptCard
@@ -86,6 +87,8 @@ fun LiveWorkoutScreen(
 
     val suggestion by vm.suggestion.collectAsState()
     val splitPrompt by vm.splitPrompt.collectAsState()
+    val nearHint by vm.nearHint.collectAsState()
+    val positionOffer by vm.positionOffer.collectAsState()
     val locations by locationsVm.locations.collectAsState()
     var pickingLocation by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { vm.loadActiveIfAny() }
@@ -163,11 +166,25 @@ fun LiveWorkoutScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 item(key = "location") {
-                    LocationChip(
-                        name = locations.nameOf(session?.locationId),
-                        onClick = { pickingLocation = true },
-                        modifier = Modifier.testTag(LiveWorkoutTags.LOCATION),
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            LocationChip(
+                                name = locations.nameOf(session?.locationId),
+                                onClick = { pickingLocation = true },
+                                modifier = Modifier.testTag(LiveWorkoutTags.LOCATION),
+                            )
+                            nearHint?.let {
+                                Text("near $it", style = MaterialTheme.typography.labelMedium, color = EmberTheme.colors.textSecondary)
+                            }
+                        }
+                        positionOffer?.let { offer ->
+                            PositionOfferRow(
+                                placeName = offer.location.name,
+                                onSave = vm::acceptPositionOffer,
+                                onDismiss = vm::dismissPositionOffer,
+                            )
+                        }
+                    }
                 }
                 item(key = "workout-note") {
                     WorkoutNoteRow(

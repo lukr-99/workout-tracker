@@ -11,7 +11,9 @@ import com.lukr99.workout.data.images.ExerciseImageResolver
 import com.lukr99.workout.data.images.ExercisePhotoStore
 import com.lukr99.workout.data.images.FreeExerciseImageIndex
 import com.lukr99.workout.data.importer.BundleImporter
+import com.lukr99.workout.data.location.EnginePositionProvider
 import com.lukr99.workout.data.location.GpsWatcher
+import com.lukr99.workout.data.location.LocationSuggester
 import com.lukr99.workout.data.location.RunSessionController
 import com.lukr99.workout.data.map.OfflineTileCache
 import com.lukr99.workout.data.music.SpotifyController
@@ -69,6 +71,9 @@ class AppContainer(context: Context) {
 
     /** GPS accuracy before a run, for the Start a run card. */
     val gpsWatcher: GpsWatcher by lazy { GpsWatcher(context) }
+
+    /** One-shot position and the nearest-saved-place suggestion at workout start. */
+    val locationSuggester: LocationSuggester by lazy { LocationSuggester(EnginePositionProvider(context)) }
 
     /**
      * Music control (R4), shared by the live run + lift screens. Ships as the Open-Spotify-only

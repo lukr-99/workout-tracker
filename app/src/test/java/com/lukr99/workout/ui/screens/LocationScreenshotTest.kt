@@ -23,6 +23,7 @@ import com.lukr99.workout.ui.components.MultiLineChart
 import com.lukr99.workout.ui.components.TimedValue
 import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.SeriesColors
+import com.lukr99.workout.ui.components.PositionOfferRow
 import com.lukr99.workout.ui.components.LocationSetupCard
 import com.lukr99.workout.ui.components.SplitPromptCard
 import com.lukr99.workout.ui.components.TrackPerGymRow
@@ -56,6 +57,8 @@ class LocationScreenshotTest {
                 onAddGym = {},
                 onRename = { _, _ -> },
                 onArchive = { _, _ -> },
+                hasLocationPermission = { true },
+                onSetPosition = { _, _ -> },
             )
         }
     }
@@ -96,6 +99,7 @@ class LocationScreenshotTest {
     @Composable
     private fun Pieces() = Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         LocationChip("Brno gym", onClick = {})
+        PositionOfferRow(placeName = "Brno gym", onSave = {}, onDismiss = {})
         LocationSetupCard(unknownWorkouts = 48, onSave = { _, _ -> }, onDismiss = {})
         SplitPromptCard("Cable Fly", "59 kg here, 15 kg at Brno gym", onTrack = {}, onNotNow = {}, onNever = {})
         TrackPerGymRow(checked = true, onChange = {})
