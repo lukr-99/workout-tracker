@@ -134,9 +134,8 @@ class LiveWorkoutViewModel(
             .mapLatest { key -> key?.locationId?.let { repo.getLocationNotes(key.exerciseIds, it) }.orEmpty() }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
-    /** Saves the machine note for [exerciseId] at the workout's location. A blank note clears it. */
-    fun setLocationNote(exerciseId: String, text: String) {
-        val locationId = draftState.value?.locationId ?: return
+    /** Saves the machine note for [exerciseId] at [locationId], the gym the sheet was opened for. A blank note clears it. */
+    fun setLocationNote(exerciseId: String, locationId: String, text: String) {
         viewModelScope.launch {
             repo.saveLocationNote(exerciseId, locationId, text)
             locationNotesVersion.update { it + 1 }

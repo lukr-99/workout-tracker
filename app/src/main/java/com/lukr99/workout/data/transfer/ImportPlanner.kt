@@ -63,7 +63,7 @@ internal object ImportPlanner {
                 runs = runs,
                 routes = routes,
                 locations = locations,
-                locationNotes = payload.locationNotes,
+                locationNotes = payload.locationNotes.map { it.copy(exerciseId = exerciseRemap[it.exerciseId] ?: it.exerciseId) },
                 issues = payload.issues,
                 sourceLabel = payload.sourceLabel,
                 mode = RestoreMode.Merge,

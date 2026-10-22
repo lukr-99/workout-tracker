@@ -4,6 +4,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import com.lukr99.workout.domain.BodyParts
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.Location
@@ -146,12 +147,15 @@ internal fun LiveWorkoutSheets(
         }
         is LiveSheet.LocationNote -> {
             val entry = entries.firstOrNull { it.id == sheet.entryId } ?: return close()
+            // Pinned to the gym the sheet opened for, so a location change (like a GPS switch) cannot move the note.
+            val locationId = remember(sheet) { session?.locationId } ?: return close()
+            if (session?.locationId != locationId) return close()
             NoteEditorSheet(
                 title = "Gym note · ${entry.exerciseSnapshotName}",
                 initial = locationNotes[entry.exerciseId].orEmpty(),
                 hint = "Setup for ${locations.nameOf(session?.locationId)} only, like \"double pulley, seat 4\". It shows on this exercise every time you train here.",
                 placeholder = "Double pulley, seat 4",
-                onSave = { vm.setLocationNote(entry.exerciseId, it) },
+                onSave = { vm.setLocationNote(entry.exerciseId, locationId, it) },
                 onDismiss = close,
             )
         }

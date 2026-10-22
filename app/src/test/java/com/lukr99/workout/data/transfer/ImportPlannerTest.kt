@@ -2,6 +2,7 @@ package com.lukr99.workout.data.transfer
 
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
+import com.lukr99.workout.domain.ExerciseLocationNote
 import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.domain.WorkoutSession
@@ -33,6 +34,22 @@ class ImportPlannerTest {
         assertEquals(PlannedAction.Skip, preview.plan.exercises.single().action)
         assertEquals("catalog", preview.plan.sessions.single().value.entries.single().exerciseId)
         assertEquals(PlannedAction.Skip, preview.plan.sessions.single().action)
+    }
+
+    @Test
+    fun locationNotes_followTheRemappedExerciseId() {
+        val existingExercise = Exercise(id = "catalog", name = "Cable Fly", primaryBodyPart = "Chest")
+        val preview = ImportPlanner.plan(
+            ImportedPayload(
+                DataFormat.WorkoutJson,
+                exercises = listOf(existingExercise.copy(id = "foreign")),
+                locationNotes = listOf(ExerciseLocationNote("foreign", "gym", "Seat 4")),
+            ),
+            ImportContext(listOf(existingExercise), emptyList(), emptyList()),
+            ImportOptions(),
+        )
+
+        assertEquals(listOf(ExerciseLocationNote("catalog", "gym", "Seat 4")), preview.plan.locationNotes)
     }
 
     @Test
