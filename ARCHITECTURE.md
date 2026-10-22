@@ -60,10 +60,15 @@ part's name.
   `domain/WorkoutDraftEdits.kt`, and `RestTimer` runs the rest countdown.
 - **History is a snapshot:** an entry copies the exercise's name, category and body part when it is
   logged. Catalog exercises are archived, never deleted, so past workouts never change.
+- **Locations:** a workout has an optional `locationId`; a new one starts at the last used
+  location. An exercise tracked per location reads its last time, records, suggestions and
+  progress through `domain/LocationScope`, which keeps only workouts at that place. Nothing is
+  copied or rewritten, so turning tracking off joins the history again.
+  `domain/LocationSplitHeuristic` decides when to suggest tracking an exercise per location.
 - **Runs:** `LocationService` is a foreground service that holds a partial wake lock while a run
   records. `RunSessionController` feeds fixes to the pure `domain/run/RunTracker`, and
   `RunRepository` stores runs, trace points, routes and route points.
-- **Export and import:** `DataTransferService` writes the `ExportBundle` JSON (format 1.8), a full
+- **Export and import:** `DataTransferService` writes the `ExportBundle` JSON (format 1.12), a full
   backup with settings and photos, and a flat CSV. It imports our own bundles and Lyfta CSV, and
   plans every import (preview, merge or replace, counts) before writing. A commit is one
   transaction, with photos staged to new files first (`PhotoArchive`, `SettingsArchive`). Single
@@ -116,7 +121,7 @@ Failures show as a message on the screen that started the call. There are no bac
 ## Known constraints
 
 - Room migrations are one numbered file each in `data/migrations/` (`Migration0008ExerciseGuides`),
-  listed in order by `WorkoutMigrations.ALL`. Schemas 1 to 8 are checked in under `app/schemas/`.
+  listed in order by `WorkoutMigrations.ALL`. Schemas 1 to 10 are checked in under `app/schemas/`.
 - Five screen files are still over 400 lines: `LiveRunScreen`, `SettingsScreen`,
   `LiveWorkoutScreen`, `WorkoutDetailScreen` and `App.kt`. The planned redesign rewrites them, so
   they were not split first. Split any of them you change before then.

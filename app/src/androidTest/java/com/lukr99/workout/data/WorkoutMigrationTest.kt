@@ -15,6 +15,7 @@ import com.lukr99.workout.data.migrations.Migration0006RunSegmentBreaks
 import com.lukr99.workout.data.migrations.Migration0007LiveLoggingMetadata
 import com.lukr99.workout.data.migrations.Migration0008ExerciseGuides
 import com.lukr99.workout.data.migrations.Migration0009TemplatePlan
+import com.lukr99.workout.data.migrations.Migration0010Locations
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -89,6 +90,14 @@ class WorkoutMigrationTest {
                 assertEquals(true, cursor.isNull(0))
                 assertEquals(true, cursor.isNull(1))
                 assertEquals(true, cursor.isNull(2))
+            }
+            database.query("SELECT locationId FROM sessions WHERE id = 'session'", null).use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(true, cursor.isNull(0))
+            }
+            database.query("SELECT COUNT(*) FROM locations", null).use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(2, cursor.getInt(0))
             }
         } finally {
             database.close()
@@ -374,6 +383,54 @@ class WorkoutMigrationTest {
                 cursor.moveToFirst()
                 assertEquals("Pause", cursor.getString(0))
                 (1..5).forEach { assertEquals(true, cursor.isNull(it)) }
+            }
+        }
+    }
+
+    @Test
+    fun migratesSchemaNineToTenAddingLocations() {
+        helper.createDatabase(DatabaseName, 9).apply {
+            execSQL(
+                """
+                INSERT INTO sessions (
+                    id, templateId, name, status, startedAtUtc, endedAtUtc, completedDateUtc,
+                    durationSeconds, notes, perceivedEffort, bodyweightKg, source, externalKey
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """.trimIndent(),
+                arrayOf("s10", null, "Push", 1, 1000, 2000, 2000, 1, "", null, null, 0, null),
+            )
+            execSQL(
+                """
+                INSERT INTO exercises (
+                    id, name, category, primaryBodyPart, secondaryBodyPartsJson, equipment, notes,
+                    source, externalSourceId, isArchived, defaultRestSeconds, imageUrl, imageAttribution,
+                    localImagePath, instructions, videoUrl
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """.trimIndent(),
+                arrayOf("ex10", "Cable Fly", 0, "Chest", "[]", "Cable", "", 2, null, 0, null, null, null, null, "", null),
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(DatabaseName, 10, true, Migration0010Locations).use { db ->
+            db.query("SELECT locationId FROM sessions WHERE id = 's10'").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(true, cursor.isNull(0))
+            }
+            db.query("SELECT trackPerLocation, splitPromptMuted FROM exercises WHERE id = 'ex10'").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+                assertEquals(0, cursor.getInt(1))
+            }
+            db.query("SELECT id, name, kind, isArchived FROM locations ORDER BY kind").use { cursor ->
+                assertEquals(2, cursor.count)
+                cursor.moveToFirst()
+                assertEquals("home", cursor.getString(0))
+                assertEquals(1, cursor.getInt(2))
+                cursor.moveToNext()
+                assertEquals("outdoors", cursor.getString(0))
+                assertEquals(2, cursor.getInt(2))
+                assertEquals(0, cursor.getInt(3))
             }
         }
     }

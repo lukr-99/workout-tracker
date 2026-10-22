@@ -16,6 +16,8 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 - **The exercise picker fills the screen.** Adding or replacing an exercise, in a live workout, a
   template or a past workout, now opens a full-screen list instead of a sheet. Scrolling no longer
   drags the picker closed. Close it with the X or the back gesture.
+- **Backups carry training locations.** The backup format is now 1.12. It saves your locations,
+  each workout's location and which exercises are tracked per gym. Older backups still import.
 
 ## [2.8.0] - 2026-10-14
 

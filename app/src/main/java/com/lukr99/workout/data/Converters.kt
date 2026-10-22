@@ -3,6 +3,7 @@ package com.lukr99.workout.data
 import androidx.room.TypeConverter
 import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.ExerciseSource
+import com.lukr99.workout.domain.LocationKind
 import com.lukr99.workout.domain.SetType
 import com.lukr99.workout.domain.WeightDisplayUnit
 import com.lukr99.workout.domain.WorkoutSessionStatus
@@ -37,6 +38,9 @@ class Converters {
     @TypeConverter fun weightDisplayUnitToInt(v: WeightDisplayUnit?): Int? = v?.ordinal
     @TypeConverter fun intToWeightDisplayUnit(v: Int?): WeightDisplayUnit? =
         v?.let { WeightDisplayUnit.entries.getOrNull(it) }
+
+    @TypeConverter fun locationKindToInt(v: LocationKind): Int = v.ordinal
+    @TypeConverter fun intToLocationKind(v: Int): LocationKind = LocationKind.entries.getOrElse(v) { LocationKind.Gym }
 
     @TypeConverter fun runSourceToInt(v: RunSource): Int = v.ordinal
     @TypeConverter fun intToRunSource(v: Int): RunSource = RunSource.entries[v]

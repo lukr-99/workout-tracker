@@ -24,6 +24,7 @@ internal object ReplacePlanner {
             sessions = payload.sessions.map { PlannedSession(it, PlannedAction.Insert, reason = "Restored") },
             runs = payload.runs,
             routes = payload.routes,
+            locations = payload.locations,
             issues = issues,
             sourceLabel = payload.sourceLabel,
             mode = RestoreMode.Replace,

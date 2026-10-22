@@ -18,5 +18,6 @@ object WorkoutMigrations {
         Migration0007LiveLoggingMetadata,
         Migration0008ExerciseGuides,
         Migration0009TemplatePlan,
+        Migration0010Locations,
     )
 }

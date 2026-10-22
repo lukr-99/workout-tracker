@@ -12,6 +12,8 @@ data class ImportPlan(
     val runs: List<Run> = emptyList(),
     /** Saved routes to insert (those whose id isn't already present). */
     val routes: List<Route> = emptyList(),
+    /** Locations to save: on a merge only those whose id is new, on a replace all of them. */
+    val locations: List<com.lukr99.workout.domain.Location> = emptyList(),
     val issues: List<TransferIssue> = emptyList(),
     val sourceLabel: String? = null,
     val mode: RestoreMode = RestoreMode.Merge,

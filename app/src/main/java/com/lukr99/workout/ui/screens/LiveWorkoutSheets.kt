@@ -42,7 +42,7 @@ internal fun LiveWorkoutSheets(
         null -> Unit
         LiveSheet.AddExercise -> {
             val recentIds by produceState(emptyList<String>()) { value = vm.history.recentExerciseIds() }
-            val lastSets by produceState(emptyMap<String, List<StrengthSet>>(), recentIds) { value = vm.history.lastSets(recentIds.toSet()) }
+            val lastSets by produceState(emptyMap<String, List<StrengthSet>>(), recentIds) { value = vm.history.lastSets(recentIds.toSet(), session?.locationId) }
             ExercisePickerScreen(
                 exercises = exercises,
                 onDismiss = close,
@@ -93,7 +93,7 @@ internal fun LiveWorkoutSheets(
                     canMoveDown = index < entries.lastIndex,
                     hasGuide = catalogExercise != null,
                 ),
-                loadOutings = { vm.history.outings(entry.exerciseId) },
+                loadOutings = { vm.history.outings(entry.exerciseId, vm.draft.value?.locationId) },
                 onReplace = { onSheet(LiveSheet.Replace(entry.id)) },
                 onSuperset = {
                     val next = entries.getOrNull(index + 1)

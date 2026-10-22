@@ -13,6 +13,7 @@ data class ImportedPayload(
     val sessions: List<WorkoutSession> = emptyList(),
     val runs: List<Run> = emptyList(),
     val routes: List<Route> = emptyList(),
+    val locations: List<com.lukr99.workout.domain.Location> = emptyList(),
     val photos: List<com.lukr99.workout.data.export.ExercisePhoto> = emptyList(),
     val settings: com.lukr99.workout.data.export.SettingsSnapshot? = null,
     val issues: List<TransferIssue> = emptyList(),

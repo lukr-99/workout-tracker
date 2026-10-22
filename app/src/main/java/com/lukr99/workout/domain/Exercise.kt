@@ -25,6 +25,10 @@ data class Exercise(
     // [notes] stays the owner's personal note (seat height, grip) shown while logging.
     val instructions: String = "",
     val videoUrl: String? = null,
+    // Export v1.12: keep last time, records and progress apart per location (see LocationScope),
+    // and never ask again whether to split it.
+    val trackPerLocation: Boolean = false,
+    val splitPromptMuted: Boolean = false,
 ) {
     /** Non-blank instruction lines, in order. Derived, not persisted. */
     val instructionSteps: List<String>

@@ -42,4 +42,8 @@ data class ExerciseEntity(
     val instructions: String = "",
     /** v8: optional http(s) guide or video link. */
     val videoUrl: String? = null,
+    /** v10: last time, records and progress are kept apart per location. */
+    val trackPerLocation: Boolean = false,
+    /** v10: never ask whether to track it per location. */
+    val splitPromptMuted: Boolean = false,
 )

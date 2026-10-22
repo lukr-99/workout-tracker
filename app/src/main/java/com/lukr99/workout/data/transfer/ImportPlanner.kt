@@ -26,6 +26,8 @@ internal object ImportPlanner {
         // ones not already present (idempotent) — keeping any run/route already on this device untouched.
         val runs = payload.runs.filter { it.id !in context.existingRunIds }
         val routes = payload.routes.filter { it.id !in context.existingRouteIds }
+        // A place the owner already has keeps its local name; workouts still point at its id.
+        val locations = payload.locations.filter { it.id !in context.existingLocationIds }
         val summary = ImportSummary(
             sourceRows = payload.sourceRows,
             parsedSessions = payload.sessions.size,
@@ -60,6 +62,7 @@ internal object ImportPlanner {
                 sessions = sessions,
                 runs = runs,
                 routes = routes,
+                locations = locations,
                 issues = payload.issues,
                 sourceLabel = payload.sourceLabel,
                 mode = RestoreMode.Merge,

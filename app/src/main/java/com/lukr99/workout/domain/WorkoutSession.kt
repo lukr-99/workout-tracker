@@ -22,5 +22,7 @@ data class WorkoutSession(
     // Export v1.2 / integration provenance. Existing 1.0/1.1 data defaults to local.
     val source: WorkoutSessionSource = WorkoutSessionSource.Local,
     val externalKey: String? = null,
+    // Export v1.12: where it happened (a Location id). Null is "Unknown location".
+    val locationId: String? = null,
     val entries: List<WorkoutEntry> = emptyList(),
 )

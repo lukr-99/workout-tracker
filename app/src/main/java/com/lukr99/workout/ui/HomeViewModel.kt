@@ -87,7 +87,8 @@ class HomeViewModel(
     }
 
     suspend fun preview(template: WorkoutTemplate): TemplatePreviewData = TemplatePreviewData(
-        lastSets = repo.getLastSets(template.exercises.map { it.exerciseId }),
+        // A new workout starts at the last used location, so preview what it will show there.
+        lastSets = repo.getLastSets(template.exercises.map { it.exerciseId }, repo.getLastUsedLocationId()),
         lastDoneUtc = repo.getTemplateLastDone(template.id),
     )
 

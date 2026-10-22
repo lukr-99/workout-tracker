@@ -9,6 +9,8 @@ import com.lukr99.workout.data.services.WorkoutDataService
 import com.lukr99.workout.data.services.WorkoutInsightsService
 import com.lukr99.workout.domain.Estimates
 import com.lukr99.workout.domain.ExerciseCategory
+import com.lukr99.workout.domain.ExerciseFilter
+import com.lukr99.workout.domain.LocationScope
 import com.lukr99.workout.domain.ProgressContext
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutSessionStatus
@@ -28,6 +30,9 @@ import kotlinx.coroutines.launch
  * The Progress analytics tab. Headline KPIs and the weekly-volume trend come from the Phase 3 stats
  * service (`calculateStats`); per-exercise series are built from the same completed sessions with the
  * domain `Estimates`/e1RM helpers. No stats math is reimplemented here.
+ *
+ * An exercise tracked per location shows the numbers from the last used location only (where the
+ * next workout starts); shared exercises count every workout.
  */
 class ProgressViewModel(
     private val repo: WorkoutRepository,
@@ -44,7 +49,10 @@ class ProgressViewModel(
 
     fun loadRecords(exerciseId: String) {
         recordsState.value = null
-        viewModelScope.launch { recordsState.value = insights.records(exerciseId) }
+        viewModelScope.launch {
+            val scope = repo.locationScope(exerciseId, repo.getLastUsedLocationId())
+            recordsState.value = insights.records(exerciseId, scope = scope)
+        }
     }
 
     fun refresh() {
@@ -86,7 +94,7 @@ class ProgressViewModel(
                 overview = overview,
                 context = ProgressContext.of(sessions, System.currentTimeMillis(), java.time.ZoneId.systemDefault()),
                 weeklyVolume = weekly,
-                exercises = buildExerciseSummaries(sessions),
+                exercises = buildExerciseSummaries(sessions, scopes()),
                 recovery = insights.recovery(),
             )
         }
@@ -97,7 +105,17 @@ class ProgressViewModel(
         return ExerciseProgressDetail(summary = summary, points = summary.points)
     }
 
-    private fun buildExerciseSummaries(sessions: List<WorkoutSession>): List<ExerciseProgressSummary> {
+    /** Each exercise's [LocationScope] at the last used location. */
+    private suspend fun scopes(): (String) -> LocationScope {
+        val locationId = repo.getLastUsedLocationId()
+        val catalog = repo.getExercises(ExerciseFilter(includeArchived = true)).associateBy { it.id }
+        return { id -> LocationScope.of(catalog[id], locationId) }
+    }
+
+    private fun buildExerciseSummaries(
+        sessions: List<WorkoutSession>,
+        scopeOf: (String) -> LocationScope,
+    ): List<ExerciseProgressSummary> {
         data class Acc(
             val name: String,
             val bodyPart: String,
@@ -111,6 +129,7 @@ class ProgressViewModel(
             session.entries.filter { it.entryType == ExerciseCategory.Strength && it.exerciseId.isNotBlank() }
                 .groupBy { it.exerciseId }
                 .forEach { (id, entries) ->
+                    if (!scopeOf(id).includes(session)) return@forEach
                     val sets = entries.flatMap { it.strengthSets }
                     if (sets.isEmpty()) return@forEach
                     val acc = byExercise.getOrPut(id) {
@@ -144,6 +163,7 @@ class ProgressViewModel(
                 latestE1rmKg = latest,
                 deltaKg = if (previous != null) latest - previous else 0.0,
                 points = acc.points,
+                scope = scopeOf(id),
             )
         }.sortedByDescending { it.points.lastOrNull()?.dateMillis ?: 0L }
     }

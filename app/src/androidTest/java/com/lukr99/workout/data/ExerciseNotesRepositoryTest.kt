@@ -69,7 +69,7 @@ class ExerciseNotesRepositoryTest {
             session("live", 20_000L, "Typing this now", WorkoutSessionStatus.Active),
         )
 
-        val notes = repo.getPreviousEntryNotes(listOf("bench", "squat", ""), live.id)
+        val notes = repo.getPreviousEntryNotes(listOf("bench", "squat", ""), live.id, locationId = null)
 
         assertEquals(setOf("bench"), notes.keys)
         assertEquals("Grip wider next time", notes.getValue("bench").text)

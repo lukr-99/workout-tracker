@@ -102,21 +102,24 @@ class LiveWorkoutViewModel(
     val history = EntryHistory(repo, insights)
     val templates = TemplateSync(repo)
 
-    /** The live workout's id and exercise ids; "last time" data reloads only when these change. */
+    /**
+     * The live workout's id, exercise ids and location; "last time" data reloads only when these
+     * change, so moving the workout to another gym refreshes it.
+     */
     private val onScreen = draftState
-        .map { session -> session?.let { it.id to it.entries.map(WorkoutEntry::exerciseId).toSet() } }
+        .map { session -> session?.let { OnScreen(it.id, it.entries.map(WorkoutEntry::exerciseId).toSet(), it.locationId) } }
         .distinctUntilChanged()
 
     /** "Last time" notes for the exercises in the live session. */
     @OptIn(ExperimentalCoroutinesApi::class)
     val previousNotes: StateFlow<Map<String, PreviousEntryNote>> =
-        onScreen.mapLatest { key -> key?.let { (sessionId, ids) -> history.notes(ids, sessionId) }.orEmpty() }
+        onScreen.mapLatest { key -> key?.let { history.notes(it.exerciseIds, it.sessionId, it.locationId) }.orEmpty() }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     /** Last time's sets for the exercises in the live session, for each set row's "Previous". */
     @OptIn(ExperimentalCoroutinesApi::class)
     val previousSets: StateFlow<Map<String, List<StrengthSet>>> =
-        onScreen.mapLatest { key -> key?.let { (_, ids) -> history.lastSets(ids) }.orEmpty() }
+        onScreen.mapLatest { key -> key?.let { history.lastSets(it.exerciseIds, it.locationId) }.orEmpty() }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     private val persistMutex = Mutex()
@@ -172,7 +175,7 @@ class LiveWorkoutViewModel(
             val start = draftState.value?.entries?.size ?: 0
             val added = exercises.mapIndexed { i, exercise ->
                 val base = repo.newEntryForExercise(exercise, sortOrder = start + i)
-                val prefill = history.prefill(exercise)
+                val prefill = history.prefill(exercise, draftState.value?.locationId)
                 prefill?.rationale?.let { suggestionState.value = it }
                 prefill?.let { base.copy(strengthSets = it.sets) } ?: base
             }
@@ -291,8 +294,10 @@ class LiveWorkoutViewModel(
         val set = entry.strengthSets.firstOrNull { it.id == setId } ?: return
         if (entry.exerciseId.isBlank() || set.isWarmup || SetTag.Warmup in set.effectiveTags) return
         if (set.reps <= 0 || set.weightKg <= 0.0) return
+        val locationId = draftState.value?.locationId
         viewModelScope.launch {
-            val achievement = insights.evaluateSetRecord(entry.exerciseId, set)
+            val scope = repo.locationScope(entry.exerciseId, locationId)
+            val achievement = insights.evaluateSetRecord(entry.exerciseId, set, scope = scope)
             if (!achievement.isPersonalRecord) return@launch
             // Flag the set as a PR in the draft (persist so history keeps the badge).
             mutate { it.withSet(entryId, setId) { s -> s.copy(isPr = true) } }
@@ -389,6 +394,8 @@ class LiveWorkoutViewModel(
             persistMutex.withLock { repo.saveWorkoutSession(session) }
         }
     }
+
+    private data class OnScreen(val sessionId: String, val exerciseIds: Set<String>, val locationId: String?)
 
     companion object {
         fun factory(container: AppContainer): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
