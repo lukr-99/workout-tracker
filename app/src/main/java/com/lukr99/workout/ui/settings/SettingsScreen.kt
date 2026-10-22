@@ -45,6 +45,7 @@ import androidx.health.connect.client.PermissionController
 import com.lukr99.workout.data.health.HealthConnectAvailability
 import com.lukr99.workout.settings.ThemeMode
 import com.lukr99.workout.settings.UnitSystem
+import com.lukr99.workout.ui.LocationsViewModel
 import com.lukr99.workout.ui.SettingsViewModel
 import com.lukr99.workout.ui.UpdatesViewModel
 import com.lukr99.workout.ui.components.FilterChip
@@ -70,6 +71,7 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(
     vm: SettingsViewModel,
     updates: UpdatesViewModel,
+    locationsVm: LocationsViewModel,
     onOpenData: () -> Unit,
     onOpenPrivacy: () -> Unit,
     onBack: () -> Unit,
@@ -84,6 +86,7 @@ fun SettingsScreen(
     val backupBusy by vm.backupBusy.collectAsState()
     val backupError by vm.backupError.collectAsState()
     val syncState by vm.catalogSync.collectAsState()
+    val locations by locationsVm.locations.collectAsState()
     val toast = LocalToast.current
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
@@ -218,6 +221,12 @@ fun SettingsScreen(
                                 onClick = vm::syncCatalog,
                             )
                         }
+                        SettingsSection.Locations -> LocationsSettings(
+                            locations = locations,
+                            onAddGym = { locationsVm.addGym(it) },
+                            onRename = locationsVm::rename,
+                            onArchive = { location, archived -> locationsVm.setArchived(location.id, archived) },
+                        )
                         SettingsSection.HealthConnect -> {
                             val status = health.error ?: healthAvailabilityDetail(health.availability, health.connected)
                             when (health.availability) {

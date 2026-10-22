@@ -20,4 +20,7 @@ data class ExerciseDraft(
     val localImagePath: String? = null,
     val instructions: String = "",
     val videoUrl: String? = null,
+    /** Carried through so editing an exercise keeps how its history is read. */
+    val trackPerLocation: Boolean = false,
+    val splitPromptMuted: Boolean = false,
 )

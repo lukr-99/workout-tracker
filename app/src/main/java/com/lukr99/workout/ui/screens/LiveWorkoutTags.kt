@@ -6,4 +6,6 @@ object LiveWorkoutTags {
     const val ADD_EXERCISE = "live_add_exercise"
     const val WORKOUT_NOTE = "live_workout_note"
     const val DISCARD = "live_discard"
+    const val LOCATION = "live_location"
+    const val SPLIT_PROMPT = "live_split_prompt"
 }

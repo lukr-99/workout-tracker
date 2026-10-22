@@ -25,6 +25,14 @@ class DevicePrefs(private val context: Context) {
     /** When the automatic update check last ran, or null if never. */
     val lastUpdateCheckUtc: Flow<Long?> = context.devicePrefsDataStore.data.map { it[LastUpdateCheck] }
 
+    /** The owner put away Home's "Where do you train?" card. */
+    val locationSetupDismissed: Flow<Boolean> =
+        context.devicePrefsDataStore.data.map { it[LocationSetupDismissed] ?: false }
+
+    suspend fun dismissLocationSetup() {
+        context.devicePrefsDataStore.edit { it[LocationSetupDismissed] = true }
+    }
+
     suspend fun setHealthAutoSend(on: Boolean) {
         context.devicePrefsDataStore.edit { it[HealthAutoSend] = on }
     }
@@ -41,5 +49,6 @@ class DevicePrefs(private val context: Context) {
         val HealthAutoSend = booleanPreferencesKey("health_auto_send")
         val UpdateAutoCheck = booleanPreferencesKey("update_auto_check")
         val LastUpdateCheck = longPreferencesKey("last_update_check_utc")
+        val LocationSetupDismissed = booleanPreferencesKey("location_setup_dismissed")
     }
 }

@@ -17,4 +17,6 @@ data class WorkoutSessionSummary(
     val cardioMinutes: Int = 0,
     val sessionTypeLabel: String = "",
     val bodyPartsSummary: String = "",
+    /** Where it happened, or null for "Unknown location". */
+    val locationId: String? = null,
 )

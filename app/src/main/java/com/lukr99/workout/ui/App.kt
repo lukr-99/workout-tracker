@@ -7,24 +7,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -38,14 +28,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lukr99.workout.data.AppContainer
 import com.lukr99.workout.ui.components.LocalExerciseImageResolver
@@ -54,6 +40,7 @@ import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.ResumeChooserSheet
 import com.lukr99.workout.ui.components.StartChooserSheet
 import com.lukr99.workout.ui.components.ToastHost
+import com.lukr99.workout.ui.components.LocationSetupCard
 import com.lukr99.workout.ui.components.UpdateCard
 import com.lukr99.workout.ui.components.rememberReduceMotion
 import com.lukr99.workout.ui.components.rememberToastState
@@ -76,7 +63,6 @@ import com.lukr99.workout.ui.screens.TemplateEditorScreen
 import com.lukr99.workout.ui.screens.TemplatePreviewSheet
 import com.lukr99.workout.ui.screens.WorkoutDetailScreen
 import com.lukr99.workout.ui.settings.SettingsScreen
-import com.lukr99.workout.ui.theme.EmberTheme
 import kotlinx.coroutines.flow.first
 
 /**
@@ -97,6 +83,9 @@ fun App(container: AppContainer) {
     val settingsVm: SettingsViewModel = viewModel(factory = SettingsViewModel.factory(container))
     val libraryVm: LibraryViewModel = viewModel(factory = LibraryViewModel.factory(container))
     val liveVm: LiveWorkoutViewModel = viewModel(factory = LiveWorkoutViewModel.factory(container))
+    val locationsVm: LocationsViewModel = viewModel(factory = LocationsViewModel.factory(container))
+    val locationSetup by locationsVm.setup.collectAsState()
+    val locations by locationsVm.locations.collectAsState()
     val runVm: RunViewModel = viewModel(factory = RunViewModel.factory(container))
     val liveRunVm: LiveRunViewModel = viewModel(factory = LiveRunViewModel.factory(container))
     val routePlannerVm: RoutePlannerViewModel = viewModel(factory = RoutePlannerViewModel.factory(container))
@@ -190,6 +179,21 @@ fun App(container: AppContainer) {
                                     )
                                 }
                             },
+                            locationSetupCard = locationSetup?.let { setup ->
+                                {
+                                    val toast = LocalToast.current
+                                    LocationSetupCard(
+                                        unknownWorkouts = setup.unknownWorkouts,
+                                        onSave = { name, assignPast ->
+                                            locationsVm.finishSetup(name, assignPast) { moved ->
+                                                toast(if (moved > 0) "$name added, $moved workouts moved there" else "$name added")
+                                            }
+                                        },
+                                        onDismiss = locationsVm::dismissSetup,
+                                        modifier = Modifier.testTag(AppTags.LOCATION_SETUP),
+                                    )
+                                }
+                            },
                         )
                         Tab.LIBRARY -> LibraryScreen(
                             vm = libraryVm,
@@ -212,6 +216,7 @@ fun App(container: AppContainer) {
                         Tab.PROGRESS -> ProgressHubScreen(
                             progressVm = progressVm,
                             historyVm = historyVm,
+                            locationsVm = locationsVm,
                             runVm = runVm,
                             units = settings.units,
                             onOpenExercise = { nav.push(Route.ProgressDetail(it)) },
@@ -232,6 +237,7 @@ fun App(container: AppContainer) {
                     when (overlay) {
                         Route.LiveWorkout -> LiveWorkoutScreen(
                             vm = liveVm,
+                            locationsVm = locationsVm,
                             units = settings.units,
                             onClose = { liveVm.flush(); nav.pop() },
                             onEditExercise = { nav.push(Route.ExerciseEditor(it)) },
@@ -260,6 +266,7 @@ fun App(container: AppContainer) {
                             SettingsScreen(
                                 vm = settingsVm,
                                 updates = updatesVm,
+                                locationsVm = locationsVm,
                                 onOpenData = { nav.push(Route.DataTransfer) },
                                 onOpenPrivacy = { nav.push(Route.PrivacyPolicy) },
                                 onBack = { nav.pop() },
@@ -278,6 +285,7 @@ fun App(container: AppContainer) {
                         )
                         is Route.WorkoutDetail -> WorkoutDetailScreen(
                             vm = historyVm,
+                            locationsVm = locationsVm,
                             sessionId = overlay.sessionId,
                             units = settings.units,
                             onBack = { nav.pop() },
@@ -290,6 +298,7 @@ fun App(container: AppContainer) {
                             exerciseId = overlay.exerciseId,
                             units = settings.units,
                             onBack = { nav.pop() },
+                            locations = locations,
                         )
                         Route.DataTransfer -> Box(Modifier.fillMaxSize()) {
                             DataTransferScreen(vm = dataVm)
@@ -359,87 +368,4 @@ private fun BackChip(onBack: () -> Unit, modifier: Modifier = Modifier) {
             .clickable(onClick = onBack)
             .padding(horizontal = 16.dp, vertical = 8.dp),
     )
-}
-
-/**
- * Full-width rounded floating nav: four equal-width tabs split around a central raised ember Start
- * action (container-transform into the live session). Selected tabs tint `primary @ 16%` behind the
- * icon. When a session is live the center action shows a ▶ resume glyph instead of ＋.
- */
-@Composable
-private fun FloatingNav(
-    current: Tab,
-    resumeMode: Boolean,
-    onSelect: (Tab) -> Unit,
-    onStart: () -> Unit,
-    modifier: Modifier,
-) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(26.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
-        tonalElevation = 3.dp,
-        shadowElevation = 12.dp,
-    ) {
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            NavItem(Tab.HOME, current, Modifier.weight(1f)) { onSelect(Tab.HOME) }
-            NavItem(Tab.LIBRARY, current, Modifier.weight(1f)) { onSelect(Tab.LIBRARY) }
-            StartAction(resumeMode, onStart, Modifier.weight(1f))
-            NavItem(Tab.RUNS, current, Modifier.weight(1f)) { onSelect(Tab.RUNS) }
-            NavItem(Tab.PROGRESS, current, Modifier.weight(1f)) { onSelect(Tab.PROGRESS) }
-        }
-    }
-}
-
-@Composable
-private fun NavItem(tab: Tab, current: Tab, modifier: Modifier, onClick: () -> Unit) {
-    val on = tab == current
-    val tint = if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-    Column(
-        modifier.testTag(AppTags.nav(tab)).clip(RoundedCornerShape(16.dp)).clickable(onClick = onClick).padding(vertical = 3.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Box(
-            Modifier.background(
-                if (on) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f) else Color.Transparent,
-                CircleShape,
-            ).padding(horizontal = 12.dp, vertical = 5.dp),
-        ) { Icon(tab.icon, tab.label, tint = tint, modifier = Modifier.size(20.dp)) }
-        Spacer(Modifier.height(2.dp))
-        Text(
-            tab.label, color = tint, fontSize = 12.sp,
-            fontWeight = if (on) FontWeight.SemiBold else FontWeight.Medium,
-            maxLines = 1, softWrap = false,
-        )
-    }
-}
-
-@Composable
-private fun StartAction(resumeMode: Boolean, onStart: () -> Unit, modifier: Modifier) {
-    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            Modifier.testTag(AppTags.NAV_START).size(52.dp).clip(CircleShape)
-                .background(EmberTheme.colors.primary)
-                .clickable(onClick = onStart),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                if (resumeMode) Icons.Rounded.PlayArrow else Icons.Rounded.Add,
-                contentDescription = if (resumeMode) "Resume workout" else "Start workout",
-                tint = EmberTheme.colors.onPrimary,
-                modifier = Modifier.size(28.dp),
-            )
-        }
-        Spacer(Modifier.height(2.dp))
-        Text(
-            if (resumeMode) "Resume" else "Start",
-            color = MaterialTheme.colorScheme.primary, fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
-        )
-    }
 }

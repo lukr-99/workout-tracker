@@ -30,6 +30,7 @@ object Analytics {
             cardioMinutes = session.entries.sumOf { (it.cardioData?.durationSeconds ?: 0) / 60 },
             sessionTypeLabel = describeSessionType(session.entries),
             bodyPartsSummary = describeBodyParts(session.entries),
+            locationId = session.locationId,
         )
     }
 

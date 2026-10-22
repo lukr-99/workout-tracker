@@ -82,6 +82,7 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     /** The "new version ready" card from the automatic update check, when there is one. */
     updateCard: (@Composable () -> Unit)? = null,
+    locationSetupCard: (@Composable () -> Unit)? = null,
 ) {
     val snapshot by vm.snapshot.collectAsState()
     val active by vm.activeSession.collectAsState()
@@ -105,6 +106,7 @@ fun HomeScreen(
         }
         updateCard?.let { card -> item(key = "update") { card() } }
         whatsNew?.let { note -> item(key = "whats-new") { WhatsNewCard(note, vm::dismissWhatsNew) } }
+        locationSetupCard?.let { card -> item(key = "location-setup") { card() } }
         active?.let { session -> item { ResumeCard(session, onResume) } }
         item { SectionLabel("This week") { Streak(snapshot.consistency.currentWeeklyStreak) } }
         item { WeekCard(week, units) { if (it.isRun) onOpenRun(it.id) else onOpenSession(it.id) } }

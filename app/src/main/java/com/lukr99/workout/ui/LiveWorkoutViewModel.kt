@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
@@ -83,6 +84,14 @@ class LiveWorkoutViewModel(
     val prEvent: StateFlow<PrEvent?> = prEventState.asStateFlow()
     fun consumePrEvent() { prEventState.value = null }
 
+    /** "Track this exercise separately per gym?", asked at most once per exercise per workout. */
+    private val splitPromptState = MutableStateFlow<SplitPrompt?>(null)
+    val splitPrompt: StateFlow<SplitPrompt?> = splitPromptState.asStateFlow()
+    private val splitPrompts = SplitPrompts(repo)
+
+    /** Bumped when an exercise changes how its history is read, so "last time" reloads. */
+    private val historyVersion = MutableStateFlow(0)
+
     /** A one-shot progression rationale to surface (toast) after an exercise is added with a suggestion. */
     private val suggestionState = MutableStateFlow<String?>(null)
     val suggestion: StateFlow<String?> = suggestionState.asStateFlow()
@@ -106,9 +115,9 @@ class LiveWorkoutViewModel(
      * The live workout's id, exercise ids and location; "last time" data reloads only when these
      * change, so moving the workout to another gym refreshes it.
      */
-    private val onScreen = draftState
-        .map { session -> session?.let { OnScreen(it.id, it.entries.map(WorkoutEntry::exerciseId).toSet(), it.locationId) } }
-        .distinctUntilChanged()
+    private val onScreen = combine(draftState, historyVersion) { session, version ->
+        session?.let { OnScreen(it.id, it.entries.map(WorkoutEntry::exerciseId).toSet(), it.locationId, version) }
+    }.distinctUntilChanged()
 
     /** "Last time" notes for the exercises in the live session. */
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -154,6 +163,9 @@ class LiveWorkoutViewModel(
     // --- Structural edits ----------------------------------------------------------------------
 
     fun rename(name: String) = mutate(persist = false) { it.copy(name = name) }
+
+    /** Moves the live workout to another location (null is "Unknown location"). */
+    fun setLocation(locationId: String?) = mutate { it.copy(locationId = locationId) }
 
     // --- Notes (saved right away; each comes from an explicit Save in the note sheet) ----------
 
@@ -280,8 +292,33 @@ class LiveWorkoutViewModel(
             val restSecs = entry?.let { restSecondsFor(it) } ?: defaultRest
             startRest(restSecs)
             evaluatePr(entryId, setId)
+            evaluateSplit(entryId)
         }
         persist()
+    }
+
+    /** After a set is done, maybe ask whether this exercise should be tracked per gym. */
+    private fun evaluateSplit(entryId: String) {
+        val draft = draftState.value ?: return
+        if (splitPromptState.value != null) return
+        viewModelScope.launch { splitPrompts.check(draft, entryId)?.let { splitPromptState.value = it } }
+    }
+
+    /** "Track per gym": from now on this exercise only reads workouts at the workout's location. */
+    fun acceptSplit() {
+        val prompt = splitPromptState.value ?: return
+        splitPromptState.value = null
+        viewModelScope.launch {
+            repo.setTrackPerLocation(prompt.exerciseId, true)
+            historyVersion.update { it + 1 }
+        }
+    }
+
+    /** "Not now" asks again in a later workout; [never] is "Don't ask again" for this exercise. */
+    fun dismissSplit(never: Boolean) {
+        val prompt = splitPromptState.value ?: return
+        splitPromptState.value = null
+        if (never) viewModelScope.launch { repo.muteSplitPrompt(prompt.exerciseId) }
     }
 
     /**
@@ -370,6 +407,8 @@ class LiveWorkoutViewModel(
     private fun clear() {
         draftState.value = null
         doneSetIdsState.value = emptySet()
+        splitPromptState.value = null
+        splitPrompts.reset()
         skipRest()
     }
 
@@ -395,7 +434,7 @@ class LiveWorkoutViewModel(
         }
     }
 
-    private data class OnScreen(val sessionId: String, val exerciseIds: Set<String>, val locationId: String?)
+    private data class OnScreen(val sessionId: String, val exerciseIds: Set<String>, val locationId: String?, val version: Int)
 
     companion object {
         fun factory(container: AppContainer): ViewModelProvider.Factory = object : ViewModelProvider.Factory {

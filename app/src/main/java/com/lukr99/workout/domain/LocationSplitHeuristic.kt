@@ -6,9 +6,10 @@ package com.lukr99.workout.domain
  * For each location, take the top working weight of each of the newest [recentWorkouts] workouts
  * that logged the exercise there, and use their median. Ask when the median here and the median at
  * some other location differ by at least [minRatio] (the larger over the smaller), and each side
- * has enough workouts: [minWorkoutsHere] here (the live workout counts) and [minWorkoutsElsewhere]
- * at the other place. Warm-ups, sets without reps and sets without weight are ignored. Workouts
- * with no location never take part, because they could be from anywhere.
+ * has enough workouts: [minWorkoutsHere] here (the live workout counts, by its sets marked done)
+ * and [minWorkoutsElsewhere] at the other place. Warm-ups, sets without reps and sets without
+ * weight are ignored. Workouts with no location never take part, because they could be from
+ * anywhere.
  *
  * With the defaults it asks once one gym's numbers are 40% away from the median of another gym's
  * recent workouts (two or more). A normal progression step is a few percent, so ordinary training
@@ -46,12 +47,25 @@ data class LocationSplitHeuristic(
             .maxByOrNull { it.ratio }
     }
 
-    private fun topWorkingKg(session: WorkoutSession, exerciseId: String): Double? =
-        session.entries.asSequence()
+    /**
+     * Like [evaluate], but only for an [exercise] that could still be split: a shared strength
+     * exercise whose prompt was not muted with "Don't ask again".
+     */
+    fun evaluateFor(exercise: Exercise, sessions: List<WorkoutSession>, locationId: String?): LocationSplitSuggestion? {
+        if (exercise.trackPerLocation || exercise.splitPromptMuted || exercise.category != ExerciseCategory.Strength) return null
+        return evaluate(sessions, exercise.id, locationId)
+    }
+
+    /** In the live workout only sets marked done count; the rest may still hold another gym's prefill. */
+    private fun topWorkingKg(session: WorkoutSession, exerciseId: String): Double? {
+        val live = session.status == WorkoutSessionStatus.Active
+        return session.entries.asSequence()
             .filter { it.exerciseId == exerciseId && it.isStrength }
             .flatMap { it.strengthSets.asSequence() }
+            .filter { !live || it.performedAtUtc != null }
             .filter { it.reps > 0 && it.weightKg > 0.0 && !it.isWarmup && SetTag.Warmup !in it.effectiveTags }
             .maxOfOrNull { it.weightKg }
+    }
 
     private fun median(values: List<Double>): Double {
         val sorted = values.sorted()
