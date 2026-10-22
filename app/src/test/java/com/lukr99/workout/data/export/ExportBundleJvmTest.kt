@@ -4,6 +4,8 @@ import com.lukr99.workout.domain.CardioEntryData
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.ExerciseSource
+import com.lukr99.workout.domain.Location
+import com.lukr99.workout.domain.LocationKind
 import com.lukr99.workout.domain.SetTag
 import com.lukr99.workout.domain.SetType
 import com.lukr99.workout.domain.StrengthSet
@@ -32,7 +34,7 @@ class ExportBundleJvmTest {
 
     private val bundle = ExportBundle(
         exportedAtUtc = "2024-01-01T10:00:00Z",
-        exportFormatVersion = "1.11",
+        exportFormatVersion = "1.12",
         exercises = listOf(
             Exercise(
                 id = "ex1", name = "Bench", category = ExerciseCategory.Strength,
@@ -44,6 +46,8 @@ class ExportBundleJvmTest {
                 notes = "Seat on 4",
                 instructions = "Feet flat\nBar to lower chest",
                 videoUrl = "https://www.youtube.com/watch?v=bench",
+                trackPerLocation = true,
+                splitPromptMuted = true,
             ),
         ),
         templates = listOf(
@@ -64,6 +68,7 @@ class ExportBundleJvmTest {
                 completedDateUtc = 1_700_003_600_000L, durationSeconds = 3600,
                 status = WorkoutSessionStatus.Completed, perceivedEffort = 8, bodyweightKg = 82.5,
                 source = WorkoutSessionSource.HealthConnect, externalKey = "health-connect:record",
+                locationId = "gym1",
                 entries = listOf(
                     WorkoutEntry(
                         id = "e1", workoutSessionId = "s1", exerciseId = "ex1",
@@ -114,6 +119,10 @@ class ExportBundleJvmTest {
         appVersion = "2.6.0",
         settings = SettingsSnapshot(themeMode = "Dark", units = "Imperial", defaultRestSeconds = 150, reduceMotion = true),
         photos = listOf(ExercisePhoto(exerciseId = "ex1", dataBase64 = "/9j/4AAQ")),
+        locations = Location.builtIns + listOf(
+            Location(id = "gym1", name = "Brno Gym", kind = LocationKind.Gym, latitude = 49.19, longitude = 16.61),
+            Location(id = "gym0", name = "Old gym", isArchived = true),
+        ),
     )
 
     @Test
@@ -213,8 +222,31 @@ class ExportBundleJvmTest {
 
     @Test
     fun supportsAllPublishedVersions() {
-        assertEquals(setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "1.10", "1.11"), ExportBundle.SUPPORTED_VERSIONS)
-        assertEquals("1.11", ExportBundle.CURRENT_VERSION)
+        assertEquals(setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "1.10", "1.11", "1.12"), ExportBundle.SUPPORTED_VERSIONS)
+        assertEquals("1.12", ExportBundle.CURRENT_VERSION)
+    }
+
+    @Test
+    fun locationKindsSerializeAsOrdinals() {
+        val json = JsonExporter.toJson(bundle)
+        assertTrue(Regex(""""id":\s*"gym1",\s*"name":\s*"Brno Gym",\s*"kind":\s*0""").containsMatchIn(json))
+        assertTrue(Regex(""""id":\s*"outdoors",\s*"name":\s*"Outdoors",\s*"kind":\s*2""").containsMatchIn(json))
+    }
+
+    @Test
+    fun reads_v111_exportWithoutLocations() {
+        // A 1.11 backup has no locations, no locationId and no per-location flags.
+        val json = JsonExporter.toJson(bundle.copy(exportFormatVersion = "1.11", locations = emptyList()))
+            .replace(Regex(""",\s*"locationId":\s*"gym1""""), "")
+            .replace(Regex(""",\s*"trackPerLocation":\s*true"""), "")
+            .replace(Regex(""",\s*"splitPromptMuted":\s*true"""), "")
+            .replace(Regex(""",\s*"locations":\s*\[\s*]"""), "")
+        assertTrue("the keys should be gone", "location" !in json.lowercase() && "splitPrompt" !in json)
+        val restored = JsonExporter.fromJson(json)
+        assertTrue(restored.locations.isEmpty())
+        assertEquals(null, restored.sessions.single().locationId)
+        assertEquals(false, restored.exercises.single().trackPerLocation)
+        assertEquals(false, restored.exercises.single().splitPromptMuted)
     }
 
     @Test

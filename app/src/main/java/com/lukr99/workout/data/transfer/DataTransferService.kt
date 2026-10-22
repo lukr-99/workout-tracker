@@ -44,6 +44,7 @@ class DataTransferService(
             sessions = repository.getSessions(includeDiscarded = true),
             existingRunIds = runRepository.getRuns().mapTo(mutableSetOf()) { it.id },
             existingRouteIds = runRepository.getRoutes().mapTo(mutableSetOf()) { it.id },
+            existingLocationIds = repository.getLocations().mapTo(mutableSetOf()) { it.id },
         )
         val candidates = options.formatHint?.let { hint ->
             importers.filter { it.format == hint }
@@ -148,6 +149,7 @@ class DataTransferService(
                         }
                     }
                 }
+                plan.locations.forEach { saveLocation(it) }
                 // Routes first, so a run's routeId points at a route that is already there.
                 plan.routes.forEach { runRepository.saveRoute(it) }
                 plan.runs.forEach { runRepository.saveRun(it) }
@@ -218,6 +220,7 @@ class DataTransferService(
             sessions = sessions.sortedByDescending(WorkoutSession::startedAtUtc),
             runs = runs,
             routes = routes,
+            locations = repository.getLocations(),
             appVersion = appVersion,
             settings = if (options.includeSettings) settings?.snapshot() else null,
             photos = if (options.includePhotos) exportPhotos(exercises) else emptyList(),

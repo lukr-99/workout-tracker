@@ -11,4 +11,5 @@ data class ImportContext(
     /** Ids of runs/routes already in the store, so a restore only inserts the ones that are missing. */
     val existingRunIds: Set<String> = emptySet(),
     val existingRouteIds: Set<String> = emptySet(),
+    val existingLocationIds: Set<String> = emptySet(),
 )
