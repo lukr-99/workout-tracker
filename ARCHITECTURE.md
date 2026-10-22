@@ -65,6 +65,8 @@ part's name.
   progress through `domain/LocationScope`, which keeps only workouts at that place. Nothing is
   copied or rewritten, so turning tracking off joins the history again.
   `domain/LocationSplitHeuristic` decides when to suggest tracking an exercise per location.
+  Gym notes live in `exercise_location_notes`, keyed by exercise and location. The progress chart's
+  "All gyms" view groups finished workouts by `locationId` in `ui/ExerciseSeries`.
 - **Runs:** `LocationService` is a foreground service that holds a partial wake lock while a run
   records. `RunSessionController` feeds fixes to the pure `domain/run/RunTracker`, and
   `RunRepository` stores runs, trace points, routes and route points.

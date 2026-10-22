@@ -2,6 +2,7 @@ package com.lukr99.workout.data
 
 import com.lukr99.workout.domain.CardioEntryData
 import com.lukr99.workout.domain.Exercise
+import com.lukr99.workout.domain.ExerciseLocationNote
 import com.lukr99.workout.domain.Location
 import com.lukr99.workout.domain.SetTag
 import com.lukr99.workout.domain.StrengthSet
@@ -77,6 +78,10 @@ internal fun Location.toEntity() = LocationEntity(
     longitude = longitude,
     isArchived = isArchived,
 )
+
+internal fun ExerciseLocationNoteEntity.toDomain() = ExerciseLocationNote(exerciseId, locationId, note)
+
+internal fun ExerciseLocationNote.toEntity() = ExerciseLocationNoteEntity(exerciseId, locationId, note)
 
 internal fun TemplateWithExercises.toDomain() = WorkoutTemplate(
     id = template.id,

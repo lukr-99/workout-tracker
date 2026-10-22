@@ -197,6 +197,33 @@ interface WorkoutDao {
     @Query("DELETE FROM locations")
     suspend fun deleteAllLocations()
 
+    // --- Machine notes per exercise and location -----------------------------------------------
+
+    @Query("SELECT * FROM exercise_location_notes WHERE exerciseId = :exerciseId AND locationId = :locationId")
+    fun observeLocationNote(exerciseId: String, locationId: String): Flow<ExerciseLocationNoteEntity?>
+
+    @Query("SELECT * FROM exercise_location_notes WHERE locationId = :locationId AND exerciseId IN (:exerciseIds)")
+    suspend fun getLocationNotes(exerciseIds: List<String>, locationId: String): List<ExerciseLocationNoteEntity>
+
+    @Query("SELECT * FROM exercise_location_notes WHERE exerciseId = :exerciseId")
+    fun observeLocationNotesFor(exerciseId: String): Flow<List<ExerciseLocationNoteEntity>>
+
+    @Query("SELECT * FROM exercise_location_notes ORDER BY exerciseId, locationId")
+    suspend fun getAllLocationNotes(): List<ExerciseLocationNoteEntity>
+
+    @Upsert
+    suspend fun upsertLocationNote(note: ExerciseLocationNoteEntity)
+
+    @Query("DELETE FROM exercise_location_notes WHERE exerciseId = :exerciseId AND locationId = :locationId")
+    suspend fun deleteLocationNote(exerciseId: String, locationId: String)
+
+    /** Keeps the note already on this device when the same pair is restored again. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertMissingLocationNotes(notes: List<ExerciseLocationNoteEntity>)
+
+    @Query("DELETE FROM exercise_location_notes")
+    suspend fun deleteAllLocationNotes()
+
     // --- Per-location tracking -----------------------------------------------------------------
 
     @Query("UPDATE exercises SET trackPerLocation = :perLocation WHERE id = :exerciseId")

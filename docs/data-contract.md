@@ -7,7 +7,7 @@ requires this for every app that holds user data (`RULES.md`, Data lifecycle).
 
 | Data | Owner | Where | Format and version | In the backup |
 |---|---|---|---|---|
-| Exercises, templates, workouts, sets, locations | `WorkoutRepository` | Room `workout.db` | Room schema 10 (`app/schemas/`) | Yes |
+| Exercises, templates, workouts, sets, locations | `WorkoutRepository` | Room `workout.db` | Room schema 11 (`app/schemas/`) | Yes |
 | Runs, trace points, routes | `RunRepository` | Room `workout.db` | Room schema 10 | Yes |
 | Settings: theme, units, default rest | `SettingsStore` | Preferences DataStore `settings` | Keys `theme_mode`, `units`, `default_rest_seconds` | Yes |
 | Personal exercise photos | `ExercisePhotoStore` | `files/exercise_images/` | JPEG, path in `Exercise.localImagePath` | Yes, scaled to 1600 px |
@@ -22,7 +22,7 @@ Health Connect once written.
 
 A backup is one JSON file, the `ExportBundle` (`data/export/ExportBundle.kt`):
 
-- `exportFormatVersion` is `1.12`. Every version from `1.0` on still imports.
+- `exportFormatVersion` is `1.13`. Every version from `1.0` on still imports.
 - Template exercises carry an optional plan (from 1.9): `targetSets`, `repsMin`, `repsMax`,
   `restSeconds` and `supersetGroup`.
 - Training locations (from 1.12): a `locations` list (`id`, `name`, `kind` as an ordinal: gym 0,
@@ -30,6 +30,8 @@ A backup is one JSON file, the `ExportBundle` (`data/export/ExportBundle.kt`):
   each workout (null is "Unknown location"), and `trackPerLocation` and `splitPromptMuted` on each
   exercise. Home and Outdoors always have the ids `home` and `outdoors`. A merge adds locations
   whose id is new and keeps the phone's own name for the rest.
+- Gym notes (from 1.13): a `locationNotes` list of `exerciseId`, `locationId` and `note`. A merge
+  adds a note only for a pair that has none on the phone.
 - `exportedAtUtc` and `appVersion` (from 1.8) say when it was made and by which build.
 - Ids are stable strings. Timestamps are ISO-8601 UTC. Weights are kilograms, distances are
   metres. Enums are ordinals, except in `settings`, where they are names.

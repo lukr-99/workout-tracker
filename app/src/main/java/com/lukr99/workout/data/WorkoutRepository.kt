@@ -10,6 +10,7 @@ import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseAnalyticsPoint
 import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.ExerciseFilter
+import com.lukr99.workout.domain.ExerciseLocationNote
 import com.lukr99.workout.domain.Location
 import com.lukr99.workout.domain.LocationScope
 import com.lukr99.workout.domain.PreviousEntryNote
@@ -299,6 +300,40 @@ class WorkoutRepository(
 
     suspend fun deleteWorkoutSession(id: String) = dao.deleteSession(id)
 
+    // --- Machine notes ---------------------------------------------------------------------------
+
+    /** The note for [exerciseId] at [locationId], empty when there is none. Updates as it is saved. */
+    fun observeLocationNote(exerciseId: String, locationId: String): Flow<String> =
+        dao.observeLocationNote(exerciseId, locationId).map { it?.note.orEmpty() }
+
+    /** Every note for [exerciseId] by location id, for the exercise editor. */
+    fun observeLocationNotesFor(exerciseId: String): Flow<Map<String, String>> =
+        dao.observeLocationNotesFor(exerciseId).map { rows -> rows.associate { it.locationId to it.note } }
+
+    /** Notes at [locationId] for the given exercises. Exercises without one are left out. */
+    suspend fun getLocationNotes(exerciseIds: Collection<String>, locationId: String): Map<String, String> {
+        val ids = exerciseIds.distinct()
+        if (ids.isEmpty()) return emptyMap()
+        return ids.chunked(SQL_VARIABLE_CHUNK)
+            .flatMap { dao.getLocationNotes(it, locationId) }
+            .associate { it.exerciseId to it.note }
+    }
+
+    suspend fun getAllLocationNotes(): List<ExerciseLocationNote> = dao.getAllLocationNotes().map { it.toDomain() }
+
+    /** Save the note for a pair. A blank note removes it, so no empty rows pile up. */
+    suspend fun saveLocationNote(exerciseId: String, locationId: String, note: String) {
+        val text = note.trim()
+        if (text.isEmpty()) dao.deleteLocationNote(exerciseId, locationId)
+        else dao.upsertLocationNote(ExerciseLocationNoteEntity(exerciseId, locationId, text))
+    }
+
+    /** Restore notes from a backup; a pair that already has a note here keeps it. */
+    suspend fun restoreLocationNotes(notes: List<ExerciseLocationNote>) {
+        notes.filter { it.note.isNotBlank() }.chunked(SQL_VARIABLE_CHUNK)
+            .forEach { dao.insertMissingLocationNotes(it.map(ExerciseLocationNote::toEntity)) }
+    }
+
     // --- Locations -----------------------------------------------------------------------------
 
     /** Every location, archived ones included. Callers pick with `forPicker()`. */
@@ -345,6 +380,7 @@ class WorkoutRepository(
         dao.deleteAllSessions()
         dao.deleteAllTemplates()
         dao.deleteAllExercises()
+        dao.deleteAllLocationNotes()
         dao.deleteAllLocations()
         dao.insertMissingLocations(Location.builtIns.map { it.toEntity() })
     }
@@ -437,12 +473,14 @@ class WorkoutRepository(
         templates = dao.getAllTemplates().map { it.toDomain() },
         sessions = dao.getExportableSessions().map { it.toDomain() }.sortedByDescending { it.startedAtUtc },
         locations = getLocations(),
+        locationNotes = getAllLocationNotes(),
     )
 
     /** Restore a supported bundle into the DB, preserving ids (upsert). */
     suspend fun importBundle(bundle: ExportBundle) = inTransaction {
         dao.upsertExercises(bundle.exercises.map { it.toEntity() })
         bundle.locations.forEach { dao.upsertLocation(it.toEntity()) }
+        bundle.locationNotes.forEach { dao.upsertLocationNote(it.toEntity()) }
         for (template in bundle.templates) saveTemplate(template)
         for (session in bundle.sessions) saveWorkoutSession(session)
     }

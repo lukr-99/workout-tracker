@@ -63,6 +63,7 @@ internal object ImportPlanner {
                 runs = runs,
                 routes = routes,
                 locations = locations,
+                locationNotes = payload.locationNotes,
                 issues = payload.issues,
                 sourceLabel = payload.sourceLabel,
                 mode = RestoreMode.Merge,
