@@ -15,7 +15,14 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.lukr99.workout.domain.Location
+import com.lukr99.workout.ui.components.ChartLine
+import com.lukr99.workout.ui.components.ExerciseNotesPanel
+import com.lukr99.workout.ui.components.GymNotesSection
 import com.lukr99.workout.ui.components.LocationChip
+import com.lukr99.workout.ui.components.MultiLineChart
+import com.lukr99.workout.ui.components.TimedValue
+import com.lukr99.workout.ui.theme.EmberTheme
+import com.lukr99.workout.ui.theme.SeriesColors
 import com.lukr99.workout.ui.components.PositionOfferRow
 import com.lukr99.workout.ui.components.LocationSetupCard
 import com.lukr99.workout.ui.components.SplitPromptCard
@@ -54,6 +61,39 @@ class LocationScreenshotTest {
                 onSetPosition = { _, _ -> },
             )
         }
+    }
+
+    @Test fun gymNotesAndChartLight() = capture("gym_notes_chart_light", dark = false) { NotesAndChart() }
+
+    @Test fun gymNotesAndChartDark() = capture("gym_notes_chart_dark", dark = true) { NotesAndChart() }
+
+    @Composable
+    private fun NotesAndChart() = Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        ExerciseNotesPanel(
+            exerciseNote = "Slow on the way back",
+            previous = null,
+            entryNote = "",
+            onEditEntryNote = null,
+            locationNote = "Double pulley, seat 4",
+            locationName = "Brno gym",
+            onEditLocationNote = {},
+        )
+        GymNotesSection(
+            locations = listOf(Location(id = "brno", name = "Brno gym"), Location(id = "other", name = "Other gym")) + Location.builtIns,
+            notes = mapOf("brno" to "Double pulley, seat 4"),
+            onSave = { _, _ -> },
+        )
+        val day = 86_400_000L
+        val colors = EmberTheme.colors
+        MultiLineChart(
+            lines = listOf(
+                ChartLine("Brno gym", SeriesColors.of(colors, 0), listOf(TimedValue(0, 20.0), TimedValue(10 * day, 22.0), TimedValue(30 * day, 25.0))),
+                ChartLine("Other gym", SeriesColors.of(colors, 1), listOf(TimedValue(5 * day, 70.0), TimedValue(20 * day, 75.0))),
+                ChartLine(Location.UNKNOWN_NAME, SeriesColors.of(colors, 2, isUnknown = true), listOf(TimedValue(2 * day, 45.0)), dashed = true),
+            ),
+            summary = "Estimated 1RM by gym.",
+            valueFormat = { "${it.toInt()} kg" },
+        )
     }
 
     @Composable

@@ -19,5 +19,6 @@ object WorkoutMigrations {
         Migration0008ExerciseGuides,
         Migration0009TemplatePlan,
         Migration0010Locations,
+        Migration0011ExerciseLocationNotes,
     )
 }

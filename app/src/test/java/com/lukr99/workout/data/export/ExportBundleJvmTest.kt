@@ -3,6 +3,7 @@ package com.lukr99.workout.data.export
 import com.lukr99.workout.domain.CardioEntryData
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
+import com.lukr99.workout.domain.ExerciseLocationNote
 import com.lukr99.workout.domain.ExerciseSource
 import com.lukr99.workout.domain.Location
 import com.lukr99.workout.domain.LocationKind
@@ -34,7 +35,7 @@ class ExportBundleJvmTest {
 
     private val bundle = ExportBundle(
         exportedAtUtc = "2024-01-01T10:00:00Z",
-        exportFormatVersion = "1.12",
+        exportFormatVersion = "1.13",
         exercises = listOf(
             Exercise(
                 id = "ex1", name = "Bench", category = ExerciseCategory.Strength,
@@ -123,6 +124,7 @@ class ExportBundleJvmTest {
             Location(id = "gym1", name = "Brno Gym", kind = LocationKind.Gym, latitude = 49.19, longitude = 16.61),
             Location(id = "gym0", name = "Old gym", isArchived = true),
         ),
+        locationNotes = listOf(ExerciseLocationNote(exerciseId = "ex1", locationId = "gym1", note = "Double pulley, seat 4")),
     )
 
     @Test
@@ -222,8 +224,25 @@ class ExportBundleJvmTest {
 
     @Test
     fun supportsAllPublishedVersions() {
-        assertEquals(setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "1.10", "1.11", "1.12"), ExportBundle.SUPPORTED_VERSIONS)
-        assertEquals("1.12", ExportBundle.CURRENT_VERSION)
+        assertEquals(setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "1.10", "1.11", "1.12", "1.13"), ExportBundle.SUPPORTED_VERSIONS)
+        assertEquals("1.13", ExportBundle.CURRENT_VERSION)
+    }
+
+    @Test
+    fun reads_v112_exportWithoutLocationNotes() {
+        // A 1.12 backup has locations but no machine notes.
+        val json = JsonExporter.toJson(bundle.copy(exportFormatVersion = "1.12", locationNotes = emptyList()))
+            .replace(Regex(""",\s*"locationNotes":\s*\[\s*]"""), "")
+        assertTrue("the key should be gone", "locationNotes" !in json)
+        val restored = JsonExporter.fromJson(json)
+        assertTrue(restored.locationNotes.isEmpty())
+        assertEquals(bundle.locations, restored.locations)
+    }
+
+    @Test
+    fun locationNotesRoundTrip() {
+        val restored = JsonExporter.fromJson(JsonExporter.toJson(bundle))
+        assertEquals(bundle.locationNotes, restored.locationNotes)
     }
 
     @Test
@@ -236,7 +255,8 @@ class ExportBundleJvmTest {
     @Test
     fun reads_v111_exportWithoutLocations() {
         // A 1.11 backup has no locations, no locationId and no per-location flags.
-        val json = JsonExporter.toJson(bundle.copy(exportFormatVersion = "1.11", locations = emptyList()))
+        val json = JsonExporter.toJson(bundle.copy(exportFormatVersion = "1.11", locations = emptyList(), locationNotes = emptyList()))
+            .replace(Regex(""",\s*"locationNotes":\s*\[\s*]"""), "")
             .replace(Regex(""",\s*"locationId":\s*"gym1""""), "")
             .replace(Regex(""",\s*"trackPerLocation":\s*true"""), "")
             .replace(Regex(""",\s*"splitPromptMuted":\s*true"""), "")

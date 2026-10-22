@@ -18,5 +18,6 @@ data class EntryCardActions(
     val onAddSet: () -> Unit,
     val onCardioChange: (CardioEntryData) -> Unit,
     val onEditNote: () -> Unit,
+    val onEditLocationNote: () -> Unit,
     val onShowGuide: () -> Unit,
 )

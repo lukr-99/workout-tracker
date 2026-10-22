@@ -203,7 +203,9 @@ private fun ExerciseRow(summary: ExerciseProgressSummary, units: UnitSystem, onC
     ) {
         Column(Modifier.weight(1f)) {
             Text(summary.name, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, maxLines = 1)
-            Row(verticalAlignment = Alignment.Bottom) {
+            if (summary.points.isEmpty()) {
+                Text("No workouts at this gym yet", style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
+            } else Row(verticalAlignment = Alignment.Bottom) {
                 Text("Est 1RM ", style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
                 Text(Format.weightWithUnit(summary.bestE1rmKg, units), style = Numbers.copy(fontSize = 14.sp), color = MaterialTheme.colorScheme.onBackground)
                 if (summary.deltaKg != 0.0) {

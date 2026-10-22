@@ -38,8 +38,10 @@ import com.lukr99.workout.data.migrations.WorkoutMigrations
         RoutePointEntity::class,
         // Training locations (v10).
         LocationEntity::class,
+        // Machine notes per exercise and location (v11).
+        ExerciseLocationNoteEntity::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

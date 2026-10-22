@@ -126,6 +126,9 @@ fun LiveEntryCard(
                 previous = notes.previous,
                 entryNote = entry.notes,
                 onEditEntryNote = actions.onEditNote,
+                locationNote = notes.locationNote,
+                locationName = notes.locationName,
+                onEditLocationNote = actions.onEditLocationNote,
             )
 
             if (collapsed) {

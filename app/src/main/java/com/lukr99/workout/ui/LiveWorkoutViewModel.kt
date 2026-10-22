@@ -133,6 +133,23 @@ class LiveWorkoutViewModel(
         onScreen.mapLatest { key -> key?.let { history.notes(it.exerciseIds, it.sessionId, it.locationId) }.orEmpty() }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
+    private val locationNotesVersion = MutableStateFlow(0)
+
+    /** Machine notes at the live workout's location, by exercise id. Empty while the location is unknown. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val locationNotes: StateFlow<Map<String, String>> =
+        combine(onScreen, locationNotesVersion) { key, _ -> key }
+            .mapLatest { key -> key?.locationId?.let { repo.getLocationNotes(key.exerciseIds, it) }.orEmpty() }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
+    /** Saves the machine note for [exerciseId] at [locationId], the gym the sheet was opened for. A blank note clears it. */
+    fun setLocationNote(exerciseId: String, locationId: String, text: String) {
+        viewModelScope.launch {
+            repo.saveLocationNote(exerciseId, locationId, text)
+            locationNotesVersion.update { it + 1 }
+        }
+    }
+
     /** Last time's sets for the exercises in the live session, for each set row's "Previous". */
     @OptIn(ExperimentalCoroutinesApi::class)
     val previousSets: StateFlow<Map<String, List<StrengthSet>>> =

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -39,13 +40,26 @@ fun ExerciseNotesPanel(
     onEditEntryNote: (() -> Unit)?,
     modifier: Modifier = Modifier,
     entryNoteLabel: String? = "Today",
+    /** The machine note at the workout's gym, like "double pulley, seat 4". */
+    locationNote: String = "",
+    locationName: String? = null,
+    onEditLocationNote: (() -> Unit)? = null,
 ) {
     // A template note is copied into every workout, so it would repeat as "Last time"; show it once.
     val previous = previous?.takeUnless { it.text.trim().equals(entryNote.trim(), ignoreCase = true) }
-    if (exerciseNote.isBlank() && previous == null && entryNote.isBlank()) return
+    if (exerciseNote.isBlank() && previous == null && entryNote.isBlank() && locationNote.isBlank()) return
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         if (exerciseNote.isNotBlank()) {
             NoteLine(Icons.Rounded.PushPin, label = null, text = exerciseNote, description = "Exercise note")
+        }
+        if (locationNote.isNotBlank()) {
+            NoteLine(
+                Icons.Rounded.Place,
+                label = locationName,
+                text = locationNote,
+                description = "Machine note for this gym",
+                onClick = onEditLocationNote,
+            )
         }
         if (previous != null) {
             NoteLine(

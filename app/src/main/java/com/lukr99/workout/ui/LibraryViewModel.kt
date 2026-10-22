@@ -11,6 +11,7 @@ import com.lukr99.workout.data.services.WorkoutDataService
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.ExerciseFilter
+import com.lukr99.workout.domain.Location
 import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.domain.creation.CreationResult
 import com.lukr99.workout.domain.creation.ExerciseDraft
@@ -18,6 +19,7 @@ import com.lukr99.workout.domain.creation.TemplateDraft
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -52,6 +54,17 @@ class LibraryViewModel(
 
     /** One exercise by id, archived included, so the editor never depends on the Library filter. */
     suspend fun getExercise(id: String): Exercise? = repo.getExercise(id)
+
+    /** Every place, for the per-gym notes in the exercise editor. */
+    val locations: StateFlow<List<Location>> =
+        repo.observeLocations().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** The machine notes of one exercise by location id. */
+    fun locationNotes(exerciseId: String): Flow<Map<String, String>> = repo.observeLocationNotesFor(exerciseId)
+
+    fun saveLocationNote(exerciseId: String, locationId: String, note: String) {
+        viewModelScope.launch { repo.saveLocationNote(exerciseId, locationId, note) }
+    }
 
     fun setSearch(text: String) = filterState.update { it.copy(searchText = text) }
     fun setBodyPart(part: String) = filterState.update { it.copy(bodyPart = part) }
