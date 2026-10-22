@@ -25,6 +25,7 @@ internal object ReplacePlanner {
             runs = payload.runs,
             routes = payload.routes,
             locations = payload.locations,
+            locationNotes = payload.locationNotes,
             issues = issues,
             sourceLabel = payload.sourceLabel,
             mode = RestoreMode.Replace,

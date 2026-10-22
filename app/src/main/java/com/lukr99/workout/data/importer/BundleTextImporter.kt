@@ -63,6 +63,7 @@ internal object BundleTextImporter : TextDataImporter {
             runs = bundle.runs,
             routes = bundle.routes,
             locations = bundle.locations,
+            locationNotes = bundle.locationNotes,
             photos = bundle.photos,
             settings = bundle.settings,
             sourceLabel = sourceLabel,

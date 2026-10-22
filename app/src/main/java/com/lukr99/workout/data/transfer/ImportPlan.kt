@@ -14,6 +14,8 @@ data class ImportPlan(
     val routes: List<Route> = emptyList(),
     /** Locations to save: on a merge only those whose id is new, on a replace all of them. */
     val locations: List<com.lukr99.workout.domain.Location> = emptyList(),
+    /** Machine notes to restore; a pair already noted on this device keeps its note. */
+    val locationNotes: List<com.lukr99.workout.domain.ExerciseLocationNote> = emptyList(),
     val issues: List<TransferIssue> = emptyList(),
     val sourceLabel: String? = null,
     val mode: RestoreMode = RestoreMode.Merge,

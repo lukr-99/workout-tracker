@@ -16,6 +16,7 @@ import com.lukr99.workout.data.migrations.Migration0007LiveLoggingMetadata
 import com.lukr99.workout.data.migrations.Migration0008ExerciseGuides
 import com.lukr99.workout.data.migrations.Migration0009TemplatePlan
 import com.lukr99.workout.data.migrations.Migration0010Locations
+import com.lukr99.workout.data.migrations.Migration0011ExerciseLocationNotes
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -431,6 +432,42 @@ class WorkoutMigrationTest {
                 assertEquals("outdoors", cursor.getString(0))
                 assertEquals(2, cursor.getInt(2))
                 assertEquals(0, cursor.getInt(3))
+            }
+        }
+    }
+
+    @Test
+    fun migratesSchemaTenToElevenAddingLocationNotes() {
+        helper.createDatabase(DatabaseName, 10).apply {
+            execSQL("INSERT INTO locations (id, name, kind, latitude, longitude, isArchived) VALUES ('brno', 'Brno gym', 0, NULL, NULL, 0)")
+            execSQL(
+                """
+                INSERT INTO sessions (
+                    id, templateId, name, status, startedAtUtc, endedAtUtc, completedDateUtc,
+                    durationSeconds, notes, perceivedEffort, bodyweightKg, source, externalKey, locationId
+                ) VALUES ('s11', NULL, 'Push', 1, 1000, 2000, 2000, 1, '', NULL, NULL, 0, NULL, 'brno')
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(DatabaseName, 11, true, Migration0011ExerciseLocationNotes).use { db ->
+            db.query("SELECT locationId FROM sessions WHERE id = 's11'").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("brno", cursor.getString(0))
+            }
+            db.query("SELECT COUNT(*) FROM locations").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(1, cursor.getInt(0))
+            }
+            db.query("SELECT COUNT(*) FROM exercise_location_notes").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+            }
+            db.execSQL("INSERT INTO exercise_location_notes (exerciseId, locationId, note) VALUES ('fly', 'brno', 'Seat 4')")
+            db.query("SELECT note FROM exercise_location_notes WHERE exerciseId = 'fly' AND locationId = 'brno'").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("Seat 4", cursor.getString(0))
             }
         }
     }

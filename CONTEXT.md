@@ -81,6 +81,12 @@ Switching changes only how history is read, never the history itself. In copy it
 gym". In code it is `trackPerLocation` and `LocationScope`.
 _Avoid_: Split exercise, gym-specific exercise
 
+**Gym note**:
+A note for one exercise at one location, like "double pulley, seat 4". It works for shared and
+per-location exercises alike, because the machine setup differs either way. Not the same as the
+exercise note (everywhere) or the entry note (one workout). In code it is `ExerciseLocationNote`.
+_Avoid_: Location note (in copy), machine note
+
 **Plan**:
 What a template sets up for one exercise: a number of sets, a rep range, rest and a superset group.
 It is a starting point; the workout can always differ. In code it is the template exercise's

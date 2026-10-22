@@ -186,6 +186,51 @@ class NewestMigrationJvmTest {
         }
     }
 
+    @Test
+    fun aVersionTenDatabaseOpensAtElevenWithItsDataAndNoNotes() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val name = "jvm-migration-10.db"
+        context.deleteDatabase(name)
+        val file = context.getDatabasePath(name).apply { parentFile?.mkdirs() }
+
+        SQLiteDatabase.openOrCreateDatabase(file, null).use { db ->
+            createSchema(db, version = 10)
+            db.execSQL("INSERT INTO locations (id, name, kind, latitude, longitude, isArchived) VALUES ('brno', 'Brno gym', 0, NULL, NULL, 0)")
+            db.execSQL(
+                "INSERT INTO exercises (id, name, category, primaryBodyPart, secondaryBodyPartsJson, equipment, " +
+                    "notes, source, externalSourceId, isArchived, defaultRestSeconds, imageUrl, imageAttribution, " +
+                    "localImagePath, instructions, videoUrl, trackPerLocation, splitPromptMuted) VALUES " +
+                    "('fly', 'Cable Fly', 0, 'Chest', '[]', 'Cable', 'Slow', 2, NULL, 0, NULL, NULL, NULL, NULL, '', NULL, 1, 0)",
+            )
+            db.execSQL(
+                "INSERT INTO sessions (id, templateId, name, status, startedAtUtc, endedAtUtc, completedDateUtc, " +
+                    "durationSeconds, notes, perceivedEffort, bodyweightKg, source, externalKey, locationId) " +
+                    "VALUES ('s10', NULL, 'Push', 1, 1000, 2000, 2000, 1, '', NULL, NULL, 0, NULL, 'brno')",
+            )
+            db.version = 10
+        }
+
+        val room = Room.databaseBuilder(context, WorkoutDb::class.java, name)
+            .addMigrations(*WorkoutMigrations.ALL)
+            .allowMainThreadQueries()
+            .build()
+        try {
+            val repo = WorkoutRepository(room.workoutDao(), RoomTransactionRunner(room))
+            // Nothing that was there changed.
+            assertEquals("brno", repo.getSession("s10")!!.locationId)
+            assertEquals(true, repo.getExercise("fly")!!.trackPerLocation)
+            assertEquals("Slow", repo.getExercise("fly")!!.notes)
+            assertEquals(listOf("brno"), repo.getLocations().map { it.id })
+
+            // The new table starts empty and works for the first note.
+            assertEquals(emptyList<Any>(), repo.getAllLocationNotes())
+            repo.saveLocationNote("fly", "brno", "Double pulley, seat 4")
+            assertEquals("Double pulley, seat 4", repo.getLocationNotes(listOf("fly"), "brno").getValue("fly"))
+        } finally {
+            room.close()
+        }
+    }
+
     /** Builds the schema exactly as Room exported it for [version]. */
     private fun createSchema(db: SQLiteDatabase, version: Int) {
         val schemaFile = File("schemas/com.lukr99.workout.data.WorkoutDb/$version.json")

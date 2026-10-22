@@ -140,7 +140,7 @@ class ComponentScreenshotTest {
                 ExerciseOuting(1_758_600_000_000, listOf(StrengthSet(reps = 8, weightKg = 77.5), StrengthSet(reps = 8, weightKg = 77.5)), 98.2),
             )
         },
-        onReplace = {}, onSuperset = {}, onFullHistory = {}, onMoveUp = {}, onMoveDown = {}, onEditNote = {}, onShowGuide = {}, onRemove = {}, onDismiss = {},
+        onReplace = {}, onSuperset = {}, onFullHistory = {}, onMoveUp = {}, onMoveDown = {}, onEditNote = {}, onEditLocationNote = {}, locationName = "Brno gym", hasLocationNote = true, onShowGuide = {}, onRemove = {}, onDismiss = {},
     )
 
     private val catalog = listOf(
@@ -364,6 +364,6 @@ class ComponentScreenshotTest {
         onOpenMenu = {}, onEditSuperset = {}, onToggleCollapsed = {}, onToggleWeightUnit = {},
         onStart = {}, onFinish = {}, onReopen = {}, onReps = { _, _ -> }, onWeight = { _, _ -> },
         onToggleDone = {}, onOptions = {}, onAddSet = {},
-        onCardioChange = {}, onEditNote = {}, onShowGuide = {},
+        onCardioChange = {}, onEditNote = {}, onEditLocationNote = {}, onShowGuide = {},
     )
 }

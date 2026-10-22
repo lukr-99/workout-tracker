@@ -22,6 +22,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,7 +35,13 @@ import com.lukr99.workout.domain.records.RecordSource
 import com.lukr99.workout.domain.nameOf
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.ProgressViewModel
+import com.lukr99.workout.ui.ExerciseProgressSummary
 import com.lukr99.workout.ui.components.BarPoint
+import com.lukr99.workout.ui.components.ChartLine
+import com.lukr99.workout.ui.components.MultiLineChart
+import com.lukr99.workout.ui.components.SegmentedControl
+import com.lukr99.workout.ui.components.TimedValue
+import com.lukr99.workout.ui.theme.SeriesColors
 import com.lukr99.workout.ui.components.ChartPoint
 import com.lukr99.workout.ui.components.EmptyState
 import com.lukr99.workout.ui.components.Format
@@ -74,19 +83,43 @@ fun ProgressDetailScreen(
             )
         }
 
-        if (detail == null || detail.points.isEmpty()) {
+        // Chart view: false is the default line, true is one line per place.
+        var byGym by rememberSaveable(exerciseId) { mutableStateOf(false) }
+        val noneHere = detail != null && detail.points.isEmpty() && detail.canSplitByGym
+        val splitView = detail != null && detail.canSplitByGym && (byGym || noneHere)
+
+        if (detail == null || (detail.points.isEmpty() && !noneHere)) {
             EmptyState(Icons.AutoMirrored.Rounded.ShowChart, "No sets logged yet", "Log this exercise in a workout and its chart and records show up here.")
             return
         }
 
         Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            if (detail.scope.perLocation) {
-                // Phase 2 adds a switch between this gym and all gyms; for now say which one this is.
+            if (detail.canSplitByGym) {
+                SegmentedControl(
+                    options = listOf(false, true),
+                    selected = splitView,
+                    onSelect = { byGym = it },
+                    label = { if (it) detail.splitViewLabel else detail.defaultViewLabel },
+                )
+            }
+            if (detail.scope.perLocation && !splitView) {
                 Text(
                     "Tracked per gym. Showing ${locations.nameOf(detail.scope.locationId)} only.",
                     style = MaterialTheme.typography.bodySmall,
                     color = EmberTheme.colors.textSecondary,
                 )
+            }
+            if (noneHere) {
+                Text(
+                    "No workouts at ${locations.nameOf(detail.scope.locationId)} yet. Here is every gym.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = EmberTheme.colors.textSecondary,
+                )
+            }
+            if (splitView) {
+                GymLinesCard(detail, units)
+                records?.let { RecordsCard(it, units) }
+                return@Column
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 StatTile("Best e1RM", Format.weight(detail.bestE1rmKg, units), unit = Format.unitLabel(units), modifier = Modifier.weight(1f))
@@ -123,6 +156,38 @@ fun ProgressDetailScreen(
 
             InlineHint(Icons.Rounded.TouchApp, "Tap or drag along the chart to see each workout.")
         }
+    }
+}
+
+/** The e1RM of every place as its own line, with a legend that reads out the value under the finger. */
+@Composable
+private fun GymLinesCard(detail: ExerciseProgressSummary, units: UnitSystem) {
+    val colors = EmberTheme.colors
+    val unit = Format.unitLabel(units)
+    val lines = detail.series.mapIndexed { index, series ->
+        ChartLine(
+            name = series.name,
+            color = SeriesColors.of(colors, index, isUnknown = series.locationId == null),
+            points = series.points.map { TimedValue(it.dateMillis, it.e1rmKg) },
+            dashed = series.locationId == null || index >= 5,
+        )
+    }
+    val summary = "Estimated 1RM by gym. " + detail.series.joinToString(" ") {
+        val count = it.points.size
+        "${it.name}: $count ${if (count == 1) "workout" else "workouts"}, latest ${Format.weight(it.latestE1rmKg, units)} $unit, best ${Format.weight(it.bestE1rmKg, units)} $unit."
+    }
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surface).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text("Estimated 1RM by gym", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
+        MultiLineChart(
+            lines = lines,
+            summary = summary,
+            valueFormat = { Format.weightWithUnit(it, units) },
+        )
+        InlineHint(Icons.Rounded.TouchApp, "Tap or drag along the chart to compare gyms on a date.")
     }
 }
 

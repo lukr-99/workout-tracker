@@ -122,6 +122,7 @@ fun LiveWorkoutScreen(
     var openedEntries by remember { mutableStateOf(emptySet<String>()) }
     val catalog by vm.catalogById.collectAsState()
     val previousNotes by vm.previousNotes.collectAsState()
+    val locationNotes by vm.locationNotes.collectAsState()
     val previousSets by vm.previousSets.collectAsState()
     val recentIds by produceState(emptyList<String>()) { value = vm.history.recentExerciseIds() }
     val repeatable by produceState(emptyList<WorkoutSession>()) { value = vm.history.repeatable() }
@@ -196,6 +197,8 @@ fun LiveWorkoutScreen(
                             exerciseNote = catalogExercise?.notes.orEmpty(),
                             previous = previousNotes[entry.exerciseId],
                             hasGuide = catalogExercise != null,
+                            locationNote = locationNotes[entry.exerciseId].orEmpty(),
+                            locationName = locations.nameOf(session?.locationId),
                             lastTimeSets = previousSets[entry.exerciseId].orEmpty(),
                         ),
                         actions = EntryCardActions(
@@ -225,6 +228,7 @@ fun LiveWorkoutScreen(
                             onAddSet = { vm.addSet(entry.id) },
                             onCardioChange = { data -> vm.updateCardio(entry.id) { data } },
                             onEditNote = { sheet = LiveSheet.Note(NoteTarget.Entry(entry.id)) },
+                            onEditLocationNote = { sheet = LiveSheet.LocationNote(entry.id) },
                             onShowGuide = { catalogExercise?.let { sheet = LiveSheet.Guide(it) } },
                         ),
                     )
@@ -329,6 +333,8 @@ fun LiveWorkoutScreen(
         units = units,
         exercises = exercises,
         catalog = catalog,
+        locations = locations,
+        locationNotes = locationNotes,
         onSheet = { sheet = it },
         onEditExercise = onEditExercise,
         onOpenHistory = onOpenHistory,

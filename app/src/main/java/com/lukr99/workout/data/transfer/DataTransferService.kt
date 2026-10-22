@@ -150,6 +150,7 @@ class DataTransferService(
                     }
                 }
                 plan.locations.forEach { saveLocation(it) }
+                restoreLocationNotes(plan.locationNotes)
                 // Routes first, so a run's routeId points at a route that is already there.
                 plan.routes.forEach { runRepository.saveRoute(it) }
                 plan.runs.forEach { runRepository.saveRun(it) }
@@ -221,6 +222,7 @@ class DataTransferService(
             runs = runs,
             routes = routes,
             locations = repository.getLocations(),
+            locationNotes = repository.getAllLocationNotes(),
             appVersion = appVersion,
             settings = if (options.includeSettings) settings?.snapshot() else null,
             photos = if (options.includePhotos) exportPhotos(exercises) else emptyList(),

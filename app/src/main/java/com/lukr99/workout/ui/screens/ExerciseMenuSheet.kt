@@ -21,6 +21,7 @@ import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.LinkOff
 import androidx.compose.material.icons.rounded.SwapHoriz
@@ -71,6 +72,10 @@ internal fun ExerciseMenuSheet(
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
     onEditNote: () -> Unit,
+    /** Edits the machine note at the workout's gym; null while the workout has no location. */
+    onEditLocationNote: (() -> Unit)?,
+    locationName: String?,
+    hasLocationNote: Boolean,
     onShowGuide: () -> Unit,
     onRemove: () -> Unit,
     onDismiss: () -> Unit,
@@ -116,6 +121,14 @@ internal fun ExerciseMenuSheet(
                 if (options.canMoveUp) Action(Icons.Rounded.ArrowUpward, "Move up", null, onClick = act(onMoveUp))
                 if (options.canMoveDown) Action(Icons.Rounded.ArrowDownward, "Move down", null, onClick = act(onMoveDown))
                 Action(Icons.AutoMirrored.Rounded.NoteAdd, if (entry.notes.isBlank()) "Add a note for today" else "Edit today's note", null, onClick = act(onEditNote))
+                if (entry.isStrength && onEditLocationNote != null) {
+                    Action(
+                        Icons.Rounded.Place,
+                        if (hasLocationNote) "Edit the gym note" else "Add a gym note",
+                        "Seat, pulley or setup at ${locationName ?: "this gym"}. Kept for next time.",
+                        onClick = act(onEditLocationNote),
+                    )
+                }
                 if (options.hasGuide) Action(Icons.Rounded.Info, "How to do it", "Steps, your note and the guide link.", onClick = act(onShowGuide))
                 val done = entry.strengthSets.count { it.performedAtUtc != null }
                 Action(

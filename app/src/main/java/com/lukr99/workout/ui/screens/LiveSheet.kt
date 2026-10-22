@@ -10,6 +10,7 @@ sealed interface LiveSheet {
     data class Menu(val entryId: String) : LiveSheet
     data class SetOptions(val entryId: String, val setId: String) : LiveSheet
     data class Note(val target: NoteTarget) : LiveSheet
+    data class LocationNote(val entryId: String) : LiveSheet
     data class Guide(val exercise: Exercise) : LiveSheet
     data class Superset(val groupId: Int) : LiveSheet
     data object ConfirmFinish : LiveSheet
