@@ -2,14 +2,12 @@ package com.lukr99.workout.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -29,10 +27,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -53,29 +49,29 @@ import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutShareSummary
 import com.lukr99.workout.domain.newId
 import com.lukr99.workout.settings.UnitSystem
+import com.lukr99.workout.domain.nameOf
 import com.lukr99.workout.ui.HistoryViewModel
+import com.lukr99.workout.ui.LocationsViewModel
+import com.lukr99.workout.ui.components.LocationChip
+import com.lukr99.workout.ui.components.LocationPickerSheet
 import com.lukr99.workout.ui.statsSummary
 import com.lukr99.workout.ui.components.ConfirmDialog
 import com.lukr99.workout.ui.components.ExerciseNotesPanel
 import com.lukr99.workout.ui.components.ExercisePickerScreen
-import com.lukr99.workout.ui.components.SetNoteLine
 import com.lukr99.workout.ui.components.WorkoutNoteRow
 import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.SetColumnHeader
-import com.lukr99.workout.ui.components.SetTagChips
 import com.lukr99.workout.ui.components.Tag
-import com.lukr99.workout.ui.components.ValueCell
 import com.lukr99.workout.ui.theme.EmberTheme
-import com.lukr99.workout.ui.theme.Numbers
 import kotlinx.coroutines.launch
-import androidx.compose.ui.graphics.asImageBitmap
 
 /** Drill-in for a past session with full edit-after-the-fact (persists via saveWorkoutSession). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkoutDetailScreen(
     vm: HistoryViewModel,
+    locationsVm: LocationsViewModel,
     sessionId: String,
     units: UnitSystem,
     onBack: () -> Unit,
@@ -101,6 +97,8 @@ fun WorkoutDetailScreen(
     }
     var confirmDelete by remember { mutableStateOf(false) }
     var noteTarget by remember { mutableStateOf<NoteTarget?>(null) }
+    var pickingLocation by remember { mutableStateOf(false) }
+    val locations by locationsVm.locations.collectAsState()
 
     val session = draft
     if (session == null) {
@@ -185,6 +183,10 @@ fun WorkoutDetailScreen(
             contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 14.dp, end = 14.dp, bottom = 40.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            item(key = "location") {
+                // Like every edit here, the location joins the draft and Save writes it.
+                LocationChip(name = locations.nameOf(session.locationId), onClick = { pickingLocation = true })
+            }
             item(key = "workout-note") {
                 WorkoutNoteRow(note = session.notes, onEdit = { noteTarget = NoteTarget.Workout })
             }
@@ -322,41 +324,26 @@ fun WorkoutDetailScreen(
     }
 
     preparedShare?.let { preview ->
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ModalBottomSheet(
-            onDismissRequest = { preparedShare = null },
-            sheetState = sheetState,
-            containerColor = MaterialTheme.colorScheme.surface,
-        ) {
-            Column(
-                Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
-            ) {
-                Text("Share preview", style = MaterialTheme.typography.titleLarge)
-                Text("This exact image will be shared.", color = EmberTheme.colors.textSecondary)
-                Image(
-                    bitmap = preview.bitmap.asImageBitmap(),
-                    contentDescription = "Workout share image preview",
-                    modifier = Modifier.fillMaxWidth().aspectRatio(preview.bitmap.width.toFloat() / preview.bitmap.height)
-                        .clip(RoundedCornerShape(16.dp)),
-                )
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = {
-                        preparedShare = null
-                    }) { Text("Cancel") }
-                    TextButton(onClick = {
-                        runCatching {
-                            context.startActivity(
-                                android.content.Intent.createChooser(preview.intent, "Share workout"),
-                            )
-                        }.onFailure { toast("Could not open the share sheet") }
-                    }) {
-                        Icon(Icons.Rounded.Share, null, modifier = Modifier.size(18.dp))
-                        Text(" Share")
-                    }
-                }
-            }
-        }
+        WorkoutSharePreviewSheet(
+            preview = preview,
+            onDismiss = { preparedShare = null },
+            onShare = {
+                runCatching {
+                    context.startActivity(android.content.Intent.createChooser(preview.intent, "Share workout"))
+                }.onFailure { toast("Could not open the share sheet") }
+            },
+        )
+    }
+
+    if (pickingLocation) {
+        LocationPickerSheet(
+            title = "Where was this workout?",
+            locations = locations,
+            selectedId = session.locationId,
+            onPick = { id -> draft = session.copy(locationId = id) },
+            onAddGym = { name -> locationsVm.addGym(name) { gym -> draft = draft?.copy(locationId = gym.id) } },
+            onDismiss = { pickingLocation = false },
+        )
     }
 
     noteTarget?.let { target ->
@@ -384,74 +371,5 @@ fun WorkoutDetailScreen(
             onConfirm = { vm.delete(sessionId) { onBack() } },
             onDismiss = { confirmDelete = false },
         )
-    }
-}
-
-@Composable
-private fun EditSetRow(
-    index: Int,
-    set: StrengthSet,
-    units: UnitSystem,
-    onReps: (Int) -> Unit,
-    onWeight: (Double) -> Unit,
-    onRemove: () -> Unit,
-    onNote: () -> Unit,
-) {
-    // null = closed, false = editing reps, true = editing weight
-    var editingWeight by remember { mutableStateOf<Boolean?>(null) }
-    Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant).padding(horizontal = 8.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Box(Modifier.size(32.dp), contentAlignment = Alignment.Center) {
-            Text("${index + 1}", style = Numbers, color = EmberTheme.colors.textSecondary)
-        }
-        Row(
-            Modifier.weight(1f),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            ValueCell(display = set.reps.toString(), modifier = Modifier.weight(1f)) { editingWeight = false }
-            Text("×", color = EmberTheme.colors.textSecondary)
-            ValueCell(
-                display = Format.weight(set.weightKg, units),
-                modifier = Modifier.weight(1.25f),
-            ) { editingWeight = true }
-        }
-        IconButton(onClick = onNote, modifier = Modifier.size(38.dp)) {
-            Icon(
-                Icons.AutoMirrored.Rounded.NoteAdd,
-                if (set.notes.isBlank()) "Add note to set ${index + 1}" else "Edit note on set ${index + 1}",
-                tint = if (set.notes.isBlank()) EmberTheme.colors.textSecondary else MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(16.dp),
-            )
-        }
-        IconButton(onClick = onRemove, modifier = Modifier.size(38.dp)) {
-            Icon(Icons.Rounded.Delete, "Remove set", tint = EmberTheme.colors.textSecondary, modifier = Modifier.size(16.dp))
-        }
-    }
-    SetTagChips(set, Modifier.fillMaxWidth().padding(start = 48.dp, top = 3.dp))
-    SetNoteLine(set)
-
-    when (editingWeight) {
-        false -> com.lukr99.workout.ui.components.NumberPadSheet(
-            title = "Set ${index + 1} · Reps",
-            initial = set.reps.toDouble(),
-            quickStep = 1.0,
-            onValue = { onReps(it.toInt()) },
-            onDismiss = { editingWeight = null },
-        )
-        true -> com.lukr99.workout.ui.components.NumberPadSheet(
-            title = "Set ${index + 1} · Weight",
-            initial = Format.toDisplay(set.weightKg, units),
-            quickStep = 2.5,
-            allowDecimal = true,
-            unitLabel = Format.unitLabel(units),
-            onValue = { onWeight(Format.toKg(it, units)) },
-            onDismiss = { editingWeight = null },
-        )
-        null -> Unit
     }
 }

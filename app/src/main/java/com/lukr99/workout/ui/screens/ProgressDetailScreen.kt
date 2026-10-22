@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.lukr99.workout.domain.records.ExerciseRecords
 import com.lukr99.workout.domain.records.RecordSource
+import com.lukr99.workout.domain.nameOf
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.ProgressViewModel
 import com.lukr99.workout.ui.components.BarPoint
@@ -48,6 +49,7 @@ fun ProgressDetailScreen(
     exerciseId: String,
     units: UnitSystem,
     onBack: () -> Unit,
+    locations: List<com.lukr99.workout.domain.Location> = emptyList(),
 ) {
     val state by vm.state.collectAsState()
     val records by vm.records.collectAsState()
@@ -78,6 +80,14 @@ fun ProgressDetailScreen(
         }
 
         Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            if (detail.scope.perLocation) {
+                // Phase 2 adds a switch between this gym and all gyms; for now say which one this is.
+                Text(
+                    "Tracked per gym. Showing ${locations.nameOf(detail.scope.locationId)} only.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = EmberTheme.colors.textSecondary,
+                )
+            }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 StatTile("Best e1RM", Format.weight(detail.bestE1rmKg, units), unit = Format.unitLabel(units), modifier = Modifier.weight(1f))
                 StatTile("Latest e1RM", Format.weight(detail.latestE1rmKg, units), unit = Format.unitLabel(units), modifier = Modifier.weight(1f))

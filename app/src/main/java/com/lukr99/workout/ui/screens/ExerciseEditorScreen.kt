@@ -57,6 +57,7 @@ import com.lukr99.workout.ui.components.BodyPartChips
 import com.lukr99.workout.ui.components.ExerciseThumbnail
 import com.lukr99.workout.ui.components.FilterChip
 import com.lukr99.workout.ui.components.LocalToast
+import com.lukr99.workout.ui.components.TrackPerGymRow
 import com.lukr99.workout.ui.components.resolvedExerciseImage
 
 /**
@@ -85,6 +86,7 @@ fun ExerciseEditorScreen(
     var instructions by remember { mutableStateOf("") }
     var videoUrl by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
+    var trackPerLocation by remember { mutableStateOf(false) }
     var localImagePath by remember { mutableStateOf<String?>(null) }
     var removedPhotoPath by remember { mutableStateOf<String?>(null) }
     var pendingCapture by remember { mutableStateOf<PhotoCaptureTarget?>(null) }
@@ -103,6 +105,7 @@ fun ExerciseEditorScreen(
             instructions = found.instructions
             videoUrl = found.videoUrl.orEmpty()
             notes = found.notes
+            trackPerLocation = found.trackPerLocation
             localImagePath = found.localImagePath
         }
         loaded = true
@@ -306,6 +309,11 @@ fun ExerciseEditorScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
+            if (category == ExerciseCategory.Strength) {
+                SectionTitle("Gyms")
+                TrackPerGymRow(trackPerLocation, onChange = { trackPerLocation = it })
+            }
+
             Spacer(Modifier.size(4.dp))
             Button(
                 onClick = {
@@ -327,6 +335,10 @@ fun ExerciseEditorScreen(
                             localImagePath = localImagePath,
                             instructions = instructions,
                             videoUrl = videoUrl,
+                            trackPerLocation = trackPerLocation,
+                            // Turning it off by hand also means "don't ask again".
+                            splitPromptMuted = (existing?.splitPromptMuted ?: false) ||
+                                (existing?.trackPerLocation == true && !trackPerLocation),
                         ),
                     ) { result ->
                         if (result.isValid) {

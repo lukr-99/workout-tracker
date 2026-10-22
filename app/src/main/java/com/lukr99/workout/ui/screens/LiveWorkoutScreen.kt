@@ -50,7 +50,12 @@ import com.lukr99.workout.ui.components.InlineHint
 import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.MusicMiniControls
 import com.lukr99.workout.ui.components.PrBanner
+import com.lukr99.workout.ui.components.LocationChip
+import com.lukr99.workout.ui.components.LocationPickerSheet
 import com.lukr99.workout.ui.components.RestTimerBar
+import com.lukr99.workout.ui.components.SplitPromptCard
+import com.lukr99.workout.domain.nameOf
+import com.lukr99.workout.ui.LocationsViewModel
 import com.lukr99.workout.ui.components.RoundIconButton
 import com.lukr99.workout.ui.components.WorkoutNoteRow
 import com.lukr99.workout.ui.theme.EmberTheme
@@ -64,6 +69,7 @@ import com.lukr99.workout.ui.theme.Numbers
 @Composable
 fun LiveWorkoutScreen(
     vm: LiveWorkoutViewModel,
+    locationsVm: LocationsViewModel,
     units: UnitSystem,
     onClose: () -> Unit,
     onEditExercise: (String) -> Unit,
@@ -79,6 +85,9 @@ fun LiveWorkoutScreen(
     val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
 
     val suggestion by vm.suggestion.collectAsState()
+    val splitPrompt by vm.splitPrompt.collectAsState()
+    val locations by locationsVm.locations.collectAsState()
+    var pickingLocation by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { vm.loadActiveIfAny() }
     // Flush the working draft when the app is backgrounded, so unsaved reps/weight survive if the OS
     // reclaims the process while a live session is open.
@@ -152,6 +161,13 @@ fun LiveWorkoutScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                item(key = "location") {
+                    LocationChip(
+                        name = locations.nameOf(session?.locationId),
+                        onClick = { pickingLocation = true },
+                        modifier = Modifier.testTag(LiveWorkoutTags.LOCATION),
+                    )
+                }
                 item(key = "workout-note") {
                     WorkoutNoteRow(
                         note = session?.notes.orEmpty(),
@@ -262,6 +278,19 @@ fun LiveWorkoutScreen(
             Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            splitPrompt?.let { prompt ->
+                SplitPromptCard(
+                    exerciseName = prompt.exerciseName,
+                    detail = "${Format.weightWithUnit(prompt.hereKg, units)} here, ${Format.weightWithUnit(prompt.otherKg, units)} at ${prompt.otherLocationName}",
+                    onTrack = {
+                        vm.acceptSplit()
+                        toast("${prompt.exerciseName} is tracked per gym")
+                    },
+                    onNotNow = { vm.dismissSplit(never = false) },
+                    onNever = { vm.dismissSplit(never = true) },
+                    modifier = Modifier.testTag(LiveWorkoutTags.SPLIT_PROMPT),
+                )
+            }
             if (rest.running) {
                 RestTimerBar(
                     remainingSeconds = rest.remaining,
@@ -280,6 +309,17 @@ fun LiveWorkoutScreen(
                 ) { Text("Discard", color = MaterialTheme.colorScheme.error) }
             }
         }
+    }
+
+    if (pickingLocation) {
+        LocationPickerSheet(
+            title = "Where are you training?",
+            locations = locations,
+            selectedId = session?.locationId,
+            onPick = vm::setLocation,
+            onAddGym = { name -> locationsVm.addGym(name) { vm.setLocation(it.id) } },
+            onDismiss = { pickingLocation = false },
+        )
     }
 
     LiveWorkoutSheets(

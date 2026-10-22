@@ -12,6 +12,11 @@ object AppTags {
     const val DAY_SHEET = "day_sheet"
     const val EXERCISE_PICKER = "exercise_picker"
     const val EXERCISE_PICKER_CLOSE = "exercise_picker_close"
+    const val LOCATION_SHEET = "location_sheet"
+    const val LOCATION_SETUP = "location_setup"
+
+    /** A row in the location picker, by location id, like `location_home`. */
+    fun location(id: String): String = "location_$id"
 
     /** A day tile in Home's week strip, by its date, like `home_day_2026-10-13`. */
     fun homeDay(date: java.time.LocalDate): String = "home_day_$date"

@@ -8,6 +8,16 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 ### Added
 
+- **Locations.** Each workout now has a location: your gyms, Home or Outdoors. A new workout
+  starts at the last one you used; tap "Location" at the top of the workout to change it. A past
+  workout's location is on its detail screen. Manage gyms in Settings, Locations.
+- **Track an exercise per gym.** Cable and machine numbers often differ between gyms. Turn on
+  "Track per gym" in the exercise editor, and last time, records, suggestions and progress only
+  count workouts at the gym you are in. Turn it off to see all gyms together again; nothing is
+  lost. When a set is far from what you lift at another gym, Ember offers to do this for you.
+- **Name your main gym.** After the update, Home asks once where you train and can put all your
+  past workouts there. To fix single workouts, long-press them in History and move them to a
+  location.
 - **Core as a body part.** The exercise editor, quick create and the picker filters now offer Core
   next to Abs. Core exercises colour and light up the body map the same way Abs do.
 

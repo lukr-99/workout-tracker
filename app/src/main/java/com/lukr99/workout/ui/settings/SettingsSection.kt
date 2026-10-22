@@ -4,6 +4,7 @@ package com.lukr99.workout.ui.settings
 enum class SettingsSection(val title: String, val description: String) {
     Appearance("Appearance", "How Ember looks on this phone."),
     Workouts("Workouts", "Units, rest and the exercise catalog."),
+    Locations("Locations", "Gyms and places you train at."),
     HealthConnect("Health Connect", "Share workouts and runs with other health apps."),
     YourData("Your data", "Backups, import and export. Everything stays on this phone."),
     Updates("Updates", "Ember updates from its GitHub releases."),

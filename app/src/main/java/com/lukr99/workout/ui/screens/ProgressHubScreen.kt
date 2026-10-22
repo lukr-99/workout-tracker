@@ -30,6 +30,7 @@ import com.lukr99.workout.ui.run.RunningProgressSection
 fun ProgressHubScreen(
     progressVm: ProgressViewModel,
     historyVm: HistoryViewModel,
+    locationsVm: com.lukr99.workout.ui.LocationsViewModel,
     runVm: RunViewModel,
     units: UnitSystem,
     onOpenExercise: (String) -> Unit,
@@ -50,7 +51,7 @@ fun ProgressHubScreen(
         when (pane) {
             HubPane.Progress -> ProgressScreen(vm = progressVm, units = units, onOpenExercise = onOpenExercise)
             HubPane.Running -> RunningProgressSection(vm = runVm, units = units)
-            HubPane.History -> HistoryScreen(vm = historyVm, units = units, onOpen = onOpenSession)
+            HubPane.History -> HistoryScreen(vm = historyVm, locationsVm = locationsVm, units = units, onOpen = onOpenSession)
         }
     }
 }
