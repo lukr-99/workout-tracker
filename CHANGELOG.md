@@ -6,6 +6,8 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 ## [Unreleased]
 
+## [2.9.0] - 2026-10-22
+
 ### Added
 
 - **Locations.** Each workout now has a location: your gyms, Home or Outdoors. A new workout
@@ -26,7 +28,7 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
   location". An exercise with no workouts at the current gym can still be opened.
 - **Gym suggestion by GPS.** In Settings, Locations, "Set position" saves where a gym or Home is.
   When you start a workout and location is already allowed, Ember takes one quick fix and, if you
-  are within 150 m of a saved place, picks it and shows "near <gym>". Without permission or a fix
+  are within 150 m of a saved place (precise location needed), picks it and shows "near <gym>". Without permission or a fix
   nothing changes. Ember also offers once to save the spot when you train at a gym with no position.
 - **Core as a body part.** The exercise editor, quick create and the picker filters now offer Core
   next to Abs. Core exercises colour and light up the body map the same way Abs do.
@@ -36,8 +38,9 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 - **The exercise picker fills the screen.** Adding or replacing an exercise, in a live workout, a
   template or a past workout, now opens a full-screen list instead of a sheet. Scrolling no longer
   drags the picker closed. Close it with the X or the back gesture.
-- **Backups carry training locations.** The backup format is now 1.12. It saves your locations,
-  each workout's location and which exercises are tracked per gym. Older backups still import.
+- **Backups carry training locations.** The backup format is now 1.13. It saves your locations,
+  each workout's location, which exercises are tracked per gym, and gym notes. Older backups
+  still import.
 
 ## [2.8.0] - 2026-10-14
 

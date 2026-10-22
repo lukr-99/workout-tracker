@@ -9,6 +9,17 @@ object WhatsNew {
 
     val notes: List<WhatsNewNote> = listOf(
         WhatsNewNote(
+            versionCode = 13,
+            title = "New in Ember",
+            lines = listOf(
+                "Pick a gym, Home or Outdoors for each workout. Set it up in Settings, Locations.",
+                "Track an exercise per gym, so each gym keeps its own numbers.",
+                "Gym notes, like \"seat 4\", show on an exercise at that gym.",
+                "Compare gyms on the progress chart with the This gym / All gyms switch.",
+                "Save a gym's position and Ember picks it when you start a workout there.",
+            ),
+        ),
+        WhatsNewNote(
             versionCode = 12,
             title = "New in Ember",
             lines = listOf(
