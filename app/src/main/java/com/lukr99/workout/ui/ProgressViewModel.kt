@@ -7,9 +7,9 @@ import com.lukr99.workout.data.AppContainer
 import com.lukr99.workout.data.WorkoutRepository
 import com.lukr99.workout.data.services.WorkoutDataService
 import com.lukr99.workout.data.services.WorkoutInsightsService
-import com.lukr99.workout.domain.Estimates
 import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.ExerciseFilter
+import com.lukr99.workout.domain.Location
 import com.lukr99.workout.domain.LocationScope
 import com.lukr99.workout.domain.ProgressContext
 import com.lukr99.workout.domain.WorkoutSession
@@ -32,7 +32,8 @@ import kotlinx.coroutines.launch
  * domain `Estimates`/e1RM helpers. No stats math is reimplemented here.
  *
  * An exercise tracked per location shows the numbers from the last used location only (where the
- * next workout starts); shared exercises count every workout.
+ * next workout starts); shared exercises count every workout. Each summary also carries one line
+ * per place ([ExerciseSeries]) for the "All gyms" chart.
  */
 class ProgressViewModel(
     private val repo: WorkoutRepository,
@@ -94,7 +95,7 @@ class ProgressViewModel(
                 overview = overview,
                 context = ProgressContext.of(sessions, System.currentTimeMillis(), java.time.ZoneId.systemDefault()),
                 weeklyVolume = weekly,
-                exercises = buildExerciseSummaries(sessions, scopes()),
+                exercises = buildExerciseSummaries(sessions, scopes(), repo.getLocations()),
                 recovery = insights.recovery(),
             )
         }
@@ -115,7 +116,9 @@ class ProgressViewModel(
     private fun buildExerciseSummaries(
         sessions: List<WorkoutSession>,
         scopeOf: (String) -> LocationScope,
+        locations: List<Location>,
     ): List<ExerciseProgressSummary> {
+        val seriesById = ExerciseSeries.byLocation(sessions, locations)
         data class Acc(
             val name: String,
             val bodyPart: String,
@@ -125,11 +128,9 @@ class ProgressViewModel(
 
         val byExercise = LinkedHashMap<String, Acc>()
         for (session in sessions.sortedBy { it.completedDateUtc ?: it.startedAtUtc }) {
-            val date = session.completedDateUtc ?: session.startedAtUtc
             session.entries.filter { it.entryType == ExerciseCategory.Strength && it.exerciseId.isNotBlank() }
                 .groupBy { it.exerciseId }
                 .forEach { (id, entries) ->
-                    if (!scopeOf(id).includes(session)) return@forEach
                     val sets = entries.flatMap { it.strengthSets }
                     if (sets.isEmpty()) return@forEach
                     val acc = byExercise.getOrPut(id) {
@@ -139,13 +140,9 @@ class ProgressViewModel(
                             category = ExerciseCategory.Strength,
                         )
                     }
-                    acc.points += ProgressPoint(
-                        dateMillis = date,
-                        e1rmKg = Estimates.bestEpley(sets),
-                        volumeKg = Estimates.volume(sets),
-                        reps = Estimates.totalReps(sets),
-                        sessionName = session.name,
-                    )
+                    // An exercise tracked per gym with no workout here yet still gets a row, so its
+                    // "All gyms" chart can be opened.
+                    if (scopeOf(id).includes(session)) acc.points += ProgressPoint.of(session, sets)
                 }
         }
 
@@ -164,6 +161,7 @@ class ProgressViewModel(
                 deltaKg = if (previous != null) latest - previous else 0.0,
                 points = acc.points,
                 scope = scopeOf(id),
+                series = seriesById[id].orEmpty(),
             )
         }.sortedByDescending { it.points.lastOrNull()?.dateMillis ?: 0L }
     }

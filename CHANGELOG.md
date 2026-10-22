@@ -18,6 +18,12 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 - **Name your main gym.** After the update, Home asks once where you train and can put all your
   past workouts there. To fix single workouts, long-press them in History and move them to a
   location.
+- **Gym notes.** Write a note for an exercise at one gym, like "double pulley, seat 4". It shows on
+  the exercise while you log it there. Add it from the exercise's three-dot menu in a workout, or
+  under "Notes by gym" in the exercise editor. Works for shared exercises too.
+- **Progress by gym.** The progress chart of an exercise has a switch. "All gyms" draws one line
+  per gym with a legend, so you can compare them. Workouts without a gym show as "Unknown
+  location". An exercise with no workouts at the current gym can still be opened.
 - **Core as a body part.** The exercise editor, quick create and the picker filters now offer Core
   next to Abs. Core exercises colour and light up the body map the same way Abs do.
 
