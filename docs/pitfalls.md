@@ -4,6 +4,17 @@ Things that went wrong in this repository and took longer to find than to fix. S
 CodePrint's `docs/pitfalls/`, for the error text before debugging something surprising. The format
 is in CodePrint's `docs/pitfalls/README.md`. Newest first.
 
+## A new `Exercise` field is reset whenever the exercise editor saves
+
+- Symptom: a flag such as `trackPerLocation` is set, then turns off again after the exercise is
+  edited and saved for an unrelated reason, like a new note.
+- Cause: the editor saves through `ExerciseDraft` and `WorkoutFactory.exercise`, which build a new
+  `Exercise` from the draft's fields. A field the draft does not carry falls back to its default.
+- Fix: add the field to `ExerciseDraft`, pass it in `WorkoutFactory`, and fill it from the loaded
+  exercise in `ExerciseEditorScreen`.
+- Closed off by: `ExerciseLocationCreationTest`.
+- Seen: training locations, 2026-10-22, caught in review before it shipped.
+
 ## The update check failed with `NetworkOnMainThreadException` (2.6.0)
 
 - Symptom: Settings > Updates > "Check now" showed "Check failed: NetworkOnMainThreadException".

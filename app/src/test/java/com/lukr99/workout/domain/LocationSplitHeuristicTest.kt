@@ -99,6 +99,41 @@ class LocationSplitHeuristicTest {
     }
 
     @Test
+    fun inTheLiveWorkoutOnlySetsMarkedDoneCount() {
+        // Last time's 15 kg was prefilled at the other gym; only the first set is done, at 59 kg.
+        val prefilled = WorkoutSession(
+            id = "live",
+            startedAtUtc = 9_000,
+            status = WorkoutSessionStatus.Active,
+            locationId = B,
+            entries = listOf(
+                WorkoutEntry(
+                    exerciseId = FLY,
+                    strengthSets = listOf(
+                        StrengthSet(reps = 10, weightKg = 59.0, performedAtUtc = 9_100),
+                        StrengthSet(reps = 10, weightKg = 75.0),
+                    ),
+                ),
+            ),
+        )
+        val history = listOf(workout(1, A, 15.0), workout(2, A, 15.0))
+        assertEquals(59.0, heuristic.evaluate(history + prefilled, FLY, B)!!.hereTopKg, 0.0)
+
+        val nothingDone = prefilled.copy(entries = prefilled.entries.map { e -> e.copy(strengthSets = e.strengthSets.map { it.copy(performedAtUtc = null) }) })
+        assertNull(heuristic.evaluate(history + nothingDone, FLY, B))
+    }
+
+    @Test
+    fun onlySharedStrengthExercisesThatWereNotMutedAreAsked() {
+        val sessions = listOf(workout(1, A, 15.0), workout(2, A, 15.0), workout(3, B, 59.0))
+        val fly = Exercise(id = FLY, name = "Cable Fly")
+        assertNotNull(heuristic.evaluateFor(fly, sessions, B))
+        assertNull(heuristic.evaluateFor(fly.copy(trackPerLocation = true), sessions, B))
+        assertNull(heuristic.evaluateFor(fly.copy(splitPromptMuted = true), sessions, B))
+        assertNull(heuristic.evaluateFor(fly.copy(category = ExerciseCategory.Cardio), sessions, B))
+    }
+
+    @Test
     fun noLocationMeansNoQuestion() {
         val sessions = listOf(workout(1, A, 15.0), workout(2, A, 15.0), workout(3, null, 59.0))
         assertNull(heuristic.evaluate(sessions, FLY, null))
@@ -123,8 +158,8 @@ class LocationSplitHeuristicTest {
     ): WorkoutSession {
         val sets = buildList {
             warmUpKg?.let { add(StrengthSet(reps = 5, weightKg = it, tags = setOf(SetTag.Warmup))) }
-            add(StrengthSet(reps = 10, weightKg = kg))
-            add(StrengthSet(reps = 10, weightKg = kg * 0.9))
+            add(StrengthSet(reps = 10, weightKg = kg, performedAtUtc = n * 1_000))
+            add(StrengthSet(reps = 10, weightKg = kg * 0.9, performedAtUtc = n * 1_000))
         }
         return WorkoutSession(
             id = "w$n",

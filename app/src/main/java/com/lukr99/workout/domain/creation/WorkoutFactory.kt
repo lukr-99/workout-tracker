@@ -74,6 +74,8 @@ class WorkoutFactory(
                 instructions = draft.instructions.lines().map(String::trim)
                     .filter(String::isNotBlank).joinToString("\n"),
                 videoUrl = GuideLink.normalize(draft.videoUrl),
+                trackPerLocation = draft.trackPerLocation,
+                splitPromptMuted = draft.splitPromptMuted,
             ),
             issues = issues,
         )
