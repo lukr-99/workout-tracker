@@ -18,6 +18,10 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 - **Name your main gym.** After the update, Home asks once where you train and can put all your
   past workouts there. To fix single workouts, long-press them in History and move them to a
   location.
+- **Gym suggestion by GPS.** In Settings, Locations, "Set position" saves where a gym or Home is.
+  When you start a workout and location is already allowed, Ember takes one quick fix and, if you
+  are within 150 m of a saved place, picks it and shows "near <gym>". Without permission or a fix
+  nothing changes. Ember also offers once to save the spot when you train at a gym with no position.
 - **Core as a body part.** The exercise editor, quick create and the picker filters now offer Core
   next to Abs. Core exercises colour and light up the body map the same way Abs do.
 

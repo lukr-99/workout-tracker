@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.lukr99.workout.data.AppContainer
 import com.lukr99.workout.data.WorkoutRepository
+import com.lukr99.workout.data.location.LocationSuggester
+import com.lukr99.workout.data.location.NoPositionProvider
 import com.lukr99.workout.domain.Location
 import com.lukr99.workout.domain.LocationKind
 import com.lukr99.workout.settings.DevicePrefs
@@ -21,6 +23,7 @@ import kotlinx.coroutines.launch
 class LocationsViewModel(
     private val repo: WorkoutRepository,
     private val prefs: DevicePrefs,
+    private val suggester: LocationSuggester = LocationSuggester(NoPositionProvider),
 ) : ViewModel() {
 
     /** Every location, archived ones included. */
@@ -64,6 +67,25 @@ class LocationsViewModel(
         }
     }
 
+    /** Whether the app already has location permission. Settings asks for it; nothing else does. */
+    fun hasLocationPermission(): Boolean = suggester.hasPermission()
+
+    /**
+     * Saves where the phone is now as the position of [location] (a gym or Home). Reports whether a
+     * fix came in time. The suggestion at workout start matches against these positions.
+     */
+    fun setPositionHere(location: Location, onDone: (Boolean) -> Unit) {
+        if (location.kind == LocationKind.Outdoors) return onDone(false)
+        viewModelScope.launch {
+            val fix = suggester.currentFix()
+            if (fix != null) {
+                repo.saveLocation(location.copy(latitude = fix.latitude, longitude = fix.longitude))
+                prefs.markPositionOfferAnswered(location.id)
+            }
+            onDone(fix != null)
+        }
+    }
+
     /** "Not now" on the setup card. Locations stay in Settings. */
     fun dismissSetup() {
         viewModelScope.launch { prefs.dismissLocationSetup() }
@@ -73,7 +95,7 @@ class LocationsViewModel(
         fun factory(container: AppContainer): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                LocationsViewModel(container.repository, container.devicePrefs) as T
+                LocationsViewModel(container.repository, container.devicePrefs, container.locationSuggester) as T
         }
     }
 }

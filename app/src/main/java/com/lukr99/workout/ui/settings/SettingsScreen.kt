@@ -226,6 +226,8 @@ fun SettingsScreen(
                             onAddGym = { locationsVm.addGym(it) },
                             onRename = locationsVm::rename,
                             onArchive = { location, archived -> locationsVm.setArchived(location.id, archived) },
+                            hasLocationPermission = locationsVm::hasLocationPermission,
+                            onSetPosition = locationsVm::setPositionHere,
                         )
                         SettingsSection.HealthConnect -> {
                             val status = health.error ?: healthAvailabilityDetail(health.availability, health.connected)

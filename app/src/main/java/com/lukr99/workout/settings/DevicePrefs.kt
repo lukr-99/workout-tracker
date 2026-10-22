@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -45,7 +46,16 @@ class DevicePrefs(private val context: Context) {
         context.devicePrefsDataStore.edit { it[LastUpdateCheck] = atUtc }
     }
 
+    /** Places where the "save this spot?" offer was already answered, so it is made once per place. */
+    val positionOfferAnswered: Flow<Set<String>> =
+        context.devicePrefsDataStore.data.map { it[PositionOfferAnswered] ?: emptySet() }
+
+    suspend fun markPositionOfferAnswered(locationId: String) {
+        context.devicePrefsDataStore.edit { it[PositionOfferAnswered] = (it[PositionOfferAnswered] ?: emptySet()) + locationId }
+    }
+
     private companion object {
+        val PositionOfferAnswered = stringSetPreferencesKey("position_offer_answered")
         val HealthAutoSend = booleanPreferencesKey("health_auto_send")
         val UpdateAutoCheck = booleanPreferencesKey("update_auto_check")
         val LastUpdateCheck = longPreferencesKey("last_update_check_utc")

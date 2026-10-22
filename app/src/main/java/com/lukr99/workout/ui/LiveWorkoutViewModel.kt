@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.lukr99.workout.data.AppContainer
 import com.lukr99.workout.data.WorkoutRepository
+import com.lukr99.workout.data.location.LocationSuggester
+import com.lukr99.workout.data.location.NoPositionProvider
 import com.lukr99.workout.data.services.WorkoutInsightsService
 import com.lukr99.workout.domain.Estimates
 import com.lukr99.workout.domain.Exercise
@@ -16,6 +18,9 @@ import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutSessionStatus
 import com.lukr99.workout.domain.WorkoutTemplate
+import com.lukr99.workout.domain.positionOfferFor
+import com.lukr99.workout.domain.startLocationSwitch
+import com.lukr99.workout.settings.DevicePrefs
 import com.lukr99.workout.domain.completedAt
 import com.lukr99.workout.domain.effectiveTags
 import com.lukr99.workout.domain.repeating
@@ -44,6 +49,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
@@ -62,6 +68,8 @@ class LiveWorkoutViewModel(
     private val repo: WorkoutRepository,
     private val settings: com.lukr99.workout.settings.SettingsStore,
     private val insights: WorkoutInsightsService,
+    private val suggester: LocationSuggester = LocationSuggester(NoPositionProvider),
+    private val prefs: DevicePrefs? = null,
 ) : ViewModel() {
 
     /** Live snapshot of the user's default rest, refreshed from DataStore. */
@@ -138,10 +146,66 @@ class LiveWorkoutViewModel(
     /** Ensure a live session exists (resumes an existing one) and load it into the draft. */
     fun startOrResume(templateId: String? = null) {
         viewModelScope.launch {
+            val resuming = repo.getActiveSession() != null
             val session = repo.createWorkoutSession(templateId = templateId)
             draftState.value = session
             doneSetIdsState.value = session.setIdsMarkedDone
+            if (!resuming) suggestLocation()
         }
+    }
+
+    /** "near Brno gym", shown beside the location chip when a fix matched a saved place. */
+    private val nearHintState = MutableStateFlow<String?>(null)
+    val nearHint: StateFlow<String?> = nearHintState.asStateFlow()
+
+    /** A gym or Home with no position yet, offered once: "Save this spot as <place>?". */
+    private val positionOfferState = MutableStateFlow<PositionOffer?>(null)
+    val positionOffer: StateFlow<PositionOffer?> = positionOfferState.asStateFlow()
+
+    private var locationPickedByHand = false
+
+    /**
+     * One coarse fix after a new workout starts. The workout is already running at the last used
+     * location, so this never waits on anything: a match switches the chip to that place unless the
+     * owner picked one first, and no fix, no permission or no match changes nothing.
+     */
+    private fun suggestLocation() {
+        locationPickedByHand = false
+        nearHintState.value = null
+        positionOfferState.value = null
+        viewModelScope.launch {
+            val locations = repo.getLocations()
+            val result = suggester.suggest(locations) ?: return@launch
+            val session = draftState.value ?: return@launch
+            result.near?.let { near ->
+                nearHintState.value = near.name
+                startLocationSwitch(session.locationId, locationPickedByHand, near)?.let { id ->
+                    mutate { it.copy(locationId = id) }
+                }
+            }
+            val answered = prefs?.positionOfferAnswered?.first().orEmpty()
+            val place = locations.firstOrNull { it.id == (draftState.value?.locationId) }
+            if (!locationPickedByHand) {
+                positionOfferFor(place, result.near, answered)?.let { positionOfferState.value = PositionOffer(it, result.fix) }
+            }
+        }
+    }
+
+    /** Save the fix from workout start as the position of the offered place. */
+    fun acceptPositionOffer() {
+        val offer = positionOfferState.value ?: return
+        positionOfferState.value = null
+        viewModelScope.launch {
+            repo.saveLocation(offer.location.copy(latitude = offer.fix.latitude, longitude = offer.fix.longitude))
+            prefs?.markPositionOfferAnswered(offer.location.id)
+            nearHintState.value = offer.location.name
+        }
+    }
+
+    fun dismissPositionOffer() {
+        val offer = positionOfferState.value ?: return
+        positionOfferState.value = null
+        viewModelScope.launch { prefs?.markPositionOfferAnswered(offer.location.id) }
     }
 
     fun loadActiveIfAny() {
@@ -165,7 +229,12 @@ class LiveWorkoutViewModel(
     fun rename(name: String) = mutate(persist = false) { it.copy(name = name) }
 
     /** Moves the live workout to another location (null is "Unknown location"). */
-    fun setLocation(locationId: String?) = mutate { it.copy(locationId = locationId) }
+    fun setLocation(locationId: String?) {
+        locationPickedByHand = true
+        nearHintState.value = null
+        positionOfferState.value = null
+        mutate { it.copy(locationId = locationId) }
+    }
 
     // --- Notes (saved right away; each comes from an explicit Save in the note sheet) ----------
 
@@ -440,7 +509,9 @@ class LiveWorkoutViewModel(
         fun factory(container: AppContainer): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                LiveWorkoutViewModel(container.repository, container.settings, container.insights) as T
+                LiveWorkoutViewModel(
+                    container.repository, container.settings, container.insights, container.locationSuggester, container.devicePrefs,
+                ) as T
         }
     }
 }
