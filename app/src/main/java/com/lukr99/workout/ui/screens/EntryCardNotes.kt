@@ -8,6 +8,9 @@ data class EntryCardNotes(
     val exerciseNote: String = "",
     val previous: PreviousEntryNote? = null,
     val hasGuide: Boolean = false,
+    /** The machine note for this exercise at the workout's gym, and the gym it belongs to. */
+    val locationNote: String = "",
+    val locationName: String? = null,
     /** The sets from the newest finished workout with this exercise, for the Previous column. */
     val lastTimeSets: List<StrengthSet> = emptyList(),
 )

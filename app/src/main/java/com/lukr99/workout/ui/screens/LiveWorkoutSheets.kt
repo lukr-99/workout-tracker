@@ -6,6 +6,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import com.lukr99.workout.domain.BodyParts
 import com.lukr99.workout.domain.Exercise
+import com.lukr99.workout.domain.Location
+import com.lukr99.workout.domain.nameOf
 import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutTemplate
@@ -16,6 +18,7 @@ import com.lukr99.workout.ui.components.ConfirmDialog
 import com.lukr99.workout.ui.components.ExerciseGuideSheet
 import com.lukr99.workout.ui.components.ExercisePickerScreen
 import com.lukr99.workout.ui.components.Format
+import com.lukr99.workout.ui.components.NoteEditorSheet
 import com.lukr99.workout.ui.components.QuickCreateSheet
 import com.lukr99.workout.ui.components.SetOptionsSheet
 
@@ -29,6 +32,8 @@ internal fun LiveWorkoutSheets(
     units: UnitSystem,
     exercises: List<Exercise>,
     catalog: Map<String, Exercise>,
+    locations: List<Location>,
+    locationNotes: Map<String, String>,
     onSheet: (LiveSheet?) -> Unit,
     onEditExercise: (String) -> Unit,
     onOpenHistory: (String) -> Unit,
@@ -107,6 +112,9 @@ internal fun LiveWorkoutSheets(
                 onMoveUp = { vm.moveEntry(entry.id, up = true) },
                 onMoveDown = { vm.moveEntry(entry.id, up = false) },
                 onEditNote = { onSheet(LiveSheet.Note(NoteTarget.Entry(entry.id))) },
+                onEditLocationNote = session?.locationId?.let { { onSheet(LiveSheet.LocationNote(entry.id)) } },
+                locationName = locations.nameOf(session?.locationId),
+                hasLocationNote = locationNotes[entry.exerciseId].orEmpty().isNotBlank(),
                 onShowGuide = { catalogExercise?.let { onSheet(LiveSheet.Guide(it)) } },
                 onRemove = { vm.removeEntry(entry.id) },
                 onDismiss = close,
@@ -133,6 +141,17 @@ internal fun LiveWorkoutSheets(
                 onSaveWorkout = vm::setWorkoutNote,
                 onSaveEntry = vm::setEntryNote,
                 onSaveSet = vm::setSetNote,
+                onDismiss = close,
+            )
+        }
+        is LiveSheet.LocationNote -> {
+            val entry = entries.firstOrNull { it.id == sheet.entryId } ?: return close()
+            NoteEditorSheet(
+                title = "Gym note · ${entry.exerciseSnapshotName}",
+                initial = locationNotes[entry.exerciseId].orEmpty(),
+                hint = "Setup for ${locations.nameOf(session?.locationId)} only, like \"double pulley, seat 4\". It shows on this exercise every time you train here.",
+                placeholder = "Double pulley, seat 4",
+                onSave = { vm.setLocationNote(entry.exerciseId, it) },
                 onDismiss = close,
             )
         }

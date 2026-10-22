@@ -57,6 +57,7 @@ import com.lukr99.workout.ui.components.BodyPartChips
 import com.lukr99.workout.ui.components.ExerciseThumbnail
 import com.lukr99.workout.ui.components.FilterChip
 import com.lukr99.workout.ui.components.LocalToast
+import com.lukr99.workout.ui.components.GymNotesSection
 import com.lukr99.workout.ui.components.TrackPerGymRow
 import com.lukr99.workout.ui.components.resolvedExerciseImage
 
@@ -312,6 +313,16 @@ fun ExerciseEditorScreen(
             if (category == ExerciseCategory.Strength) {
                 SectionTitle("Gyms")
                 TrackPerGymRow(trackPerLocation, onChange = { trackPerLocation = it })
+            }
+
+            if (exerciseId != null) {
+                val gyms by vm.locations.collectAsState()
+                val gymNotes by remember(exerciseId) { vm.locationNotes(exerciseId) }.collectAsState(emptyMap())
+                GymNotesSection(
+                    locations = gyms,
+                    notes = gymNotes,
+                    onSave = { locationId, text -> vm.saveLocationNote(exerciseId, locationId, text) },
+                )
             }
 
             Spacer(Modifier.size(4.dp))
