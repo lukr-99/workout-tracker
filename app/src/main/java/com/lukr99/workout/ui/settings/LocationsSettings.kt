@@ -50,8 +50,13 @@ internal fun LocationsSettings(
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
         val place = pendingPermission
         pendingPermission = null
-        if (place != null && result.values.any { it }) capture(place)
-        else if (place != null) toast("Location permission is needed to save a position.")
+        when {
+            place == null -> Unit
+            result[Manifest.permission.ACCESS_FINE_LOCATION] == true -> capture(place)
+            result[Manifest.permission.ACCESS_COARSE_LOCATION] == true ->
+                toast("Saving a position needs precise location. Turn on Precise for Ember in the phone's settings.")
+            else -> toast("Location permission is needed to save a position.")
+        }
     }
 
     var adding by remember { mutableStateOf(false) }

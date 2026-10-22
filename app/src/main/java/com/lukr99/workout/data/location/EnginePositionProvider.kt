@@ -17,29 +17,39 @@ import kotlin.coroutines.resume
 
 /**
  * One-shot fix from the same location engine the run mode uses. It registers for updates, takes the
- * first fix, and unregisters, so nothing keeps listening. A last-known fix younger than
- * [MAX_AGE_MS] counts, since a gym does not move. No background location is involved.
+ * first good enough fix, and unregisters, so nothing keeps listening. No background location is
+ * involved. Only precise location counts: an approximate fix is blurred by about 2 km, which is
+ * useless for a 150 m match.
+ *
+ * [FixQuality.Balanced] (workout start) also takes a last-known fix younger than [MAX_AGE_MS], since
+ * a gym does not move, but only one at least as accurate as [BALANCED_MAX_ACCURACY_M].
+ * [FixQuality.High] (saving a place) ignores last-known fixes, stops early on a fix within
+ * [HIGH_GOOD_ACCURACY_M], and otherwise keeps the best fresh fix within [HIGH_MAX_ACCURACY_M].
  */
 class EnginePositionProvider(private val context: Context) : PositionProvider {
 
-    override fun hasPermission(): Boolean = listOf(
-        Manifest.permission.ACCESS_FINE_LOCATION,
-        Manifest.permission.ACCESS_COARSE_LOCATION,
-    ).any { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }
+    override fun hasPermission(): Boolean =
+        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
     @SuppressLint("MissingPermission") // Checked by hasPermission() first.
     override suspend fun currentPosition(quality: FixQuality, timeoutMs: Long): GeoPoint? {
         if (!hasPermission()) return null
         val engine = LocationEngineDefault.getDefaultLocationEngine(context.applicationContext)
+        val maxAccuracy = if (quality == FixQuality.High) HIGH_MAX_ACCURACY_M else BALANCED_MAX_ACCURACY_M
+        val goodAccuracy = if (quality == FixQuality.High) HIGH_GOOD_ACCURACY_M else BALANCED_MAX_ACCURACY_M
+        val startedAt = System.currentTimeMillis()
+        var best: android.location.Location? = null
         var callback: LocationEngineCallback<LocationEngineResult>? = null
         return try {
-            withTimeoutOrNull(timeoutMs) {
+            val good = withTimeoutOrNull(timeoutMs) {
                 suspendCancellableCoroutine { cont ->
                     val cb = object : LocationEngineCallback<LocationEngineResult> {
                         override fun onSuccess(result: LocationEngineResult?) {
                             val fix = result?.lastLocation ?: return
-                            if (System.currentTimeMillis() - fix.time > MAX_AGE_MS) return
-                            if (cont.isActive) cont.resume(GeoPoint(fix.latitude, fix.longitude))
+                            val oldest = if (quality == FixQuality.High) startedAt else System.currentTimeMillis() - MAX_AGE_MS
+                            if (fix.time < oldest || !fix.hasAccuracy() || fix.accuracy > maxAccuracy) return
+                            if (best.let { it == null || fix.accuracy < it.accuracy }) best = fix
+                            if (fix.accuracy <= goodAccuracy && cont.isActive) cont.resume(fix)
                         }
 
                         override fun onFailure(exception: Exception) = Unit
@@ -51,9 +61,10 @@ class EnginePositionProvider(private val context: Context) : PositionProvider {
                     }
                     val request = LocationEngineRequest.Builder(INTERVAL_MS).setPriority(priority).setMaxWaitTime(timeoutMs).build()
                     runCatching { engine.requestLocationUpdates(request, cb, Looper.getMainLooper()) }
-                    runCatching { engine.getLastLocation(cb) }
+                    if (quality == FixQuality.Balanced) runCatching { engine.getLastLocation(cb) }
                 }
             }
+            (good ?: best)?.let { GeoPoint(it.latitude, it.longitude) }
         } finally {
             callback?.let { cb -> runCatching { engine.removeLocationUpdates(cb) } }
         }
@@ -62,5 +73,8 @@ class EnginePositionProvider(private val context: Context) : PositionProvider {
     private companion object {
         const val INTERVAL_MS = 1_000L
         const val MAX_AGE_MS = 2 * 60_000L
+        const val BALANCED_MAX_ACCURACY_M = 150f
+        const val HIGH_GOOD_ACCURACY_M = 25f
+        const val HIGH_MAX_ACCURACY_M = 100f
     }
 }

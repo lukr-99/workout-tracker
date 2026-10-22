@@ -163,6 +163,7 @@ class LiveWorkoutViewModel(
     val positionOffer: StateFlow<PositionOffer?> = positionOfferState.asStateFlow()
 
     private var locationPickedByHand = false
+    private var suggestionJob: Job? = null
 
     /**
      * One coarse fix after a new workout starts. The workout is already running at the last used
@@ -173,12 +174,13 @@ class LiveWorkoutViewModel(
         locationPickedByHand = false
         nearHintState.value = null
         positionOfferState.value = null
-        viewModelScope.launch {
+        suggestionJob?.cancel()
+        suggestionJob = viewModelScope.launch {
             val locations = repo.getLocations()
             val result = suggester.suggest(locations) ?: return@launch
             val session = draftState.value ?: return@launch
             result.near?.let { near ->
-                nearHintState.value = near.name
+                if (!locationPickedByHand) nearHintState.value = near.name
                 startLocationSwitch(session.locationId, locationPickedByHand, near)?.let { id ->
                     mutate { it.copy(locationId = id) }
                 }
@@ -196,9 +198,11 @@ class LiveWorkoutViewModel(
         val offer = positionOfferState.value ?: return
         positionOfferState.value = null
         viewModelScope.launch {
-            repo.saveLocation(offer.location.copy(latitude = offer.fix.latitude, longitude = offer.fix.longitude))
+            // Read it again so a rename or archive made since the workout started is kept.
+            val place = repo.getLocation(offer.location.id) ?: return@launch
+            repo.saveLocation(place.copy(latitude = offer.fix.latitude, longitude = offer.fix.longitude))
             prefs?.markPositionOfferAnswered(offer.location.id)
-            nearHintState.value = offer.location.name
+            nearHintState.value = place.name
         }
     }
 
@@ -478,6 +482,9 @@ class LiveWorkoutViewModel(
         doneSetIdsState.value = emptySet()
         splitPromptState.value = null
         splitPrompts.reset()
+        suggestionJob?.cancel()
+        nearHintState.value = null
+        positionOfferState.value = null
         skipRest()
     }
 
