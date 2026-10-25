@@ -20,6 +20,7 @@ import com.lukr99.workout.data.music.SpotifyController
 import com.lukr99.workout.data.music.StubSpotifyController
 import com.lukr99.workout.data.routing.OsrmRoutingClient
 import com.lukr99.workout.data.routing.RoutingClient
+import com.lukr99.workout.data.run.RoomRunRepository
 import com.lukr99.workout.data.run.RunRepository
 import com.lukr99.workout.data.run.ShareCardRenderer
 import com.lukr99.workout.data.services.WorkoutDataService
@@ -48,12 +49,12 @@ import com.lukr99.workout.update.VerifiedDownloader
  */
 class AppContainer(context: Context) {
     private val db: WorkoutDb = WorkoutDb.build(context)
-    val repository: WorkoutRepository = WorkoutRepository(
+    val repository: WorkoutRepository = RoomWorkoutRepository(
         db.workoutDao(),
         RoomTransactionRunner(db),
     )
     /** Run Mode persistence (v5 tables). Additive — lazily built so strength flows are unaffected. */
-    val runRepository: RunRepository by lazy { RunRepository(db.runDao()) }
+    val runRepository: RunRepository by lazy { RoomRunRepository(db.runDao()) }
 
     /** Process-wide live-run brain + crash-buffer persistence (R1). One instance per process. */
     val runSessionController: RunSessionController by lazy {

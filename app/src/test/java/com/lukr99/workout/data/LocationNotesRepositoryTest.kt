@@ -37,7 +37,7 @@ class LocationNotesRepositoryTest {
         val direct = Executor { it.run() }
         db = Room.inMemoryDatabaseBuilder(context, WorkoutDb::class.java)
             .allowMainThreadQueries().setQueryExecutor(direct).setTransactionExecutor(direct).build()
-        repo = WorkoutRepository(db.workoutDao(), RoomTransactionRunner(db))
+        repo = RoomWorkoutRepository(db.workoutDao(), RoomTransactionRunner(db))
         repo.ensureSeeded()
         // One shared exercise and one tracked per gym: notes must work for both.
         repo.saveExercise(Exercise(id = FLY, name = "Cable Fly", trackPerLocation = true))

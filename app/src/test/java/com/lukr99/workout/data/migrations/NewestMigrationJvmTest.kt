@@ -1,5 +1,6 @@
 package com.lukr99.workout.data.migrations
 
+import com.lukr99.workout.data.RoomWorkoutRepository
 import android.app.Application
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
@@ -74,7 +75,7 @@ class NewestMigrationJvmTest {
             .allowMainThreadQueries()
             .build()
         try {
-            val repo = WorkoutRepository(room.workoutDao(), RoomTransactionRunner(room))
+            val repo = RoomWorkoutRepository(room.workoutDao(), RoomTransactionRunner(room))
             val exercise = repo.getExercise("ex7")!!
             assertEquals("Seat 4", exercise.notes)
             assertEquals(listOf("Triceps"), exercise.secondaryBodyParts)
@@ -113,7 +114,7 @@ class NewestMigrationJvmTest {
             .allowMainThreadQueries()
             .build()
         try {
-            val repo = WorkoutRepository(room.workoutDao(), RoomTransactionRunner(room))
+            val repo = RoomWorkoutRepository(room.workoutDao(), RoomTransactionRunner(room))
             val template = repo.getTemplate("t8")!!
             assertEquals("Heavy first", template.notes)
             val exercise = template.exercises.single()
@@ -170,7 +171,7 @@ class NewestMigrationJvmTest {
             .allowMainThreadQueries()
             .build()
         try {
-            val repo = WorkoutRepository(room.workoutDao(), RoomTransactionRunner(room))
+            val repo = RoomWorkoutRepository(room.workoutDao(), RoomTransactionRunner(room))
             assertEquals(listOf("home", "outdoors"), repo.getLocations().map { it.id })
             assertNull(repo.getSession("s9")!!.locationId)
             assertEquals(false, repo.getExercise("fly")!!.trackPerLocation)
@@ -215,7 +216,7 @@ class NewestMigrationJvmTest {
             .allowMainThreadQueries()
             .build()
         try {
-            val repo = WorkoutRepository(room.workoutDao(), RoomTransactionRunner(room))
+            val repo = RoomWorkoutRepository(room.workoutDao(), RoomTransactionRunner(room))
             // Nothing that was there changed.
             assertEquals("brno", repo.getSession("s10")!!.locationId)
             assertEquals(true, repo.getExercise("fly")!!.trackPerLocation)

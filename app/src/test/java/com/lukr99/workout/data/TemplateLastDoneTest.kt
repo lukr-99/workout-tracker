@@ -28,7 +28,7 @@ class TemplateLastDoneTest {
         val direct = Executor { it.run() }
         val db = Room.inMemoryDatabaseBuilder(context, WorkoutDb::class.java)
             .allowMainThreadQueries().setQueryExecutor(direct).setTransactionExecutor(direct).build()
-        val repo = WorkoutRepository(db.workoutDao(), RoomTransactionRunner(db))
+        val repo = RoomWorkoutRepository(db.workoutDao(), RoomTransactionRunner(db))
 
         fun workout(template: String?, at: Long, status: WorkoutSessionStatus = WorkoutSessionStatus.Completed) = WorkoutSession(
             templateId = template,
