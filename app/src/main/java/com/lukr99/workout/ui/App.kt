@@ -77,13 +77,30 @@ fun App(container: AppContainer) {
     val nav = remember { Navigator() }
     val toast = rememberToastState()
 
-    val homeVm: HomeViewModel = viewModel(factory = HomeViewModel.factory(container))
-    val historyVm: HistoryViewModel = viewModel(factory = HistoryViewModel.factory(container))
-    val progressVm: ProgressViewModel = viewModel(factory = ProgressViewModel.factory(container))
-    val settingsVm: SettingsViewModel = viewModel(factory = SettingsViewModel.factory(container))
-    val libraryVm: LibraryViewModel = viewModel(factory = LibraryViewModel.factory(container))
-    val liveVm: LiveWorkoutViewModel = viewModel(factory = LiveWorkoutViewModel.factory(container))
-    val locationsVm: LocationsViewModel = viewModel(factory = LocationsViewModel.factory(container))
+    val homeVm: HomeViewModel = viewModel(factory = HomeViewModel.factory(container.repository, container.runRepository, container.whatsNew))
+    val historyVm: HistoryViewModel = viewModel(factory = HistoryViewModel.factory(container.repository))
+    val progressVm: ProgressViewModel = viewModel(factory = ProgressViewModel.factory(container.repository, container.workoutData, container.insights))
+    val settingsVm: SettingsViewModel = viewModel(
+        factory = SettingsViewModel.factory(
+            container.settings,
+            container.wgerSync,
+            container.healthConnect,
+            container.backup,
+            container.devicePrefs,
+            container.runRepository,
+        ),
+    )
+    val libraryVm: LibraryViewModel = viewModel(factory = LibraryViewModel.factory(container.repository, container.workoutData, container.exercisePhotos))
+    val liveVm: LiveWorkoutViewModel = viewModel(
+        factory = LiveWorkoutViewModel.factory(
+            container.repository,
+            container.settings,
+            container.insights,
+            container.locationSuggester,
+            container.devicePrefs,
+        ),
+    )
+    val locationsVm: LocationsViewModel = viewModel(factory = LocationsViewModel.factory(container.repository, container.devicePrefs, container.locationSuggester))
     val locationSetup by locationsVm.setup.collectAsState()
     val locations by locationsVm.locations.collectAsState()
     val runVm: RunViewModel = viewModel(factory = RunViewModel.factory(container))

@@ -2,8 +2,9 @@ package com.lukr99.workout.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewModelScope
-import com.lukr99.workout.data.AppContainer
 import com.lukr99.workout.data.WorkoutRepository
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.WorkoutEntry
@@ -72,10 +73,9 @@ class HistoryViewModel(private val repo: WorkoutRepository) : ViewModel() {
     }
 
     companion object {
-        fun factory(container: AppContainer): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                HistoryViewModel(container.repository) as T
-        }
+        fun factory(repo: WorkoutRepository): ViewModelProvider.Factory =
+            viewModelFactory {
+                initializer { HistoryViewModel(repo) }
+            }
     }
 }

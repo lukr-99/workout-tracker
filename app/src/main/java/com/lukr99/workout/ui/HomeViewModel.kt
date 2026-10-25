@@ -6,8 +6,9 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewModelScope
-import com.lukr99.workout.data.AppContainer
 import com.lukr99.workout.data.WorkoutRepository
 import com.lukr99.workout.data.run.RunRepository
 import com.lukr99.workout.domain.DashboardSnapshot
@@ -102,10 +103,9 @@ class HomeViewModel(
     companion object {
         const val RECENT_ROWS = 5
 
-        fun factory(container: AppContainer): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                HomeViewModel(container.repository, container.runRepository, container.whatsNew) as T
-        }
+        fun factory(repo: WorkoutRepository, runs: RunRepository, whatsNew: WhatsNewGate): ViewModelProvider.Factory =
+            viewModelFactory {
+                initializer { HomeViewModel(repo, runs, whatsNew) }
+            }
     }
 }

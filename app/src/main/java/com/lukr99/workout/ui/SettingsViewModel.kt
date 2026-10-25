@@ -3,8 +3,9 @@ package com.lukr99.workout.ui
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewModelScope
-import com.lukr99.workout.data.AppContainer
 import com.lukr99.workout.data.backup.BackupScheduler
 import com.lukr99.workout.data.backup.BackupState
 import com.lukr99.workout.data.health.HealthConnectAvailability
@@ -234,18 +235,16 @@ class SettingsViewModel(
     )
 
     companion object {
-        fun factory(container: AppContainer): ViewModelProvider.Factory =
-            object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                    SettingsViewModel(
-                        container.settings,
-                        container.wgerSync,
-                        container.healthConnect,
-                        container.backup,
-                        container.devicePrefs,
-                        container.runRepository,
-                    ) as T
+        fun factory(
+            store: SettingsStore,
+            wgerSync: WgerSyncService,
+            healthConnect: HealthConnectService,
+            backup: BackupScheduler,
+            devicePrefs: DevicePrefs,
+            runs: RunRepository,
+        ): ViewModelProvider.Factory =
+            viewModelFactory {
+                initializer { SettingsViewModel(store, wgerSync, healthConnect, backup, devicePrefs, runs) }
             }
     }
 }

@@ -4,6 +4,8 @@ import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewModelScope
 import com.lukr99.workout.data.transfer.AndroidDocumentGateway
 import com.lukr99.workout.data.transfer.CsvExportOptions
@@ -109,14 +111,9 @@ class DataTransferViewModel(
     }
 
     companion object {
-        fun factory(
-            transfer: DataTransferService,
-            documents: AndroidDocumentGateway,
-            eraser: UserDataEraser,
-        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                DataTransferViewModel(transfer, documents, eraser) as T
-        }
+        fun factory(transfer: DataTransferService, documents: AndroidDocumentGateway, eraser: UserDataEraser): ViewModelProvider.Factory =
+            viewModelFactory {
+                initializer { DataTransferViewModel(transfer, documents, eraser) }
+            }
     }
 }

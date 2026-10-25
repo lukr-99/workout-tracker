@@ -2,8 +2,9 @@ package com.lukr99.workout.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewModelScope
-import com.lukr99.workout.data.AppContainer
 import com.lukr99.workout.data.WorkoutRepository
 import com.lukr99.workout.data.location.LocationSuggester
 import com.lukr99.workout.data.location.NoPositionProvider
@@ -92,10 +93,9 @@ class LocationsViewModel(
     }
 
     companion object {
-        fun factory(container: AppContainer): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                LocationsViewModel(container.repository, container.devicePrefs, container.locationSuggester) as T
-        }
+        fun factory(repo: WorkoutRepository, prefs: DevicePrefs, suggester: LocationSuggester): ViewModelProvider.Factory =
+            viewModelFactory {
+                initializer { LocationsViewModel(repo, prefs, suggester) }
+            }
     }
 }

@@ -3,8 +3,9 @@ package com.lukr99.workout.ui
 import com.lukr99.workout.domain.nowMillis
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewModelScope
-import com.lukr99.workout.data.AppContainer
 import com.lukr99.workout.data.WorkoutRepository
 import com.lukr99.workout.data.services.WorkoutDataService
 import com.lukr99.workout.data.services.WorkoutInsightsService
@@ -168,10 +169,9 @@ class ProgressViewModel(
     }
 
     companion object {
-        fun factory(container: AppContainer): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                ProgressViewModel(container.repository, container.workoutData, container.insights) as T
-        }
+        fun factory(repo: WorkoutRepository, data: WorkoutDataService, insights: WorkoutInsightsService): ViewModelProvider.Factory =
+            viewModelFactory {
+                initializer { ProgressViewModel(repo, data, insights) }
+            }
     }
 }
