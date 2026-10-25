@@ -12,7 +12,7 @@ import java.io.File
 import java.util.UUID
 
 /** App-private file boundary for personal exercise photos, and their side of backup and restore. */
-class ExercisePhotoStore(private val context: Context) : PhotoArchive {
+class ExercisePhotoStore(private val context: Context) : PhotoArchive, ExercisePhotos {
     private val photosDirectory: File
         get() = File(context.filesDir, "exercise_images").also(File::mkdirs)
     private val capturesDirectory: File
@@ -43,11 +43,14 @@ class ExercisePhotoStore(private val context: Context) : PhotoArchive {
         input.use { destination.outputStream().use(it::copyTo) }
     }
 
+    override fun savePhoto(exerciseId: String, bytes: ByteArray): String =
+        replacePhoto(exerciseId) { destination -> destination.writeBytes(bytes) }
+
     fun discardCapture(temporaryPath: String?) {
         temporaryPath?.let(::File)?.takeIf { it.parentFile == capturesDirectory }?.delete()
     }
 
-    fun removePhoto(path: String?) {
+    override fun removePhoto(path: String?) {
         path?.let(::File)
             ?.takeIf { it.parentFile == photosDirectory }
             ?.delete()

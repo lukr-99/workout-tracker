@@ -1,10 +1,7 @@
 package com.lukr99.workout.ui.components
 
-import android.provider.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
 
 /** Ember's own Reduce motion setting, provided at the theme root. */
 val LocalReduceMotion = compositionLocalOf { false }
@@ -19,13 +16,7 @@ val LocalReduceMotion = compositionLocalOf { false }
  */
 @Composable
 fun rememberReduceMotion(): Boolean {
-    val context = LocalContext.current
     val app = LocalReduceMotion.current
-    val system = remember {
-        val scale = runCatching {
-            Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f)
-        }.getOrDefault(1f)
-        scale == 0f
-    }
+    val system = rememberSystemAnimationsOff()
     return app || system
 }

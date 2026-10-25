@@ -45,6 +45,7 @@ import com.lukr99.workout.ui.components.UpdateCard
 import com.lukr99.workout.ui.components.rememberReduceMotion
 import com.lukr99.workout.ui.components.rememberToastState
 import com.lukr99.workout.ui.run.LiveRunScreen
+import com.lukr99.workout.ui.run.RunningProgressSection
 import com.lukr99.workout.ui.run.LiveRunViewModel
 import com.lukr99.workout.ui.run.RoutePlannerScreen
 import com.lukr99.workout.ui.run.RoutePlannerViewModel
@@ -234,10 +235,10 @@ fun App(container: AppContainer) {
                             progressVm = progressVm,
                             historyVm = historyVm,
                             locationsVm = locationsVm,
-                            runVm = runVm,
                             units = settings.units,
                             onOpenExercise = { nav.push(Route.ProgressDetail(it)) },
                             onOpenSession = { nav.push(Route.WorkoutDetail(it)) },
+                            runningSection = { RunningProgressSection(vm = runVm, units = settings.units) },
                         )
                     }
                 }

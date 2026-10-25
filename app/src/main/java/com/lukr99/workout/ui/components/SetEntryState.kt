@@ -1,5 +1,7 @@
 package com.lukr99.workout.ui.components
 
+import kotlin.math.roundToLong
+
 /**
  * What the set number pad shows and how keys change it. Weight is in the display unit (kg or lb).
  *
@@ -58,7 +60,7 @@ data class SetEntryState(
 
         /** One decimal at most, and no ".0": 82.5, 80. */
         fun trim(value: Double): String {
-            val rounded = Math.round(value * 10.0) / 10.0
+            val rounded = (value * 10.0).roundToLong() / 10.0
             return if (rounded % 1.0 == 0.0) rounded.toLong().toString() else rounded.toString()
         }
     }

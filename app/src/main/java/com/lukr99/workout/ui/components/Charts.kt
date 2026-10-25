@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui.components
 
+import kotlin.math.roundToInt
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -84,7 +85,7 @@ fun ProgressChart(
                     fun pick(x: Float) {
                         if (points.size < 2) { selected = 0; return }
                         val frac = (x / size.width).coerceIn(0f, 1f)
-                        selected = Math.round(frac * (points.size - 1)).coerceIn(0, points.lastIndex)
+                        selected = (frac * (points.size - 1)).roundToInt().coerceIn(0, points.lastIndex)
                     }
                     detectTapGestures { pick(it.x) }
                     detectDragGestures { change, _ -> pick(change.position.x) }

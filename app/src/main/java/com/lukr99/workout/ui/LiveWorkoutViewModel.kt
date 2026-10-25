@@ -1,13 +1,14 @@
 package com.lukr99.workout.ui
 
+import com.lukr99.workout.domain.nowMillis
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewModelScope
 import com.lukr99.workout.data.WorkoutRepository
-import com.lukr99.workout.data.location.LocationSuggester
-import com.lukr99.workout.data.location.NoPositionProvider
+import com.lukr99.workout.data.NoPlaceSuggester
+import com.lukr99.workout.data.PlaceSuggester
 import com.lukr99.workout.data.services.WorkoutInsightsService
 import com.lukr99.workout.domain.Estimates
 import com.lukr99.workout.domain.Exercise
@@ -69,7 +70,7 @@ class LiveWorkoutViewModel(
     private val repo: WorkoutRepository,
     private val settings: com.lukr99.workout.settings.SettingsStore,
     private val insights: WorkoutInsightsService,
-    private val suggester: LocationSuggester = LocationSuggester(NoPositionProvider),
+    private val suggester: PlaceSuggester = NoPlaceSuggester,
     private val prefs: DevicePrefs? = null,
 ) : ViewModel() {
 
@@ -89,6 +90,7 @@ class LiveWorkoutViewModel(
     val rest: StateFlow<RestState> = restTimer.state
 
     /** Fires when a just-completed set beats a stored record; the screen renders the PR treatment. */
+    private var prEventSequence = 0L
     private val prEventState = MutableStateFlow<PrEvent?>(null)
     val prEvent: StateFlow<PrEvent?> = prEventState.asStateFlow()
     fun consumePrEvent() { prEventState.value = null }
@@ -331,9 +333,9 @@ class LiveWorkoutViewModel(
         }
     }
 
-    fun startEntry(entryId: String) = mutate { it.withEntryStarted(entryId, System.currentTimeMillis()) }
+    fun startEntry(entryId: String) = mutate { it.withEntryStarted(entryId, nowMillis()) }
 
-    fun finishEntry(entryId: String) = mutate { it.withEntryFinished(entryId, System.currentTimeMillis()) }
+    fun finishEntry(entryId: String) = mutate { it.withEntryFinished(entryId, nowMillis()) }
 
     fun reopenEntry(entryId: String) = mutate { it.withEntry(entryId) { entry -> entry.copy(completedAtUtc = null) } }
 
@@ -376,7 +378,7 @@ class LiveWorkoutViewModel(
         doneSetIdsState.update { if (currentlyDone) it - setId else it + setId }
         // Stamp completion onto the set itself so the checkmark (and the typed reps/weight) survive
         // leaving the screen or the OS reclaiming the process — doneSetIds alone is in-memory only.
-        val stamp = if (currentlyDone) null else System.currentTimeMillis()
+        val stamp = if (currentlyDone) null else nowMillis()
         mutate(persist = false) { it.withSetDone(entryId, setId, stamp) }
         if (!currentlyDone) {
             val entry = draftState.value?.entries?.firstOrNull { it.id == entryId }
@@ -430,7 +432,7 @@ class LiveWorkoutViewModel(
             // Flag the set as a PR in the draft (persist so history keeps the badge).
             mutate { it.withSet(entryId, setId) { s -> s.copy(isPr = true) } }
             prEventState.value = PrEvent(
-                id = System.nanoTime(),
+                id = ++prEventSequence,
                 exerciseName = entry.exerciseSnapshotName,
                 estimated1RmKg = Estimates.epley(set.weightKg, set.reps),
                 headline = achievement.headline,
@@ -453,7 +455,7 @@ class LiveWorkoutViewModel(
         viewModelScope.launch {
             try {
                 persistJob?.cancelAndJoin()
-                val saved = persistMutex.withLock { repo.saveWorkoutSession(System.currentTimeMillis().let { session.withUntickedSets(countUnticked, it).completedAt(it) }) }
+                val saved = persistMutex.withLock { repo.saveWorkoutSession(nowMillis().let { session.withUntickedSets(countUnticked, it).completedAt(it) }) }
                 runCatching { afterSave(saved) }
                 clear()
                 onDone()
@@ -474,7 +476,7 @@ class LiveWorkoutViewModel(
                     repo.saveWorkoutSession(
                         session.copy(
                             status = WorkoutSessionStatus.Discarded,
-                            endedAtUtc = System.currentTimeMillis(),
+                            endedAtUtc = nowMillis(),
                         ),
                     )
                 }
@@ -535,7 +537,7 @@ class LiveWorkoutViewModel(
             repo: WorkoutRepository,
             settings: com.lukr99.workout.settings.SettingsStore,
             insights: WorkoutInsightsService,
-            suggester: LocationSuggester,
+            suggester: PlaceSuggester,
             prefs: DevicePrefs,
         ): ViewModelProvider.Factory =
             viewModelFactory {

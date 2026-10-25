@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui.screens
 
+import com.lukr99.workout.domain.nowMillis
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -175,7 +176,7 @@ private fun Streak(weeks: Int) {
 @Composable
 private fun ResumeCard(session: WorkoutSession, onResume: () -> Unit) {
     val colors = EmberTheme.colors
-    val minutes = ((System.currentTimeMillis() - session.startedAtUtc) / 60_000).coerceAtLeast(0)
+    val minutes = ((nowMillis() - session.startedAtUtc) / 60_000).coerceAtLeast(0)
     val finished = session.entries.count { it.completedAtUtc != null }
     val doneSets = session.entries.sumOf { e -> e.strengthSets.count { it.performedAtUtc != null } }
     val shape = RoundedCornerShape(20.dp)

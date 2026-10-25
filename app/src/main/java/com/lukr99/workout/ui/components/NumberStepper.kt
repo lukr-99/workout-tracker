@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui.components
 
+import kotlin.math.roundToLong
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -63,7 +64,7 @@ fun NumberStepper(
     fun format(v: Double): String =
         if (decimals == 0) v.toLong().toString()
         else {
-            val r = Math.round(v * 10.0) / 10.0
+            val r = (v * 10.0).roundToLong() / 10.0
             if (r % 1.0 == 0.0) r.toLong().toString() else r.toString()
         }
 

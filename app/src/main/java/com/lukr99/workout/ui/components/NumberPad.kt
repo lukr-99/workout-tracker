@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui.components
 
+import kotlin.math.roundToLong
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -201,7 +202,7 @@ private fun KeyButton(label: String, modifier: Modifier = Modifier, onClick: () 
 private fun formatBuffer(v: Double, allowDecimal: Boolean): String =
     if (!allowDecimal) v.toLong().toString()
     else {
-        val r = Math.round(v * 10.0) / 10.0
+        val r = (v * 10.0).roundToLong() / 10.0
         if (r % 1.0 == 0.0) r.toLong().toString() else r.toString()
     }
 

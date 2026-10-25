@@ -6,8 +6,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewModelScope
 import com.lukr99.workout.data.WorkoutRepository
-import com.lukr99.workout.data.images.ExercisePhotoStore
-import com.lukr99.workout.data.images.PhotoCaptureTarget
+import com.lukr99.workout.data.images.ExercisePhotos
 import com.lukr99.workout.data.services.WorkoutDataService
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
@@ -36,7 +35,7 @@ import kotlinx.coroutines.launch
 class LibraryViewModel(
     private val repo: WorkoutRepository,
     private val data: WorkoutDataService,
-    private val photos: ExercisePhotoStore,
+    val photos: ExercisePhotos,
 ) : ViewModel() {
 
     private val filterState = MutableStateFlow(ExerciseFilter())
@@ -77,42 +76,23 @@ class LibraryViewModel(
         viewModelScope.launch { onResult(data.createExercise(draft)) }
     }
 
-    fun createPhotoCaptureTarget(): Result<PhotoCaptureTarget> =
-        runCatching(photos::createCaptureTarget)
-
-    fun commitCapturedPhoto(
+    /** Keeps the bytes of a picked or captured photo for [exerciseId] and reports the stored key. */
+    fun saveExercisePhoto(
         exerciseId: String,
-        target: PhotoCaptureTarget,
+        bytes: ByteArray,
         onResult: (Result<String>) -> Unit,
     ) {
         viewModelScope.launch {
             onResult(runCatching {
-                kotlinx.coroutines.withContext(Dispatchers.IO) {
-                    photos.commitCapture(exerciseId, target.temporaryPath)
+                kotlinx.coroutines.withContext(Dispatchers.Default) {
+                    photos.savePhoto(exerciseId, bytes)
                 }
             })
         }
     }
-
-    fun importExercisePhoto(
-        exerciseId: String,
-        uri: android.net.Uri,
-        onResult: (Result<String>) -> Unit,
-    ) {
-        viewModelScope.launch {
-            onResult(runCatching {
-                kotlinx.coroutines.withContext(Dispatchers.IO) {
-                    photos.importPhoto(exerciseId, uri)
-                }
-            })
-        }
-    }
-
-    fun discardPhotoCapture(target: PhotoCaptureTarget?) =
-        photos.discardCapture(target?.temporaryPath)
 
     fun removeExercisePhoto(path: String?) {
-        viewModelScope.launch(Dispatchers.IO) { photos.removePhoto(path) }
+        viewModelScope.launch(Dispatchers.Default) { photos.removePhoto(path) }
     }
 
     fun archiveExercise(id: String) = viewModelScope.launch { repo.archiveExercise(id) }.let { }
@@ -127,7 +107,7 @@ class LibraryViewModel(
     fun deleteTemplate(id: String) = viewModelScope.launch { repo.deleteTemplate(id) }.let { }
 
     companion object {
-        fun factory(repo: WorkoutRepository, data: WorkoutDataService, photos: ExercisePhotoStore): ViewModelProvider.Factory =
+        fun factory(repo: WorkoutRepository, data: WorkoutDataService, photos: ExercisePhotos): ViewModelProvider.Factory =
             viewModelFactory {
                 initializer { LibraryViewModel(repo, data, photos) }
             }

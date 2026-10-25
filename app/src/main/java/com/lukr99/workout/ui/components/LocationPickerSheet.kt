@@ -36,8 +36,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.lukr99.workout.domain.Location
@@ -71,7 +69,7 @@ fun LocationPickerSheet(
         // A bottom sheet is its own window, so its tags need their own resource-id switch.
         Column(
             Modifier.fillMaxWidth()
-                .semantics { testTagsAsResourceId = true }
+                .exposeTestTags()
                 .testTag(AppTags.LOCATION_SHEET)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)

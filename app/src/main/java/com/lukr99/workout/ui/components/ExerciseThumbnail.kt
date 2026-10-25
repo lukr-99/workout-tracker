@@ -12,16 +12,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import com.lukr99.workout.data.images.ExerciseImageResolver
 import com.lukr99.workout.data.images.ExerciseImageSource
 import com.lukr99.workout.data.images.ResolvedExerciseImage
 import com.lukr99.workout.domain.Exercise
-import java.io.File
 
 val LocalExerciseImageResolver = compositionLocalOf<ExerciseImageResolver?> { null }
 
@@ -31,8 +28,7 @@ fun resolvedExerciseImage(exercise: Exercise): ResolvedExerciseImage? {
     return remember(exercise, resolver) {
         resolver?.resolve(exercise) ?: exercise.localImagePath
             ?.takeIf(String::isNotBlank)
-            ?.let(::File)
-            ?.takeIf(File::isFile)
+            ?.let(::userPhotoModel)
             ?.let { ResolvedExerciseImage(it, ExerciseImageSource.UserPhoto) }
             ?: exercise.imageUrl?.takeIf(String::isNotBlank)?.let {
                 ResolvedExerciseImage(
@@ -75,10 +71,9 @@ fun ExerciseThumbnail(
             fontWeight = FontWeight.Bold,
         )
         if (resolved != null) {
-            AsyncImage(
+            ExerciseImage(
                 model = resolved.model,
                 contentDescription = "${exercise.name} illustration",
-                contentScale = ContentScale.Crop,
                 modifier = Modifier.matchParentSize(),
             )
         }
