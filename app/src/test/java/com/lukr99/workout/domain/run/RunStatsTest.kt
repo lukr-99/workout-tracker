@@ -2,6 +2,7 @@ package com.lukr99.workout.domain.run
 
 import java.time.Instant
 import java.time.ZoneOffset
+import kotlinx.datetime.TimeZone
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -11,6 +12,7 @@ import org.junit.Test
 class RunStatsTest {
 
     private val utc = ZoneOffset.UTC
+    private val utcZone = TimeZone.UTC
 
     /** A run whose trace is a straight northward line of [meters] covered in [seconds] at even pace. */
     private fun straightRun(
@@ -99,7 +101,7 @@ class RunStatsTest {
             straightRun("thisWeek", now - 2L * 24 * 3600 * 1000, 3_000.0, 900),
             straightRun("threeWeeksAgo", now - 21L * 24 * 3600 * 1000, 4_000.0, 1_200),
         )
-        val weekly = RunStats.weeklyDistance(runs, weeks = 4, zone = utc, nowUtc = now)
+        val weekly = RunStats.weeklyDistance(runs, weeks = 4, zone = utcZone, nowUtc = now)
         assertEquals(4, weekly.size)
         // Oldest→newest: [3 weeks ago]=4000, [2 ago]=0, [1 ago]=0, [this]=3000
         assertEquals(4_000.0, weekly[0].distanceMeters, 20.0)
@@ -129,7 +131,7 @@ class RunStatsTest {
             // skip week 2
             straightRun("w3", now - 22L * 24 * 3600 * 1000, 1_000.0, 300),
         )
-        assertEquals(2, RunStats.currentStreakWeeks(runs, zone = utc, nowUtc = now))
+        assertEquals(2, RunStats.currentStreakWeeks(runs, zone = utcZone, nowUtc = now))
     }
 
     @Test
@@ -176,7 +178,7 @@ class RunStatsTest {
     fun emptyInputsAreSafe() {
         assertEquals(0, RunStats.totals(emptyList()).runCount)
         assertTrue(RunStats.paceTrend(emptyList()).isEmpty())
-        assertEquals(0, RunStats.currentStreakWeeks(emptyList(), zone = utc, nowUtc = 0))
+        assertEquals(0, RunStats.currentStreakWeeks(emptyList(), zone = utcZone, nowUtc = 0))
         val prs = RunStats.personalRecords(emptyList())
         assertNull(prs.fastest5k)
         assertNull(prs.longestRun)

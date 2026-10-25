@@ -1,5 +1,6 @@
 package com.lukr99.workout.domain.run
 
+import com.lukr99.workout.domain.toRadians
 import kotlin.math.cos
 import kotlin.math.sqrt
 
@@ -18,7 +19,7 @@ object RouteDeviation {
     /** Shortest distance (m) from `(lat, lon)` to the `(lat, lon)` [route] polyline; +∞ if empty. */
     fun distanceToRouteMeters(lat: Double, lon: Double, route: List<Pair<Double, Double>>): Double {
         if (route.isEmpty()) return Double.POSITIVE_INFINITY
-        val mPerLon = METERS_PER_DEG_LON_EQ * cos(Math.toRadians(lat))
+        val mPerLon = METERS_PER_DEG_LON_EQ * cos(lat.toRadians())
         // Point at the local origin; project route vertices into metres relative to it.
         fun x(p: Pair<Double, Double>) = (p.second - lon) * mPerLon
         fun y(p: Pair<Double, Double>) = (p.first - lat) * METERS_PER_DEG_LAT

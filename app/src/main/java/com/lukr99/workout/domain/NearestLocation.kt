@@ -12,10 +12,10 @@ const val NEAR_LOCATION_METERS = 150.0
 /** Great-circle distance between two points in metres. */
 fun distanceMeters(a: GeoPoint, b: GeoPoint): Double {
     val earthRadius = 6_371_000.0
-    val lat1 = Math.toRadians(a.latitude)
-    val lat2 = Math.toRadians(b.latitude)
+    val lat1 = a.latitude.toRadians()
+    val lat2 = b.latitude.toRadians()
     val dLat = lat2 - lat1
-    val dLng = Math.toRadians(b.longitude - a.longitude)
+    val dLng = (b.longitude - a.longitude).toRadians()
     val h = sin(dLat / 2).let { it * it } + cos(lat1) * cos(lat2) * sin(dLng / 2).let { it * it }
     return 2 * earthRadius * asin(min(1.0, sqrt(h)))
 }

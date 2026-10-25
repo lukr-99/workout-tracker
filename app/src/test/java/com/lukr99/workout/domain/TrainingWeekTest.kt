@@ -1,8 +1,10 @@
 package com.lukr99.workout.domain
 
 import com.lukr99.workout.domain.run.Run
-import java.time.LocalDate
-import java.time.ZoneOffset
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atTime
+import kotlinx.datetime.toInstant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -10,23 +12,23 @@ import org.junit.Test
 
 class TrainingWeekTest {
 
-    private val zone = ZoneOffset.UTC
-    private val wednesday = LocalDate.of(2026, 10, 7)
+    private val zone = TimeZone.UTC
+    private val wednesday = LocalDate(2026, 10, 7)
 
-    private fun at(date: LocalDate, hour: Int = 18) = date.atTime(hour, 0).toInstant(zone).toEpochMilli()
+    private fun at(date: LocalDate, hour: Int = 18) = date.atTime(hour, 0).toInstant(zone).toEpochMilliseconds()
 
     @Test
     fun theWeekRunsMondayToSundayAndMarksToday() {
         val week = TrainingWeek.of(wednesday, zone, emptyList(), emptyList())
 
-        assertEquals(LocalDate.of(2026, 10, 5), week.days.first().date)
-        assertEquals(LocalDate.of(2026, 10, 11), week.days.last().date)
+        assertEquals(LocalDate(2026, 10, 5), week.days.first().date)
+        assertEquals(LocalDate(2026, 10, 11), week.days.last().date)
         assertEquals(listOf(false, false, true, false, false, false, false), week.days.map { it.isToday })
     }
 
     @Test
     fun finishedWorkoutsAndRunsMarkTheirDaysAndAddUp() {
-        val monday = LocalDate.of(2026, 10, 5)
+        val monday = LocalDate(2026, 10, 5)
         val workouts = listOf(
             WorkoutSessionSummary(id = "a", startedAtUtc = at(monday), completedDateUtc = at(monday), totalVolumeKg = 12_000.0),
             WorkoutSessionSummary(id = "b", startedAtUtc = at(wednesday), totalVolumeKg = 9_000.0),
@@ -48,8 +50,8 @@ class TrainingWeekTest {
 
     @Test
     fun aWorkoutCountsOnTheDayItFinished() {
-        val sundayNight = LocalDate.of(2026, 10, 4).atTime(23, 30).toInstant(zone).toEpochMilli()
-        val mondayMorning = at(LocalDate.of(2026, 10, 5), 0)
+        val sundayNight = LocalDate(2026, 10, 4).atTime(23, 30).toInstant(zone).toEpochMilliseconds()
+        val mondayMorning = at(LocalDate(2026, 10, 5), 0)
 
         val week = TrainingWeek.of(
             wednesday,
@@ -64,7 +66,7 @@ class TrainingWeekTest {
 
     @Test
     fun eachDayListsItsWorkoutsAndRunsOldestFirst() {
-        val monday = LocalDate.of(2026, 10, 5)
+        val monday = LocalDate(2026, 10, 5)
         val workouts = listOf(
             WorkoutSessionSummary(id = "evening", name = "Pull", startedAtUtc = at(wednesday, 18), completedDateUtc = at(wednesday, 19)),
             WorkoutSessionSummary(id = "solo", name = "Push", startedAtUtc = at(monday), completedDateUtc = at(monday)),

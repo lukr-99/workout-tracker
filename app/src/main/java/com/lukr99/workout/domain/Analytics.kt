@@ -1,9 +1,8 @@
 package com.lukr99.workout.domain
 
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
-import java.time.temporal.IsoFields
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.isoDayNumber
 
 /**
  * Consistency / overview analytics, ported as **pure functions** from the MAUI
@@ -37,7 +36,7 @@ object Analytics {
     /** Dashboard overview across completed sessions. */
     fun overview(
         completed: List<WorkoutSession>,
-        nowUtcMillis: Long = System.currentTimeMillis(),
+        nowUtcMillis: Long = nowMillis(),
     ): AnalyticsOverview {
         val summaries = completed.map { summarize(it) }
         val cutoff = nowUtcMillis - THIRTY_DAYS_MILLIS
@@ -61,14 +60,14 @@ object Analytics {
     /** 7/30-day counts, current weekly streak, longest gap — over distinct workout *days*. */
     fun consistency(
         completedDateMillis: List<Long>,
-        nowUtcMillis: Long = System.currentTimeMillis(),
+        nowUtcMillis: Long = nowMillis(),
     ): WorkoutConsistencySnapshot {
         val days = completedDateMillis.map { toUtcDate(it) }.distinct().sorted()
         val today = toUtcDate(nowUtcMillis)
 
         var longestGap = 0
         for (i in 1 until days.size) {
-            longestGap = maxOf(longestGap, (days[i].toEpochDay() - days[i - 1].toEpochDay()).toInt())
+            longestGap = maxOf(longestGap, days[i].toEpochDays() - days[i - 1].toEpochDays())
         }
 
         return WorkoutConsistencySnapshot(
@@ -82,7 +81,7 @@ object Analytics {
     /**
      * Consecutive ISO-week streak ending at the current week (ported from MAUI `CalculateWeeklyStreak`).
      */
-    fun weeklyStreak(dateMillis: List<Long>, nowUtcMillis: Long = System.currentTimeMillis()): Int {
+    fun weeklyStreak(dateMillis: List<Long>, nowUtcMillis: Long = nowMillis()): Int {
         val buckets = dateMillis.map { isoWeekKey(toUtcDate(it)) }.toHashSet()
         if (buckets.isEmpty()) return 0
 
@@ -127,15 +126,14 @@ object Analytics {
         return if (parts.isEmpty()) "No body part tags" else parts.joinToString(" • ")
     }
 
-    private fun toUtcDate(millis: Long): LocalDate =
-        Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
+    private fun toUtcDate(millis: Long): LocalDate = millis.dateIn(TimeZone.UTC)
 
     /** Monday-based week start (MAUI used `((int)DayOfWeek + 6) % 7`). */
     private fun weekStart(date: LocalDate): LocalDate =
-        date.minusDays(((date.dayOfWeek.value + 6) % 7).toLong())
+        date.minusDays((date.dayOfWeek.isoDayNumber + 6) % 7)
 
     private fun isoWeekKey(date: LocalDate): Pair<Int, Int> =
-        date.get(IsoFields.WEEK_BASED_YEAR) to date.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR)
+        date.isoWeekYear to date.isoWeekNumber
 
     private const val THIRTY_DAYS_MILLIS = 30L * 24 * 60 * 60 * 1000
 }

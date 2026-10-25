@@ -1,10 +1,11 @@
 package com.lukr99.workout.domain.stats
 
 import com.lukr99.workout.domain.query.WorkoutDataPoint
-import java.time.Instant
-import java.time.ZoneId
-import java.time.temporal.WeekFields
-import java.util.Locale
+import com.lukr99.workout.domain.dateIn
+import com.lukr99.workout.domain.isoWeekNumber
+import com.lukr99.workout.domain.isoWeekYear
+import com.lukr99.workout.domain.padded
+import kotlinx.datetime.TimeZone
 
 object BuiltInDimensions {
     val all: List<DimensionProvider> = listOf(
@@ -19,28 +20,26 @@ object BuiltInDimensions {
         dimension(DimensionKeys.Status) { point, _ -> point.session.status.name },
         dimension(DimensionKeys.SetType) { point, _ -> point.strengthSet?.setType?.name.orEmpty() },
         dimension(DimensionKeys.Day) { point, zone ->
-            Instant.ofEpochMilli(point.session.startedAtUtc).atZone(zone).toLocalDate().toString()
+            point.session.startedAtUtc.dateIn(zone).toString()
         },
         dimension(DimensionKeys.Week) { point, zone ->
-            val date = Instant.ofEpochMilli(point.session.startedAtUtc).atZone(zone).toLocalDate()
-            val week = WeekFields.ISO.weekOfWeekBasedYear()
-            val year = WeekFields.ISO.weekBasedYear()
-            "%04d-W%02d".format(Locale.ROOT, date.get(year), date.get(week))
+            val date = point.session.startedAtUtc.dateIn(zone)
+            "${padded(date.isoWeekYear, 4)}-W${padded(date.isoWeekNumber, 2)}"
         },
         dimension(DimensionKeys.Month) { point, zone ->
-            val date = Instant.ofEpochMilli(point.session.startedAtUtc).atZone(zone)
-            "%04d-%02d".format(Locale.ROOT, date.year, date.monthValue)
+            val date = point.session.startedAtUtc.dateIn(zone)
+            "${padded(date.year, 4)}-${padded(date.monthNumber, 2)}"
         },
         dimension(DimensionKeys.Year) { point, zone ->
-            Instant.ofEpochMilli(point.session.startedAtUtc).atZone(zone).year.toString()
+            point.session.startedAtUtc.dateIn(zone).year.toString()
         },
     )
 
     private fun dimension(
         key: String,
-        block: (WorkoutDataPoint, ZoneId) -> String,
+        block: (WorkoutDataPoint, TimeZone) -> String,
     ): DimensionProvider = object : DimensionProvider {
         override val key = key
-        override fun resolve(point: WorkoutDataPoint, zoneId: ZoneId): String = block(point, zoneId)
+        override fun resolve(point: WorkoutDataPoint, zoneId: TimeZone): String = block(point, zoneId)
     }
 }

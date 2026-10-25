@@ -1,9 +1,15 @@
 package com.lukr99.workout.domain.run
 
-import java.time.DayOfWeek
-import java.time.Instant
-import java.time.ZoneId
-import java.time.temporal.TemporalAdjusters
+import com.lukr99.workout.domain.dateIn
+import com.lukr99.workout.domain.minusDays
+import com.lukr99.workout.domain.mondayOfWeek
+import com.lukr99.workout.domain.nowMillis
+import com.lukr99.workout.domain.plusDays
+import com.lukr99.workout.domain.startMillis
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
 import kotlin.math.roundToLong
 
 /**
@@ -12,8 +18,8 @@ import kotlin.math.roundToLong
  * into the numbers the **Progress** running section shows. Fully unit-tested; distances are metres,
  * durations seconds, pace **seconds per kilometre**.
  *
- * Callers pass a [ZoneId] and a reference "now" (epoch-millis) so week/month bucketing is
- * deterministic and testable; the UI passes `ZoneId.systemDefault()` + `System.currentTimeMillis()`.
+ * Callers pass a [TimeZone] and a reference "now" (epoch-millis) so week/month bucketing is
+ * deterministic and testable; the UI passes `TimeZone.currentSystemDefault()` + `nowMillis()`.
  */
 object RunStats {
 
@@ -84,16 +90,15 @@ object RunStats {
     fun weeklyDistance(
         runs: List<Run>,
         weeks: Int = 12,
-        zone: ZoneId = ZoneId.systemDefault(),
-        nowUtc: Long = System.currentTimeMillis(),
+        zone: TimeZone = TimeZone.currentSystemDefault(),
+        nowUtc: Long = nowMillis(),
     ): List<PeriodBucket> {
         require(weeks > 0)
-        val thisWeekStart = Instant.ofEpochMilli(nowUtc).atZone(zone).toLocalDate()
-            .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-        val bucketStarts = (weeks - 1 downTo 0).map { thisWeekStart.minusWeeks(it.toLong()) }
+        val thisWeekStart = nowUtc.dateIn(zone).mondayOfWeek()
+        val bucketStarts = (weeks - 1 downTo 0).map { thisWeekStart.minusDays(7 * it) }
         return bucketStarts.map { weekStart ->
-            val start = weekStart.atStartOfDay(zone).toInstant().toEpochMilli()
-            val end = weekStart.plusWeeks(1).atStartOfDay(zone).toInstant().toEpochMilli()
+            val start = weekStart.startMillis(zone)
+            val end = weekStart.plusDays(7).startMillis(zone)
             val inWeek = runs.filter { it.startedAtUtc in start until end }
             PeriodBucket(
                 startUtc = start,
@@ -108,16 +113,16 @@ object RunStats {
     fun monthlyDistance(
         runs: List<Run>,
         months: Int = 6,
-        zone: ZoneId = ZoneId.systemDefault(),
-        nowUtc: Long = System.currentTimeMillis(),
+        zone: TimeZone = TimeZone.currentSystemDefault(),
+        nowUtc: Long = nowMillis(),
     ): List<PeriodBucket> {
         require(months > 0)
-        val thisMonth = Instant.ofEpochMilli(nowUtc).atZone(zone).toLocalDate()
-            .with(TemporalAdjusters.firstDayOfMonth())
-        val bucketStarts = (months - 1 downTo 0).map { thisMonth.minusMonths(it.toLong()) }
+        val today = nowUtc.dateIn(zone)
+        val thisMonth = today.minusDays(today.dayOfMonth - 1)
+        val bucketStarts = (months - 1 downTo 0).map { thisMonth.minus(it, DateTimeUnit.MONTH) }
         return bucketStarts.map { monthStart ->
-            val start = monthStart.atStartOfDay(zone).toInstant().toEpochMilli()
-            val end = monthStart.plusMonths(1).atStartOfDay(zone).toInstant().toEpochMilli()
+            val start = monthStart.startMillis(zone)
+            val end = monthStart.plus(1, DateTimeUnit.MONTH).startMillis(zone)
             val inMonth = runs.filter { it.startedAtUtc in start until end }
             PeriodBucket(
                 startUtc = start,
@@ -139,20 +144,18 @@ object RunStats {
     /** Number of consecutive weeks ending with the current week that have at least one run. */
     fun currentStreakWeeks(
         runs: List<Run>,
-        zone: ZoneId = ZoneId.systemDefault(),
-        nowUtc: Long = System.currentTimeMillis(),
+        zone: TimeZone = TimeZone.currentSystemDefault(),
+        nowUtc: Long = nowMillis(),
     ): Int {
         if (runs.isEmpty()) return 0
         val activeWeeks = runs.map {
-            Instant.ofEpochMilli(it.startedAtUtc).atZone(zone).toLocalDate()
-                .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+            it.startedAtUtc.dateIn(zone).mondayOfWeek()
         }.toHashSet()
-        var week = Instant.ofEpochMilli(nowUtc).atZone(zone).toLocalDate()
-            .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        var week = nowUtc.dateIn(zone).mondayOfWeek()
         var streak = 0
         while (week in activeWeeks) {
             streak++
-            week = week.minusWeeks(1)
+            week = week.minusDays(7)
         }
         return streak
     }

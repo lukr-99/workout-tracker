@@ -1,6 +1,7 @@
 package com.lukr99.workout.domain
 
-import java.util.UUID
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 import kotlinx.serialization.Serializable
 
 /**
@@ -16,7 +17,8 @@ import kotlinx.serialization.Serializable
  */
 
 /** MAUI `Guid.NewGuid().ToString("N")` — 32 lowercase hex chars, no dashes. */
-fun newId(): String = UUID.randomUUID().toString().replace("-", "")
+@OptIn(ExperimentalUuidApi::class)
+fun newId(): String = Uuid.random().toHexString()
 
 /** Includes the legacy exclusive type so older workouts display exactly as they did before v1.6. */
 val StrengthSet.effectiveTags: Set<SetTag>

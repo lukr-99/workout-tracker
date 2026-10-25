@@ -1,5 +1,9 @@
 package com.lukr99.workout.domain
 
+import kotlin.math.roundToInt
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.isoDayNumber
+
 /** The context lines under the Progress tiles: recent windows next to all-time totals. */
 data class ProgressContext(
     val workoutsThisMonth: Int = 0,
@@ -12,7 +16,7 @@ data class ProgressContext(
 ) {
     /** Change from the previous four weeks in whole percent, or null with nothing to compare. */
     val volumeChangePercent: Int?
-        get() = if (volumePrevious4WeeksKg <= 0.0) null else Math.round((volumeLast4WeeksKg / volumePrevious4WeeksKg - 1) * 100).toInt()
+        get() = if (volumePrevious4WeeksKg <= 0.0) null else ((volumeLast4WeeksKg / volumePrevious4WeeksKg - 1) * 100).roundToInt()
 
     companion object {
         private const val DAY_MS = 24L * 60 * 60 * 1000
@@ -21,13 +25,13 @@ data class ProgressContext(
          * From finished workouts at [now] in [zone]. A workout counts at its finish time. The week
          * starts on Monday, like the Home week strip.
          */
-        fun of(sessions: List<WorkoutSession>, now: Long, zone: java.time.ZoneId): ProgressContext {
+        fun of(sessions: List<WorkoutSession>, now: Long, zone: TimeZone): ProgressContext {
             val done = sessions.filter { it.status == WorkoutSessionStatus.Completed }
             fun at(s: WorkoutSession) = s.completedDateUtc ?: s.startedAtUtc
             fun volume(list: List<WorkoutSession>) = list.sumOf { s -> s.entries.sumOf { Estimates.volume(it.strengthSets) } }
-            val today = java.time.Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
-            val monthStart = today.withDayOfMonth(1).atStartOfDay(zone).toInstant().toEpochMilli()
-            val weekStart = today.minusDays((today.dayOfWeek.value - 1).toLong()).atStartOfDay(zone).toInstant().toEpochMilli()
+            val today = now.dateIn(zone)
+            val monthStart = today.minusDays(today.dayOfMonth - 1).startMillis(zone)
+            val weekStart = today.minusDays(today.dayOfWeek.isoDayNumber - 1).startMillis(zone)
             return ProgressContext(
                 workoutsThisMonth = done.count { at(it) >= monthStart },
                 volumeLast4WeeksKg = volume(done.filter { at(it) > now - 28 * DAY_MS }),

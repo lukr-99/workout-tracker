@@ -8,7 +8,7 @@ data class WorkoutSession(
     val templateId: String? = null,
     val name: String = "",
     @Serializable(with = InstantMillisSerializer::class)
-    val startedAtUtc: Long = System.currentTimeMillis(),
+    val startedAtUtc: Long = nowMillis(),
     @Serializable(with = InstantMillisSerializer::class)
     val endedAtUtc: Long? = null,
     @Serializable(with = InstantMillisSerializer::class)

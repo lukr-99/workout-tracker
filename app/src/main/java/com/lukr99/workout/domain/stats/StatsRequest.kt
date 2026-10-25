@@ -1,7 +1,7 @@
 package com.lukr99.workout.domain.stats
 
 import com.lukr99.workout.domain.query.WorkoutQuery
-import java.time.ZoneId
+import kotlinx.datetime.TimeZone
 
 data class StatsRequest(
     val query: WorkoutQuery = WorkoutQuery(),
@@ -12,6 +12,6 @@ data class StatsRequest(
         MetricKeys.VolumeKg,
     ),
     val dimensions: List<String> = emptyList(),
-    val timeZoneId: String = ZoneId.systemDefault().id,
+    val timeZoneId: String = TimeZone.currentSystemDefault().id,
     val sort: List<StatsSort> = emptyList(),
 )

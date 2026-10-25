@@ -1,8 +1,6 @@
 package com.lukr99.workout.domain
 
-import java.time.Instant
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
+import kotlinx.datetime.TimeZone
 
 /**
  * Serialization glue that keeps the JSON export bytes compatible with the MAUI `v1.0` export.
@@ -17,5 +15,4 @@ import java.time.format.DateTimeFormatter
  */
 
 /** `yyyy-MM-dd` (UTC) for display/notes — e.g. the "Created from workout on …" template note. */
-fun formatIsoDate(millis: Long): String =
-    DateTimeFormatter.ISO_LOCAL_DATE.format(Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC))
+fun formatIsoDate(millis: Long): String = millis.dateIn(TimeZone.UTC).toString()

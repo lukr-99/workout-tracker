@@ -161,6 +161,7 @@ dependencies {
     // Force the 16 KB-aligned graphics-path native lib (normally pulled transitively by Compose).
     implementation(libs.androidx.graphics.path)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.datetime)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.okhttp)
     implementation(libs.coil.compose)

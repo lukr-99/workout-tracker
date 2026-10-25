@@ -1,5 +1,7 @@
 package com.lukr99.workout.domain.recovery
 
+import kotlin.math.pow
+import com.lukr99.workout.domain.nowMillis
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.SetType
@@ -13,7 +15,7 @@ object RecoveryEngine {
     fun calculate(
         sessions: Iterable<WorkoutSession>,
         exercises: Iterable<Exercise>,
-        nowUtcMillis: Long = System.currentTimeMillis(),
+        nowUtcMillis: Long = nowMillis(),
         config: RecoveryConfig = RecoveryConfig(),
     ): RecoverySnapshot {
         val catalog = exercises.associateBy(Exercise::id)
@@ -112,7 +114,7 @@ object RecoveryEngine {
         (100.0 * exp(-fatigue / saturation)).coerceIn(0.0, 100.0)
 
     private fun halfLifeDecay(ageHours: Double, halfLifeHours: Double): Double =
-        Math.pow(0.5, ageHours / halfLifeHours)
+        0.5.pow(ageHours / halfLifeHours)
 
     private fun readyAt(
         nowUtcMillis: Long,

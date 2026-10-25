@@ -1,5 +1,6 @@
 package com.lukr99.workout.domain.progression
 
+import com.lukr99.workout.domain.formatFixed
 import com.lukr99.workout.domain.Estimates
 import com.lukr99.workout.domain.SetType
 import com.lukr99.workout.domain.StrengthSet
@@ -195,7 +196,7 @@ object ProgressionSuggestionEngine {
     }
 
     private fun formatKg(value: Double): String =
-        if (value % 1.0 == 0.0) value.toInt().toString() else "%.1f".format(java.util.Locale.ROOT, value)
+        if (value % 1.0 == 0.0) value.toInt().toString() else formatFixed(value, 1)
 
     private data class SessionPerformance(
         val sessionId: String,

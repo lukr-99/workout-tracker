@@ -96,7 +96,7 @@ object WorkoutShareSummary {
         val parts = buildList {
             if (cardio.durationSeconds > 0) add(Units.formatDuration(cardio.durationSeconds.toLong()))
             cardio.distanceKm?.takeIf { it > 0 }?.let { km ->
-                add(if (imperial) "%.2f mi".format(Units.kmToMiles(km)) else "%.2f km".format(km))
+                add(if (imperial) "${localDecimal(Units.kmToMiles(km), 2)} mi" else "${localDecimal(km, 2)} km")
             }
         }
         return parts.takeIf { it.isNotEmpty() }?.joinToString(", ")

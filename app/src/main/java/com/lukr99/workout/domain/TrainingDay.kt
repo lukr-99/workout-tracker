@@ -1,6 +1,6 @@
 package com.lukr99.workout.domain
 
-import java.time.LocalDate
+import kotlinx.datetime.LocalDate
 
 /** One day of the training week on Home: its finished workouts and runs, oldest first. */
 data class TrainingDay(
