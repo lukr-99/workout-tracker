@@ -117,7 +117,6 @@ class ComponentScreenshotTest {
         copyLabel = "Set 3",
         copyFrom = 82.5 to 8,
         onChange = { _, _ -> },
-        onDone = {},
         onDismiss = {},
     )
 

@@ -6,6 +6,12 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 ## [Unreleased]
 
+### Changed
+
+- **OK on the set number pad.** The big button on the weight and reps pad now says OK. It keeps
+  what you typed and takes you back to the workout, but no longer ticks the set as done. Tick the
+  check on the row when you finish the set.
+
 ## [2.9.0] - 2026-10-22
 
 ### Added
