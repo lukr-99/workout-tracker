@@ -48,3 +48,8 @@
 - Browse-heavy areas such as catalog, templates, and history should default to list-first layouts with overlay editors instead of stacking editor forms above the content feed.
 - Exercise selection surfaces should show category and body-part context directly in the chooser instead of relying on generic picker rows.
 - Short-lived success and error feedback should use top toast notifications instead of consuming layout space inside the page content.
+
+## Architecture decision records
+
+- Larger decisions are recorded one per file in `docs/adr/`.
+- [ADR 0001](adr/0001-web-edition.md): a browser edition for iPhone, compiled from the app's own Kotlin to WebAssembly (proposed).
