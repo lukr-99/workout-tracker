@@ -22,13 +22,13 @@ settings/ (DataStore)    update/ (GitHub release updater)
 | Package | Responsibility | May depend on |
 |---|---|---|
 | `domain/` | Models and the export contract (`Models.kt`), analytics, records, recovery, progression, stats, queries, run maths, validated creation (`creation/WorkoutFactory`), snapshot copies (`WorkoutSnapshots.kt`) and live workout edits (`WorkoutDraftEdits.kt`). No Android imports. | nothing else in the app |
-| `data/` | `WorkoutRepository` and `RunRepository` (the only Room users, with entity mapping in `WorkoutEntityMapping.kt`), numbered Room migrations in `data/migrations/`, import and export, backup, Health Connect, wger sync, images, location service, routing, map tiles, music. | `domain/`, `settings/` |
-| `settings/` | `SettingsStore`: theme, units, default rest (Preferences DataStore). | nothing |
+| `data/` | the `WorkoutRepository` and `RunRepository` interfaces with their Room classes `RoomWorkoutRepository` and `RoomRunRepository` (the only Room users, with entity mapping in `WorkoutEntityMapping.kt`), numbered Room migrations in `data/migrations/`, import and export, backup, Health Connect, wger sync, images, location service, routing, map tiles, music. | `domain/`, `settings/` |
+| `settings/` | `SettingsStore` and `DevicePrefs` interfaces (theme, units, default rest; this phone's switches) with the Preferences DataStore classes `DataStoreSettingsStore` and `DataStoreDevicePrefs`. | nothing |
 | `update/` | The updater chain: `GitHubReleaseSource`, `VersionPolicy`, `ArtifactSelector`, `VerifiedDownloader` (HTTPS, size, SHA-256), `PackageSignatureCheck`, `FileProviderInstallerLauncher`, joined by `UpdateService`. Only the Android adapters touch Android. | nothing else in the app |
 | `ui/` | `App.kt` shell and custom `Navigator`, one ViewModel per area, screens in `ui/screens/` and `ui/run/`, shared pieces in `ui/components/` (`ScreenHeader`, `SearchField`, `SegmentedControl`, `FilterChip`, `BodyPartTag`), the theme in `ui/theme/`. | everything above |
 
 The composition root is `data/AppContainer.kt`, created once by `WorkoutApp`. ViewModels get their
-dependencies through `factory(container)`. `WorkoutApp` also gives WorkManager its configuration,
+dependencies through `factory(...)`, which takes the repositories and services it needs, not the container. `WorkoutApp` also gives WorkManager its configuration,
 and `BackupWorkerFactory` hands the backup to `BackupWorker`, so the default WorkManager initializer
 is removed in the manifest.
 
@@ -69,7 +69,7 @@ part's name.
   "All gyms" view groups finished workouts by `locationId` in `ui/ExerciseSeries`.
 - **Runs:** `LocationService` is a foreground service that holds a partial wake lock while a run
   records. `RunSessionController` feeds fixes to the pure `domain/run/RunTracker`, and
-  `RunRepository` stores runs, trace points, routes and route points.
+  `RoomRunRepository` stores runs, trace points, routes and route points.
 - **Export and import:** `DataTransferService` writes the `ExportBundle` JSON (format 1.12), a full
   backup with settings and photos, and a flat CSV. It imports our own bundles and Lyfta CSV, and
   plans every import (preview, merge or replace, counts) before writing. A commit is one
