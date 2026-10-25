@@ -6,6 +6,8 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 ## [Unreleased]
 
+## [2.9.1] - 2026-10-25
+
 ### Changed
 
 - **OK on the set number pad.** The big button on the weight and reps pad now says OK. It keeps
