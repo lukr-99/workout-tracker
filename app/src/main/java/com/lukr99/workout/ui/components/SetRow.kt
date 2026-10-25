@@ -122,10 +122,6 @@ fun SetRow(
                 onWeightKg(Format.toKg(weight, units))
                 onReps(reps)
             },
-            onDone = {
-                editing = null
-                if (!done) onToggleDone()
-            },
             onDismiss = { editing = null },
         )
     }

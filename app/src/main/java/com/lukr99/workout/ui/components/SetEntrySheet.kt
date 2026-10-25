@@ -43,8 +43,9 @@ import com.lukr99.workout.ui.theme.Numbers
 
 /**
  * The set number pad: weight and reps side by side, quick steps, "same as the set before", a
- * keypad, then Next or Done set. Values reach the set live through [onChange], so the row behind
- * the sheet updates while you type. [onDone] marks the set done; the caller closes the sheet.
+ * keypad, then Next or OK. Values reach the set live through [onChange], so the row behind the
+ * sheet updates while you type. OK only closes the sheet through [onDismiss]; it does not mark the
+ * set done, that stays the check on the row.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,7 +58,6 @@ fun SetEntrySheet(
     copyLabel: String?,
     copyFrom: Pair<Double, Int>?,
     onChange: (weightDisplay: Double, reps: Int) -> Unit,
-    onDone: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val colors = EmberTheme.colors
@@ -114,12 +114,12 @@ fun SetEntrySheet(
                 }
                 Row(
                     Modifier.weight(1f).height(54.dp).clip(RoundedCornerShape(27.dp)).background(colors.primary)
-                        .clickable(role = Role.Button, onClick = onDone),
+                        .clickable(role = Role.Button, onClick = onDismiss),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(Icons.Rounded.Check, null, tint = colors.onPrimary, modifier = Modifier.size(20.dp))
-                    Text("  Done set", fontWeight = FontWeight.Bold, color = colors.onPrimary)
+                    Text("  OK", fontWeight = FontWeight.Bold, color = colors.onPrimary)
                 }
             }
         }
