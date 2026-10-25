@@ -1,5 +1,9 @@
 package com.lukr99.workout.ui
 
+import com.lukr99.workout.domain.dateIn
+import com.lukr99.workout.domain.nowMillis
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -12,9 +16,6 @@ import com.lukr99.workout.domain.WhatsNewNote
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.settings.WhatsNewGate
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -33,8 +34,8 @@ class HomeViewModel(
     private val repo: WorkoutRepository,
     runs: RunRepository,
     private val whatsNewGate: WhatsNewGate? = null,
-    private val now: () -> Long = System::currentTimeMillis,
-    private val zone: () -> ZoneId = ZoneId::systemDefault,
+    private val now: () -> Long = ::nowMillis,
+    private val zone: () -> TimeZone = TimeZone::currentSystemDefault,
 ) : ViewModel() {
 
     private val snapshotState = MutableStateFlow(DashboardSnapshot())
@@ -96,7 +97,7 @@ class HomeViewModel(
         viewModelScope.launch { snapshotState.value = repo.getDashboardSnapshot() }
     }
 
-    private fun today(): LocalDate = Instant.ofEpochMilli(now()).atZone(zone()).toLocalDate()
+    private fun today(): LocalDate = now().dateIn(zone())
 
     companion object {
         const val RECENT_ROWS = 5

@@ -19,7 +19,8 @@ import com.lukr99.workout.domain.TrainingWeek
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.AppTags
 import com.lukr99.workout.ui.theme.WorkoutTheme
-import java.time.LocalDate
+import com.lukr99.workout.domain.plusDays
+import kotlinx.datetime.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -34,7 +35,7 @@ class WeekCardTest {
     @get:Rule
     val compose = createComposeRule()
 
-    private val monday = LocalDate.of(2026, 10, 12)
+    private val monday = LocalDate(2026, 10, 12)
     private val push = DayActivity("push", isRun = false, name = "Push day", atUtc = 1L)
     private val run = DayActivity("run", isRun = true, name = "Easy 5k", atUtc = 2L)
     private val pull = DayActivity("pull", isRun = false, name = "Pull day", atUtc = 3L)
@@ -42,7 +43,7 @@ class WeekCardTest {
     private val opened = mutableListOf<DayActivity>()
 
     private fun show() {
-        val days = (0L..6L).map { TrainingDay(monday.plusDays(it), isToday = it == 1L) }.toMutableList()
+        val days = (0..6).map { TrainingDay(monday.plusDays(it), isToday = it == 1) }.toMutableList()
         days[0] = days[0].copy(activities = listOf(push))
         days[1] = days[1].copy(activities = listOf(run, pull))
         compose.setContent {

@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui
 
+import com.lukr99.workout.domain.nowMillis
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -93,7 +94,7 @@ class ProgressViewModel(
             uiState.value = ProgressUiState(
                 loaded = true,
                 overview = overview,
-                context = ProgressContext.of(sessions, System.currentTimeMillis(), java.time.ZoneId.systemDefault()),
+                context = ProgressContext.of(sessions, nowMillis(), kotlinx.datetime.TimeZone.currentSystemDefault()),
                 weeklyVolume = weekly,
                 exercises = buildExerciseSummaries(sessions, scopes(), repo.getLocations()),
                 recovery = insights.recovery(),

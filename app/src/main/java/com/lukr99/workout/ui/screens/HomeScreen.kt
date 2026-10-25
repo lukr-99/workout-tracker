@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lukr99.workout.domain.DayActivity
+import com.lukr99.workout.domain.localDecimal
 import com.lukr99.workout.domain.TrainingDay
 import com.lukr99.workout.domain.TrainingWeek
 import com.lukr99.workout.domain.WorkoutSession
@@ -55,18 +56,17 @@ import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.AppTags
 import com.lukr99.workout.ui.HomeRecent
 import com.lukr99.workout.ui.HomeViewModel
+import com.lukr99.workout.ui.components.DateStyle
 import com.lukr99.workout.ui.components.DayActivitySheet
 import com.lukr99.workout.ui.components.EmptyState
 import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.RoundIconButton
 import com.lukr99.workout.ui.components.ScreenHeader
+import com.lukr99.workout.ui.components.localDateText
+import com.lukr99.workout.ui.components.weekdayName
 import com.lukr99.workout.ui.components.WhatsNewCard
 import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.format.TextStyle
-import java.util.Locale
 
 /** Home: what is in progress, how the week is going, and the fastest ways to start. */
 @Composable
@@ -100,7 +100,7 @@ fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            ScreenHeader("Today", LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE d MMMM"))) {
+            ScreenHeader("Today", localDateText(Format.today(), DateStyle.Header)) {
                 RoundIconButton(Icons.Rounded.Settings, "Settings", onOpenSettings)
             }
         }
@@ -135,7 +135,7 @@ fun HomeScreen(
 private fun SectionLabel(text: String, trailing: @Composable () -> Unit) {
     Row(Modifier.fillMaxWidth().padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(
-            text.uppercase(Locale.getDefault()),
+            text.uppercase(),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
             letterSpacing = 1.sp,
@@ -254,7 +254,7 @@ internal fun WeekCard(week: TrainingWeek, units: UnitSystem, onOpen: (DayActivit
 @Composable
 private fun DayMark(day: TrainingDay, modifier: Modifier, onClick: () -> Unit) {
     val colors = EmberTheme.colors
-    val name = day.date.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault())
+    val name = weekdayName(day.date.dayOfWeek, narrow = false)
     val what = when {
         day.lifted && day.ran -> "workout and run"
         day.lifted -> "workout"
@@ -289,7 +289,7 @@ private fun DayMark(day: TrainingDay, modifier: Modifier, onClick: () -> Unit) {
             else -> Box(circle.background(colors.surfaceRaised))
         }
         Text(
-            day.date.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault()),
+            weekdayName(day.date.dayOfWeek, narrow = true),
             style = MaterialTheme.typography.labelSmall,
             fontWeight = if (day.isToday) FontWeight.Bold else FontWeight.SemiBold,
             color = if (day.isToday) colors.textPrimary else colors.textSecondary,
@@ -390,5 +390,5 @@ private fun RecentRow(row: HomeRecent, units: UnitSystem, onClick: () -> Unit) {
 /** Distance with one decimal and no trailing ".0", for the week totals: "7.2", "12". */
 private fun shortDistance(meters: Double, units: UnitSystem): String {
     val value = if (units == UnitSystem.Imperial) meters / 1_609.344 else meters / 1_000.0
-    return "%.1f".format(value).replace(Regex("[.,]0$"), "")
+    return localDecimal(value, 1).replace(Regex("[.,]0$"), "")
 }

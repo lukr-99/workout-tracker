@@ -136,7 +136,7 @@ internal fun lossLine(counts: StoreCounts): String =
 
 private fun backupLine(metadata: Map<String, String>): String? {
     val version = metadata["appVersion"]
-    val exported = metadata["exportedAtUtc"]?.let { runCatching { java.time.Instant.parse(it).toEpochMilli() }.getOrNull() }
+    val exported = metadata["exportedAtUtc"]?.let { runCatching { kotlinx.datetime.Instant.parse(it).toEpochMilliseconds() }.getOrNull() }
     return when {
         version != null && exported != null -> "Ember $version backup from ${Format.fullDate(exported)}"
         exported != null -> "Backup from ${Format.fullDate(exported)}"
