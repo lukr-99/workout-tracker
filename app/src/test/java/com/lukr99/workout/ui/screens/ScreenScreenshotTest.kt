@@ -31,6 +31,7 @@ import com.lukr99.workout.data.run.ShareCardRenderer
 import com.lukr99.workout.data.services.WorkoutDataService
 import com.lukr99.workout.data.services.WorkoutInsightsService
 import com.lukr99.workout.data.transfer.AndroidDocumentGateway
+import com.lukr99.workout.settings.DataStoreSettingsStore
 import com.lukr99.workout.settings.SettingsStore
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.HistoryViewModel
@@ -38,6 +39,7 @@ import com.lukr99.workout.ui.HomeViewModel
 import com.lukr99.workout.ui.LibraryViewModel
 import com.lukr99.workout.ui.LiveWorkoutViewModel
 import com.lukr99.workout.ui.LocationsViewModel
+import com.lukr99.workout.settings.DataStoreDevicePrefs
 import com.lukr99.workout.settings.DevicePrefs
 import com.lukr99.workout.ui.ProgressViewModel
 import com.lukr99.workout.ui.run.RunViewModel
@@ -179,12 +181,12 @@ class ScreenScreenshotTest {
 
     @Composable
     private fun Live() {
-        val vm = LiveWorkoutViewModel(repo, SettingsStore(context), WorkoutInsightsService(repo))
+        val vm = LiveWorkoutViewModel(repo, DataStoreSettingsStore(context), WorkoutInsightsService(repo))
         vm.loadActiveIfAny()
         LiveWorkoutScreen(vm = vm, locationsVm = locations(), units = UnitSystem.Metric, onClose = {}, onEditExercise = {})
     }
 
-    private fun locations() = LocationsViewModel(repo, DevicePrefs(context))
+    private fun locations() = LocationsViewModel(repo, DataStoreDevicePrefs(context))
 
     /** Tab screens get the shell's side and top padding, as in App. */
     @Composable
