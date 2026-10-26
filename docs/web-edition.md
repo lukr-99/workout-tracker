@@ -82,8 +82,9 @@ background. A run recorded on the web only works with the screen on the whole ti
   before the first frame, because a canvas has no system fonts to fall back on.
 - `web/wrangler.toml`: the Cloudflare Pages project name (`ember-workout`) and output folder.
 - `tools/stamp_web_dist.py` prepares a build for deploy; `tools/check-web-dist.cjs` checks a stamped
-  build in headless Chromium; `.github/workflows/web.yml` builds, tests, checks and (only by hand)
-  deploys.
+  build in headless Chromium (loading screen, offline reload, CSP, the fallback screens, and
+  Start, Discard and Finish on a phone-sized page, read back from IndexedDB);
+  `.github/workflows/web.yml` builds, tests, checks and (only by hand) deploys.
 
 Notes for the UI:
 

@@ -109,6 +109,73 @@ async function openPage(browser, base, setup) {
   return { context, page, problems };
 }
 
+// Where the live workout's controls are on the 390 x 844 page openPage uses. The app is drawn on a
+// canvas, so the check taps positions and reads the outcome from the stored document.
+const TAP = {
+  start: [238, 770],
+  discard: [195, 808],
+  confirmDiscard: [294, 478],
+  finish: [334, 36],
+  confirmFinish: [284, 796],
+};
+
+/** The status of each workout in the stored document: 0 live, 1 finished, 2 discarded. */
+function storedStatuses(page) {
+  return page.evaluate(() => new Promise((resolve) => {
+    const open = indexedDB.open('ember');
+    open.onerror = () => resolve(null);
+    open.onsuccess = () => {
+      const read = open.result.transaction('data').objectStore('data').get('current');
+      read.onerror = () => resolve(null);
+      read.onsuccess = () => {
+        if (!read.result) { resolve([]); return; }
+        const stored = JSON.parse(read.result.text);
+        resolve((stored.data.sessions || []).map((session) => session.status));
+      };
+    };
+  }));
+}
+
+/** Waits until [test] accepts the stored statuses, up to 20 seconds. Returns the last ones read. */
+async function waitForStatuses(page, test) {
+  let statuses = null;
+  for (let i = 0; i < 40; i++) {
+    statuses = await storedStatuses(page);
+    if (statuses && test(statuses)) return { ok: true, statuses };
+    await page.waitForTimeout(500);
+  }
+  return { ok: false, statuses };
+}
+
+async function tap(page, [x, y]) {
+  await page.mouse.click(x, y);
+  await page.waitForTimeout(1500);
+}
+
+/** Start opens a workout; Discard and its confirm remove it; Finish and its confirm save it. */
+async function checkLiveWorkoutActions(browser, base) {
+  const { context, page } = await openPage(browser, base);
+  await page.waitForFunction(() => document.getElementById('boot').hidden, null, { timeout: 60000 });
+  await page.waitForTimeout(2000);
+  const live = (statuses) => statuses.includes(0);
+
+  await tap(page, TAP.start);
+  let state = await waitForStatuses(page, live);
+  check('Start opens a live workout', state.ok, JSON.stringify(state.statuses));
+  await tap(page, TAP.discard);
+  await tap(page, TAP.confirmDiscard);
+  state = await waitForStatuses(page, (statuses) => !live(statuses));
+  check('Discard and its confirm end the live workout', state.ok, JSON.stringify(state.statuses));
+
+  await tap(page, TAP.start);
+  await waitForStatuses(page, live);
+  await tap(page, TAP.finish);
+  await tap(page, TAP.confirmFinish);
+  state = await waitForStatuses(page, (statuses) => !live(statuses) && statuses.includes(1));
+  check('Finish and its confirm save the workout', state.ok, JSON.stringify(state.statuses));
+  await context.close();
+}
+
 (async () => {
   const server = await serve();
   const base = `http://127.0.0.1:${server.address().port}/`;
@@ -130,6 +197,8 @@ async function openPage(browser, base, setup) {
     check('reload works offline', !(await visible(page, 'failed')));
     check('no CSP violations or page errors', problems.length === 0, problems.join(' | '));
     await context.close();
+
+    await checkLiveWorkoutActions(browser, base);
 
     const tooOld = await openPage(browser, base, (p) => p.addInitScript(() => { WebAssembly.validate = () => false; }));
     await tooOld.page.waitForTimeout(1000);
