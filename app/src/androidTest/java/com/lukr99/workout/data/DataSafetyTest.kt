@@ -240,12 +240,12 @@ class DataSafetyTest {
         private var next = 0
         override fun exportBytes(path: String): ByteArray? = files[path]
         override fun exists(path: String): Boolean = path in files
-        override fun stage(exerciseId: String, bytes: ByteArray): String =
+        override suspend fun stage(exerciseId: String, bytes: ByteArray): String =
             "/photos/$exerciseId-${next++}.jpg".also { files[it] = bytes }
-        override fun delete(path: String) {
+        override suspend fun delete(path: String) {
             files.remove(path)
         }
-        override fun deleteAllExcept(keep: Set<String>) {
+        override suspend fun deleteAllExcept(keep: Set<String>) {
             files.keys.retainAll(keep)
         }
     }

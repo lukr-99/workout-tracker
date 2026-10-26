@@ -85,7 +85,7 @@ class DataTransferService(
         val exercises = try {
             withRestoredPhotos(plan, staged)
         } catch (failure: Throwable) {
-            staged.forEach(photos::delete)
+            staged.forEach { photos.delete(it) }
             throw failure
         }
 
@@ -157,7 +157,7 @@ class DataTransferService(
                 plan.runs.forEach { runRepository.saveRun(it) }
             }
         } catch (failure: Throwable) {
-            staged.forEach(photos::delete)
+            staged.forEach { photos.delete(it) }
             throw failure
         }
 
@@ -253,7 +253,7 @@ class DataTransferService(
      * existed on another phone is cleared rather than left dangling.
      */
     @OptIn(ExperimentalEncodingApi::class)
-    private fun withRestoredPhotos(plan: ImportPlan, staged: MutableList<String>): List<PlannedExercise> {
+    private suspend fun withRestoredPhotos(plan: ImportPlan, staged: MutableList<String>): List<PlannedExercise> {
         val photoByTargetId = plan.photos.associateBy { photo ->
             plan.exerciseIdMap[photo.exerciseId] ?: photo.exerciseId
         }

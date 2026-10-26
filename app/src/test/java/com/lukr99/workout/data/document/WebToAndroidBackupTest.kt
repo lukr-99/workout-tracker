@@ -16,6 +16,7 @@ import com.lukr99.workout.data.run.RoomRunRepository
 import com.lukr99.workout.data.transfer.DataStoreSettingsArchive
 import com.lukr99.workout.data.transfer.DataTransferService
 import com.lukr99.workout.data.transfer.ImportOptions
+import com.lukr99.workout.data.transfer.NoPhotoArchive
 import com.lukr99.workout.data.transfer.RestoreMode
 import com.lukr99.workout.domain.CardioEntryData
 import com.lukr99.workout.domain.Exercise
@@ -72,7 +73,7 @@ class WebToAndroidBackupTest {
     private val web = DataTransferService(
         webRepo,
         webRuns,
-        photos = DroppedPhotoArchive,
+        photos = NoPhotoArchive,
         settings = DataStoreSettingsArchive(webSettings),
         appVersion = "1.0",
     )

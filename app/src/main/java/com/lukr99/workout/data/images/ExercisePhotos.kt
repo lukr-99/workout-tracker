@@ -7,8 +7,8 @@ package com.lukr99.workout.data.images
  */
 interface ExercisePhotos {
     /** Saves [bytes] as the photo of [exerciseId], replacing the old one, and returns its key. */
-    fun savePhoto(exerciseId: String, bytes: ByteArray): String
+    suspend fun savePhoto(exerciseId: String, bytes: ByteArray): String
 
     /** Removes the photo with this key. A null or unknown key is ignored. */
-    fun removePhoto(path: String?)
+    suspend fun removePhoto(path: String?)
 }

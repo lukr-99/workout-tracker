@@ -14,10 +14,10 @@ class ExercisePhotoStore(private val context: Context) : PhotoArchive, ExerciseP
     private val photosDirectory: File
         get() = File(context.filesDir, "exercise_images").also(File::mkdirs)
 
-    override fun savePhoto(exerciseId: String, bytes: ByteArray): String =
+    override suspend fun savePhoto(exerciseId: String, bytes: ByteArray): String =
         replacePhoto(exerciseId) { destination -> destination.writeBytes(bytes) }
 
-    override fun removePhoto(path: String?) {
+    override suspend fun removePhoto(path: String?) {
         path?.let(::File)
             ?.takeIf { it.parentFile == photosDirectory }
             ?.delete()
@@ -57,7 +57,7 @@ class ExercisePhotoStore(private val context: Context) : PhotoArchive, ExerciseP
 
     override fun exists(path: String): Boolean = File(path).let { it.parentFile == photosDirectory && it.isFile }
 
-    override fun stage(exerciseId: String, bytes: ByteArray): String {
+    override suspend fun stage(exerciseId: String, bytes: ByteArray): String {
         require(exerciseId.matches(Regex("[A-Za-z0-9_-]+"))) { "Invalid exercise id." }
         require(bytes.size in 1..ExercisePhoto.MAX_BYTES) { "A photo in the backup is empty or too large." }
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -73,9 +73,9 @@ class ExercisePhotoStore(private val context: Context) : PhotoArchive, ExerciseP
         return destination.absolutePath
     }
 
-    override fun delete(path: String) = removePhoto(path)
+    override suspend fun delete(path: String) = removePhoto(path)
 
-    override fun deleteAllExcept(keep: Set<String>) {
+    override suspend fun deleteAllExcept(keep: Set<String>) {
         photosDirectory.listFiles().orEmpty()
             .filter { it.isFile && it.absolutePath !in keep }
             .forEach(File::delete)
