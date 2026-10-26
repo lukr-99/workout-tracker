@@ -122,7 +122,9 @@ fun App(container: AppContainer) {
             runActive && hasResumableLift -> resumeChooserOpen = true
             runActive -> nav.push(Route.LiveRun)
             hasResumableLift -> startWorkout()
-            else -> chooserOpen = true
+            // Without Run Mode (the web edition) there is nothing to choose: Start is a workout.
+            platform.hasRuns -> chooserOpen = true
+            else -> startWorkout()
         }
     }
 
@@ -278,6 +280,7 @@ fun App(container: AppContainer) {
                 FloatingNav(
                     current = nav.tab.value,
                     resumeMode = resumeMode,
+                    showRuns = platform.hasRuns,
                     onSelect = { nav.switch(it) },
                     onStart = { onCenterAction() },
                     modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()

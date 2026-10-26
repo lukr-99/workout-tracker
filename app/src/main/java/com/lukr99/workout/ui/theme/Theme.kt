@@ -2,6 +2,7 @@ package com.lukr99.workout.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -19,8 +20,12 @@ fun WorkoutTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () 
         MaterialTheme(
             colorScheme = colors.toMaterial(),
             typography = WorkoutTypography,
-            content = content,
-        )
+        ) {
+            // Text outside a Surface takes LocalContentColor, which is black unless something sets
+            // it. Screens draw straight on the background, so a title without its own colour came
+            // out black on the dark theme. Start every screen with the theme's text colour.
+            CompositionLocalProvider(LocalContentColor provides colors.textPrimary, content = content)
+        }
     }
 }
 

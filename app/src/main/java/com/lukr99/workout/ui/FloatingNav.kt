@@ -40,6 +40,7 @@ import com.lukr99.workout.ui.theme.EmberTheme
 internal fun FloatingNav(
     current: Tab,
     resumeMode: Boolean,
+    showRuns: Boolean,
     onSelect: (Tab) -> Unit,
     onStart: () -> Unit,
     modifier: Modifier,
@@ -58,7 +59,7 @@ internal fun FloatingNav(
             NavItem(Tab.HOME, current, Modifier.weight(1f)) { onSelect(Tab.HOME) }
             NavItem(Tab.LIBRARY, current, Modifier.weight(1f)) { onSelect(Tab.LIBRARY) }
             StartAction(resumeMode, onStart, Modifier.weight(1f))
-            NavItem(Tab.RUNS, current, Modifier.weight(1f)) { onSelect(Tab.RUNS) }
+            if (showRuns) NavItem(Tab.RUNS, current, Modifier.weight(1f)) { onSelect(Tab.RUNS) }
             NavItem(Tab.PROGRESS, current, Modifier.weight(1f)) { onSelect(Tab.PROGRESS) }
         }
     }

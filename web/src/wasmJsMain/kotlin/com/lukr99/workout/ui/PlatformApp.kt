@@ -19,6 +19,7 @@ import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.settings.SettingsHost
 import com.lukr99.workout.ui.settings.WebSettingsHost
+import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
  * Everything [App] needs that only some platforms have: Run Mode, the in-app updater, Health
@@ -28,6 +29,9 @@ import com.lukr99.workout.ui.settings.WebSettingsHost
  * Each platform supplies this file.
  */
 class PlatformApp internal constructor() {
+    /** No Run Mode here: no Runs tab, and Start goes straight to a workout. */
+    val hasRuns: Boolean = false
+
     /** The Running pane on the Progress tab; the web edition has none. */
     val runningSection: (@Composable (UnitSystem) -> Unit)? = null
 
@@ -85,10 +89,15 @@ private fun NoRunsNote(onBack: (() -> Unit)?) {
         verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Runs are not in the web edition yet", style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
+        Text(
+            "Runs are not in the web edition yet",
+            color = EmberTheme.colors.textPrimary,
+            style = MaterialTheme.typography.titleMedium,
+            textAlign = TextAlign.Center,
+        )
         Text(
             "Use the Android app to record runs. Runs saved in a backup are kept when you import it here.",
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = EmberTheme.colors.textSecondary,
             textAlign = TextAlign.Center,
         )
         if (onBack != null) TextButton(onClick = onBack) { Text("Back") }
