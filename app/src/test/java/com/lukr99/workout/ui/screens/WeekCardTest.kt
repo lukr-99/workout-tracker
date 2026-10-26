@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.semantics.Role
@@ -42,13 +43,13 @@ class WeekCardTest {
 
     private val opened = mutableListOf<DayActivity>()
 
-    private fun show() {
+    private fun show(showRuns: Boolean = true) {
         val days = (0..6).map { TrainingDay(monday.plusDays(it), isToday = it == 1) }.toMutableList()
         days[0] = days[0].copy(activities = listOf(push))
         days[1] = days[1].copy(activities = listOf(run, pull))
         compose.setContent {
             WorkoutTheme(dark = true) {
-                WeekCard(TrainingWeek(days, workouts = 2, liftedKg = 0.0, runMeters = 0.0), UnitSystem.Metric) { opened += it }
+                WeekCard(TrainingWeek(days, workouts = 2, liftedKg = 0.0, runMeters = 0.0), UnitSystem.Metric, showRuns) { opened += it }
             }
         }
     }
@@ -89,6 +90,19 @@ class WeekCardTest {
 
         compose.onNodeWithTag(AppTags.homeDay(monday.plusDays(2))).assertHasNoClickAction()
         compose.onNodeWithTag(AppTags.homeDay(monday)).assertHasClickAction()
+    }
+
+    @Test
+    fun theRunTotalShowsOnlyWithRunMode() {
+        show(showRuns = false)
+        compose.onNodeWithText("Run").assertDoesNotExist()
+        compose.onNodeWithText("Lifted").assertExists()
+    }
+
+    @Test
+    fun theRunTotalShowsWithRunMode() {
+        show()
+        compose.onNodeWithText("Run").assertExists()
     }
 
     private fun clickLabel(label: String) = SemanticsMatcher("click label is \"$label\"") {
