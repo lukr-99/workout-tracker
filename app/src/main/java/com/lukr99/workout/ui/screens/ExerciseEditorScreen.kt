@@ -1,8 +1,5 @@
 package com.lukr99.workout.ui.screens
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,7 +41,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.lukr99.workout.data.images.PhotoCaptureTarget
 import com.lukr99.workout.domain.BodyParts
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
@@ -90,7 +86,6 @@ fun ExerciseEditorScreen(
     var trackPerLocation by remember { mutableStateOf(false) }
     var localImagePath by remember { mutableStateOf<String?>(null) }
     var removedPhotoPath by remember { mutableStateOf<String?>(null) }
-    var pendingCapture by remember { mutableStateOf<PhotoCaptureTarget?>(null) }
 
     LaunchedEffect(exerciseId) {
         if (exerciseId == null) return@LaunchedEffect
@@ -112,34 +107,18 @@ fun ExerciseEditorScreen(
         loaded = true
     }
 
-    val photoPicker = rememberLauncherForActivityResult(
-        ActivityResultContracts.PickVisualMedia(),
-    ) { uri ->
-        if (uri != null) {
-            vm.importExercisePhoto(editorExerciseId, uri) { result ->
+    val photoPicker = rememberExercisePhotoPicker(
+        onPhoto = { bytes ->
+            vm.saveExercisePhoto(editorExerciseId, bytes) { result ->
                 result.onSuccess {
                     localImagePath = it
                     removedPhotoPath = null
                 }
-                    .onFailure { toast(it.message ?: "Could not copy the selected photo") }
+                    .onFailure { toast(it.message ?: "Could not save the photo") }
             }
-        }
-    }
-    val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { saved ->
-        val target = pendingCapture
-        pendingCapture = null
-        if (saved && target != null) {
-            vm.commitCapturedPhoto(editorExerciseId, target) { result ->
-                result.onSuccess {
-                    localImagePath = it
-                    removedPhotoPath = null
-                }
-                    .onFailure { toast(it.message ?: "Could not save the camera photo") }
-            }
-        } else {
-            vm.discardPhotoCapture(target)
-        }
-    }
+        },
+        onError = { message -> toast(message) },
+    )
     val previewExercise = (existing ?: Exercise(
         id = editorExerciseId,
         source = ExerciseSource.Custom,
@@ -210,14 +189,7 @@ fun ExerciseEditorScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 OutlinedButton(
-                    onClick = {
-                        vm.createPhotoCaptureTarget()
-                            .onSuccess {
-                                pendingCapture = it
-                                camera.launch(it.uri)
-                            }
-                            .onFailure { toast(it.message ?: "Could not open the camera") }
-                    },
+                    onClick = photoPicker.takePhoto,
                     modifier = Modifier.weight(1f),
                 ) {
                     Icon(Icons.Rounded.CameraAlt, null)
@@ -225,11 +197,7 @@ fun ExerciseEditorScreen(
                     Text("Take photo")
                 }
                 OutlinedButton(
-                    onClick = {
-                        photoPicker.launch(
-                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                        )
-                    },
+                    onClick = photoPicker.choosePhoto,
                     modifier = Modifier.weight(1f),
                 ) {
                     Icon(Icons.Rounded.PhotoLibrary, null)
