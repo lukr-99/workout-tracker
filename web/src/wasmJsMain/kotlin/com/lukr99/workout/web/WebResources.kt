@@ -16,7 +16,6 @@ import kotlinx.coroutines.coroutineScope
 internal object WebResources {
     private var loadedBarlow: FontFamily? = null
     private var loadedBarlowCondensed: FontFamily? = null
-    private var loadedFreeExerciseImageIndex: String? = null
 
     /** Barlow, the reading typeface. */
     val barlow: FontFamily get() = checkNotNull(loadedBarlow) { "Fonts are read before preloadWebResources()" }
@@ -25,17 +24,7 @@ internal object WebResources {
     val barlowCondensed: FontFamily
         get() = checkNotNull(loadedBarlowCondensed) { "Fonts are read before preloadWebResources()" }
 
-    /** The text of the free exercise image index; "{}" when it could not be fetched. */
-    val freeExerciseImageIndexJson: String get() = loadedFreeExerciseImageIndex ?: "{}"
-
-    suspend fun load() = coroutineScope {
-        val fonts = async { loadFonts() }
-        val index = async { BrowserResourceFetcher.text(FREE_EXERCISE_IMAGE_INDEX_PATH) }
-        fonts.await()
-        // The index only feeds exercise pictures, which the web edition does not draw yet, so a
-        // missing file is not worth stopping the app for.
-        loadedFreeExerciseImageIndex = index.await()
-    }
+    suspend fun load() = loadFonts()
 
     /**
      * A page with no fonts would draw no text at all (a canvas has no system fonts to fall back on),
@@ -62,12 +51,10 @@ internal object WebResources {
         loadedBarlow = FontFamily(barlowFiles.map { fetched.getValue(it.first) })
         loadedBarlowCondensed = FontFamily(condensedFiles.map { fetched.getValue(it.first) })
     }
-
-    private const val FREE_EXERCISE_IMAGE_INDEX_PATH = "free_exercise_image_index.json"
 }
 
 /**
- * Fetches the fonts and the exercise image index. `main` must finish this before the first frame:
- * the typefaces and the image index are read from what it loaded.
+ * Fetches the fonts. `main` must finish this before the first frame: the typefaces are read from
+ * what it loaded.
  */
 suspend fun preloadWebResources() = WebResources.load()
