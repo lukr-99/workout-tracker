@@ -7,7 +7,7 @@ import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.domain.run.Route
 import com.lukr99.workout.domain.run.Run
-import java.time.Instant
+import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
 
 /**
@@ -32,7 +32,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class ExportBundle(
-    val exportedAtUtc: String = Instant.now().toString(),
+    val exportedAtUtc: String = Clock.System.now().toString(),
     val exportFormatVersion: String = CURRENT_VERSION,
     val exercises: List<Exercise> = emptyList(),
     val templates: List<WorkoutTemplate> = emptyList(),
