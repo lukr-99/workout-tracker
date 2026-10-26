@@ -90,6 +90,15 @@ val webFonts = tasks.register<Sync>("webFonts") {
     into(layout.buildDirectory.dir("generated/webFonts"))
 }
 
+// The bundled free exercise image index, served beside the page; Android reads the same file from
+// its classpath resources. The page fetches it before the first screen (WebResources.kt).
+val webData = tasks.register<Sync>("webData") {
+    from(rootProject.file("app/src/main/resources")) {
+        include("free_exercise_image_index.json")
+    }
+    into(layout.buildDirectory.dir("generated/webData"))
+}
+
 kotlin {
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
@@ -104,7 +113,12 @@ kotlin {
                 enabled = false
             }
         }
-        nodejs()
+        nodejs {
+            testTask {
+                // Compose's Skia build fetches its .wasm, which Node cannot do from disk on its own.
+                nodeJsArgs += listOf("--import", project.file("src/wasmJsTest/node/file-fetch.mjs").toURI().toString())
+            }
+        }
         binaries.executable()
     }
 
@@ -120,6 +134,7 @@ kotlin {
                 path.startsWith(shared) && androidOnly.any { path.removePrefix(shared).let { rel -> rel.startsWith(it) || rel.endsWith(it) } }
             }
             resources.srcDir(webFonts)
+            resources.srcDir(webData)
             dependencies {
                 implementation(compose.runtime)
                 implementation(compose.foundation)
