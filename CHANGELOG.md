@@ -12,6 +12,10 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
   current browsers, from the same code as the Android app: lifting workouts, templates, history,
   the exercise library, settings, and backup export and import. Data stays in the browser. Runs,
   photos and Health Connect stay Android-only for now. See `docs/web-edition.md`.
+- **Web edition: Add to Home Screen note and iPhone safe areas.** In a Safari tab on iPhone or iPad,
+  a note explains how to add Ember to the Home Screen and why. The app keeps clear of the notch and
+  the home indicator. Gyms show no Set position row and Home no run totals, since the web edition has
+  no GPS or Run Mode.
 
 ### Fixed
 

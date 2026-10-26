@@ -151,6 +151,7 @@ fun App(container: AppContainer) {
                     when (tab) {
                         Tab.HOME -> HomeScreen(
                             vm = homeVm,
+                            showRuns = platform.hasRuns,
                             units = settings.units,
                             onResume = { startWorkout() },
                             onStartTemplate = { startWorkout(it) },

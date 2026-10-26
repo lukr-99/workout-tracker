@@ -11,6 +11,7 @@ import com.lukr99.workout.data.transfer.UserDataEraser
 import com.lukr99.workout.settings.DevicePrefs
 import com.lukr99.workout.settings.SettingsStore
 import com.lukr99.workout.settings.WhatsNewGate
+import com.lukr99.workout.web.RunsHiddenFromScreens
 import com.lukr99.workout.web.WEB_VERSION_NAME
 import com.lukr99.workout.web.WebExercisePhotos
 import com.lukr99.workout.web.storage.WebStorage
@@ -22,7 +23,8 @@ import com.lukr99.workout.web.storage.WebStorage
  */
 class AppContainer(storage: WebStorage) {
     val repository: WorkoutRepository = storage.repository
-    val runRepository: RunRepository = storage.runRepository
+    /** What the screens read: no runs, since the web edition has no Run Mode. Backups use the full store. */
+    val runRepository: RunRepository = RunsHiddenFromScreens(storage.runRepository)
     val settings: SettingsStore = storage.settings
     val devicePrefs: DevicePrefs = storage.devicePrefs
 
@@ -41,7 +43,7 @@ class AppContainer(storage: WebStorage) {
 
     val dataTransfer: DataTransferService = DataTransferService(
         repository = repository,
-        runRepository = runRepository,
+        runRepository = storage.runRepository,
         photos = storage.photos,
         settings = storage.settingsArchive,
         appVersion = WEB_VERSION_NAME,
@@ -49,7 +51,7 @@ class AppContainer(storage: WebStorage) {
 
     val dataEraser: UserDataEraser = UserDataEraser(
         repository = repository,
-        runRepository = runRepository,
+        runRepository = storage.runRepository,
         photos = storage.photos,
         settings = storage.settingsArchive,
         stopAutomaticBackup = {},

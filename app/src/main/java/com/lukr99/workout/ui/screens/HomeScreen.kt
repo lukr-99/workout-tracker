@@ -84,6 +84,8 @@ fun HomeScreen(
     /** The "new version ready" card from the automatic update check, when there is one. */
     updateCard: (@Composable () -> Unit)? = null,
     locationSetupCard: (@Composable () -> Unit)? = null,
+    /** False without Run Mode (the web edition): no run total, and the copy talks about workouts only. */
+    showRuns: Boolean = true,
 ) {
     val snapshot by vm.snapshot.collectAsState()
     val active by vm.activeSession.collectAsState()
@@ -110,7 +112,7 @@ fun HomeScreen(
         locationSetupCard?.let { card -> item(key = "location-setup") { card() } }
         active?.let { session -> item { ResumeCard(session, onResume) } }
         item { SectionLabel("This week") { Streak(snapshot.consistency.currentWeeklyStreak) } }
-        item { WeekCard(week, units) { if (it.isRun) onOpenRun(it.id) else onOpenSession(it.id) } }
+        item { WeekCard(week, units, showRuns) { if (it.isRun) onOpenRun(it.id) else onOpenSession(it.id) } }
         if (templates.isNotEmpty()) {
             item { SectionLabel("Start from a template") { TextLink("All templates", onOpenTemplates) } }
             item { TemplateCard(templates.take(4), lastDone, onStartTemplate, onOpenTemplate) }
@@ -120,8 +122,9 @@ fun HomeScreen(
             item {
                 EmptyState(
                     Icons.Rounded.History,
-                    "No workouts or runs yet",
-                    "Tap the orange Start button below to log a workout or record a run.",
+                    if (showRuns) "No workouts or runs yet" else "No workouts yet",
+                    if (showRuns) "Tap the orange Start button below to log a workout or record a run."
+                    else "Tap the orange Start button below to log a workout.",
                 )
             }
         } else {
@@ -219,7 +222,7 @@ private fun ResumeCard(session: WorkoutSession, onResume: () -> Unit) {
  * the day has more than one. Rest days do nothing.
  */
 @Composable
-internal fun WeekCard(week: TrainingWeek, units: UnitSystem, onOpen: (DayActivity) -> Unit) {
+internal fun WeekCard(week: TrainingWeek, units: UnitSystem, showRuns: Boolean = true, onOpen: (DayActivity) -> Unit) {
     val colors = EmberTheme.colors
     var choosing by remember { mutableStateOf<TrainingDay?>(null) }
     Column(
@@ -239,7 +242,9 @@ internal fun WeekCard(week: TrainingWeek, units: UnitSystem, onOpen: (DayActivit
         Row(Modifier.fillMaxWidth()) {
             WeekTotal(week.workouts.toString(), "", if (week.workouts == 1) "Workout" else "Workouts", Modifier.weight(1f))
             WeekTotal(Format.volume(week.liftedKg, units), Format.unitLabel(units), "Lifted", Modifier.weight(1f))
-            WeekTotal(shortDistance(week.runMeters, units), if (units == UnitSystem.Imperial) "mi" else "km", "Run", Modifier.weight(1f))
+            if (showRuns) {
+                WeekTotal(shortDistance(week.runMeters, units), if (units == UnitSystem.Imperial) "mi" else "km", "Run", Modifier.weight(1f))
+            }
         }
     }
     choosing?.let { day ->
