@@ -1,6 +1,5 @@
 package com.lukr99.workout.ui
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -29,29 +28,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lukr99.workout.data.AppContainer
 import com.lukr99.workout.ui.components.LocalExerciseImageResolver
-import com.lukr99.workout.ui.components.LocalSpotify
 import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.ResumeChooserSheet
 import com.lukr99.workout.ui.components.StartChooserSheet
 import com.lukr99.workout.ui.components.ToastHost
+import com.lukr99.workout.ui.components.exposeTestTags
 import com.lukr99.workout.ui.components.LocationSetupCard
-import com.lukr99.workout.ui.components.UpdateCard
 import com.lukr99.workout.ui.components.rememberReduceMotion
 import com.lukr99.workout.ui.components.rememberToastState
-import com.lukr99.workout.ui.run.LiveRunScreen
-import com.lukr99.workout.ui.run.RunningProgressSection
-import com.lukr99.workout.ui.run.LiveRunViewModel
-import com.lukr99.workout.ui.run.RoutePlannerScreen
-import com.lukr99.workout.ui.run.RoutePlannerViewModel
-import com.lukr99.workout.ui.run.RunDetailScreen
-import com.lukr99.workout.ui.run.RunViewModel
-import com.lukr99.workout.ui.run.RunsScreen
 import com.lukr99.workout.ui.screens.DataTransferScreen
 import com.lukr99.workout.ui.screens.ExerciseEditorScreen
 import com.lukr99.workout.ui.screens.HomeScreen
@@ -64,7 +52,6 @@ import com.lukr99.workout.ui.screens.TemplateEditorScreen
 import com.lukr99.workout.ui.screens.TemplatePreviewSheet
 import com.lukr99.workout.ui.screens.WorkoutDetailScreen
 import com.lukr99.workout.ui.settings.SettingsScreen
-import kotlinx.coroutines.flow.first
 
 /**
  * App root. The 5-item shell — `Home · Runs · (＋ Start) · Progress · Settings` — with the center
@@ -72,7 +59,6 @@ import kotlinx.coroutines.flow.first
  * lives under the Progress tab now. Peer tabs cross-fade; full-screen flows layer over them through a
  * manual back-stack ([Navigator]). See 02-design-system.md and docs/run-mode.
  */
-@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 fun App(container: AppContainer) {
     val nav = remember { Navigator() }
@@ -81,16 +67,7 @@ fun App(container: AppContainer) {
     val homeVm: HomeViewModel = viewModel(factory = HomeViewModel.factory(container.repository, container.runRepository, container.whatsNew))
     val historyVm: HistoryViewModel = viewModel(factory = HistoryViewModel.factory(container.repository))
     val progressVm: ProgressViewModel = viewModel(factory = ProgressViewModel.factory(container.repository, container.workoutData, container.insights))
-    val settingsVm: SettingsViewModel = viewModel(
-        factory = SettingsViewModel.factory(
-            container.settings,
-            container.wgerSync,
-            container.healthConnect,
-            container.backup,
-            container.devicePrefs,
-            container.runRepository,
-        ),
-    )
+    val settingsVm: SettingsViewModel = viewModel(factory = SettingsViewModel.factory(container.settings))
     val libraryVm: LibraryViewModel = viewModel(factory = LibraryViewModel.factory(container.repository, container.workoutData, container.exercisePhotos))
     val liveVm: LiveWorkoutViewModel = viewModel(
         factory = LiveWorkoutViewModel.factory(
@@ -104,20 +81,14 @@ fun App(container: AppContainer) {
     val locationsVm: LocationsViewModel = viewModel(factory = LocationsViewModel.factory(container.repository, container.devicePrefs, container.locationSuggester))
     val locationSetup by locationsVm.setup.collectAsState()
     val locations by locationsVm.locations.collectAsState()
-    val runVm: RunViewModel = viewModel(factory = RunViewModel.factory(container))
-    val liveRunVm: LiveRunViewModel = viewModel(factory = LiveRunViewModel.factory(container))
-    val routePlannerVm: RoutePlannerViewModel = viewModel(factory = RoutePlannerViewModel.factory(container))
+    val platform = rememberPlatformApp(container)
     val dataVm: DataTransferViewModel = viewModel(
-        factory = DataTransferViewModel.factory(container.dataTransfer, container.documents, container.dataEraser),
+        factory = DataTransferViewModel.factory(container.dataTransfer, container.dataEraser),
     )
-    val updatesVm: UpdatesViewModel = viewModel(factory = UpdatesViewModel.factory(container.updates, container.devicePrefs))
-    val updateState by updatesVm.state.collectAsState()
-    LaunchedEffect(Unit) { updatesVm.checkIfDue() }
 
     val settings by settingsVm.settings.collectAsState()
     val activeSession by homeVm.activeSession.collectAsState()
-    val liveRunState by liveRunVm.state.collectAsState()
-    val runActive = liveRunState.isActive
+    val runActive = platform.liveRunActive
     // An in-progress lift only counts as "resume-able" once it has content; an empty 0-exercise
     // session (e.g. one started then abandoned) shouldn't keep the centre action stuck on Resume.
     val hasResumableLift = activeSession?.entries?.isNotEmpty() == true
@@ -135,12 +106,12 @@ fun App(container: AppContainer) {
     }
 
     fun startRun() {
-        liveRunVm.prepareRoute(null)
+        platform.prepareRun(null)
         nav.push(Route.LiveRun)
     }
 
     fun startRunFromRoute(routeId: String) {
-        liveRunVm.prepareRoute(routeId)
+        platform.prepareRun(routeId)
         nav.push(Route.LiveRun)
     }
 
@@ -158,13 +129,13 @@ fun App(container: AppContainer) {
     CompositionLocalProvider(
         LocalToast provides toast,
         LocalExerciseImageResolver provides container.exerciseImages,
-        LocalSpotify provides container.spotify,
+        *platform.locals,
     ) {
         Box(
             Modifier.fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 // Test tags become resource ids for uiautomator, Android CLI and Maestro.
-                .semantics { testTagsAsResourceId = true }
+                .exposeTestTags()
                 .testTag(AppTags.ROOT),
         ) {
             // Peer-tab layer (always mounted so tab state persists behind overlays).
@@ -186,17 +157,7 @@ fun App(container: AppContainer) {
                             onOpenSession = { nav.push(Route.WorkoutDetail(it)) },
                             onOpenRun = { nav.push(Route.RunDetail(it)) },
                             onOpenSettings = { nav.push(Route.Settings) },
-                            updateCard = updateState.offer?.let { offer ->
-                                {
-                                    UpdateCard(
-                                        version = offer.version,
-                                        busy = updateState.busy,
-                                        status = updateState.status,
-                                        onUpdate = updatesVm::downloadAndInstall,
-                                        onLater = updatesVm::dismissOffer,
-                                    )
-                                }
-                            },
+                            updateCard = platform.updateCard,
                             locationSetupCard = locationSetup?.let { setup ->
                                 {
                                     val toast = LocalToast.current
@@ -223,8 +184,7 @@ fun App(container: AppContainer) {
                             onStartTemplate = { startWorkout(it) },
                             onOpenTemplate = { previewTemplateId = it },
                         )
-                        Tab.RUNS -> RunsScreen(
-                            vm = runVm,
+                        Tab.RUNS -> platform.RunsTab(
                             units = settings.units,
                             onStartRun = { startRun() },
                             onOpenRun = { nav.push(Route.RunDetail(it)) },
@@ -238,7 +198,7 @@ fun App(container: AppContainer) {
                             units = settings.units,
                             onOpenExercise = { nav.push(Route.ProgressDetail(it)) },
                             onOpenSession = { nav.push(Route.WorkoutDetail(it)) },
-                            runningSection = { RunningProgressSection(vm = runVm, units = settings.units) },
+                            runningSection = platform.runningSection?.let { section -> { section(settings.units) } },
                         )
                     }
                 }
@@ -246,7 +206,7 @@ fun App(container: AppContainer) {
 
             // Overlay layer (full-screen flows).
             if (overlay != null) {
-                BackHandler(enabled = true) { nav.pop() }
+                PlatformBackHandler(enabled = true) { nav.pop() }
                 Box(
                     Modifier.fillMaxSize()
                         .background(MaterialTheme.colorScheme.background)
@@ -261,29 +221,15 @@ fun App(container: AppContainer) {
                             onEditExercise = { nav.push(Route.ExerciseEditor(it)) },
                             onOpenHistory = { liveVm.flush(); nav.push(Route.ProgressDetail(it)) },
                             onWorkoutSaved = { saved ->
-                                if (container.devicePrefs.healthAutoSend.first()) container.healthConnect.exportWorkout(saved)
+                                platform.onWorkoutSaved(saved)
                             },
                         )
-                        Route.LiveRun -> LiveRunScreen(
-                            vm = liveRunVm,
-                            units = settings.units,
-                            onClose = { nav.pop() },
-                        )
-                        is Route.RunDetail -> RunDetailScreen(
-                            vm = runVm,
-                            runId = overlay.runId,
-                            units = settings.units,
-                            onBack = { nav.pop() },
-                        )
-                        Route.RoutePlanner -> RoutePlannerScreen(
-                            vm = routePlannerVm,
-                            units = settings.units,
-                            onBack = { nav.pop() },
-                        )
+                        Route.LiveRun, is Route.RunDetail, Route.RoutePlanner ->
+                            platform.RunRoute(overlay, settings.units, onClose = { nav.pop() })
                         Route.Settings -> Box(Modifier.fillMaxSize().padding(horizontal = 18.dp).padding(top = 12.dp)) {
                             SettingsScreen(
                                 vm = settingsVm,
-                                updates = updatesVm,
+                                host = platform.rememberSettingsHost(),
                                 locationsVm = locationsVm,
                                 onOpenData = { nav.push(Route.DataTransfer) },
                                 onOpenPrivacy = { nav.push(Route.PrivacyPolicy) },
