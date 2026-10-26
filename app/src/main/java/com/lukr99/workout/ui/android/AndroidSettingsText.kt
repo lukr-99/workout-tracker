@@ -1,4 +1,4 @@
-package com.lukr99.workout.ui.settings
+package com.lukr99.workout.ui.android
 
 import android.content.Intent
 import android.net.Uri
