@@ -1,8 +1,5 @@
 package com.lukr99.workout.ui.screens
 
-import android.content.Intent
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,12 +20,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.lukr99.workout.data.transfer.ImportCommitResult
 import com.lukr99.workout.data.transfer.RestoreMode
 import com.lukr99.workout.ui.DataTransferViewModel
+import com.lukr99.workout.data.transfer.ExportArtifact
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
@@ -43,17 +41,12 @@ fun DataTransferScreen(
     val state by vm.state.collectAsState()
     // Counts and the live-session check feed the danger zone; refresh after every operation.
     LaunchedEffect(state.isWorking) { if (!state.isWorking) vm.refreshErase() }
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri?.let { vm.previewImport(it, it.lastPathSegment) }
-    }
-    val jsonSaveLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("application/json"),
-    ) { uri -> uri?.let { vm.exportJson(it) } }
-    val csvSaveLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("text/csv"),
-    ) { uri -> uri?.let { vm.exportCsv(it) } }
+    val documents = rememberDocumentActions(
+        onPicked = vm::previewImport,
+        onSaveChosen = vm::saveExport,
+        onError = vm::reportError,
+    )
 
     Column(
         modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
@@ -69,19 +62,17 @@ fun DataTransferScreen(
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Button(
-                onClick = {
-                    importLauncher.launch(arrayOf("application/json", "text/csv", "text/*"))
-                },
+                onClick = documents.pickFile,
                 enabled = !state.isWorking,
                 modifier = Modifier.testTag(DataTags.IMPORT),
             ) { Text("Import file") }
             OutlinedButton(
-                onClick = { jsonSaveLauncher.launch("workout-backup.json") },
+                onClick = { saveExport(scope, vm, documents, { vm.jsonArtifact() }) },
                 enabled = !state.isWorking,
                 modifier = Modifier.testTag(DataTags.SAVE_JSON),
             ) { Text("Save JSON") }
             OutlinedButton(
-                onClick = { csvSaveLauncher.launch("workout-history.csv") },
+                onClick = { saveExport(scope, vm, documents, { vm.csvArtifact() }) },
                 enabled = !state.isWorking,
                 modifier = Modifier.testTag(DataTags.SAVE_CSV),
             ) { Text("Save CSV") }
@@ -90,20 +81,14 @@ fun DataTransferScreen(
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             OutlinedButton(
                 onClick = {
-                    scope.launch {
-                        val intent = vm.jsonShareIntent()
-                        context.startActivity(Intent.createChooser(intent, "Share workout backup"))
-                    }
+                    shareExport(scope, vm, documents, "Share workout backup", { vm.jsonArtifact() })
                 },
                 enabled = !state.isWorking,
                 modifier = Modifier.testTag(DataTags.SHARE_JSON),
             ) { Text("Share JSON") }
             OutlinedButton(
                 onClick = {
-                    scope.launch {
-                        val intent = vm.csvShareIntent()
-                        context.startActivity(Intent.createChooser(intent, "Share workout CSV"))
-                    }
+                    shareExport(scope, vm, documents, "Share workout CSV", { vm.csvArtifact() })
                 },
                 enabled = !state.isWorking,
                 modifier = Modifier.testTag(DataTags.SHARE_CSV),
@@ -157,5 +142,32 @@ private fun commitMessage(result: ImportCommitResult): String {
     return when (result.mode) {
         RestoreMode.Replace -> "Replaced your data with the backup: $restored."
         RestoreMode.Merge -> "Imported $restored. ${result.skippedSessions} were already here."
+    }
+}
+
+private fun saveExport(
+    scope: CoroutineScope,
+    vm: DataTransferViewModel,
+    documents: DocumentActions,
+    build: suspend () -> ExportArtifact,
+) {
+    scope.launch {
+        runCatching { build() }
+            .onSuccess(documents.saveFile)
+            .onFailure { vm.reportError(it.message ?: "Operation failed.") }
+    }
+}
+
+private fun shareExport(
+    scope: CoroutineScope,
+    vm: DataTransferViewModel,
+    documents: DocumentActions,
+    title: String,
+    build: suspend () -> ExportArtifact,
+) {
+    scope.launch {
+        runCatching { build() }
+            .onSuccess { documents.shareFile(it, title) }
+            .onFailure { vm.reportError(it.message ?: "Operation failed.") }
     }
 }

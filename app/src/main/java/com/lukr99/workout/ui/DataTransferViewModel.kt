@@ -1,15 +1,13 @@
 package com.lukr99.workout.ui
 
-import android.content.Intent
-import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewModelScope
-import com.lukr99.workout.data.transfer.AndroidDocumentGateway
 import com.lukr99.workout.data.transfer.CsvExportOptions
 import com.lukr99.workout.data.transfer.DataTransferService
+import com.lukr99.workout.data.transfer.ExportArtifact
 import com.lukr99.workout.data.transfer.ImportOptions
 import com.lukr99.workout.data.transfer.JsonExportOptions
 import com.lukr99.workout.data.transfer.RestoreMode
@@ -26,7 +24,6 @@ import kotlinx.coroutines.launch
  */
 class DataTransferViewModel(
     private val transfer: DataTransferService,
-    private val documents: AndroidDocumentGateway,
     private val eraser: UserDataEraser,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(DataTransferState())
@@ -36,8 +33,9 @@ class DataTransferViewModel(
     private var pickedText: String? = null
     private var pickedName: String? = null
 
-    fun previewImport(uri: Uri, fileName: String? = null) = launchOperation {
-        val text = documents.readText(uri)
+    /** [read] gets the picked file's text; it runs here so the busy state and errors apply to it. */
+    fun previewImport(fileName: String?, read: suspend () -> String) = launchOperation {
+        val text = read()
         pickedText = text
         pickedName = fileName
         preview(RestoreMode.Merge)
@@ -56,23 +54,23 @@ class DataTransferViewModel(
         mutableState.update { it.copy(preview = null, commitResult = result) }
     }
 
-    fun exportJson(uri: Uri, options: JsonExportOptions = JsonExportOptions()) = launchOperation {
-        val artifact = transfer.exportJson(options)
-        documents.writeText(uri, artifact)
+    /** Builds the JSON backup for the platform to save or share. */
+    suspend fun jsonArtifact(options: JsonExportOptions = JsonExportOptions()): ExportArtifact =
+        transfer.exportJson(options)
+
+    /** Builds the CSV export for the platform to save or share. */
+    suspend fun csvArtifact(options: CsvExportOptions = CsvExportOptions()): ExportArtifact =
+        transfer.exportCsv(options)
+
+    /** Runs [write] (the platform saving [artifact]) with the busy state, then notes the export. */
+    fun saveExport(artifact: ExportArtifact, write: suspend () -> Unit) = launchOperation {
+        write()
         mutableState.update { it.copy(lastExport = artifact) }
     }
 
-    fun exportCsv(uri: Uri, options: CsvExportOptions = CsvExportOptions()) = launchOperation {
-        val artifact = transfer.exportCsv(options)
-        documents.writeText(uri, artifact)
-        mutableState.update { it.copy(lastExport = artifact) }
+    fun reportError(message: String) {
+        mutableState.update { it.copy(error = message) }
     }
-
-    suspend fun jsonShareIntent(options: JsonExportOptions = JsonExportOptions()): Intent =
-        documents.shareIntent(transfer.exportJson(options))
-
-    suspend fun csvShareIntent(options: CsvExportOptions = CsvExportOptions()): Intent =
-        documents.shareIntent(transfer.exportCsv(options))
 
     fun clearPreview() {
         pickedText = null
@@ -111,9 +109,9 @@ class DataTransferViewModel(
     }
 
     companion object {
-        fun factory(transfer: DataTransferService, documents: AndroidDocumentGateway, eraser: UserDataEraser): ViewModelProvider.Factory =
+        fun factory(transfer: DataTransferService, eraser: UserDataEraser): ViewModelProvider.Factory =
             viewModelFactory {
-                initializer { DataTransferViewModel(transfer, documents, eraser) }
+                initializer { DataTransferViewModel(transfer, eraser) }
             }
     }
 }
