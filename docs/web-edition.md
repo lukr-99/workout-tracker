@@ -1,7 +1,7 @@
 # Web edition
 
-Status: M1 live at https://ember-workout.pages.dev (Pages project `ember-workout`); M2 (the rest of
-v1) in review. Runs are left out of v1 (owner's decision, 2026-10-25). The
+Status: M1 and M2 live at https://ember-workout.pages.dev (Pages project `ember-workout`); M3
+(photos and image sharing) in review. Runs are left out of v1 (owner's decision, 2026-10-25). The
 decision and the alternatives are in [ADR 0001](adr/0001-web-edition.md).
 
 The web edition lets friends on iPhone (and anyone with a current browser) use Ember from Safari and
@@ -37,12 +37,13 @@ shows "This browser is too old for Ember" with update steps when they are missin
 | Delete all data | M1 | Clears the browser document and reseeds the catalog. |
 | Progress charts, records, e1RM, weekly volume, body heatmap, per-gym charts | M1, checked in M2 | Shared. All charts are our own `Canvas` code. |
 | Gyms and per-gym tracking, gym notes | M1, without GPS | Gyms are picked by hand. No "you are at this gym" suggestion and no Set position rows (`CAN_SAVE_POSITIONS` is false). |
-| Share a workout | M1, text only | The share sheet with the workout as text, else the clipboard. No share card image yet. |
+| Share a workout | M1 text, M3 image | "Share as text": the share sheet, else the clipboard. "Share as image": the same card as Android, drawn with Skia in the page, shared as a PNG file through the share sheet, else saved as a download. |
 | Spotify button | M1 | A link, not a controller: opens `spotify:` (the app, if installed), then `https://open.spotify.com`. |
-| Exercise photos and catalog pictures | M3 | Not in M1: the editor says photos are not available yet, and no pictures are drawn. Catalog pictures come from another site, which the CSP does not allow yet. |
+| Exercise photos | M3 | Take photo (`capture`) or Choose from the library. Shrunk to 1280 px, JPEG 0.8, kept in IndexedDB and in backups. See "Photos" below. |
+| Catalog pictures | Not yet | They are loaded from other sites. That needs a wider CSP and sends the phone's address to those sites, against "nothing is sent anywhere", so they are left out until the owner decides. Exercises show their body-part mark. |
 | Runs | Not in v1 | Owner's decision, see "Run tracking". No Runs tab, Start goes straight to a workout (`PlatformApp.hasRuns` is false), and Home shows no run totals. Imported runs stay in storage and in backups. |
 | Health Connect | No | Android only. |
-| Scheduled automatic backups | No | A browser cannot write files on a schedule. A backup reminder is planned for M3. |
+| Scheduled automatic backups | No | A browser cannot write files on a schedule. A backup reminder is still open. |
 | In-app updater | No | The service worker delivers new builds. |
 | wger catalog sync | No | Not needed for v1. |
 | Vibration and speech cues | No | No Vibration API on iPhone. The rest timer end shows on screen only. |
@@ -113,7 +114,16 @@ Notes for the UI:
 - The app asks the browser to keep its storage (`navigator.storage.persist()`).
 - On an iPhone or iPad in a Safari tab, a note explains how to add Ember to the Home Screen and why
   (Safari may delete a site's data after 7 days without a visit). "Got it" hides it on that device.
-- Photos are not stored in M1. An Android backup's photos are dropped on import.
+- **Photos** are separate records in the `photos` store, one per photo, keyed `photo:<exercise id>-<random>`
+  and stored as an `ArrayBuffer` of JPEG bytes. The exercise keeps the key in `localImagePath`, as
+  Android keeps a file path. `DocumentPhotoArchive` (shared, JVM-tested) holds them all in memory for
+  drawing, loaded before the first frame, and writes through to IndexedDB: a photo only shows once it
+  is stored. A write that fails (device full, storage blocked) throws a sentence the editor shows as a
+  toast, for example "This device is out of storage space". Other tabs and a returning page reload
+  the photos along with the document. A backup carries each photo as Base64 JPEG (data contract
+  1.8, Android scales to 1600 px, the web stores at most 1280 px); an Android backup's photos now
+  restore on the web too, and a replace or "Delete all data" removes photos nothing points at.
+  Photos are decoded to at most 640 px for drawing, with a cache of 48.
 - Kotlin/Wasm 2.0.21 writes the number `1e-7` as `.e-7`, which is not valid JSON. The document codec
   and `JsonExporter.toJson` repair it (`data/document/JsonNumberRepair.kt`), so web backups always
   read back.
@@ -214,8 +224,9 @@ between the two with export and import.
 - **M2, the rest of v1.** Done: progress, library, gyms and backup import walked through on the web;
   the Runs tab, the Run choice and the GPS rows hidden; the Add to Home Screen note in a Safari tab;
   iPhone safe areas. Still open: a test pass on a real iPhone.
-- **M3, v1.1.** Exercise photos with capture and compression, catalog pictures, the workout share card,
-  a backup reminder in place of scheduled backups.
+- **M3, v1.1.** This change: exercise photos with capture and compression, the workout share card
+  image, share fallbacks and the Spotify link check. Still open: catalog pictures (see the table) and a
+  backup reminder in place of scheduled backups.
 - **M4, runs (if chosen later).**
 
 ## Left out compared with Android

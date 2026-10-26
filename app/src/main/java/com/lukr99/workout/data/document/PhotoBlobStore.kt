@@ -14,6 +14,3 @@ interface PhotoBlobStore {
     /** Removes these keys. A missing key is ignored. */
     suspend fun delete(keys: Collection<String>)
 }
-
-/** A photo could not be written, for example because the device storage is full. */
-class PhotoStorageException(message: String) : Exception(message)

@@ -13,6 +13,3 @@ internal object WebPhotos {
     /** The image model for the photo stored under [key], or null when there is none. */
     fun model(key: String): WebPhotoModel? = archive?.bytes(key)?.let { WebPhotoModel(key, it) }
 }
-
-/** A stored exercise photo, as the image model the thumbnails draw. */
-internal class WebPhotoModel(val key: String, val bytes: ByteArray)

@@ -23,9 +23,6 @@ import org.jetbrains.skia.Shader
 import org.jetbrains.skia.Surface
 import org.jetbrains.skia.Typeface
 
-/** The finished card: the PNG file, and the same picture to show in the preview. */
-internal class RenderedShareCard(val png: ByteArray, val image: Image)
-
 /**
  * Draws the workout share card (a PNG, 1080 px wide, square up to 4:5) on a Skia surface, the same
  * layout and wording as Android's `WorkoutShareCardRenderer`: the Ember header, the workout name,
