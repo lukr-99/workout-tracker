@@ -18,6 +18,9 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 - **Web edition: no Run choice.** Start goes straight to a workout and the Runs tab is hidden, since
   the web edition has no Run Mode. The remaining "Runs are not in the web edition yet" note is
   readable in both themes.
+- **Unreadable titles in the dark theme.** Some titles drawn straight on the background, such as
+  "Delete all data" and "Data", came out black on black. Text now starts in the theme's text
+  colour everywhere.
 
 ## [2.9.1] - 2026-10-25
 
