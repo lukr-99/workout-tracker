@@ -1,7 +1,7 @@
 # Web edition
 
-Status: M1 built (the `:web` module, browser storage, the lifting core, the page shell and the
-deploy workflow). Not deployed yet. Runs are left out of v1 (owner's decision, 2026-10-25). The
+Status: M1 live at https://ember-workout.pages.dev (Pages project `ember-workout`); M2 (the rest of
+v1) in review. Runs are left out of v1 (owner's decision, 2026-10-25). The
 decision and the alternatives are in [ADR 0001](adr/0001-web-edition.md).
 
 The web edition lets friends on iPhone (and anyone with a current browser) use Ember from Safari and
@@ -35,12 +35,12 @@ shows "This browser is too old for Ember" with update steps when they are missin
 | Backup export (JSON) and CSV | M1 | The same `ExportBundle` JSON. On iPhone the share sheet ("Save to Files") when the browser can share files, else a download. |
 | Backup import (Ember JSON, Lyfta CSV) | M1 | A file picker; the same preview, merge and replace flow. |
 | Delete all data | M1 | Clears the browser document and reseeds the catalog. |
-| Progress charts, records, e1RM, weekly volume, body heatmap | M1 (compiles and runs), checked in M2 | Shared. All charts are our own `Canvas` code. |
-| Gyms and per-gym tracking, gym notes | M1 without GPS, polished in M2 | Gyms are picked by hand. No "you are at this gym" suggestion; "Set position" reports that the position is not available. |
+| Progress charts, records, e1RM, weekly volume, body heatmap, per-gym charts | M1, checked in M2 | Shared. All charts are our own `Canvas` code. |
+| Gyms and per-gym tracking, gym notes | M1, without GPS | Gyms are picked by hand. No "you are at this gym" suggestion and no Set position rows (`CAN_SAVE_POSITIONS` is false). |
 | Share a workout | M1, text only | The share sheet with the workout as text, else the clipboard. No share card image yet. |
 | Spotify button | M1 | A link, not a controller: opens `spotify:` (the app, if installed), then `https://open.spotify.com`. |
 | Exercise photos and catalog pictures | M3 | Not in M1: the editor says photos are not available yet, and no pictures are drawn. Catalog pictures come from another site, which the CSP does not allow yet. |
-| Runs | Not in v1 | Owner's decision, see "Run tracking". The Runs tab says runs are not in the web edition yet. |
+| Runs | Not in v1 | Owner's decision, see "Run tracking". No Runs tab, Start goes straight to a workout (`PlatformApp.hasRuns` is false), and Home shows no run totals. Imported runs stay in storage and in backups. |
 | Health Connect | No | Android only. |
 | Scheduled automatic backups | No | A browser cannot write files on a schedule. A backup reminder is planned for M3. |
 | In-app updater | No | The service worker delivers new builds. |
@@ -89,7 +89,7 @@ Notes for the UI:
 
 - The canvas fills the whole window, including the area under the iPhone home indicator.
   `globalThis.emberSafeArea()` returns the insets in CSS pixels and an `ember:safearea` event fires on
-  resize.
+  resize; `Main` pads the app by them (`web/SafeAreaPadding.kt`).
 - The CSP allows only same-origin files. Do not load fonts, images or scripts from another site.
 
 ## Storage
@@ -110,6 +110,8 @@ Notes for the UI:
   again", and the change stays in memory. If the browser refuses storage altogether, the banner says
   that everything is lost when the page closes. The app never falls back silently.
 - The app asks the browser to keep its storage (`navigator.storage.persist()`).
+- On an iPhone or iPad in a Safari tab, a note explains how to add Ember to the Home Screen and why
+  (Safari may delete a site's data after 7 days without a visit). "Got it" hides it on that device.
 - Photos are not stored in M1. An Android backup's photos are dropped on import.
 - Kotlin/Wasm 2.0.21 writes the number `1e-7` as `.e-7`, which is not valid JSON. The document codec
   and `JsonExporter.toJson` repair it (`data/document/JsonNumberRepair.kt`), so web backups always
@@ -208,9 +210,9 @@ between the two with export and import.
   revisions, quarantine and the storage banner, the seeded catalog, the shared screens, backup export
   and import, the page shell, service worker, CSP, stamp and check scripts, and `web.yml` with a
   manual-only deploy.
-- **M2, the rest of v1.** Progress, gyms and gym notes checked on the web; hide the Runs tab and the
-  GPS rows instead of showing "not available"; a gentle note in a Safari tab; iPhone safe areas; a
-  real-iPhone test pass; the first deploy with the owner.
+- **M2, the rest of v1.** Done: progress, library, gyms and backup import walked through on the web;
+  the Runs tab, the Run choice and the GPS rows hidden; the Add to Home Screen note in a Safari tab;
+  iPhone safe areas. Still open: a test pass on a real iPhone.
 - **M3, v1.1.** Exercise photos with capture and compression, catalog pictures, the workout share card,
   a backup reminder in place of scheduled backups.
 - **M4, runs (if chosen later).**
