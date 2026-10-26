@@ -1,8 +1,11 @@
 package com.lukr99.workout.web
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -15,6 +18,7 @@ import com.lukr99.workout.settings.AppSettings
 import com.lukr99.workout.settings.ThemeMode
 import com.lukr99.workout.ui.App
 import com.lukr99.workout.ui.components.LocalReduceMotion
+import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.WorkoutTheme
 import com.lukr99.workout.web.storage.WebStorage
 import kotlinx.coroutines.MainScope
@@ -46,9 +50,12 @@ fun main() {
             }
             WorkoutTheme(dark = dark) {
                 CompositionLocalProvider(LocalReduceMotion provides settings.reduceMotion) {
-                    Box(Modifier.fillMaxSize()) {
+                    Box(Modifier.fillMaxSize().background(EmberTheme.colors.background).padding(rememberSafeAreaPadding())) {
                         App(container)
-                        StorageBanner(storage, Modifier.align(Alignment.TopCenter))
+                        Column(Modifier.align(Alignment.TopCenter)) {
+                            StorageBanner(storage)
+                            InstallNote()
+                        }
                     }
                 }
             }
