@@ -8,7 +8,7 @@ import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.domain.newId
 import com.lukr99.workout.domain.effectiveTags
-import java.util.Locale
+import com.lukr99.workout.domain.formatFixed
 
 /** Turns a parsed payload into deterministic insert/update/merge/skip actions. */
 internal object ImportPlanner {
@@ -344,7 +344,7 @@ internal object ImportPlanner {
 
     private fun StrengthSet.signature(): String = listOf(
         reps,
-        String.format(Locale.ROOT, "%.6f", weightKg),
+        formatFixed(weightKg, 6),
         durationSeconds ?: 0,
         setType.ordinal,
         isWarmup,
