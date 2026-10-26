@@ -1,6 +1,6 @@
 # Cloudflare Pages project for the browser edition. Read by `wrangler pages deploy`, run from this
 # folder by .github/workflows/web.yml. The project is a Direct Upload project: GitHub Actions
 # builds and uploads, Cloudflare does not build. See docs/web-edition.md.
-name = "ember"
+name = "ember-workout"
 compatibility_date = "2026-09-01"
 pages_build_output_dir = "build/dist/wasmJs/productionExecutable"
