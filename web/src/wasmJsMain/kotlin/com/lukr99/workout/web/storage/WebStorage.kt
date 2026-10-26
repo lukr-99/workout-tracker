@@ -9,12 +9,12 @@ import com.lukr99.workout.data.document.DocumentSettingsStore
 import com.lukr99.workout.data.document.DocumentStore
 import com.lukr99.workout.data.document.DocumentTransactionRunner
 import com.lukr99.workout.data.document.DocumentWorkoutRepository
-import com.lukr99.workout.data.document.DroppedPhotoArchive
+import com.lukr99.workout.data.document.DocumentPhotoArchive
+import com.lukr99.workout.data.document.PhotoBlobStore
 import com.lukr99.workout.data.document.StorageStatus
 import com.lukr99.workout.data.WorkoutRepository
 import com.lukr99.workout.data.run.RunRepository
 import com.lukr99.workout.data.transfer.DataStoreSettingsArchive
-import com.lukr99.workout.data.transfer.PhotoArchive
 import com.lukr99.workout.data.transfer.SettingsArchive
 import com.lukr99.workout.settings.DevicePrefs
 import com.lukr99.workout.settings.SeenVersionStore
@@ -34,6 +34,7 @@ import kotlinx.coroutines.launch
 class WebStorage(
     private val scope: CoroutineScope,
     store: DocumentStore = IndexedDbDocumentStore(),
+    photoStore: PhotoBlobStore = IndexedDbPhotoBlobStore(),
 ) {
     val database = DocumentDatabase(store)
     val repository: WorkoutRepository = DocumentWorkoutRepository(database)
@@ -43,7 +44,8 @@ class WebStorage(
     val devicePrefs: DevicePrefs = DocumentDevicePrefs(database)
     val seenVersions: SeenVersionStore = DocumentSeenVersionStore(database)
     val transactions: TransactionRunner = DocumentTransactionRunner(database)
-    val photos: PhotoArchive = DroppedPhotoArchive
+    /** Exercise photos, in memory for the screens and in IndexedDB for keeps. Backup and the editor use it. */
+    val photos = DocumentPhotoArchive(photoStore)
 
     /** Saved, failed, memory only, data set aside: for the banner. */
     val status: StateFlow<StorageStatus> = database.status
@@ -55,11 +57,16 @@ class WebStorage(
 
     private var started = false
 
+    private suspend fun reloadAll() {
+        photos.load()
+        database.reload()
+    }
+
     fun start() {
         if (started) return
         started = true
-        onDataChanged { scope.launch { database.reload() } }
-        onPageVisible { scope.launch { database.reload() } }
+        onDataChanged { scope.launch { reloadAll() } }
+        onPageVisible { scope.launch { reloadAll() } }
         scope.launch {
             database.open()
             val granted: Boolean = try {

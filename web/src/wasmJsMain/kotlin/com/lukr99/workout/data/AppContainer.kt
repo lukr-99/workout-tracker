@@ -13,7 +13,6 @@ import com.lukr99.workout.settings.SettingsStore
 import com.lukr99.workout.settings.WhatsNewGate
 import com.lukr99.workout.web.RunsHiddenFromScreens
 import com.lukr99.workout.web.WEB_VERSION_NAME
-import com.lukr99.workout.web.WebExercisePhotos
 import com.lukr99.workout.web.storage.WebStorage
 
 /**
@@ -34,7 +33,7 @@ class AppContainer(storage: WebStorage) {
     val workoutData: WorkoutDataService = WorkoutDataService(repository)
     val insights: WorkoutInsightsService = WorkoutInsightsService(repository)
 
-    val exercisePhotos: ExercisePhotos = WebExercisePhotos
+    val exercisePhotos: ExercisePhotos = storage.photos
 
     /** A browser page cannot follow the phone's position in the background, so no gym suggestions. */
     val locationSuggester: PlaceSuggester = NoPlaceSuggester
