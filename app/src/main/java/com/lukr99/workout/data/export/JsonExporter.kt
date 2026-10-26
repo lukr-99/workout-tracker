@@ -1,5 +1,6 @@
 package com.lukr99.workout.data.export
 
+import com.lukr99.workout.data.document.JsonNumberRepair
 import kotlinx.serialization.json.Json
 
 /**
@@ -19,7 +20,12 @@ object JsonExporter {
         explicitNulls = true
     }
 
-    fun toJson(bundle: ExportBundle): String = json.encodeToString(ExportBundle.serializer(), bundle)
+    /**
+     * The bundle as JSON. [JsonNumberRepair] fixes numbers Kotlin/Wasm 2.0 writes wrongly (`1e-7` as
+     * `.e-7`), so a backup made in the web edition always reads back; on Android it changes nothing.
+     */
+    fun toJson(bundle: ExportBundle): String =
+        JsonNumberRepair.repair(json.encodeToString(ExportBundle.serializer(), bundle))
 
     fun fromJson(text: String): ExportBundle = json.decodeFromString(ExportBundle.serializer(), text)
 }

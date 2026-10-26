@@ -4,6 +4,18 @@ Things that went wrong in this repository and took longer to find than to fix. S
 CodePrint's `docs/pitfalls/`, for the error text before debugging something surprising. The format
 is in CodePrint's `docs/pitfalls/README.md`. Newest first.
 
+## The web edition wrote `.e-7` into JSON, and its build ran out of memory
+
+- Symptom: a document or backup written by the web edition did not parse (`Unexpected JSON token`)
+  when a number was exactly `1e-7`. Separately, linking the web build failed with "Not enough memory".
+- Cause: Kotlin/Wasm 2.0.21 prints some doubles in exponent form without a leading digit (`.e-7`),
+  which kotlinx.serialization copies into the JSON. Linking Kotlin/Wasm needs more heap than the old
+  2 GB `org.gradle.jvmargs`.
+- Fix: `data/document/JsonNumberRepair.kt` repairs such numbers in the web document codec and in
+  `JsonExporter.toJson`. `gradle.properties` gives Gradle 3 GB and the Kotlin daemon 4 GB.
+- Closed off by: `JsonNumberRepairTest`.
+- Seen: web edition M1, 2026-10-26.
+
 ## A new `Exercise` field is reset whenever the exercise editor saves
 
 - Symptom: a flag such as `trackPerLocation` is set, then turns off again after the exercise is

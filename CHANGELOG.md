@@ -6,6 +6,13 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 ## [Unreleased]
 
+### Added
+
+- **Web edition (not deployed yet).** Ember can now be built as a web app for iPhone and other
+  current browsers, from the same code as the Android app: lifting workouts, templates, history,
+  the exercise library, settings, and backup export and import. Data stays in the browser. Runs,
+  photos and Health Connect stay Android-only for now. See `docs/web-edition.md`.
+
 ## [2.9.1] - 2026-10-25
 
 ### Changed

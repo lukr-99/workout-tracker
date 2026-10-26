@@ -1,12 +1,12 @@
-# Web edition (draft)
+# Web edition
 
-Status: M0 (Android prep) done on `feat/web-edition`; the `:web` module is not built yet. Runs are
-left out of v1 (owner's decision, 2026-10-25). The decision and the alternatives are in
-[ADR 0001](adr/0001-web-edition.md).
+Status: M1 built (the `:web` module, browser storage, the lifting core, the page shell and the
+deploy workflow). Not deployed yet. Runs are left out of v1 (owner's decision, 2026-10-25). The
+decision and the alternatives are in [ADR 0001](adr/0001-web-edition.md).
 
 The web edition lets friends on iPhone (and anyone with a current browser) use Ember from Safari and
 add it to the home screen like an app. It is the same Kotlin code as the Android app, compiled to
-WebAssembly with Compose Multiplatform, modelled on Tarot2Go's web edition
+WebAssembly with Compose Multiplatform and drawn on a canvas, modelled on Tarot2Go's web edition
 (`../Tarot2Go/docs/web-edition.md`).
 
 ## Browsers
@@ -25,161 +25,199 @@ shows "This browser is too old for Ember" with update steps when they are missin
 
 ## What ships on the web
 
-| Area | v1 on the web | How |
+| Area | On the web | How |
 | --- | --- | --- |
-| Live workout, sets, set tags, supersets, rest timer | Yes | Shared UI and `LiveWorkoutViewModel`. The rest timer runs while the page is open. |
-| Templates | Yes | Shared. |
-| History and workout detail | Yes | Shared. |
-| Exercise library, custom exercises, exercise notes | Yes | Shared. The starter catalog is seeded on first start, as on Android. |
-| Progress charts, records, e1RM, weekly volume, body heatmap | Yes | Shared. All charts are our own `Canvas` code. |
-| Gyms and per-gym tracking, gym notes | Yes, without GPS | Gyms are picked by hand. No "you are at this gym" suggestion. |
-| Settings (theme, units, default rest) | Yes | A web `SettingsStore` in the same storage, same keys as the backup. |
-| Backup export (JSON) and CSV | Yes | The same `ExportBundle` JSON, offered as a download. On iPhone the Web Share sheet ("Save to Files") is used when available. |
-| Backup import (Ember JSON, Lyfta CSV) | Yes | `<input type=file>`; the same preview, merge and replace flow. |
-| Delete all data | Yes | Clears the web storage and reseeds the catalog. |
-| Exercise photos | v1.1 (milestone 3) | `<input type=file accept="image/*" capture>`, scaled in a canvas to at most 1600 px and stored as JPEG blobs. |
-| Share a workout (text or card) | v1.1 | Web Share API with text; the share card image if the canvas render ports cleanly, else text only. |
-| Spotify button | v1.1 | A link, not a controller: opens `spotify:` (the app, if installed) with `https://open.spotify.com` as the fallback. No playback control or now-playing. |
-| Runs: live recording | Not in v1 | Left out of v1 by the owner, see "Run tracking". |
-| Runs: history, detail, routes | Not in v1 | Comes with the run decision. Maps would use MapLibre GL JS. |
+| Live workout, sets, set tags, supersets, rest timer | M1 | Shared UI and `LiveWorkoutViewModel`. The rest timer runs while the page is open. |
+| Templates | M1 | Shared. |
+| History and workout detail | M1 | Shared. |
+| Exercise library, custom exercises, exercise notes | M1 | Shared. The starter catalog is seeded on first start, as on Android. |
+| Settings (theme, units, default rest, reduce motion) | M1 | Stored in the browser document, same keys as the backup. Android-only rows (Health Connect, automatic backup, updates, catalog sync) are not shown. |
+| Backup export (JSON) and CSV | M1 | The same `ExportBundle` JSON. On iPhone the share sheet ("Save to Files") when the browser can share files, else a download. |
+| Backup import (Ember JSON, Lyfta CSV) | M1 | A file picker; the same preview, merge and replace flow. |
+| Delete all data | M1 | Clears the browser document and reseeds the catalog. |
+| Progress charts, records, e1RM, weekly volume, body heatmap | M1 (compiles and runs), checked in M2 | Shared. All charts are our own `Canvas` code. |
+| Gyms and per-gym tracking, gym notes | M1 without GPS, polished in M2 | Gyms are picked by hand. No "you are at this gym" suggestion; "Set position" reports that the position is not available. |
+| Share a workout | M1, text only | The share sheet with the workout as text, else the clipboard. No share card image yet. |
+| Spotify button | M1 | A link, not a controller: opens `spotify:` (the app, if installed), then `https://open.spotify.com`. |
+| Exercise photos and catalog pictures | M3 | Not in M1: the editor says photos are not available yet, and no pictures are drawn. Catalog pictures come from another site, which the CSP does not allow yet. |
+| Runs | Not in v1 | Owner's decision, see "Run tracking". The Runs tab says runs are not in the web edition yet. |
 | Health Connect | No | Android only. |
-| Scheduled automatic backups | No | A browser cannot write files on a schedule. The app reminds the user to export instead (milestone 3). |
+| Scheduled automatic backups | No | A browser cannot write files on a schedule. A backup reminder is planned for M3. |
 | In-app updater | No | The service worker delivers new builds. |
-| wger catalog sync | No | Cross-origin calls are blocked by the CSP and not needed for v1. |
-| Vibration and speech cues | No | No Vibration API on iPhone. Rest timer end shows on screen only. |
+| wger catalog sync | No | Not needed for v1. |
+| Vibration and speech cues | No | No Vibration API on iPhone. The rest timer end shows on screen only. |
 
 ### Run tracking (decided: option 1)
 
 Safari on iPhone does not give a web page location while the screen is off or the app is in the
-background. A run recorded on the web only works with the screen on the whole time. The choices:
+background. A run recorded on the web only works with the screen on the whole time. The choices were:
 
-1. **Leave runs out of v1 (chosen on 2026-10-25).** v1 is lifting only. Runs imported from an Android backup
-   are kept in storage untouched, so a backup made on the web does not lose them, but they are not
-   shown. Runs can come later as their own milestone.
-2. **Runs read-only.** Show run history, detail, splits and maps (MapLibre GL JS with OpenFreeMap
-   tiles) for runs imported from Android. No recording. Adds the map library and a CSP exception for
-   the tile host.
+1. **Leave runs out of v1 (chosen on 2026-10-25).** v1 is lifting only. Runs imported from an Android
+   backup are kept in storage untouched, so a backup made on the web does not lose them, but they are
+   not shown. Runs can come later as their own milestone.
+2. **Runs read-only.** Run history, detail, splits and maps (MapLibre GL JS) for runs imported from
+   Android. No recording.
 3. **Screen-on recording.** Option 2 plus live recording with `watchPosition`, a screen wake lock and
-   a clear warning that the screen must stay on and Ember must stay in front. The trace has gaps the
-   moment the phone locks. Needs testing on a real iPhone, including the wake lock in the home-screen
-   app.
+   a clear warning that the screen must stay on.
+
+## How it is put together
+
+- `web/` is the `:web` Gradle module (Kotlin Multiplatform, `wasmJs` target, Compose Multiplatform
+  1.7.3). Its `wasmJsMain` compiles `domain/`, `settings/`, `data/` and `ui/` straight from
+  `app/src/main/java/com/lukr99/workout`, minus the list `androidOnly` in `web/build.gradle.kts`
+  (Room, Run Mode, Health Connect, backup scheduling, the updater, GPS, and Android's side of every
+  platform file).
+- `web/src/wasmJsMain/kotlin/com/lukr99/workout/` holds the web's versions of the platform files
+  (same package, name and signature as Android's; see ARCHITECTURE.md, "Shared code and platform
+  files"), the web `data/AppContainer.kt`, and `web/`: `Main.kt`, the storage banner, the browser
+  storage (`web/storage/`) and the JavaScript glue (`web/platform/`).
+- The storage logic itself is shared code in `app/src/main/java/com/lukr99/workout/data/document/`,
+  so the JVM tests in `:app` hold it to the same contract as the Room repository.
+- `web/src/wasmJsMain/resources/` holds the page: `index.html`, `boot.css`, `boot.js` (browser check,
+  loading screen, "too old" and "could not start" screens, update banner), `sw.js` (offline copy),
+  `manifest.webmanifest`, `apple-touch-icon.png`, `icons/`, `_headers` (CSP and security headers) and
+  `404.html`. The icons come from the Android launcher icon; regenerate them with
+  `NODE_PATH="$(npm root -g)" node tools/render-web-icons.cjs` after changing it.
+- The Barlow fonts are served next to the page from `app/src/main/res/font`; `Main` fetches them
+  before the first frame, because a canvas has no system fonts to fall back on.
+- `web/wrangler.toml`: the Cloudflare Pages project name (`ember`) and output folder.
+- `tools/stamp_web_dist.py` prepares a build for deploy; `tools/check-web-dist.cjs` checks a stamped
+  build in headless Chromium; `.github/workflows/web.yml` builds, tests, checks and (only by hand)
+  deploys.
+
+Notes for the UI:
+
+- The canvas fills the whole window, including the area under the iPhone home indicator.
+  `globalThis.emberSafeArea()` returns the insets in CSS pixels and an `ember:safearea` event fires on
+  resize.
+- The CSP allows only same-origin files. Do not load fonts, images or scripts from another site.
 
 ## Storage
 
-- **IndexedDB**, database `ember`, three object stores:
-  - `data`: one record, the workout data as an `ExportBundle` without photos, plus a `revision`
-    number and the format version. This keeps the browser copy in the format that
-    [data-contract.md](data-contract.md) already describes and tests.
-  - `photos`: one compressed JPEG blob per exercise photo, keyed by exercise id.
-  - `quarantine`: data the app could not read, set aside once and never overwritten. Settings offers
-    it as a download.
-- In memory, the web repository holds the document as Kotlin models and exposes `Flow`s like the
-  Room DAOs do. A write changes the model and saves the whole document.
-- **No lost updates across tabs** (a Tarot2Go review finding). Each save runs in one `readwrite`
-  transaction that checks the stored `revision` against the one this tab loaded. If another tab
-  saved in between, the tab reloads the newer data, reapplies its change and saves again. A
-  `BroadcastChannel` tells other tabs to reload after a save.
-- **No silent failures** (also from that review). A failed save (quota, storage blocked) shows a
-  lasting banner with "Export a backup". If the browser refuses storage altogether, the app says on
-  every screen that data lives in memory only until the page closes. It never falls back silently.
-- The app calls `navigator.storage.persist()` and shows a gentle note in a Safari tab, because Safari
-  may delete data of a site that is not on the home screen and was not opened for 7 days.
-- Runs and run routes from an imported Android backup stay in the document untouched (option 1), so
-  web, then Android round trips lose nothing.
+- **IndexedDB**, database `ember`:
+  - `data`: one record, the whole workout data as one document in the export-bundle shape
+    (exercises, templates, workouts, locations, notes, settings, and any runs and routes from an
+    imported Android backup), with a revision number.
+  - `quarantine`: stored data the app could not read, set aside once and never overwritten. The
+    storage banner offers it as a download.
+- In memory, the repositories hold the document as Kotlin models and expose `Flow`s like the Room DAOs
+  do. A write changes the model and saves the whole document.
+- **No lost updates across tabs.** Each save runs in one `readwrite` transaction that checks the stored
+  revision against the one this tab loaded. If another tab saved in between, this tab takes the newer
+  document, applies its own change on top and saves again. A `BroadcastChannel` tells other tabs to
+  reload after a save, and a tab reloads when it becomes visible.
+- **No silent failures.** A failed save (quota, storage blocked) shows a lasting banner with "Try
+  again", and the change stays in memory. If the browser refuses storage altogether, the banner says
+  that everything is lost when the page closes. The app never falls back silently.
+- The app asks the browser to keep its storage (`navigator.storage.persist()`).
+- Photos are not stored in M1. An Android backup's photos are dropped on import.
+- Kotlin/Wasm 2.0.21 writes the number `1e-7` as `.e-7`, which is not valid JSON. The document codec
+  and `JsonExporter.toJson` repair it (`data/document/JsonNumberRepair.kt`), so web backups always
+  read back.
 
-## Module layout
+## Run it locally
 
-```text
-app/        Android app, unchanged build. Shared sources stay where they are.
-web/        :web, Kotlin Multiplatform, wasmJs target, Compose Multiplatform 1.7.3
-  build.gradle.kts            srcDir into app/src/main/java/com/lukr99/workout/{domain,ui,...}
-  src/wasmJsMain/kotlin/      web adapters: storage, settings, files, share, photos, fonts, ids
-  src/wasmJsMain/resources/   index.html, boot.js, boot.css, sw.js, manifest, icons, _headers, 404
-  src/wasmJsTest/             web tests (Node), storage and adapters
-  wrangler.toml               Pages project name (proposed: ember)
-tools/stamp_web_dist.py       build id and file hashes into sw.js, Pages limits check
-tools/check-web-dist.cjs      headless Chromium check of a stamped build
-.github/workflows/web.yml     build, test, check; deploy by hand only
+Development build (no Binaryen download needed):
+
+```bash
+./gradlew :web:wasmJsBrowserDevelopmentRun        # serves on http://localhost:8080 and reloads
+# or build the files only:
+./gradlew :web:wasmJsBrowserDevelopmentExecutableDistribution
+# output: web/build/dist/wasmJs/developmentExecutable
 ```
 
-What `:web` compiles from `app/src/main`:
+Linking needs more memory than Gradle's default; `gradle.properties` sets 3 GB for Gradle and 4 GB
+for the Kotlin daemon. On a machine that cannot reach GitHub, add `-Pember.web.systemYarn=true` to use
+a Yarn already on `PATH`.
 
-- `commonMain`: `domain/` (all of it once portable), the export and import model and planner
-  (`data/export`, the Room-free parts of `data/importer` and `data/transfer`), the repository
-  interfaces, and `settings/` interfaces.
-- `wasmJsMain`: `ui/` without `ui/run/`, `UpdatesViewModel` and the updater screens, plus the web's
-  same-name files for each platform call. As in Tarot2Go, `ui/` is platform code there, because it
-  uses those same-name declarations.
-- Excluded: Room, WorkManager, Health Connect, location, map, routing, music, updater, wger sync.
+The service worker caches nothing until the output is stamped, so a plain local build always shows
+the latest code. To try the offline copy and the real headers locally:
 
-The Barlow fonts are served next to the page from `app/src/main/res/font`, as Tarot2Go does with its
-typefaces. The CSP allows only same-origin files.
+```bash
+python tools/stamp_web_dist.py --dev web/build/dist/wasmJs/developmentExecutable
+NODE_PATH="$(npm root -g)" node tools/check-web-dist.cjs web/build/dist/wasmJs/developmentExecutable --dev
+```
 
-Later, once the web edition has proven itself, the shared code moves into a `:shared` module.
+`--dev` on the stamp script skips the 25 MiB per-file limit (the unoptimized development `.wasm` is
+larger); `--dev` on the check allows `eval`, which only the development bundle uses.
 
-## What changes on the Android side first
+## Build and test
 
-Done in M0. The resulting seams are listed in ARCHITECTURE.md, "Shared code and platform files".
+```bash
+./gradlew :web:wasmJsBrowserDistribution          # production output:
+                                                  # web/build/dist/wasmJs/productionExecutable
+./gradlew :web:wasmJsNodeTest                     # web tests (run under Node.js)
+./gradlew testDebugUnitTest                       # includes the shared storage contract tests
+python tools/test_stamp_web_dist.py
+python tools/stamp_web_dist.py web/build/dist/wasmJs/productionExecutable
+```
 
-Each step is its own pull request or commit series, with the Android app unchanged for the owner and
-`testDebugUnitTest assembleDebug lintDebug` green:
-
-1. **Dates and times.** `java.time` becomes `kotlinx-datetime` in `domain/` (about 20 files) and in
-   the shared `ui/` code (about 13 files, mostly `ui/components/Format.kt`). Date formatting goes
-   behind one `formatDate` and friends with an Android file and a web file. Tests pin week starts,
-   time zones and export timestamps.
-2. **Ids and numbers.** `UUID.randomUUID()` in `domain/Models.kt` becomes a platform `newId()`.
-   `"%.1f".format` and `String.format(Locale...)` become one shared number formatter.
-   `java.net.URI` in `GuideLink` becomes plain string checks. GPX stays Android-only for now.
-3. **Repository interfaces.** `WorkoutRepository` and `RunRepository` become interfaces; the Room
-   classes become `RoomWorkoutRepository` and `RoomRunRepository`. `WorkoutDataService`,
-   `WorkoutInsightsService` and `DataTransferService` depend on the interfaces and on a small
-   `TransactionRunner` (already an interface).
-4. **ViewModels.** Factories use the `viewModel { }` initializer instead of
-   `ViewModelProvider.Factory`. `AppContainer` gets a small interface (or the factories take their
-   dependencies directly), so the web can supply its own graph.
-5. **Platform calls out of shared screens**, each into a same-name file:
-   photo picker and camera (`ExerciseEditorScreen`), file pickers and share intents
-   (`DataTransferScreen`, `DataTransferViewModel`), workout share (`WorkoutDetailScreen`),
-   `BackHandler` (`App.kt`), animator scale (`components/Motion.kt`), the exercise thumbnail (Coil 2
-   with `File`), window insets in `ExercisePickerScreen`, the music button, and the Health Connect and
-   location rows in Settings. `SettingsStore` gets an interface over DataStore.
-6. **Fonts.** `ui/theme/Type.kt` reads the Barlow fonts through a same-name file instead of
-   `R.font`.
-
-## Milestones
-
-- **M0, Android prep.** Steps 1 to 6 above. No web code yet. Ships as a normal Android release, so the
-  owner's phone proves nothing changed.
-- **M1, web shell and lifting core.** `:web` module, boot page with the browser check, IndexedDB
-  storage with revisions and quarantine, the web `SettingsStore`, seeded catalog. Screens: Home,
-  live workout, templates, history, workout detail, library, settings, backup export and import,
-  delete all data. Service worker with verified per-build caches and the waiting-build handover (no
-  automatic `skipWaiting`), manifest, iOS meta tags, `_headers` with CSP, `stamp_web_dist.py`,
-  `check-web-dist.cjs`, and `web.yml` without a deploy run. Web tests for storage (two tabs, quota,
-  unreadable data, round trip with an Android backup).
-- **M2, the rest of v1.** Progress screens and charts, gyms and per-gym tracking, gym notes, the "too
-  old" and "could not start" screens polished, iPhone safe areas, a real-iPhone test pass.
-- **M3, v1.1.** Exercise photos with capture and compression, Web Share for workouts, the Spotify link,
-  a backup reminder in place of scheduled backups.
-- **M4, runs (if chosen).** Read-only run history and maps, then screen-on recording, per the owner's
-  answer above.
-- **Deploy.** The Cloudflare Pages project and the first deploy are done with the owner, after M1 or
-  M2. New projects must be created with
-  `wrangler pages project create ember --production-branch=main --force`.
+CI (`Web edition` workflow) does all of this on every push or pull request that touches `web/`, the
+shared app sources or the Gradle setup, then checks the build in Chromium and uploads it as the
+`ember-web` artifact.
 
 ## Hosting and deploy
 
-As Tarot2Go: Cloudflare Pages Direct Upload, built and checked in GitHub Actions, deployed only by
-hand (`workflow_dispatch` with "deploy" ticked), production only from `main`, through the GitHub
-environment `web-production` with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, and
-`cloudflare/wrangler-action` pinned by commit SHA. The Cloudflare account and a Pages-Edit token
-already exist for Tarot2Go. Free plan; no running costs.
+Cloudflare Pages, as a **Direct Upload** project: GitHub Actions builds, checks and uploads; Cloudflare
+only serves. Free plan; no running costs.
+
+One-time setup, by the owner (not done yet):
+
+1. Create the Pages project once, from a computer with a logged-in Wrangler:
+   `npx wrangler pages project create ember --production-branch=main --force`. The production branch
+   must be `main`. `--force` is needed with newer Wrangler, which otherwise hands Pages commands for a
+   project that does not exist yet to Cloudflare Workers, and they fail.
+2. In the GitHub repository: Settings > Environments > New environment `web-production`, with the
+   secrets `CLOUDFLARE_API_TOKEN` (Account > Cloudflare Pages > Edit only; the token made for Tarot2Go
+   works) and `CLOUDFLARE_ACCOUNT_ID`. Under "Deployment branches and tags" allow only `main`.
+
+Each deploy: Actions > Web edition > Run workflow on `main`, tick **Deploy this build to Cloudflare
+Pages**, and choose `preview` or `production`. The workflow never deploys on push or pull request, and
+refuses to run without both secrets. Production lives at `https://ember.pages.dev` (or the name
+Cloudflare gives the project).
 
 ## Install on iPhone
 
 1. Open the link in Safari (iOS 18.2 or newer).
-2. Share > Add to Home Screen > Add.
+2. Wait for Ember to appear, then tap Share > Add to Home Screen > Add.
 3. Use Ember from the home screen from then on. It runs full screen and works offline.
 
-The home-screen app keeps its own storage, separate from Safari tabs.
+The home-screen app keeps its own storage, separate from Safari tabs, and Safari may delete the data
+of a site that is not on the home screen and was not opened for 7 days. Install first, and move data
+between the two with export and import.
+
+## Updates
+
+- Each deploy gets a new build id in `sw.js`. A new build downloads in the background, every file is
+  checked against its SHA-256, and only a complete set replaces the old one.
+- The new build waits beside the old one (no automatic `skipWaiting`), so a running app never meets
+  files of a newer build. On the loading screen it takes over at once; in a running app a "A new
+  version is ready. Reload" banner appears, and Reload hands over and reloads.
+
+## Data stays in the browser
+
+- No account and no server. Nothing is sent anywhere.
+- Clearing Safari's website data or deleting the home-screen app deletes the data. Export a backup
+  from Settings now and then. A backup made on the web imports on Android and the other way round.
+
+## Milestones
+
+- **M0, Android prep.** Done (PR #47): kotlinx-datetime, repository and settings interfaces, platform
+  files.
+- **M1, web shell and lifting core.** This milestone: the `:web` module, IndexedDB storage with
+  revisions, quarantine and the storage banner, the seeded catalog, the shared screens, backup export
+  and import, the page shell, service worker, CSP, stamp and check scripts, and `web.yml` with a
+  manual-only deploy.
+- **M2, the rest of v1.** Progress, gyms and gym notes checked on the web; hide the Runs tab and the
+  GPS rows instead of showing "not available"; a gentle note in a Safari tab; iPhone safe areas; a
+  real-iPhone test pass; the first deploy with the owner.
+- **M3, v1.1.** Exercise photos with capture and compression, catalog pictures, the workout share card,
+  a backup reminder in place of scheduled backups.
+- **M4, runs (if chosen later).**
+
+## Left out compared with Android
+
+- No in-app updater, no Room, no Health Connect, no automatic backups, no Run Mode, no GPS.
+- Drawn on a canvas: screen readers, browser text selection, browser zoom and find-in-page work poorly
+  or not at all.
+- Needs iOS 18.2 or a similarly recent browser, and a larger first download than a typical website.

@@ -1,0 +1,36 @@
+# Cloudflare Pages response headers for the browser edition. See docs/web-edition.md.
+#
+# Caching: Pages already answers every file with "max-age=0, must-revalidate" plus an ETag, so a
+# phone always checks for a newer copy. Only files whose name is a content hash may be cached for
+# good; tools/stamp_web_dist.py appends one rule per such file at the end, because their names
+# change every build. The service worker keeps the offline copy, not the HTTP cache.
+#
+# CSP: Kotlin/Wasm compiles its .wasm files at runtime, which needs 'wasm-unsafe-eval' (not the
+# much broader 'unsafe-eval'). Compose draws on a WebGL canvas and fetches its .wasm and
+# fonts from this origin; nothing loads from another origin. The style hash allows the one <style>
+# element CanvasBasedWindow adds (Compose Multiplatform 1.7.3): "body { margin: 0; overflow:
+# hidden; } #ember { outline: none; }". If Compose changes it, the browser only logs a CSP
+# error, since boot.css already sets the same rules. Check with tools/check-web-dist.cjs.
+
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'sha256-njCcG9Vr+hRX/T94dmPOS5ElXIB4vWbEamh71y18lCA='; img-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+  Cross-Origin-Opener-Policy: same-origin
+  Strict-Transport-Security: max-age=31536000
+
+/*.wasm
+  Content-Type: application/wasm
+
+/manifest.webmanifest
+  Content-Type: application/manifest+json
+
+# Re-checked on every visit so a deploy is noticed at once.
+/sw.js
+  Cache-Control: no-cache
+
+/
+  Cache-Control: no-cache
+
+# Content-hashed files, appended by tools/stamp_web_dist.py:
