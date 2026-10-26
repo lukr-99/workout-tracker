@@ -20,6 +20,10 @@ graphicsPath = "1.0.1"
 serialization = "1.7.3"
 # Multiplatform dates and times: domain/ and the shared UI use it so the web edition can compile them.
 datetime = "0.6.1"
+# The web edition (:web): Compose Multiplatform for Kotlin/Wasm, matching Kotlin 2.0.21.
+composeMultiplatform = "1.7.3"
+# JetBrains' multiplatform builds of the AndroidX lifecycle, for the web edition's ViewModels.
+jbLifecycle = "2.8.4"
 okhttp = "4.12.0"
 # Later 1.1 builds require compileSdk 36 / newer AGP. alpha11 is the newest 1.1 artifact compatible
 # with this repository's intentionally pinned compileSdk 35 / AGP 8.5 toolchain.
@@ -73,6 +77,8 @@ androidx-graphics-path = { module = "androidx.graphics:graphics-path", version.r
 # JSON export/import contract
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
+jb-lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "jbLifecycle" }
+jb-lifecycle-runtime-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "jbLifecycle" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 health-connect-client = { module = "androidx.health.connect:connect-client", version.ref = "healthConnect" }
 work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
@@ -83,6 +89,7 @@ coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 maplibre-android = { module = "org.maplibre.gl:android-sdk", version.ref = "maplibre" }
 
 # Async
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 
 # Test
@@ -100,5 +107,7 @@ android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
