@@ -17,28 +17,15 @@ import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.ProvidableCompositionLocal
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.lukr99.workout.data.music.SpotifyController
-import com.lukr99.workout.data.music.StubSpotifyController
-
-/** The music controller in scope for the live screens. Provided once at the app root. */
-val LocalSpotify: ProvidableCompositionLocal<SpotifyController> =
-    staticCompositionLocalOf { StubSpotifyController }
 
 /**
  * The minimal, shared music control (R4) hosted on **both** the live run and live lift screens —
- * deliberately a **small side button**. It connects the [SpotifyController] while shown and renders:
+ * deliberately a **small side button**. It connects the music player while shown and renders:
  * - **not connected** (the shipping default): a single round **note** button → Open Spotify;
  * - **connected** (App Remote): a compact previous · play/pause · next row.
  *
@@ -46,18 +33,10 @@ val LocalSpotify: ProvidableCompositionLocal<SpotifyController> =
  */
 @Composable
 fun MusicMiniControls(modifier: Modifier = Modifier) {
-    val controller = LocalSpotify.current
-    val context = LocalContext.current
-    val available by controller.available.collectAsState()
-    val track by controller.track.collectAsState()
+    val transport = rememberMusicTransport()
+    val openMusicApp = rememberOpenMusicApp()
 
-    DisposableEffect(controller) {
-        controller.connect(context)
-        onDispose { controller.disconnect() }
-    }
-
-    val current = track
-    if (available && current != null) {
+    if (transport != null) {
         Row(
             modifier.clip(RoundedCornerShape(22.dp))
                 .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f))
@@ -65,21 +44,21 @@ fun MusicMiniControls(modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
         ) {
-            TransportButton(Icons.Rounded.SkipPrevious, "Previous", controller::previous)
+            TransportButton(Icons.Rounded.SkipPrevious, "Previous", transport.previous)
             TransportButton(
-                if (current.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                if (current.isPlaying) "Pause" else "Play",
-                controller::playPause,
+                if (transport.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                if (transport.isPlaying) "Pause" else "Play",
+                transport.playPause,
                 primary = true,
             )
-            TransportButton(Icons.Rounded.SkipNext, "Next", controller::next)
+            TransportButton(Icons.Rounded.SkipNext, "Next", transport.next)
         }
     } else {
         // Small, unobtrusive note button — tap to open Spotify.
         Box(
             modifier.size(40.dp).clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f))
-                .clickable { controller.openSpotify(context) },
+                .clickable { openMusicApp() },
             contentAlignment = Alignment.Center,
         ) {
             Icon(
@@ -99,10 +78,4 @@ private fun TransportButton(icon: ImageVector, label: String, onClick: () -> Uni
     ) {
         Icon(icon, label, tint = fg, modifier = Modifier.size(if (primary) 24.dp else 20.dp))
     }
-}
-
-/** Convenience for the app root to inject the controller into the tree. */
-@Composable
-fun ProvideSpotify(controller: SpotifyController, content: @Composable () -> Unit) {
-    CompositionLocalProvider(LocalSpotify provides controller, content = content)
 }

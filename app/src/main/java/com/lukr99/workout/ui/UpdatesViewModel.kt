@@ -3,6 +3,8 @@ package com.lukr99.workout.ui
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewModelScope
 import com.lukr99.workout.settings.DevicePrefs
 import com.lukr99.workout.update.UpdateCheck
@@ -110,9 +112,9 @@ class UpdatesViewModel(
     companion object {
         const val RELEASES_URL = "https://github.com/lukr-99/workout-tracker/releases"
 
-        fun factory(service: UpdateService, prefs: DevicePrefs): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T = UpdatesViewModel(service, prefs) as T
-        }
+        fun factory(service: UpdateService, prefs: DevicePrefs): ViewModelProvider.Factory =
+            viewModelFactory {
+                initializer { UpdatesViewModel(service, prefs) }
+            }
     }
 }

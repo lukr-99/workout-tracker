@@ -34,7 +34,7 @@ class ExerciseNotesRepositoryTest {
         db = Room.inMemoryDatabaseBuilder(context, WorkoutDb::class.java)
             .allowMainThreadQueries()
             .build()
-        repo = WorkoutRepository(db.workoutDao(), RoomTransactionRunner(db))
+        repo = RoomWorkoutRepository(db.workoutDao(), RoomTransactionRunner(db))
     }
 
     @After

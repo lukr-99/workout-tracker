@@ -19,7 +19,7 @@ import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutSessionStatus
 import com.lukr99.workout.domain.newId
-import java.time.ZoneId
+import kotlinx.datetime.TimeZone
 
 /**
  * Lyfta CSV -> portable domain mapping. Parsing is side-effect free: it returns a staged payload
@@ -80,13 +80,13 @@ internal object LyftaCsvImporter : TextDataImporter {
             return ImportedPayload(format, issues = issues, sourceRows = table.records.size)
         }
 
-        val zone = runCatching { ZoneId.of(options.sourceTimeZoneId) }.getOrElse {
+        val zone = runCatching { TimeZone.of(options.sourceTimeZoneId) }.getOrElse {
             issues += TransferIssue(
                 "time_zone.invalid",
                 "Unknown timezone '${options.sourceTimeZoneId}'; device timezone was used.",
                 TransferIssueSeverity.Warning,
             )
-            ZoneId.systemDefault()
+            TimeZone.currentSystemDefault()
         }
         val sourceUnit = resolveWeightUnit(table, options)
         val rows = table.records.mapNotNull { record -> parseRow(record, zone, sourceUnit, options, issues) }
@@ -206,7 +206,7 @@ internal object LyftaCsvImporter : TextDataImporter {
 
     private fun parseRow(
         record: CsvRecord,
-        zone: ZoneId,
+        zone: TimeZone,
         unit: WeightUnit,
         options: ImportOptions,
         issues: MutableList<TransferIssue>,

@@ -10,10 +10,12 @@ import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.effectiveTags
 import com.lukr99.workout.domain.query.WorkoutDataPoint
 import com.lukr99.workout.domain.query.WorkoutQueryEngine
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Locale
+import com.lukr99.workout.domain.formatFixed
+import com.lukr99.workout.domain.padded
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.offsetAt
+import kotlinx.datetime.toLocalDateTime
 
 /** Configurable, flat, one-row-per-set/cardio-entry spreadsheet export. */
 object CsvExporter {
@@ -22,7 +24,7 @@ object CsvExporter {
         options: CsvExportOptions = CsvExportOptions(),
     ): ExportArtifact {
         require(options.delimiter !in setOf('"', '\r', '\n')) { "Invalid CSV delimiter." }
-        val zone = runCatching { ZoneId.of(options.timeZoneId) }.getOrDefault(ZoneId.systemDefault())
+        val zone = runCatching { TimeZone.of(options.timeZoneId) }.getOrDefault(TimeZone.currentSystemDefault())
         val points = WorkoutQueryEngine.select(sessions, options.query).points
         val lineEnding = options.lineEnding.value
         val output = buildString {
@@ -59,7 +61,7 @@ object CsvExporter {
         column: CsvColumn,
         point: WorkoutDataPoint,
         unit: WeightUnit,
-        zone: ZoneId,
+        zone: TimeZone,
     ): String {
         val session = point.session
         val entry = point.entry
@@ -99,14 +101,30 @@ object CsvExporter {
         }
     }
 
-    private fun formatDate(epochMillis: Long, zone: ZoneId): String =
-        DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(Instant.ofEpochMilli(epochMillis).atZone(zone))
+    /** Like `DateTimeFormatter.ISO_OFFSET_DATE_TIME`: seconds always, a fraction only when not zero. */
+    private fun formatDate(epochMillis: Long, zone: TimeZone): String {
+        val instant = Instant.fromEpochMilliseconds(epochMillis)
+        val local = instant.toLocalDateTime(zone)
+        val fraction = if (local.nanosecond == 0) "" else "." + padded(local.nanosecond, 9).trimEnd('0')
+        val offsetSeconds = zone.offsetAt(instant).totalSeconds
+        return padded(local.year, 4) + "-" + padded(local.monthNumber, 2) + "-" + padded(local.dayOfMonth, 2) +
+            "T" + padded(local.hour, 2) + ":" + padded(local.minute, 2) + ":" + padded(local.second, 2) +
+            fraction + formatOffset(offsetSeconds)
+    }
+
+    private fun formatOffset(totalSeconds: Int): String {
+        if (totalSeconds == 0) return "Z"
+        val abs = kotlin.math.abs(totalSeconds)
+        val seconds = abs % 60
+        return (if (totalSeconds < 0) "-" else "+") + padded(abs / 3_600, 2) + ":" + padded(abs / 60 % 60, 2) +
+            if (seconds == 0) "" else ":" + padded(seconds, 2)
+    }
 
     private fun formatWeight(kg: Double, unit: WeightUnit): String =
         formatNumber(if (unit == WeightUnit.Pounds) Units.kgToLb(kg) else kg)
 
     private fun formatNumber(value: Double): String =
-        String.format(Locale.ROOT, "%.6f", value).trimEnd('0').trimEnd('.')
+        formatFixed(value, 6).trimEnd('0').trimEnd('.')
 
     private fun escape(value: String, delimiter: Char): String {
         if (value.none { it == delimiter || it == '"' || it == '\r' || it == '\n' }) return value

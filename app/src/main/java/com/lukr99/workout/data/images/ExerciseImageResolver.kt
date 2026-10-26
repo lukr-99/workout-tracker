@@ -8,9 +8,8 @@ class ExerciseImageResolver(
 ) {
     fun resolve(exercise: Exercise): ResolvedExerciseImage? {
         exercise.localImagePath?.takeIf(String::isNotBlank)?.let { path ->
-            val file = java.io.File(path)
-            if (file.isFile) {
-                return ResolvedExerciseImage(file, ExerciseImageSource.UserPhoto)
+            localPhotoModel(path)?.let { model ->
+                return ResolvedExerciseImage(model, ExerciseImageSource.UserPhoto)
             }
         }
         exercise.imageUrl?.takeIf(String::isNotBlank)?.let { url ->

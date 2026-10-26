@@ -19,7 +19,7 @@ object AppTags {
     fun location(id: String): String = "location_$id"
 
     /** A day tile in Home's week strip, by its date, like `home_day_2026-10-13`. */
-    fun homeDay(date: java.time.LocalDate): String = "home_day_$date"
+    fun homeDay(date: kotlinx.datetime.LocalDate): String = "home_day_$date"
 
     /** A workout or run row in the day chooser sheet. */
     fun dayActivity(id: String): String = "day_activity_$id"

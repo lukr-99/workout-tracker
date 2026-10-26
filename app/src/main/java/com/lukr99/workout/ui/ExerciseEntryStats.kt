@@ -1,5 +1,7 @@
 package com.lukr99.workout.ui
 
+import kotlin.math.roundToLong
+import com.lukr99.workout.domain.nowMillis
 import com.lukr99.workout.domain.Estimates
 import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.WorkoutEntry
@@ -16,7 +18,7 @@ data class ExerciseEntryStats(
 )
 
 fun WorkoutEntry.stats(
-    nowUtcMillis: Long = System.currentTimeMillis(),
+    nowUtcMillis: Long = nowMillis(),
     includeUnperformed: Boolean = false,
 ): ExerciseEntryStats {
     val performed = strengthSets.filter { it.performedAtUtc != null }
@@ -41,7 +43,7 @@ fun WorkoutEntry.stats(
 
 fun WorkoutEntry.statsSummary(
     units: UnitSystem,
-    nowUtcMillis: Long = System.currentTimeMillis(),
+    nowUtcMillis: Long = nowMillis(),
     includeUnperformed: Boolean = false,
 ): String {
     val stats = stats(nowUtcMillis, includeUnperformed)
@@ -56,7 +58,7 @@ fun WorkoutEntry.statsSummary(
         buildList {
             cardioData?.durationSeconds?.takeIf { it > 0 }?.let { add(Format.duration(it.toLong())) }
             cardioData?.distanceKm?.let { add(Format.distance(it * 1_000.0, units)) }
-            cardioData?.calories?.let { add("${Math.round(it)} kcal") }
+            cardioData?.calories?.let { add("${it.roundToLong()} kcal") }
             stats.durationSeconds?.let { elapsed ->
                 val loggedDuration = cardioData?.durationSeconds?.toLong()
                 if (loggedDuration == null || elapsed != loggedDuration) add("${Format.duration(elapsed)} elapsed")

@@ -4,8 +4,7 @@ import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.effectiveTags
-import java.security.MessageDigest
-import java.util.Locale
+import com.lukr99.workout.domain.formatFixed
 
 object SessionFingerprint {
     fun identity(session: WorkoutSession): String =
@@ -19,20 +18,18 @@ object SessionFingerprint {
                 append(':').append(entry.entryType.ordinal)
                 entry.strengthSets.sortedBy(StrengthSet::setNumber).forEach { set ->
                     append(':').append(set.reps)
-                    append('@').append(String.format(Locale.ROOT, "%.6f", set.weightKg))
+                    append('@').append(formatFixed(set.weightKg, 6))
                     append('/').append(set.durationSeconds ?: 0)
                     append('/').append(set.setType.ordinal)
                     append('/').append(set.effectiveTags.sortedBy { it.ordinal }.joinToString(".") { it.ordinal.toString() })
                 }
                 entry.cardioData?.let {
                     append(":c").append(it.durationSeconds)
-                    append('/').append(String.format(Locale.ROOT, "%.6f", it.distanceKm ?: 0.0))
+                    append('/').append(formatFixed(it.distanceKm ?: 0.0, 6))
                 }
             }
         }
-        return MessageDigest.getInstance("SHA-256")
-            .digest(raw.toByteArray(Charsets.UTF_8))
-            .joinToString("") { "%02x".format(it) }
+        return Sha256.hexOf(raw)
     }
 
     private fun String.normalize(): String = lowercase()

@@ -1,5 +1,7 @@
 package com.lukr99.workout.data.location
 
+import com.lukr99.workout.data.LocationSuggestion
+import com.lukr99.workout.data.PlaceSuggester
 import com.lukr99.workout.domain.GeoPoint
 import com.lukr99.workout.domain.Location
 import com.lukr99.workout.domain.NEAR_LOCATION_METERS
@@ -14,21 +16,21 @@ class LocationSuggester(
     private val provider: PositionProvider,
     private val maxMeters: Double = NEAR_LOCATION_METERS,
     private val startTimeoutMs: Long = START_TIMEOUT_MS,
-) {
+) : PlaceSuggester {
     /** Workout-start check. Does not prompt for permission. */
-    suspend fun suggest(locations: List<Location>): LocationSuggestion? {
+    override suspend fun suggest(locations: List<Location>): LocationSuggestion? {
         if (!provider.hasPermission()) return null
         val fix = runCatching { provider.currentPosition(FixQuality.Balanced, startTimeoutMs) }.getOrNull() ?: return null
         return LocationSuggestion(fix, locations.nearest(fix, maxMeters)?.location)
     }
 
     /** A good fix for saving a place, or null. */
-    suspend fun currentFix(): GeoPoint? {
+    override suspend fun currentFix(): GeoPoint? {
         if (!provider.hasPermission()) return null
         return runCatching { provider.currentPosition(FixQuality.High, SAVE_TIMEOUT_MS) }.getOrNull()
     }
 
-    fun hasPermission(): Boolean = provider.hasPermission()
+    override fun hasPermission(): Boolean = provider.hasPermission()
 
     companion object {
         const val START_TIMEOUT_MS = 4_000L

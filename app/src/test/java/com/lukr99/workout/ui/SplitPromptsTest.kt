@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui
 
+import com.lukr99.workout.data.RoomWorkoutRepository
 import android.app.Application
 import android.content.Context
 import androidx.room.Room
@@ -43,7 +44,7 @@ class SplitPromptsTest {
         val direct = Executor { it.run() }
         db = Room.inMemoryDatabaseBuilder(context, WorkoutDb::class.java)
             .allowMainThreadQueries().setQueryExecutor(direct).setTransactionExecutor(direct).build()
-        repo = WorkoutRepository(db.workoutDao(), RoomTransactionRunner(db))
+        repo = RoomWorkoutRepository(db.workoutDao(), RoomTransactionRunner(db))
         prompts = SplitPrompts(repo)
         repo.saveExercise(Exercise(id = FLY, name = "Cable Fly"))
         brno = repo.saveLocation(Location(name = "Brno gym"))

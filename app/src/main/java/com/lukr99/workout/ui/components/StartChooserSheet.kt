@@ -3,8 +3,6 @@ package com.lukr99.workout.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.testTagsAsResourceId
 import com.lukr99.workout.ui.AppTags
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -101,7 +99,7 @@ fun ResumeChooserSheet(
 private fun ChooserRow(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit, tag: String) {
     Row(
         // A bottom sheet is its own window, so it needs testTagsAsResourceId again for its tags.
-        Modifier.semantics { testTagsAsResourceId = true }.testTag(tag)
+        Modifier.exposeTestTags().testTag(tag)
             .fillMaxWidth().clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .clickable(onClick = onClick)

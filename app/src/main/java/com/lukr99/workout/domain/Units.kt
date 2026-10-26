@@ -1,5 +1,7 @@
 package com.lukr99.workout.domain
 
+import kotlin.math.roundToLong
+
 /**
  * Pure Kotlin unit helpers. **No Android imports** — `domain/` stays portable and unit-testable in
  * isolation (this is what could later be lifted into a shared/desktop module). See 01-architecture.md.
@@ -28,7 +30,7 @@ object Units {
      * weights are stored unrounded and rounded only for display — 03-data-model.md).
      */
     fun formatWeight(kg: Double): String {
-        val rounded = Math.round(kg * 10.0) / 10.0
+        val rounded = (kg * 10.0).roundToLong() / 10.0
         return if (rounded % 1.0 == 0.0) rounded.toLong().toString() else rounded.toString()
     }
 
@@ -39,9 +41,9 @@ object Units {
         val minutes = (s % 3600) / 60
         val seconds = s % 60
         return if (hours > 0) {
-            "%d:%02d:%02d".format(hours, minutes, seconds)
+            "$hours:${padded(minutes.toInt(), 2)}:${padded(seconds.toInt(), 2)}"
         } else {
-            "%d:%02d".format(minutes, seconds)
+            "$minutes:${padded(seconds.toInt(), 2)}"
         }
     }
 }

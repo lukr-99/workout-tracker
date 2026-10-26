@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui.screens
 
+import com.lukr99.workout.domain.nowMillis
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -131,11 +132,11 @@ fun LiveWorkoutScreen(
     val repeatable by produceState(emptyList<WorkoutSession>()) { value = vm.history.repeatable() }
     val templates by produceState(emptyList<WorkoutTemplate>()) { value = vm.history.templates() }
     val currentSetId = nextSet(draft?.entries.orEmpty(), doneIds)?.second?.id
-    var nowUtcMillis by remember { mutableStateOf(System.currentTimeMillis()) }
+    var nowUtcMillis by remember { mutableStateOf(nowMillis()) }
     LaunchedEffect(Unit) {
         while (true) {
             kotlinx.coroutines.delay(1_000)
-            nowUtcMillis = System.currentTimeMillis()
+            nowUtcMillis = nowMillis()
         }
     }
 

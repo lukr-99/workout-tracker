@@ -1,13 +1,13 @@
 package com.lukr99.workout.data.transfer
 
 import com.lukr99.workout.domain.query.WorkoutQuery
-import java.time.ZoneId
+import kotlinx.datetime.TimeZone
 
 data class CsvExportOptions(
     val query: WorkoutQuery = WorkoutQuery(),
     val includeDiscardedSessions: Boolean = false,
     val weightUnit: WeightUnit = WeightUnit.Kilograms,
-    val timeZoneId: String = ZoneId.systemDefault().id,
+    val timeZoneId: String = TimeZone.currentSystemDefault().id,
     val delimiter: Char = ',',
     val includeHeader: Boolean = true,
     val includeUtf8Bom: Boolean = false,

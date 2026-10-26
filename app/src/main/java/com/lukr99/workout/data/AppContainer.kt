@@ -20,6 +20,7 @@ import com.lukr99.workout.data.music.SpotifyController
 import com.lukr99.workout.data.music.StubSpotifyController
 import com.lukr99.workout.data.routing.OsrmRoutingClient
 import com.lukr99.workout.data.routing.RoutingClient
+import com.lukr99.workout.data.run.RoomRunRepository
 import com.lukr99.workout.data.run.RunRepository
 import com.lukr99.workout.data.run.ShareCardRenderer
 import com.lukr99.workout.data.services.WorkoutDataService
@@ -30,6 +31,8 @@ import com.lukr99.workout.data.transfer.DataStoreSettingsArchive
 import com.lukr99.workout.data.transfer.DataTransferService
 import com.lukr99.workout.data.transfer.SettingsArchive
 import com.lukr99.workout.data.transfer.UserDataEraser
+import com.lukr99.workout.settings.DataStoreDevicePrefs
+import com.lukr99.workout.settings.DataStoreSettingsStore
 import com.lukr99.workout.settings.DevicePrefs
 import com.lukr99.workout.settings.OrientationStore
 import com.lukr99.workout.settings.SettingsStore
@@ -48,12 +51,12 @@ import com.lukr99.workout.update.VerifiedDownloader
  */
 class AppContainer(context: Context) {
     private val db: WorkoutDb = WorkoutDb.build(context)
-    val repository: WorkoutRepository = WorkoutRepository(
+    val repository: WorkoutRepository = RoomWorkoutRepository(
         db.workoutDao(),
         RoomTransactionRunner(db),
     )
     /** Run Mode persistence (v5 tables). Additive — lazily built so strength flows are unaffected. */
-    val runRepository: RunRepository by lazy { RunRepository(db.runDao()) }
+    val runRepository: RunRepository by lazy { RoomRunRepository(db.runDao()) }
 
     /** Process-wide live-run brain + crash-buffer persistence (R1). One instance per process. */
     val runSessionController: RunSessionController by lazy {
@@ -125,10 +128,10 @@ class AppContainer(context: Context) {
         )
     }
     val documents: AndroidDocumentGateway by lazy { AndroidDocumentGateway(context) }
-    val settings: SettingsStore by lazy { SettingsStore(context) }
+    val settings: SettingsStore by lazy { DataStoreSettingsStore(context) }
 
     /** This phone's own switches (Health Connect auto-send, update checks); not in backups. */
-    val devicePrefs: DevicePrefs by lazy { DevicePrefs(context) }
+    val devicePrefs: DevicePrefs by lazy { DataStoreDevicePrefs(context) }
 
     /** The "what's new" card on Home, shown once after an update that has a note. */
     val whatsNew: WhatsNewGate by lazy {

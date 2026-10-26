@@ -1,7 +1,5 @@
 package com.lukr99.workout.ui.settings
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
@@ -19,10 +17,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -35,22 +31,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.health.connect.client.PermissionController
-import com.lukr99.workout.data.health.HealthConnectAvailability
 import com.lukr99.workout.settings.ThemeMode
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.LocationsViewModel
 import com.lukr99.workout.ui.SettingsViewModel
-import com.lukr99.workout.ui.UpdatesViewModel
 import com.lukr99.workout.ui.components.FilterChip
 import com.lukr99.workout.ui.components.Format
-import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.RoundIconButton
 import com.lukr99.workout.ui.components.SegmentedControl
 import com.lukr99.workout.ui.components.rememberReduceMotion
@@ -70,43 +60,25 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(
     vm: SettingsViewModel,
-    updates: UpdatesViewModel,
+    host: SettingsHost,
     locationsVm: LocationsViewModel,
     onOpenData: () -> Unit,
     onOpenPrivacy: () -> Unit,
     onBack: () -> Unit,
 ) {
     val settings by vm.settings.collectAsState()
-    val updateState by updates.state.collectAsState()
-    val autoCheck by updates.autoCheck.collectAsState()
-    val health by vm.healthConnectUi.collectAsState()
-    val healthAutoSend by vm.healthAutoSend.collectAsState()
-    val backup by vm.backupState.collectAsState()
-    val backupOptions by vm.backupOptions.collectAsState()
-    val backupBusy by vm.backupBusy.collectAsState()
-    val backupError by vm.backupError.collectAsState()
-    val syncState by vm.catalogSync.collectAsState()
     val locations by locationsVm.locations.collectAsState()
-    val toast = LocalToast.current
-    val context = LocalContext.current
-    val uriHandler = LocalUriHandler.current
     val scope = rememberCoroutineScope()
 
-    val healthPermissionLauncher = rememberLauncherForActivityResult(
-        PermissionController.createRequestPermissionResultContract(),
-    ) { granted -> vm.onHealthPermissionsResult(granted) }
-    val backupFolderLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocumentTree(),
-    ) { uri -> uri?.let(vm::enableBackup) }
-
-    LaunchedEffect(health.summary) {
-        health.summary?.let { summary ->
-            toast("Health Connect: imported ${summary.imported}, exported ${summary.exported}, skipped ${summary.skipped}")
-            vm.consumeHealthSummary()
+    val sections = remember(host) {
+        SettingsSection.entries.filter { section ->
+            when (section) {
+                SettingsSection.HealthConnect -> host.has(SettingsSlot.HealthConnect)
+                SettingsSection.Updates -> host.has(SettingsSlot.Updates)
+                else -> true
+            }
         }
     }
-
-    val sections = SettingsSection.entries
     val list = rememberLazyListState()
     val chips = rememberLazyListState()
     val lineY = with(LocalDensity.current) { 80.dp.roundToPx() }
@@ -205,21 +177,7 @@ fun SettingsScreen(
                                     FilterChip(Format.clock(seconds), settings.defaultRestSeconds == seconds, { vm.setDefaultRest(seconds) })
                                 }
                             }
-                            val running = syncState is SettingsViewModel.CatalogSyncState.Running
-                            ButtonRow(
-                                label = "Exercise catalog",
-                                hint = when (val state = syncState) {
-                                    is SettingsViewModel.CatalogSyncState.Done ->
-                                        "Added ${state.summary.added}, updated ${state.summary.updated}, skipped ${state.summary.skipped}."
-                                    is SettingsViewModel.CatalogSyncState.Failed -> state.message
-                                    else -> "Download the open wger exercise database. Your own exercises are never changed."
-                                },
-                                hintIsError = syncState is SettingsViewModel.CatalogSyncState.Failed,
-                                action = "Sync now",
-                                busy = running,
-                                busyLabel = "Syncing…",
-                                onClick = vm::syncCatalog,
-                            )
+                            if (host.has(SettingsSlot.Catalog)) host.Rows(SettingsSlot.Catalog, onOpenPrivacy)
                         }
                         SettingsSection.Locations -> LocationsSettings(
                             locations = locations,
@@ -229,76 +187,19 @@ fun SettingsScreen(
                             hasLocationPermission = locationsVm::hasLocationPermission,
                             onSetPosition = locationsVm::setPositionHere,
                         )
-                        SettingsSection.HealthConnect -> {
-                            val status = health.error ?: healthAvailabilityDetail(health.availability, health.connected)
-                            when (health.availability) {
-                                HealthConnectAvailability.Available -> if (!health.connected) {
-                                    ButtonRow("Not connected", status, "Connect", first = true, busy = health.refreshing) {
-                                        healthPermissionLauncher.launch(vm.healthConnectPermissions)
-                                    }
-                                } else {
-                                    SettingsRow("Connected", status, first = true, hintIsError = health.error != null)
-                                    ToggleRow(
-                                        "Send finished workouts and runs",
-                                        "Each one goes to Health Connect when you finish it.",
-                                        checked = healthAutoSend,
-                                        onChange = vm::setHealthAutoSend,
-                                    )
-                                    ButtonRow("Send everything now", "Workouts and runs Health Connect does not have yet.", "Export", busy = health.operation != null, onClick = vm::exportToHealthConnect)
-                                    ButtonRow("Bring workouts in", "Imports workouts from other apps as sessions.", "Import", busy = health.operation != null, onClick = vm::importFromHealthConnect)
-                                }
-                                HealthConnectAvailability.ProviderUpdateRequired ->
-                                    ButtonRow("Update needed", status, "Install", first = true) { openHealthConnectListing(context) }
-                                else -> SettingsRow(healthAvailabilityLabel(health.availability, health.connected), status, first = true)
-                            }
-                            LinkRow("Privacy policy", "What Ember reads and why.", onClick = onOpenPrivacy)
-                        }
+                        SettingsSection.HealthConnect -> host.Rows(SettingsSlot.HealthConnect, onOpenPrivacy)
                         SettingsSection.YourData -> {
-                            ToggleRow(
-                                label = "Automatic backup",
-                                hint = if (backup.enabled) {
-                                    "${backupFolderLabel(backup.treeUri)}. ${backupStatus(backup.lastRunUtcMillis, backup.lastResult, backup.lastMessage, backupError)}"
-                                } else {
-                                    "Saves a full backup to a folder you pick, on this phone or in the cloud."
-                                },
-                                checked = backup.enabled,
-                                first = true,
-                                busy = backupBusy,
-                            ) { enabled -> if (enabled) backupFolderLauncher.launch(null) else vm.disableBackup() }
-                            SettingsRow("How often", null)
-                            val interval = if (backup.enabled) backup.intervalHours else backupOptions.intervalHours
-                            SegmentedControl(listOf(24L, 168L), interval, { vm.setBackupInterval(it) }, label = { if (it == 24L) "Daily" else "Weekly" }, modifier = Modifier.padding(bottom = 8.dp))
-                            SettingsRow("Backups to keep", "Older automatic backups are deleted. Other files are never touched.")
-                            val kept = if (backup.enabled) backup.retentionCount else backupOptions.retentionCount
-                            SegmentedControl(listOf(3, 7, 14), kept, { vm.setBackupRetention(it) }, label = { it.toString() }, modifier = Modifier.padding(bottom = 8.dp))
-                            LinkRow("Import, export and delete", "Ember backups, Lyfta CSV, plain CSV, and deleting all data.", onClick = onOpenData)
+                            val hasBackup = host.has(SettingsSlot.Backup)
+                            if (hasBackup) host.Rows(SettingsSlot.Backup, onOpenPrivacy)
+                            LinkRow("Import, export and delete", "Ember backups, Lyfta CSV, plain CSV, and deleting all data.", first = !hasBackup, onClick = onOpenData)
                         }
-                        SettingsSection.Updates -> {
-                            ButtonRow(
-                                label = "Version ${updateState.currentVersion}",
-                                hint = updateState.status.ifBlank { "Checks GitHub for a newer, signed release." },
-                                action = "Check now",
-                                first = true,
-                                busy = updateState.busy,
-                                busyLabel = "Checking…",
-                                onClick = updates::check,
-                            )
-                            ToggleRow(
-                                "Check automatically",
-                                "Looks once a day when you open Ember, and says so on Home when an update is ready.",
-                                checked = autoCheck,
-                                onChange = updates::setAutoCheck,
-                            )
-                            LinkRow("All releases on GitHub", "Release notes and the manual download.", outside = true) {
-                                runCatching { uriHandler.openUri(UpdatesViewModel.RELEASES_URL) }
-                            }
-                        }
+                        SettingsSection.Updates -> host.Rows(SettingsSlot.Updates, onOpenPrivacy)
                     }
                 }
             }
             item(key = "footer") {
                 Text(
-                    "Ember ${updateState.currentVersion}",
+                    "Ember ${host.appVersion}",
                     style = MaterialTheme.typography.labelLarge,
                     color = EmberTheme.colors.textTertiary,
                     modifier = Modifier.fillMaxWidth().padding(top = 18.dp),
@@ -307,13 +208,5 @@ fun SettingsScreen(
         }
     }
 
-    updateState.offer?.let { offer ->
-        AlertDialog(
-            onDismissRequest = updates::dismissOffer,
-            confirmButton = { TextButton(enabled = !updateState.busy, onClick = updates::downloadAndInstall) { Text("Download and install") } },
-            dismissButton = { TextButton(enabled = !updateState.busy, onClick = updates::dismissOffer) { Text("Later") } },
-            title = { Text("Ember ${offer.version}") },
-            text = { Text(offer.notes.ifBlank { "A new version is available." }.take(600), color = EmberTheme.colors.textSecondary) },
-        )
-    }
+    host.Overlays()
 }

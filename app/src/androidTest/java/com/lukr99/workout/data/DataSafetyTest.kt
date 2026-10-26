@@ -1,5 +1,6 @@
 package com.lukr99.workout.data
 
+import com.lukr99.workout.data.run.RoomRunRepository
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -58,8 +59,8 @@ class DataSafetyTest {
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         db = Room.inMemoryDatabaseBuilder(context, WorkoutDb::class.java).allowMainThreadQueries().build()
-        repo = WorkoutRepository(db.workoutDao(), RoomTransactionRunner(db))
-        runRepo = RunRepository(db.runDao())
+        repo = RoomWorkoutRepository(db.workoutDao(), RoomTransactionRunner(db))
+        runRepo = RoomRunRepository(db.runDao())
     }
 
     @After
@@ -115,7 +116,7 @@ class DataSafetyTest {
     @Test
     fun failedRestore_leavesTheStoreAndPhotoFilesUntouched() = runTest {
         repo.saveWorkoutSession(completed("kept", "none"))
-        val brokenRuns = RunRepository(object : RunDao by db.runDao() {
+        val brokenRuns = RoomRunRepository(object : RunDao by db.runDao() {
             override suspend fun upsertRun(run: RunEntity) = error("disk full")
         })
         val bundle = ExportBundle(

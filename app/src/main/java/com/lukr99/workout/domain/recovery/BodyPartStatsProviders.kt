@@ -8,7 +8,7 @@ import com.lukr99.workout.domain.stats.ExpandingDimensionProvider
 import com.lukr99.workout.domain.stats.MetricProvider
 import com.lukr99.workout.domain.stats.MetricUnit
 import com.lukr99.workout.domain.stats.MetricValue
-import java.time.ZoneId
+import kotlinx.datetime.TimeZone
 
 object BodyPartStatsProviders {
     val metrics: List<MetricProvider> = listOf(
@@ -40,7 +40,7 @@ object BodyPartStatsProviders {
         val catalog = exercises.associateBy(Exercise::id)
         return object : ExpandingDimensionProvider {
             override val key = BodyPartStatsKeys.AllBodyParts
-            override fun resolveValues(point: WorkoutDataPoint, zoneId: ZoneId): Set<String> {
+            override fun resolveValues(point: WorkoutDataPoint, zoneId: TimeZone): Set<String> {
                 val entry = point.entry ?: return emptySet()
                 val exercise = catalog[entry.exerciseId]
                 val values = linkedMapOf<String, String>()
@@ -48,7 +48,7 @@ object BodyPartStatsProviders {
                     exercise?.secondaryBodyParts.orEmpty().asSequence())
                     .map(String::trim)
                     .filter(String::isNotBlank)
-                    .onEach { values.putIfAbsent(it.lowercase(), it) }
+                    .onEach { values.getOrPut(it.lowercase()) { it } }
                     .toList()
                     .let { values.values.toSet() }
             }

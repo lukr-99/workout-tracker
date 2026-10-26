@@ -2,29 +2,10 @@ package com.lukr99.workout.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import com.lukr99.workout.R
 
-/**
- * Barlow for reading, Barlow Condensed for titles and numbers, from the approved redesign. Both are
- * bundled (SIL Open Font License, `assets/licenses/barlow-OFL.txt`), so the app looks the same
- * offline and on every phone.
- */
-val Barlow = FontFamily(
-    Font(R.font.barlow_regular, FontWeight.Normal),
-    Font(R.font.barlow_medium, FontWeight.Medium),
-    Font(R.font.barlow_semibold, FontWeight.SemiBold),
-    Font(R.font.barlow_bold, FontWeight.Bold),
-)
-
-val BarlowCondensed = FontFamily(
-    Font(R.font.barlow_condensed_medium, FontWeight.Medium),
-    Font(R.font.barlow_condensed_semibold, FontWeight.SemiBold),
-    Font(R.font.barlow_condensed_bold, FontWeight.Bold),
-)
+// Barlow and BarlowCondensed come from BarlowFonts.kt, which each platform supplies.
 
 private val base = Typography()
 

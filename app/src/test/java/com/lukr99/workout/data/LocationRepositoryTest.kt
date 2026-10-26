@@ -39,7 +39,7 @@ class LocationRepositoryTest {
         val direct = Executor { it.run() }
         db = Room.inMemoryDatabaseBuilder(context, WorkoutDb::class.java)
             .allowMainThreadQueries().setQueryExecutor(direct).setTransactionExecutor(direct).build()
-        repo = WorkoutRepository(db.workoutDao(), RoomTransactionRunner(db))
+        repo = RoomWorkoutRepository(db.workoutDao(), RoomTransactionRunner(db))
         repo.ensureSeeded()
         repo.saveExercise(Exercise(id = FLY, name = "Cable Fly"))
         Unit

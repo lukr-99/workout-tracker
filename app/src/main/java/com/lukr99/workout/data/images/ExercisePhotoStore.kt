@@ -3,8 +3,6 @@ package com.lukr99.workout.data.images
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.net.Uri
-import androidx.core.content.FileProvider
 import com.lukr99.workout.data.export.ExercisePhoto
 import com.lukr99.workout.data.transfer.PhotoArchive
 import java.io.ByteArrayOutputStream
@@ -12,42 +10,14 @@ import java.io.File
 import java.util.UUID
 
 /** App-private file boundary for personal exercise photos, and their side of backup and restore. */
-class ExercisePhotoStore(private val context: Context) : PhotoArchive {
+class ExercisePhotoStore(private val context: Context) : PhotoArchive, ExercisePhotos {
     private val photosDirectory: File
         get() = File(context.filesDir, "exercise_images").also(File::mkdirs)
-    private val capturesDirectory: File
-        get() = File(context.cacheDir, "exercise-photo-captures").also(File::mkdirs)
 
-    fun createCaptureTarget(): PhotoCaptureTarget {
-        val file = File(capturesDirectory, "${UUID.randomUUID()}.jpg")
-        check(file.createNewFile()) { "Could not create a camera image target." }
-        return PhotoCaptureTarget(
-            uri = FileProvider.getUriForFile(context, "${context.packageName}.files", file),
-            temporaryPath = file.absolutePath,
-        )
-    }
+    override fun savePhoto(exerciseId: String, bytes: ByteArray): String =
+        replacePhoto(exerciseId) { destination -> destination.writeBytes(bytes) }
 
-    fun commitCapture(exerciseId: String, temporaryPath: String): String {
-        val source = File(temporaryPath)
-        require(source.isFile && source.length() > 0) { "The camera did not return an image." }
-        return replacePhoto(exerciseId) { destination ->
-            source.inputStream().use { input ->
-                destination.outputStream().use(input::copyTo)
-            }
-        }.also { source.delete() }
-    }
-
-    fun importPhoto(exerciseId: String, uri: Uri): String = replacePhoto(exerciseId) { destination ->
-        val input = context.contentResolver.openInputStream(uri)
-            ?: error("The selected image could not be opened.")
-        input.use { destination.outputStream().use(it::copyTo) }
-    }
-
-    fun discardCapture(temporaryPath: String?) {
-        temporaryPath?.let(::File)?.takeIf { it.parentFile == capturesDirectory }?.delete()
-    }
-
-    fun removePhoto(path: String?) {
+    override fun removePhoto(path: String?) {
         path?.let(::File)
             ?.takeIf { it.parentFile == photosDirectory }
             ?.delete()

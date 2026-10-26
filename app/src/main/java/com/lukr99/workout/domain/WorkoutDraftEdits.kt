@@ -1,5 +1,7 @@
 package com.lukr99.workout.domain
 
+import kotlin.math.roundToLong
+
 /*
  * Edits to a live workout while it is logged. Each one returns a new workout and leaves the input
  * alone. Times are passed in, so the rules can be tested without a clock.
@@ -90,7 +92,7 @@ const val MAX_REPS_IN_RESERVE = 4
  * only. Null when the set has no effort.
  */
 val StrengthSet.repsInReserve: Int?
-    get() = (rir ?: rpe?.let { 10.0 - it })?.let { Math.round(it).toInt().coerceIn(0, MAX_REPS_IN_RESERVE) }
+    get() = (rir ?: rpe?.let { 10.0 - it })?.let { it.roundToLong().toInt().coerceIn(0, MAX_REPS_IN_RESERVE) }
 
 /** This set with [reps] left in the tank, or no effort when null. RPE follows as 10 minus RIR. */
 fun StrengthSet.withRepsInReserve(reps: Int?): StrengthSet {

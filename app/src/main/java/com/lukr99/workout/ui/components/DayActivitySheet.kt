@@ -26,8 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -52,7 +50,7 @@ fun DayActivitySheet(
     ) {
         Column(
             // A bottom sheet is its own window, so it needs testTagsAsResourceId again for its tags.
-            Modifier.semantics { testTagsAsResourceId = true }.testTag(AppTags.DAY_SHEET)
+            Modifier.exposeTestTags().testTag(AppTags.DAY_SHEET)
                 .fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {

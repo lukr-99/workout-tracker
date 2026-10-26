@@ -1,5 +1,6 @@
 package com.lukr99.workout.data
 
+import com.lukr99.workout.data.run.RoomRunRepository
 import android.content.Context
 import androidx.room.Room
 import androidx.sqlite.db.SimpleSQLiteQuery
@@ -57,7 +58,7 @@ class WorkoutRepositoryTest {
         db = Room.inMemoryDatabaseBuilder(context, WorkoutDb::class.java)
             .allowMainThreadQueries()
             .build()
-        repo = WorkoutRepository(db.workoutDao(), RoomTransactionRunner(db))
+        repo = RoomWorkoutRepository(db.workoutDao(), RoomTransactionRunner(db))
     }
 
     @After
@@ -327,7 +328,7 @@ class WorkoutRepositoryTest {
             ApplicationProvider.getApplicationContext(), WorkoutDb::class.java,
         ).allowMainThreadQueries().build()
         try {
-            val freshRepo = WorkoutRepository(freshDb.workoutDao())
+            val freshRepo = RoomWorkoutRepository(freshDb.workoutDao())
             freshRepo.importBundle(JsonExporter.fromJson(json))
             val reExported = freshRepo.createExportBundle()
 
@@ -340,7 +341,7 @@ class WorkoutRepositoryTest {
 
     @Test
     fun runsAndRoutes_surviveExportImportIntoFreshDatabase() = runTest {
-        val runRepo = RunRepository(db.runDao())
+        val runRepo = RoomRunRepository(db.runDao())
         runRepo.saveRoute(
             Route(
                 id = "route1", name = "River loop",
@@ -366,9 +367,9 @@ class WorkoutRepositoryTest {
             ApplicationProvider.getApplicationContext(), WorkoutDb::class.java,
         ).allowMainThreadQueries().build()
         try {
-            val freshRunRepo = RunRepository(freshDb.runDao())
+            val freshRunRepo = RoomRunRepository(freshDb.runDao())
             val freshService = DataTransferService(
-                WorkoutRepository(freshDb.workoutDao(), RoomTransactionRunner(freshDb)),
+                RoomWorkoutRepository(freshDb.workoutDao(), RoomTransactionRunner(freshDb)),
                 freshRunRepo,
             )
             val preview = freshService.previewImport(json, "workout-backup.json")
@@ -398,7 +399,7 @@ class WorkoutRepositoryTest {
     @Test
     fun lyftaPreviewCommit_isAtomicAndIdempotent() = runTest {
         repo.ensureSeeded()
-        val service = DataTransferService(repo, RunRepository(db.runDao()))
+        val service = DataTransferService(repo, RoomRunRepository(db.runDao()))
         val testContext = InstrumentationRegistry.getInstrumentation().context
         val csv = testContext.assets.open("lyfta-sample.csv").bufferedReader().use { it.readText() }
 

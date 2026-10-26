@@ -2,11 +2,12 @@ package com.lukr99.workout.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewModelScope
-import com.lukr99.workout.data.AppContainer
 import com.lukr99.workout.data.WorkoutRepository
-import com.lukr99.workout.data.location.LocationSuggester
-import com.lukr99.workout.data.location.NoPositionProvider
+import com.lukr99.workout.data.NoPlaceSuggester
+import com.lukr99.workout.data.PlaceSuggester
 import com.lukr99.workout.domain.Location
 import com.lukr99.workout.domain.LocationKind
 import com.lukr99.workout.settings.DevicePrefs
@@ -23,7 +24,7 @@ import kotlinx.coroutines.launch
 class LocationsViewModel(
     private val repo: WorkoutRepository,
     private val prefs: DevicePrefs,
-    private val suggester: LocationSuggester = LocationSuggester(NoPositionProvider),
+    private val suggester: PlaceSuggester = NoPlaceSuggester,
 ) : ViewModel() {
 
     /** Every location, archived ones included. */
@@ -92,10 +93,9 @@ class LocationsViewModel(
     }
 
     companion object {
-        fun factory(container: AppContainer): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                LocationsViewModel(container.repository, container.devicePrefs, container.locationSuggester) as T
-        }
+        fun factory(repo: WorkoutRepository, prefs: DevicePrefs, suggester: PlaceSuggester): ViewModelProvider.Factory =
+            viewModelFactory {
+                initializer { LocationsViewModel(repo, prefs, suggester) }
+            }
     }
 }

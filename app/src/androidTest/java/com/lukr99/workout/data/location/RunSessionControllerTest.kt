@@ -1,5 +1,6 @@
 package com.lukr99.workout.data.location
 
+import com.lukr99.workout.data.run.RoomRunRepository
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -37,7 +38,7 @@ class RunSessionControllerTest {
         bufferFile.delete()
         db = Room.inMemoryDatabaseBuilder(context, WorkoutDb::class.java)
             .allowMainThreadQueries().build()
-        repository = RunRepository(db.runDao())
+        repository = RoomRunRepository(db.runDao())
         controller = RunSessionController(context, repository, clock = { now })
     }
 

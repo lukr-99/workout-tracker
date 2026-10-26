@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui.components
 
+import kotlin.math.roundToLong
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -86,6 +87,6 @@ private fun CardioLabel(text: String, modifier: Modifier) {
 }
 
 private fun trim(v: Double): String {
-    val r = Math.round(v * 100.0) / 100.0
+    val r = (v * 100.0).roundToLong() / 100.0
     return if (r % 1.0 == 0.0) r.toLong().toString() else r.toString()
 }

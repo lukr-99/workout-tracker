@@ -6,6 +6,7 @@ import com.lukr99.workout.domain.LocationScope
 import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutSessionStatus
+import com.lukr99.workout.domain.nowMillis
 import com.lukr99.workout.domain.progression.DeloadPolicy
 import com.lukr99.workout.domain.progression.ProgressionScheme
 import com.lukr99.workout.domain.progression.ProgressionSuggestion
@@ -69,7 +70,7 @@ class WorkoutInsightsService(
     )
 
     suspend fun recovery(
-        nowUtcMillis: Long = System.currentTimeMillis(),
+        nowUtcMillis: Long = nowMillis(),
         config: RecoveryConfig = RecoveryConfig(),
     ): RecoverySnapshot = RecoveryEngine.calculate(
         sessions = repository.getSessions(),

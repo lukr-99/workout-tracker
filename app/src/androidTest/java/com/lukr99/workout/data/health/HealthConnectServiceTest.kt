@@ -1,5 +1,6 @@
 package com.lukr99.workout.data.health
 
+import com.lukr99.workout.data.RoomWorkoutRepository
 import android.content.Context
 import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.room.Room
@@ -32,7 +33,7 @@ class HealthConnectServiceTest {
             ApplicationProvider.getApplicationContext<Context>(),
             WorkoutDb::class.java,
         ).build()
-        repository = WorkoutRepository(db.workoutDao())
+        repository = RoomWorkoutRepository(db.workoutDao())
     }
 
     @After

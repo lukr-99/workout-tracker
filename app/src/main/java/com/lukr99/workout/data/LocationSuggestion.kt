@@ -1,4 +1,4 @@
-package com.lukr99.workout.data.location
+package com.lukr99.workout.data
 
 import com.lukr99.workout.domain.GeoPoint
 import com.lukr99.workout.domain.Location

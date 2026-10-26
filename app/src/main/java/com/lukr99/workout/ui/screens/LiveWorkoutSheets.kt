@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui.screens
 
+import com.lukr99.workout.domain.nowMillis
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -180,7 +181,7 @@ internal fun LiveWorkoutSheets(
                 session = session,
                 template = template,
                 units = units,
-                nowUtcMillis = System.currentTimeMillis(),
+                nowUtcMillis = nowMillis(),
                 onFinish = { choice, name, countUnticked ->
                     val from = template
                     vm.finish(countUnticked, afterSave = { saved ->

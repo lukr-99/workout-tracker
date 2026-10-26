@@ -1,9 +1,14 @@
 package com.lukr99.workout.ui
 
+import com.lukr99.workout.domain.dateIn
+import com.lukr99.workout.domain.nowMillis
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewModelScope
-import com.lukr99.workout.data.AppContainer
 import com.lukr99.workout.data.WorkoutRepository
 import com.lukr99.workout.data.run.RunRepository
 import com.lukr99.workout.domain.DashboardSnapshot
@@ -12,9 +17,6 @@ import com.lukr99.workout.domain.WhatsNewNote
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.settings.WhatsNewGate
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -33,8 +35,8 @@ class HomeViewModel(
     private val repo: WorkoutRepository,
     runs: RunRepository,
     private val whatsNewGate: WhatsNewGate? = null,
-    private val now: () -> Long = System::currentTimeMillis,
-    private val zone: () -> ZoneId = ZoneId::systemDefault,
+    private val now: () -> Long = ::nowMillis,
+    private val zone: () -> TimeZone = TimeZone::currentSystemDefault,
 ) : ViewModel() {
 
     private val snapshotState = MutableStateFlow(DashboardSnapshot())
@@ -96,15 +98,14 @@ class HomeViewModel(
         viewModelScope.launch { snapshotState.value = repo.getDashboardSnapshot() }
     }
 
-    private fun today(): LocalDate = Instant.ofEpochMilli(now()).atZone(zone()).toLocalDate()
+    private fun today(): LocalDate = now().dateIn(zone())
 
     companion object {
         const val RECENT_ROWS = 5
 
-        fun factory(container: AppContainer): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                HomeViewModel(container.repository, container.runRepository, container.whatsNew) as T
-        }
+        fun factory(repo: WorkoutRepository, runs: RunRepository, whatsNew: WhatsNewGate): ViewModelProvider.Factory =
+            viewModelFactory {
+                initializer { HomeViewModel(repo, runs, whatsNew) }
+            }
     }
 }

@@ -3,7 +3,7 @@ package com.lukr99.workout.domain.stats
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.query.WorkoutDataPoint
 import com.lukr99.workout.domain.query.WorkoutQueryEngine
-import java.time.ZoneId
+import kotlinx.datetime.TimeZone
 
 /**
  * Extensible multi-dimensional statistics engine. Metrics and dimensions are addressed by stable
@@ -21,7 +21,7 @@ class StatsEngine(
         sessions: Iterable<WorkoutSession>,
         request: StatsRequest = StatsRequest(),
     ): StatsReport {
-        val zone = runCatching { ZoneId.of(request.timeZoneId) }.getOrDefault(ZoneId.systemDefault())
+        val zone = runCatching { TimeZone.of(request.timeZoneId) }.getOrElse { TimeZone.currentSystemDefault() }
         val selection = WorkoutQueryEngine.select(sessions, request.query)
         val requestedMetrics = request.metrics.distinct()
         val requestedDimensions = request.dimensions.distinct()
@@ -57,7 +57,7 @@ class StatsEngine(
                     sort.key in requestedDimensions -> compareBy { it.dimensions[sort.key].orEmpty() }
                     else -> null
                 }?.let { if (sort.descending) it.reversed() else it }
-            }.reduceOrNull(Comparator<StatsRow>::thenComparing)
+            }.reduceOrNull { a, b -> a.then(b) }
             comparator?.let(unsorted::sortedWith) ?: unsorted
         }
 
@@ -75,7 +75,7 @@ class StatsEngine(
     private fun dimensionGroups(
         point: WorkoutDataPoint,
         requestedDimensions: List<String>,
-        zone: ZoneId,
+        zone: TimeZone,
     ): List<Map<String, String>> = requestedDimensions.fold(listOf(emptyMap())) { groups, key ->
         val provider = dimensions.getValue(key)
         val values = if (provider is ExpandingDimensionProvider) {

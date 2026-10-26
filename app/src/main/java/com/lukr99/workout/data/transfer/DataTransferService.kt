@@ -12,7 +12,8 @@ import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseFilter
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.query.WorkoutQueryEngine
-import java.util.Base64
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 /**
  * High-level transfer API: detect -> parse -> preview -> plan -> atomic commit, plus JSON and CSV
@@ -239,10 +240,11 @@ class DataTransferService(
     suspend fun exportCsv(options: CsvExportOptions = CsvExportOptions()): ExportArtifact =
         CsvExporter.export(repository.getSessions(options.includeDiscardedSessions), options)
 
+    @OptIn(ExperimentalEncodingApi::class)
     private fun exportPhotos(exercises: List<Exercise>): List<ExercisePhoto> =
         exercises.mapNotNull { exercise ->
             val bytes = exercise.localImagePath?.let(photos::exportBytes) ?: return@mapNotNull null
-            ExercisePhoto(exerciseId = exercise.id, dataBase64 = Base64.getEncoder().encodeToString(bytes))
+            ExercisePhoto(exerciseId = exercise.id, dataBase64 = Base64.Default.encode(bytes))
         }
 
     /**
@@ -250,6 +252,7 @@ class DataTransferService(
      * exercise already has here wins. Otherwise the backup's photo is staged, and a path that only
      * existed on another phone is cleared rather than left dangling.
      */
+    @OptIn(ExperimentalEncodingApi::class)
     private fun withRestoredPhotos(plan: ImportPlan, staged: MutableList<String>): List<PlannedExercise> {
         val photoByTargetId = plan.photos.associateBy { photo ->
             plan.exerciseIdMap[photo.exerciseId] ?: photo.exerciseId
@@ -260,7 +263,7 @@ class DataTransferService(
             val photo = photoByTargetId[planned.value.id]
             val path = when {
                 current != null && plan.mode == RestoreMode.Merge -> current
-                photo != null -> photos.stage(planned.value.id, Base64.getDecoder().decode(photo.dataBase64))
+                photo != null -> photos.stage(planned.value.id, Base64.Default.decode(photo.dataBase64))
                     .also(staged::add)
                 else -> current
             }

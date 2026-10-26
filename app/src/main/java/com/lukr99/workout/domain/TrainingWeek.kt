@@ -1,11 +1,8 @@
 package com.lukr99.workout.domain
 
 import com.lukr99.workout.domain.run.Run
-import java.time.DayOfWeek
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
-import java.time.temporal.TemporalAdjusters
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
 
 /**
  * The current week, Monday to Sunday, as Home shows it: a mark per day and the week's totals.
@@ -20,13 +17,13 @@ data class TrainingWeek(
     companion object {
         fun of(
             today: LocalDate,
-            zone: ZoneId,
+            zone: TimeZone,
             workouts: List<WorkoutSessionSummary>,
             runs: List<Run>,
         ): TrainingWeek {
-            val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+            val monday = today.mondayOfWeek()
             val week = monday..monday.plusDays(6)
-            fun dayOf(millis: Long) = Instant.ofEpochMilli(millis).atZone(zone).toLocalDate()
+            fun dayOf(millis: Long) = millis.dateIn(zone)
 
             val finished = workouts
                 .filter { it.status == WorkoutSessionStatus.Completed }
@@ -40,7 +37,7 @@ data class TrainingWeek(
             val byDay = activities.sortedBy(DayActivity::atUtc).groupBy { dayOf(it.atUtc) }
 
             return TrainingWeek(
-                days = (0L..6L).map { offset ->
+                days = (0..6).map { offset ->
                     val date = monday.plusDays(offset)
                     TrainingDay(date, isToday = date == today, activities = byDay[date].orEmpty())
                 },

@@ -1,8 +1,5 @@
 package com.lukr99.workout.ui.settings
 
-import android.Manifest
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
@@ -47,13 +44,13 @@ internal fun LocationsSettings(
         }
     }
     var pendingPermission by remember { mutableStateOf<Location?>(null) }
-    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+    val requestPermission = rememberLocationPermissionRequest { result ->
         val place = pendingPermission
         pendingPermission = null
         when {
             place == null -> Unit
-            result[Manifest.permission.ACCESS_FINE_LOCATION] == true -> capture(place)
-            result[Manifest.permission.ACCESS_COARSE_LOCATION] == true ->
+            result == LocationPermissionResult.Precise -> capture(place)
+            result == LocationPermissionResult.ApproximateOnly ->
                 toast("Saving a position needs precise location. Turn on Precise for Ember in the phone's settings.")
             else -> toast("Location permission is needed to save a position.")
         }
@@ -87,7 +84,7 @@ internal fun LocationsSettings(
                             if (hasLocationPermission()) capture(location)
                             else {
                                 pendingPermission = location
-                                permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+                                requestPermission()
                             }
                         },
                     )

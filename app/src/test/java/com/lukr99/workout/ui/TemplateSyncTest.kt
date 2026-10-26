@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui
 
+import com.lukr99.workout.data.RoomWorkoutRepository
 import android.app.Application
 import android.content.Context
 import androidx.room.Room
@@ -39,7 +40,7 @@ class TemplateSyncTest {
         val direct = Executor { it.run() }
         val db = Room.inMemoryDatabaseBuilder(context, WorkoutDb::class.java)
             .allowMainThreadQueries().setQueryExecutor(direct).setTransactionExecutor(direct).build()
-        repo = WorkoutRepository(db.workoutDao(), RoomTransactionRunner(db))
+        repo = RoomWorkoutRepository(db.workoutDao(), RoomTransactionRunner(db))
         sync = TemplateSync(repo)
         push = repo.saveTemplate(
             WorkoutTemplate(

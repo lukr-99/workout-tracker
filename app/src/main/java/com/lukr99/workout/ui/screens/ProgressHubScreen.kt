@@ -17,24 +17,22 @@ import com.lukr99.workout.ui.HistoryViewModel
 import com.lukr99.workout.ui.ProgressViewModel
 import com.lukr99.workout.ui.components.ScreenHeader
 import com.lukr99.workout.ui.components.SegmentedControl
-import com.lukr99.workout.ui.run.RunViewModel
-import com.lukr99.workout.ui.run.RunningProgressSection
 
 /**
  * The "look back" hub (Run Mode shell change): strength **Progress**, the new **Running** analytics,
  * and the workout **History**, switched by a segmented control now that History is no longer its own
  * tab. The Progress/History panes reuse the existing [ProgressScreen] / [HistoryScreen] unchanged;
- * Running renders [RunningProgressSection] (R2).
+ * Running renders [runningSection] (Run Mode, R2); where there is none, the pane is hidden.
  */
 @Composable
 fun ProgressHubScreen(
     progressVm: ProgressViewModel,
     historyVm: HistoryViewModel,
     locationsVm: com.lukr99.workout.ui.LocationsViewModel,
-    runVm: RunViewModel,
     units: UnitSystem,
     onOpenExercise: (String) -> Unit,
     onOpenSession: (String) -> Unit,
+    runningSection: (@Composable () -> Unit)? = null,
 ) {
     var pane by remember { mutableStateOf(HubPane.Progress) }
 
@@ -42,7 +40,7 @@ fun ProgressHubScreen(
         ScreenHeader("Progress", "How your training is going")
         Spacer(Modifier.height(12.dp))
         SegmentedControl(
-            options = HubPane.entries,
+            options = HubPane.entries.filter { it != HubPane.Running || runningSection != null },
             selected = pane,
             onSelect = { pane = it },
             label = { it.name },
@@ -50,7 +48,7 @@ fun ProgressHubScreen(
         )
         when (pane) {
             HubPane.Progress -> ProgressScreen(vm = progressVm, units = units, onOpenExercise = onOpenExercise)
-            HubPane.Running -> RunningProgressSection(vm = runVm, units = units)
+            HubPane.Running -> runningSection?.invoke()
             HubPane.History -> HistoryScreen(vm = historyVm, locationsVm = locationsVm, units = units, onOpen = onOpenSession)
         }
     }

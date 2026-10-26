@@ -1,178 +1,64 @@
 package com.lukr99.workout.data.run
 
-import com.lukr99.workout.domain.run.Polyline
 import com.lukr99.workout.domain.run.Route
-import com.lukr99.workout.domain.run.RoutePoint
 import com.lukr99.workout.domain.run.Run
-import com.lukr99.workout.domain.run.TracePoint
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 
 /**
- * The single API over run/route persistence — the **only** class that touches Room for Run Mode
- * (mirrors [com.lukr99.workout.data.WorkoutRepository] for strength). It maps the Room `@Entity`
- * shapes to/from the portable `domain/run` model and owns the polyline encode/decode.
+ * The single API over run and route persistence, the way ui and services reach Run Mode data
+ * (mirrors [com.lukr99.workout.data.WorkoutRepository] for strength). [RoomRunRepository] is the
+ * Room implementation. The model is the portable `domain/run` one.
  *
  * R0 scope: read/write skeleton + list flows. Live-run persistence (incremental point writes,
  * moving-time/split derivation) arrives in R1; Health Connect export in R2.
  */
-class RunRepository(private val dao: RunDao) {
-
-    // --- Runs ----------------------------------------------------------------------------------
+interface RunRepository {
 
     /** Recent-first run summaries (no trace loaded — the encoded polyline covers thumbnails). */
-    fun observeRuns(): Flow<List<Run>> = dao.observeRuns().map { rows -> rows.map { it.toDomain() } }
+    fun observeRuns(): Flow<List<Run>>
 
-    suspend fun getRuns(): List<Run> = dao.getAllRuns().map { it.toDomain() }
+    suspend fun getRuns(): List<Run>
 
-    suspend fun countRuns(): Int = dao.countRuns()
+    suspend fun countRuns(): Int
 
     /** All runs with their full traces loaded — for stats/PRs that need sub-run windows. */
-    suspend fun getRunsWithTraces(): List<Run> = dao.getAllRuns().map { row ->
-        row.toDomain(dao.getRunPoints(row.id).map { it.toDomain() })
-    }
+    suspend fun getRunsWithTraces(): List<Run>
 
     /** A run with its full raw trace loaded — for detail, editing, or GPX export. */
-    suspend fun getRun(id: String): Run? {
-        val row = dao.getRun(id) ?: return null
-        val trace = dao.getRunPoints(id).map { it.toDomain() }
-        return row.toDomain(trace)
-    }
+    suspend fun getRun(id: String): Run?
 
     /**
      * Persist a run and (re)write its raw trace. The `encodedPolyline` is derived from [run.trace]
      * when present so the stored fast-path always matches the points.
      */
-    suspend fun saveRun(run: Run) {
-        val encoded = if (run.trace.isNotEmpty()) Polyline.encodeTrace(run.trace) else run.encodedPolyline
-        dao.upsertRun(run.copy(encodedPolyline = encoded).toEntity())
-        if (run.trace.isNotEmpty()) {
-            dao.upsertRunPoints(run.trace.map { it.toEntity(run.id) })
-        }
-    }
+    suspend fun saveRun(run: Run)
 
     /** Edit a run's notes/title in place (no trace rewrite). */
-    suspend fun updateRunNotes(id: String, notes: String) = dao.updateNotes(id, notes)
+    suspend fun updateRunNotes(id: String, notes: String)
 
     /** Cascade removes the trace. */
-    suspend fun deleteRun(id: String) = dao.deleteRun(id)
+    suspend fun deleteRun(id: String)
 
-    // --- Routes --------------------------------------------------------------------------------
-
-    fun observeRoutes(): Flow<List<Route>> =
-        dao.observeRoutes().map { rows -> rows.map { it.toDomain() } }
+    fun observeRoutes(): Flow<List<Route>>
 
     /** Saved route summaries (no points loaded), newest first. */
-    suspend fun getRoutes(): List<Route> = dao.getAllRoutes().map { it.toDomain() }
+    suspend fun getRoutes(): List<Route>
 
-    suspend fun getRoute(id: String): Route? {
-        val row = dao.getRoute(id) ?: return null
-        val points = dao.getRoutePoints(id).map { it.toDomain() }
-        return row.toDomain(points)
-    }
+    suspend fun getRoute(id: String): Route?
 
-    suspend fun saveRoute(route: Route) {
-        val encoded = if (route.points.isNotEmpty()) Polyline.encodeRoute(route.points) else route.encodedPolyline
-        dao.upsertRoute(route.copy(encodedPolyline = encoded).toEntity())
-        if (route.points.isNotEmpty()) {
-            dao.upsertRoutePoints(route.points.map { it.toEntity(route.id) })
-        }
-    }
+    suspend fun saveRoute(route: Route)
 
-    suspend fun deleteRoute(id: String) = dao.deleteRoute(id)
+    suspend fun deleteRoute(id: String)
 
-    suspend fun countRoutes(): Int = dao.countRoutes()
+    suspend fun countRoutes(): Int
 
     /** Removes every run and route with their points. Callers wrap it in the restore transaction. */
-    suspend fun deleteAll() {
-        dao.deleteAllRuns()
-        dao.deleteAllRoutes()
-    }
-
-    // --- Export/import (ExportBundle 1.5) ------------------------------------------------------
+    suspend fun deleteAll()
 
     /** All runs with traces, for a portable export snapshot. */
-    suspend fun exportRuns(): List<Run> = dao.getAllRuns().map { row ->
-        row.toDomain(dao.getRunPoints(row.id).map { it.toDomain() })
-    }
+    suspend fun exportRuns(): List<Run>
 
     /** All routes with points, for a portable export snapshot. */
-    suspend fun exportRoutes(): List<Route> = dao.getAllRoutes().map { row ->
-        row.toDomain(dao.getRoutePoints(row.id).map { it.toDomain() })
-    }
+    suspend fun exportRoutes(): List<Route>
+
 }
-
-// --- Entity <-> domain mapping -----------------------------------------------------------------
-
-private fun RunEntity.toDomain(trace: List<TracePoint> = emptyList()) = Run(
-    id = id,
-    sessionId = sessionId,
-    startedAtUtc = startedAtUtc,
-    durationSeconds = durationSeconds,
-    movingSeconds = movingSeconds,
-    distanceMeters = distanceMeters,
-    avgPaceSecPerKm = avgPaceSecPerKm,
-    elevationGainM = elevationGainM,
-    calories = calories,
-    avgHr = avgHr,
-    source = source,
-    externalKey = externalKey,
-    encodedPolyline = encodedPolyline,
-    routeId = routeId,
-    notes = notes,
-    trace = trace,
-)
-
-private fun Run.toEntity() = RunEntity(
-    id = id,
-    sessionId = sessionId,
-    startedAtUtc = startedAtUtc,
-    durationSeconds = durationSeconds,
-    movingSeconds = movingSeconds,
-    distanceMeters = distanceMeters,
-    avgPaceSecPerKm = avgPaceSecPerKm,
-    elevationGainM = elevationGainM,
-    calories = calories,
-    avgHr = avgHr,
-    source = source,
-    externalKey = externalKey,
-    encodedPolyline = encodedPolyline,
-    routeId = routeId,
-    notes = notes,
-)
-
-private fun RunPointEntity.toDomain() = TracePoint(
-    t = t, lat = lat, lon = lon, elevationM = elevationM,
-    speedMps = speedMps, hrBpm = hrBpm, accuracyM = accuracyM, segmentStart = segmentStart,
-)
-
-private fun TracePoint.toEntity(runId: String) = RunPointEntity(
-    runId = runId, t = t, lat = lat, lon = lon, elevationM = elevationM,
-    speedMps = speedMps, hrBpm = hrBpm, accuracyM = accuracyM, segmentStart = segmentStart,
-)
-
-private fun RouteEntity.toDomain(points: List<RoutePoint> = emptyList()) = Route(
-    id = id,
-    name = name,
-    distanceMeters = distanceMeters,
-    elevationGainM = elevationGainM,
-    encodedPolyline = encodedPolyline,
-    createdAtUtc = createdAtUtc,
-    notes = notes,
-    points = points,
-)
-
-private fun Route.toEntity() = RouteEntity(
-    id = id,
-    name = name,
-    distanceMeters = distanceMeters,
-    elevationGainM = elevationGainM,
-    encodedPolyline = encodedPolyline,
-    createdAtUtc = createdAtUtc,
-    notes = notes,
-)
-
-private fun RoutePointEntity.toDomain() = RoutePoint(seq = seq, lat = lat, lon = lon, elevationM = elevationM)
-
-private fun RoutePoint.toEntity(routeId: String) =
-    RoutePointEntity(routeId = routeId, seq = seq, lat = lat, lon = lon, elevationM = elevationM)

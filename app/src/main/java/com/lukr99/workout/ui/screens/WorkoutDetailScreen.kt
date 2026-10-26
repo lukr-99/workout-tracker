@@ -81,11 +81,10 @@ fun WorkoutDetailScreen(
     val selected by vm.selected.collectAsState()
     val exercises by vm.exercises.collectAsState()
     var showPicker by remember { mutableStateOf(false) }
-    val context = androidx.compose.ui.platform.LocalContext.current
     val toast = LocalToast.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()
-    val shareRenderer = remember(context) { com.lukr99.workout.data.WorkoutShareCardRenderer(context) }
-    var preparedShare by remember { mutableStateOf<com.lukr99.workout.data.WorkoutShareCardRenderer.PreparedShare?>(null) }
+    val sharer = rememberWorkoutSharer()
+    var preparedShare by remember { mutableStateOf<PreparedWorkoutShare?>(null) }
     var preparingShare by remember { mutableStateOf(false) }
     var shareMenu by remember { mutableStateOf(false) }
 
@@ -145,7 +144,7 @@ fun WorkoutDetailScreen(
                             shareMenu = false
                             scope.launch {
                                 preparingShare = true
-                                runCatching { shareRenderer.prepare(session, units == UnitSystem.Imperial) }
+                                runCatching { sharer.prepareImage(session, units == UnitSystem.Imperial) }
                                     .onSuccess { preparedShare = it }
                                     .onFailure { toast("Could not prepare the share image") }
                                 preparingShare = false
@@ -161,14 +160,9 @@ fun WorkoutDetailScreen(
                                 imperial = units == UnitSystem.Imperial,
                                 dateLabel = Format.fullDate(session.completedDateUtc ?: session.startedAtUtc),
                             )
-                            val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(android.content.Intent.EXTRA_SUBJECT, session.name.ifBlank { "Workout" })
-                                putExtra(android.content.Intent.EXTRA_TEXT, text)
+                            if (!sharer.shareText(session.name.ifBlank { "Workout" }, text)) {
+                                toast("Could not open the share sheet")
                             }
-                            runCatching {
-                                context.startActivity(android.content.Intent.createChooser(intent, "Share workout"))
-                            }.onFailure { toast("Could not open the share sheet") }
                         },
                     )
                 }
@@ -328,9 +322,7 @@ fun WorkoutDetailScreen(
             preview = preview,
             onDismiss = { preparedShare = null },
             onShare = {
-                runCatching {
-                    context.startActivity(android.content.Intent.createChooser(preview.intent, "Share workout"))
-                }.onFailure { toast("Could not open the share sheet") }
+                if (!preview.share()) toast("Could not open the share sheet")
             },
         )
     }

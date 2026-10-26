@@ -1,11 +1,11 @@
 package com.lukr99.workout.data.transfer
 
-import java.time.ZoneId
+import kotlinx.datetime.TimeZone
 
 data class ImportOptions(
     val formatHint: DataFormat? = null,
     val sourceWeightUnit: WeightUnit = WeightUnit.Auto,
-    val sourceTimeZoneId: String = ZoneId.systemDefault().id,
+    val sourceTimeZoneId: String = TimeZone.currentSystemDefault().id,
     val sessionConflictPolicy: ConflictPolicy = ConflictPolicy.Skip,
     val catalogConflictPolicy: ConflictPolicy = ConflictPolicy.Merge,
     val exerciseMatchMode: ExerciseMatchMode = ExerciseMatchMode.Aliases,

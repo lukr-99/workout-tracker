@@ -1,5 +1,7 @@
 package com.lukr99.workout.ui.screens
 
+import com.lukr99.workout.data.run.RoomRunRepository
+import com.lukr99.workout.data.RoomWorkoutRepository
 import android.app.Application
 import android.content.Context
 import androidx.compose.foundation.layout.Box
@@ -29,6 +31,7 @@ import com.lukr99.workout.data.run.ShareCardRenderer
 import com.lukr99.workout.data.services.WorkoutDataService
 import com.lukr99.workout.data.services.WorkoutInsightsService
 import com.lukr99.workout.data.transfer.AndroidDocumentGateway
+import com.lukr99.workout.settings.DataStoreSettingsStore
 import com.lukr99.workout.settings.SettingsStore
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.HistoryViewModel
@@ -36,6 +39,7 @@ import com.lukr99.workout.ui.HomeViewModel
 import com.lukr99.workout.ui.LibraryViewModel
 import com.lukr99.workout.ui.LiveWorkoutViewModel
 import com.lukr99.workout.ui.LocationsViewModel
+import com.lukr99.workout.settings.DataStoreDevicePrefs
 import com.lukr99.workout.settings.DevicePrefs
 import com.lukr99.workout.ui.ProgressViewModel
 import com.lukr99.workout.ui.run.RunViewModel
@@ -81,10 +85,10 @@ class ScreenScreenshotTest {
             .setQueryExecutor(direct)
             .setTransactionExecutor(direct)
             .build()
-        repo = WorkoutRepository(db.workoutDao(), RoomTransactionRunner(db))
+        repo = RoomWorkoutRepository(db.workoutDao(), RoomTransactionRunner(db))
         repo.ensureSeeded()
         ScreenFixtures.fill(repo)
-        ScreenFixtures.fillRuns(RunRepository(db.runDao()))
+        ScreenFixtures.fillRuns(RoomRunRepository(db.runDao()))
     }
 
     // No @After close: leaving a screen saves its live draft, which runs after the test body. The
@@ -107,7 +111,7 @@ class ScreenScreenshotTest {
     @Test
     fun templatePreviewDark() {
         val template = runBlocking { repo.getTemplates().first { it.name == "Push day" } }
-        val data = runBlocking { HomeViewModel(repo, RunRepository(db.runDao())).preview(template) }
+        val data = runBlocking { HomeViewModel(repo, RoomRunRepository(db.runDao())).preview(template) }
         compose.setContent {
             WorkoutTheme(dark = true) {
                 TemplatePreviewSheet(template, data, UnitSystem.Metric, defaultRestSeconds = 120, onEdit = {}, onStart = {}, onDismiss = {})
@@ -129,7 +133,7 @@ class ScreenScreenshotTest {
 
     @Composable
     private fun Runs() {
-        val runs = RunRepository(db.runDao())
+        val runs = RoomRunRepository(db.runDao())
         RunsScreen(
             vm = RunViewModel(runs, AndroidDocumentGateway(context), ShareCardRenderer(context), OfflineTileCache(context)),
             units = UnitSystem.Metric,
@@ -142,7 +146,7 @@ class ScreenScreenshotTest {
 
     @Composable
     private fun Home() = HomeScreen(
-        vm = HomeViewModel(repo, RunRepository(db.runDao())),
+        vm = HomeViewModel(repo, RoomRunRepository(db.runDao())),
         units = UnitSystem.Metric,
         onResume = {},
         onStartTemplate = {},
@@ -177,12 +181,12 @@ class ScreenScreenshotTest {
 
     @Composable
     private fun Live() {
-        val vm = LiveWorkoutViewModel(repo, SettingsStore(context), WorkoutInsightsService(repo))
+        val vm = LiveWorkoutViewModel(repo, DataStoreSettingsStore(context), WorkoutInsightsService(repo))
         vm.loadActiveIfAny()
         LiveWorkoutScreen(vm = vm, locationsVm = locations(), units = UnitSystem.Metric, onClose = {}, onEditExercise = {})
     }
 
-    private fun locations() = LocationsViewModel(repo, DevicePrefs(context))
+    private fun locations() = LocationsViewModel(repo, DataStoreDevicePrefs(context))
 
     /** Tab screens get the shell's side and top padding, as in App. */
     @Composable

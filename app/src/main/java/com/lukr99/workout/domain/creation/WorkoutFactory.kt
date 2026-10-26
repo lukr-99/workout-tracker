@@ -1,5 +1,6 @@
 package com.lukr99.workout.domain.creation
 
+import com.lukr99.workout.domain.nowMillis
 import com.lukr99.workout.domain.CardioEntryData
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
@@ -20,7 +21,7 @@ import com.lukr99.workout.domain.newId
  */
 class WorkoutFactory(
     private val ids: IdGenerator = IdGenerator { newId() },
-    private val clock: TimeProvider = TimeProvider { System.currentTimeMillis() },
+    private val clock: TimeProvider = TimeProvider { nowMillis() },
 ) {
     fun exercise(
         draft: ExerciseDraft,

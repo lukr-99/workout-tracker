@@ -3,12 +3,14 @@ package com.lukr99.workout.ui.components
 import com.lukr99.workout.domain.Units
 import com.lukr99.workout.domain.WeightDisplayUnit
 import com.lukr99.workout.settings.UnitSystem
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
-import java.util.Locale
+import com.lukr99.workout.domain.dateIn
+import com.lukr99.workout.domain.localDecimal
+import com.lukr99.workout.domain.nowMillis
+import com.lukr99.workout.domain.padded
+import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 /**
  * UI display formatting — the one place weights get converted for display and timestamps become
@@ -16,12 +18,6 @@ import java.util.Locale
  * localizes only at the edge.
  */
 object Format {
-
-    private val dayFormatter = DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault())
-    private val dayYearFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.getDefault())
-    private val shortDayFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())
-    private val longDayFormatter = DateTimeFormatter.ofPattern("EEEE d MMM", Locale.getDefault())
-    private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
 
     fun unitLabel(units: UnitSystem): String = if (units == UnitSystem.Imperial) "lb" else "kg"
 
@@ -51,9 +47,9 @@ object Format {
     fun volume(kg: Double, units: UnitSystem): String {
         val value = if (units == UnitSystem.Imperial) Units.kgToLb(kg) else kg
         return when {
-            value >= 100_000 -> "%.1fM".format(value / 1_000_000)
-            value >= 10_000 -> "%.0fk".format(value / 1_000)
-            value >= 1_000 -> "%.1fk".format(value / 1_000)
+            value >= 100_000 -> "${localDecimal(value / 1_000_000, 1)}M"
+            value >= 10_000 -> "${localDecimal(value / 1_000, 0)}k"
+            value >= 1_000 -> "${localDecimal(value / 1_000, 1)}k"
             else -> Units.formatWeight(value)
         }
     }
@@ -63,45 +59,45 @@ object Format {
     /** Distance in km/mi with a unit suffix, e.g. "5.2 km" / "3.2 mi". Storage stays metres. */
     fun distance(meters: Double, units: UnitSystem): String {
         return if (units == UnitSystem.Imperial) {
-            "%.2f mi".format(meters / 1_609.344)
+            "${localDecimal(meters / 1_609.344, 2)} mi"
         } else {
-            "%.2f km".format(meters / 1_000.0)
+            "${localDecimal(meters / 1_000.0, 2)} km"
         }
     }
 
     fun clock(seconds: Int): String {
         val s = seconds.coerceAtLeast(0)
-        return "%d:%02d".format(s / 60, s % 60)
+        return "${s / 60}:${padded(s % 60, 2)}"
     }
 
-    fun date(millis: Long): String =
-        Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate().format(dayFormatter)
+    fun date(millis: Long): String = localDateText(localDay(millis), DateStyle.Day)
 
-    fun fullDate(millis: Long): String =
-        Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate().format(dayYearFormatter)
+    fun fullDate(millis: Long): String = localDateText(localDay(millis), DateStyle.DayYear)
 
-    fun shortDate(millis: Long): String =
-        Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate().format(shortDayFormatter)
+    fun shortDate(millis: Long): String = localDateText(localDay(millis), DateStyle.ShortDay)
 
     /** The weekday and date in full, e.g. "Monday 13 Oct". */
-    fun longDay(date: LocalDate): String = date.format(longDayFormatter)
+    fun longDay(date: LocalDate): String = localDateText(date, DateStyle.LongDay)
 
     /** The local time of day, e.g. "18:05". */
-    fun clockTime(millis: Long): String =
-        Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalTime().format(timeFormatter)
+    fun clockTime(millis: Long): String {
+        val time = Instant.fromEpochMilliseconds(millis).toLocalDateTime(TimeZone.currentSystemDefault()).time
+        return "${padded(time.hour, 2)}:${padded(time.minute, 2)}"
+    }
 
     /** "Today" / "Yesterday" / "3 days ago" / a date for older sessions. */
-    fun relativeDay(millis: Long, nowMillis: Long = System.currentTimeMillis()): String {
-        val zone = ZoneId.systemDefault()
-        val day = Instant.ofEpochMilli(millis).atZone(zone).toLocalDate()
-        val today = Instant.ofEpochMilli(nowMillis).atZone(zone).toLocalDate()
-        return when (val days = ChronoUnit.DAYS.between(day, today)) {
-            0L -> "Today"
-            1L -> "Yesterday"
+    fun relativeDay(millis: Long, nowMillis: Long = nowMillis()): String {
+        val day = localDay(millis)
+        val today = localDay(nowMillis)
+        return when (val days = today.toEpochDays() - day.toEpochDays()) {
+            0 -> "Today"
+            1 -> "Yesterday"
             in 2..6 -> "$days days ago"
-            else -> if (day.year == today.year) day.format(shortDayFormatter) else day.format(dayYearFormatter)
+            else -> localDateText(day, if (day.year == today.year) DateStyle.ShortDay else DateStyle.DayYear)
         }
     }
 
-    fun today(): LocalDate = LocalDate.now()
+    fun today(): LocalDate = localDay(nowMillis())
+
+    private fun localDay(millis: Long): LocalDate = millis.dateIn(TimeZone.currentSystemDefault())
 }
