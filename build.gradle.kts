@@ -1,4 +1,4 @@
-// Root build file — plugins are declared here (apply false) and applied in :app and :web.
+// Root build file: plugins are declared here (apply false) and applied in :app and :web.
 // Versions live in gradle/libs.versions.toml (the version catalog).
 plugins {
     alias(libs.plugins.android.application) apply false
