@@ -393,10 +393,12 @@ private fun LiveTopBar(
     ) {
         RoundIconButton(Icons.Rounded.KeyboardArrowDown, "Minimise workout", onMinimise)
         Column(Modifier.weight(1f)) {
+            // Wraps to a second line instead of scrolling out of sight beside the buttons on a narrow
+            // phone; a typed line break becomes a space, so the name stays one line.
             BasicTextField(
                 value = name,
-                onValueChange = onRename,
-                singleLine = true,
+                onValueChange = { onRename(it.replace('\n', ' ')) },
+                maxLines = 2,
                 textStyle = MaterialTheme.typography.titleLarge.copy(color = colors.textPrimary),
                 cursorBrush = SolidColor(colors.primary),
             )

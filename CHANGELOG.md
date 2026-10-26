@@ -19,6 +19,8 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 ### Fixed
 
+- **Long workout names on narrow phones.** The name at the top of a live workout wraps to a second
+  line instead of being cut off beside the buttons.
 - **Web edition: no Run choice.** Start goes straight to a workout and the Runs tab is hidden, since
   the web edition has no Run Mode. The remaining "Runs are not in the web edition yet" note is
   readable in both themes.
