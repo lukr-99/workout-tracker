@@ -76,7 +76,7 @@ internal fun LocationsSettings(
         ) {
             Icon(location.kind.icon(), contentDescription = null, tint = EmberTheme.colors.textSecondary, modifier = Modifier.size(20.dp))
             Column(verticalArrangement = Arrangement.spacedBy(6.dp), horizontalAlignment = Alignment.End) {
-                if (!location.isArchived && location.kind != LocationKind.Outdoors) {
+                if (CAN_SAVE_POSITIONS && !location.isArchived && location.kind != LocationKind.Outdoors) {
                     PillButton(
                         if (location.point == null) "Set position" else "Update position",
                         busy = settingPosition == location.id,
@@ -118,10 +118,13 @@ internal fun LocationsSettings(
 
 private fun kindLabel(location: Location): String = when (location.kind) {
     LocationKind.Outdoors -> "Built in. Has no fixed position. Tap to rename."
-    LocationKind.Home -> "Built in. ${positionLabel(location)}"
-    LocationKind.Gym -> "Gym. ${positionLabel(location)}"
+    LocationKind.Home -> "Built in. ${positionLabel(location)}".trimEnd()
+    LocationKind.Gym -> "Gym. ${positionLabel(location)}".trimEnd()
 }
 
-private fun positionLabel(location: Location): String =
-    if (location.point == null) "No position yet, so it is not suggested by GPS." else "Position saved. Suggested when you are near."
+private fun positionLabel(location: Location): String = when {
+    !CAN_SAVE_POSITIONS -> ""
+    location.point == null -> "No position yet, so it is not suggested by GPS."
+    else -> "Position saved. Suggested when you are near."
+}
 

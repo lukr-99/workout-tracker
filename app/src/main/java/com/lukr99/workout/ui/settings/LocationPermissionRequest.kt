@@ -5,6 +5,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 
+/** True where Ember can read the device position to save a gym's place (not in the web edition). */
+const val CAN_SAVE_POSITIONS: Boolean = true
+
 /**
  * Returns a function that asks for location access and reports the answer to [onResult].
  *
