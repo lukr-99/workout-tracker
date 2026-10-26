@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- maximum-scale=1 also stops iOS from zooming in when Compose focuses its hidden text field. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Ember</title>
+  <meta name="description" content="Log lifting workouts, track progress and keep your history on your own phone.">
+  <meta name="theme-color" content="#0F0D0C">
+  <meta name="color-scheme" content="dark">
+  <meta name="format-detection" content="telephone=no">
+
+  <!-- Installable web app, including "Add to Home Screen" on iPhone. -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Ember">
+  <!-- "black" keeps the page below the status bar, so the top of the canvas is never covered. -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
+
+  <link rel="stylesheet" href="boot.css">
+  <!-- boot.js checks the browser first and only then loads ember.js. -->
+  <script src="boot.js" defer></script>
+</head>
+<body>
+  <canvas id="ember"></canvas>
+
+  <div id="boot" class="screen" role="status" aria-live="polite">
+    <div class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    <h1>Ember</h1>
+    <p id="boot-message">Warming up&hellip;</p>
+    <p id="boot-slow" class="small" hidden>Still loading. The first visit downloads the app; after
+      that it starts from your phone, even offline.</p>
+    <noscript><p>Ember needs JavaScript. Turn it on in your browser settings and reload.</p></noscript>
+  </div>
+
+  <div id="unsupported" class="screen" hidden>
+    <div class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    <h1>This browser is too old for Ember</h1>
+    <p>Ember needs a browser with WebAssembly garbage collection.</p>
+    <p>On iPhone or iPad, update to iOS 18.2 or newer in Settings &gt; General &gt; Software Update,
+      then open this page in Safari again.</p>
+    <p class="small">On a computer or Android phone, use a current Chrome, Edge, Firefox or Safari.</p>
+  </div>
+
+  <div id="failed" class="screen" hidden>
+    <div class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    <h1>Ember could not start</h1>
+    <p>Check your connection and try again.</p>
+    <button type="button" class="button" data-action="reload">Try again</button>
+    <p id="failed-detail" class="small"></p>
+  </div>
+
+  <div id="update" class="update" role="status" hidden>
+    <span>A new version is ready.</span>
+    <button type="button" class="button" data-action="reload">Reload</button>
+  </div>
+
+  <!-- Measures env(safe-area-inset-*) for emberSafeArea() in boot.js. -->
+  <div id="safe-area-probe" aria-hidden="true"></div>
+</body>
+</html>
