@@ -80,7 +80,7 @@ background. A run recorded on the web only works with the screen on the whole ti
   `NODE_PATH="$(npm root -g)" node tools/render-web-icons.cjs` after changing it.
 - The Barlow fonts are served next to the page from `app/src/main/res/font`; `Main` fetches them
   before the first frame, because a canvas has no system fonts to fall back on.
-- `web/wrangler.toml`: the Cloudflare Pages project name (`ember`) and output folder.
+- `web/wrangler.toml`: the Cloudflare Pages project name (`ember-workout`) and output folder.
 - `tools/stamp_web_dist.py` prepares a build for deploy; `tools/check-web-dist.cjs` checks a stamped
   build in headless Chromium; `.github/workflows/web.yml` builds, tests, checks and (only by hand)
   deploys.
@@ -161,11 +161,12 @@ shared app sources or the Gradle setup, then checks the build in Chromium and up
 Cloudflare Pages, as a **Direct Upload** project: GitHub Actions builds, checks and uploads; Cloudflare
 only serves. Free plan; no running costs.
 
-One-time setup, by the owner (not done yet):
+One-time setup, by the owner (done on 2026-10-26):
 
 1. Create the Pages project once, from a computer with a logged-in Wrangler:
-   `npx wrangler pages project create ember --production-branch=main --force`. The production branch
-   must be `main`. `--force` is needed with newer Wrangler, which otherwise hands Pages commands for a
+   `npx wrangler pages project create ember-workout --production-branch=main --force`. The production branch
+   must be `main`. The names `ember` and `ember-lift` were taken on pages.dev and would have got a
+   random suffix, so the project is `ember-workout`. `--force` is needed with newer Wrangler, which otherwise hands Pages commands for a
    project that does not exist yet to Cloudflare Workers, and they fail.
 2. In the GitHub repository: Settings > Environments > New environment `web-production`, with the
    secrets `CLOUDFLARE_API_TOKEN` (Account > Cloudflare Pages > Edit only; the token made for Tarot2Go
@@ -173,8 +174,7 @@ One-time setup, by the owner (not done yet):
 
 Each deploy: Actions > Web edition > Run workflow on `main`, tick **Deploy this build to Cloudflare
 Pages**, and choose `preview` or `production`. The workflow never deploys on push or pull request, and
-refuses to run without both secrets. Production lives at `https://ember.pages.dev` (or the name
-Cloudflare gives the project).
+refuses to run without both secrets. Production lives at `https://ember-workout.pages.dev`.
 
 ## Install on iPhone
 
