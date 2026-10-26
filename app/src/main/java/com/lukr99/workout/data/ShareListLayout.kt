@@ -1,5 +1,7 @@
 package com.lukr99.workout.data
 
+import kotlin.math.ceil
+
 /**
  * Pure layout math for the exercise list on a share image. Rows show their sets when everything
  * fits that way, else they fall back to one compact line each. When even compact rows do not fit,
@@ -30,7 +32,7 @@ object ShareListLayout {
         val overflow = hasSets.size - shown
         val listBottom = rowsTop + heights.take(shown).sum() + if (overflow > 0) compactHeight else 0f
         val needed = listBottom + bottomSpace
-        val cardHeight = Math.ceil(needed.toDouble()).toInt().coerceIn(minHeight, maxHeight)
+        val cardHeight = ceil(needed.toDouble()).toInt().coerceIn(minHeight, maxHeight)
         val slack = (cardHeight - needed).coerceAtLeast(0f)
         return ShareListPlan(expanded, shown, overflow, heights.take(shown), cardHeight, slack)
     }

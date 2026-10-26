@@ -2,6 +2,8 @@ package com.lukr99.workout.data.run
 
 import com.lukr99.workout.domain.run.RunTrace
 import com.lukr99.workout.domain.run.TracePoint
+import com.lukr99.workout.domain.toRadians
+import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.hypot
@@ -12,12 +14,14 @@ import kotlin.math.hypot
  * true rather than stretched. Segments break at manual pauses, as [RunTrace.segments] does.
  */
 object TraceGeometry {
+    /** The same factor `Math.toDegrees` multiplies by. */
+    private const val RADIANS_TO_DEGREES = 180.0 / PI
 
     /** Projects [trace] into the box, one polyline of canvas points per segment. Empty below 2 points. */
     fun project(trace: List<TracePoint>, left: Float, top: Float, width: Float, height: Float): List<List<Pair<Float, Float>>> {
         if (trace.size < 2) return emptyList()
         val lat0 = trace.map { it.lat }.average()
-        val mPerLon = 111_320.0 * cos(Math.toRadians(lat0))
+        val mPerLon = 111_320.0 * cos(lat0.toRadians())
         fun metres(p: TracePoint) = (p.lon - trace[0].lon) * mPerLon to (p.lat - trace[0].lat) * 110_540.0
         val xy = trace.map(::metres)
         val minX = xy.minOf { it.first }
@@ -55,7 +59,7 @@ object TraceGeometry {
             val d = dist(a, b)
             if (remaining <= d || i == legs.lastIndex) {
                 val t = (remaining / d).coerceIn(0f, 1f)
-                val angle = Math.toDegrees(atan2((b.second - a.second).toDouble(), (b.first - a.first).toDouble()))
+                val angle = atan2((b.second - a.second).toDouble(), (b.first - a.first).toDouble()) * RADIANS_TO_DEGREES
                 return TracePose(a.first + (b.first - a.first) * t, a.second + (b.second - a.second) * t, angle.toFloat())
             }
             remaining -= d

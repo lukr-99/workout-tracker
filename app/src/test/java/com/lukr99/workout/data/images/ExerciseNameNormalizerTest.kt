@@ -15,6 +15,12 @@ class ExerciseNameNormalizerTest {
     }
 
     @Test
+    fun stripsAccentsBeforeMatching() {
+        assertEquals("drep s cinkou", ExerciseNameNormalizer.normalize("Dřep s činkou"))
+        assertEquals("press", ExerciseNameNormalizer.normalize("Préss"))
+    }
+
+    @Test
     fun appliesKnownCatalogAliases() {
         assertEquals(
             ExerciseNameNormalizer.normalize("Barbell Full Squat"),

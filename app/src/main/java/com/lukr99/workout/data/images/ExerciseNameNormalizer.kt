@@ -1,7 +1,5 @@
 package com.lukr99.workout.data.images
 
-import java.text.Normalizer
-
 /**
  * Shared catalog-image matching key. It deliberately removes only presentation punctuation and a
  * small set of equipment suffixes so unlike exercises do not collapse onto the same image.
@@ -38,8 +36,7 @@ object ExerciseNameNormalizer {
     )
 
     fun normalize(value: String): String {
-        val ascii = Normalizer.normalize(value, Normalizer.Form.NFD)
-            .replace(Regex("\\p{M}+"), "")
+        val ascii = stripAccents(value)
             .lowercase()
             .replace(punctuation, " ")
             .replace(whitespace, " ")
