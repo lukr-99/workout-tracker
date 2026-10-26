@@ -44,13 +44,16 @@ class PlatformApp internal constructor(
     /** Home's "update available" card, or null when there is no offer. */
     val updateCard: (@Composable () -> Unit)?,
 ) {
+    /** Whether this platform has Run Mode: the Runs tab and the Run choice under Start. */
+    val hasRuns: Boolean = true
+
     /** Composition locals the platform provides to the whole app (the music controller). */
     val locals: Array<ProvidedValue<*>> = arrayOf(LocalSpotify provides container.spotify)
 
-    /** Gets the live-run screen ready, for a saved route when [routeId] is not null. */
     /** The Running pane on the Progress tab; the web edition has none. */
     val runningSection: (@Composable (UnitSystem) -> Unit)? = { units -> RunningProgressSection(vm = runViewModel, units = units) }
 
+    /** Gets the live-run screen ready, for a saved route when [routeId] is not null. */
     fun prepareRun(routeId: String?) = liveRunVm.prepareRoute(routeId)
 
     /** Called after a workout is saved; sends it to Health Connect when the person turned that on. */

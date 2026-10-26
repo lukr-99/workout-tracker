@@ -13,6 +13,12 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
   the exercise library, settings, and backup export and import. Data stays in the browser. Runs,
   photos and Health Connect stay Android-only for now. See `docs/web-edition.md`.
 
+### Fixed
+
+- **Web edition: no Run choice.** Start goes straight to a workout and the Runs tab is hidden, since
+  the web edition has no Run Mode. The remaining "Runs are not in the web edition yet" note is
+  readable in both themes.
+
 ## [2.9.1] - 2026-10-25
 
 ### Changed
