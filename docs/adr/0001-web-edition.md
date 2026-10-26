@@ -1,6 +1,6 @@
 # ADR 0001: The web edition is Ember's own Kotlin, compiled to WebAssembly
 
-Status: Proposed (2026-10-25). Waiting for the owner's answer on run tracking.
+Status: Accepted (2026-10-25). Runs are left out of v1.
 
 ## Context
 
@@ -51,8 +51,8 @@ Compose `Canvas` code, nearly all copy is Kotlin strings (no `strings.xml`), and
    exercise photo can be several hundred kB.
 4. **v1 scope: lifting only.** Lifting workouts, templates, history, the exercise library, progress
    charts, gyms without GPS, settings, and backup import and export. Runs, Health Connect, scheduled
-   backups, the in-app updater and wger sync are left out of v1. Run tracking is the owner's decision
-   (see web-edition.md, "Open question").
+   backups, the in-app updater and wger sync are left out of v1, by the owner's decision on runs
+   (see web-edition.md, "Run tracking").
 5. **Hosting like Tarot2Go.** A Cloudflare Pages Direct Upload project, built and checked by a GitHub
    Actions workflow, deployed only by hand from `main` through the `web-production` environment.
 6. **Later, a real shared module.** Once the web edition has proven itself, the shared sources move

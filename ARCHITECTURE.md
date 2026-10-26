@@ -41,6 +41,28 @@ from `WorkoutApp`, and nothing else may:
 `LiveRunScreen` still builds its own `RunCues` (speech and vibration tied to the screen). The
 redesign replaces that screen and moves it into the container.
 
+## Shared code and platform files
+
+`domain/`, `settings/`, most of `data/` and most of `ui/` are kept free of Android and JVM-only APIs,
+so the planned web edition can compile them for the browser
+([docs/adr/0001-web-edition.md](docs/adr/0001-web-edition.md)). Dates use kotlinx-datetime
+(`domain/CalendarDates.kt`), numbers use `domain/DecimalText.kt`, and ids use `kotlin.uuid`.
+
+Where shared code needs the platform, it calls a declaration in a small **platform file**. Android's
+version lives in `app/` and keeps the old behaviour; the web edition supplies a file with the same
+package, name and signature. Each such file says "Each platform supplies this file" in its KDoc.
+Today they are: `domain/LocalDecimals.kt`, `data/images/StripAccents.kt`,
+`data/images/FreeExerciseImageIndexResource.kt`, `data/images/LocalPhotoModel.kt`,
+`ui/PlatformApp.kt` (Run Mode, the updater, Android-only Settings rows), `ui/PlatformBackHandler.kt`,
+`ui/components/` `ExerciseImage`, `FullScreenDialog`, `LocalDateText`, `MusicPlayback`,
+`SystemAnimationsOff` and `TestTagsAsResourceId`, `ui/screens/` `RememberDocumentActions`,
+`RememberExercisePhotoPicker` and `RememberWorkoutSharer`, `ui/settings/LocationPermissionRequest.kt`
+and `ui/theme/BarlowFonts.kt`. `data/AppContainer.kt` is one too: the web edition builds its own graph
+with the members `App` reads.
+
+Android-only code stays as it was: Room, Run Mode (`ui/run/`, `data/location`, `data/map`,
+`data/routing`), Health Connect, backup scheduling, the updater, wger sync and `domain/run/GpxCodec.kt`.
+
 ## Theme
 
 `WorkoutTheme` provides two things from one colour set: `EmberTheme.colors` (the CodePrint

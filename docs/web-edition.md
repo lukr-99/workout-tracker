@@ -1,6 +1,7 @@
 # Web edition (draft)
 
-Status: plan, nothing built yet. The decision and the alternatives are in
+Status: M0 (Android prep) done on `feat/web-edition`; the `:web` module is not built yet. Runs are
+left out of v1 (owner's decision, 2026-10-25). The decision and the alternatives are in
 [ADR 0001](adr/0001-web-edition.md).
 
 The web edition lets friends on iPhone (and anyone with a current browser) use Ember from Safari and
@@ -39,7 +40,7 @@ shows "This browser is too old for Ember" with update steps when they are missin
 | Exercise photos | v1.1 (milestone 3) | `<input type=file accept="image/*" capture>`, scaled in a canvas to at most 1600 px and stored as JPEG blobs. |
 | Share a workout (text or card) | v1.1 | Web Share API with text; the share card image if the canvas render ports cleanly, else text only. |
 | Spotify button | v1.1 | A link, not a controller: opens `spotify:` (the app, if installed) with `https://open.spotify.com` as the fallback. No playback control or now-playing. |
-| Runs: live recording | Not in v1 | Owner's decision, see "Open question". |
+| Runs: live recording | Not in v1 | Left out of v1 by the owner, see "Run tracking". |
 | Runs: history, detail, routes | Not in v1 | Comes with the run decision. Maps would use MapLibre GL JS. |
 | Health Connect | No | Android only. |
 | Scheduled automatic backups | No | A browser cannot write files on a schedule. The app reminds the user to export instead (milestone 3). |
@@ -47,12 +48,12 @@ shows "This browser is too old for Ember" with update steps when they are missin
 | wger catalog sync | No | Cross-origin calls are blocked by the CSP and not needed for v1. |
 | Vibration and speech cues | No | No Vibration API on iPhone. Rest timer end shows on screen only. |
 
-### Open question: run tracking
+### Run tracking (decided: option 1)
 
 Safari on iPhone does not give a web page location while the screen is off or the app is in the
 background. A run recorded on the web only works with the screen on the whole time. The choices:
 
-1. **Leave runs out of v1 (recommended).** v1 is lifting only. Runs imported from an Android backup
+1. **Leave runs out of v1 (chosen on 2026-10-25).** v1 is lifting only. Runs imported from an Android backup
    are kept in storage untouched, so a backup made on the web does not lose them, but they are not
    shown. Runs can come later as their own milestone.
 2. **Runs read-only.** Show run history, detail, splits and maps (MapLibre GL JS with OpenFreeMap
@@ -117,6 +118,8 @@ typefaces. The CSP allows only same-origin files.
 Later, once the web edition has proven itself, the shared code moves into a `:shared` module.
 
 ## What changes on the Android side first
+
+Done in M0. The resulting seams are listed in ARCHITECTURE.md, "Shared code and platform files".
 
 Each step is its own pull request or commit series, with the Android app unchanged for the owner and
 `testDebugUnitTest assembleDebug lintDebug` green:

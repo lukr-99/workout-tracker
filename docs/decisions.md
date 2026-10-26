@@ -52,4 +52,4 @@
 ## Architecture decision records
 
 - Larger decisions are recorded one per file in `docs/adr/`.
-- [ADR 0001](adr/0001-web-edition.md): a browser edition for iPhone, compiled from the app's own Kotlin to WebAssembly (proposed).
+- [ADR 0001](adr/0001-web-edition.md): a browser edition for iPhone, compiled from the app's own Kotlin to WebAssembly (accepted).
