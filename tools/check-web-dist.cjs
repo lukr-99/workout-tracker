@@ -221,12 +221,25 @@ const PHOTO_TAP = { library: [150, 775], add: [350, 59], takePhoto: [104, 230], 
 /** Choose a large photo in the exercise editor: it is shrunk to 1280 px and stored. Take photo asks for the camera. */
 async function checkExercisePhotos(browser, base) {
   const { context, page, problems } = await openPage(browser, base);
+  // One listener for the whole flow: with a fresh waitForEvent per click, Chromium sometimes opens
+  // its native chooser before Playwright has switched file chooser interception on, and the event
+  // is lost (seen on CI runners and locally).
+  const choosers = [];
+  page.on('filechooser', (chooser) => choosers.push(chooser));
+  const nextChooser = async () => {
+    for (let i = 0; i < 40; i++) {
+      if (choosers.length) return choosers.shift();
+      await page.waitForTimeout(250);
+    }
+    throw new Error('the file chooser did not open within 10 seconds');
+  };
   await page.waitForFunction(() => document.getElementById('boot').hidden, null, { timeout: 60000 });
   await page.waitForTimeout(2000);
   await tap(page, PHOTO_TAP.library);
   await tap(page, PHOTO_TAP.add);
 
-  const [library] = await Promise.all([page.waitForEvent('filechooser'), page.mouse.click(...PHOTO_TAP.choose)]);
+  await page.mouse.click(...PHOTO_TAP.choose);
+  const library = await nextChooser();
   check('Choose opens the photo library without the camera', (await library.element().getAttribute('capture')) === null);
   const buffer = await bigPhoto(page);
   await library.setFiles({ name: 'big.jpg', mimeType: 'image/jpeg', buffer });
@@ -241,7 +254,8 @@ async function checkExercisePhotos(browser, base) {
     !!photo && Math.max(photo.width, photo.height) === 1280 && photo.bytes > 0 && photo.bytes < buffer.length,
     JSON.stringify(photo));
   await page.waitForTimeout(1000);
-  const [camera] = await Promise.all([page.waitForEvent('filechooser'), page.mouse.click(...PHOTO_TAP.takePhoto)]);
+  await page.mouse.click(...PHOTO_TAP.takePhoto);
+  const camera = await nextChooser();
   check('Take photo asks the phone for its camera',
     (await camera.element().getAttribute('capture')) !== null && (await camera.element().getAttribute('accept')) === 'image/*');
   check('no page errors while choosing a photo', problems.length === 0, problems.join(' | '));
