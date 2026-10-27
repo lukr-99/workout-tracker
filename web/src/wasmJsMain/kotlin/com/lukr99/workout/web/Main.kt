@@ -36,6 +36,9 @@ fun main() {
     scope.launch {
         preloadWebResources()
         storage.database.open()
+        // The screens read photos from memory while drawing, so they are loaded before the first frame.
+        storage.photos.load()
+        WebPhotos.archive = storage.photos
         storage.start()
         // Like WorkoutApp on Android: the starter catalog goes in once, into an empty store.
         storage.repository.ensureSeeded()

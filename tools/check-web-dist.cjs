@@ -176,6 +176,92 @@ async function checkLiveWorkoutActions(browser, base) {
   await context.close();
 }
 
+/** A JPEG of a 3000 x 2000 gradient, made in the page, as a Node buffer. */
+async function bigPhoto(page) {
+  const base64 = await page.evaluate(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 3000;
+    canvas.height = 2000;
+    const context = canvas.getContext('2d');
+    const gradient = context.createLinearGradient(0, 0, 3000, 2000);
+    gradient.addColorStop(0, '#f97316');
+    gradient.addColorStop(1, '#1c1917');
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, 3000, 2000);
+    return canvas.toDataURL('image/jpeg', 0.95).split(',')[1];
+  });
+  return Buffer.from(base64, 'base64');
+}
+
+/** The photos in IndexedDB as { key, bytes, width, height }, read back and decoded in the page. */
+function storedPhotos(page) {
+  return page.evaluate(() => new Promise((resolve) => {
+    const open = indexedDB.open('ember');
+    open.onerror = () => resolve(null);
+    open.onsuccess = () => {
+      const store = open.result.transaction('photos').objectStore('photos');
+      const keys = store.getAllKeys();
+      const values = store.getAll();
+      store.transaction.oncomplete = async () => {
+        const photos = [];
+        for (let i = 0; i < keys.result.length; i++) {
+          const bytes = values.result[i].bytes;
+          const bitmap = await createImageBitmap(new Blob([bytes], { type: 'image/jpeg' }));
+          photos.push({ key: keys.result[i], bytes: bytes.byteLength, width: bitmap.width, height: bitmap.height });
+        }
+        resolve(photos);
+      };
+    };
+  }));
+}
+
+// Library tab, "+" for a new exercise, then the two photo buttons, on the 390 x 844 page.
+const PHOTO_TAP = { library: [150, 775], add: [350, 59], takePhoto: [104, 230], choose: [285, 230] };
+
+/** Choose a large photo in the exercise editor: it is shrunk to 1280 px and stored. Take photo asks for the camera. */
+async function checkExercisePhotos(browser, base) {
+  const { context, page, problems } = await openPage(browser, base);
+  // One listener for the whole flow: with a fresh waitForEvent per click, Chromium sometimes opens
+  // its native chooser before Playwright has switched file chooser interception on, and the event
+  // is lost (seen on CI runners and locally).
+  const choosers = [];
+  page.on('filechooser', (chooser) => choosers.push(chooser));
+  const nextChooser = async () => {
+    for (let i = 0; i < 40; i++) {
+      if (choosers.length) return choosers.shift();
+      await page.waitForTimeout(250);
+    }
+    throw new Error('the file chooser did not open within 10 seconds');
+  };
+  await page.waitForFunction(() => document.getElementById('boot').hidden, null, { timeout: 60000 });
+  await page.waitForTimeout(2000);
+  await tap(page, PHOTO_TAP.library);
+  await tap(page, PHOTO_TAP.add);
+
+  await page.mouse.click(...PHOTO_TAP.choose);
+  const library = await nextChooser();
+  check('Choose opens the photo library without the camera', (await library.element().getAttribute('capture')) === null);
+  const buffer = await bigPhoto(page);
+  await library.setFiles({ name: 'big.jpg', mimeType: 'image/jpeg', buffer });
+  let photos = null;
+  for (let i = 0; i < 40; i++) {
+    photos = await storedPhotos(page);
+    if (photos && photos.length) break;
+    await page.waitForTimeout(500);
+  }
+  const photo = photos && photos[0];
+  check('a chosen photo is shrunk to 1280 px and stored in IndexedDB',
+    !!photo && Math.max(photo.width, photo.height) === 1280 && photo.bytes > 0 && photo.bytes < buffer.length,
+    JSON.stringify(photo));
+  await page.waitForTimeout(1000);
+  await page.mouse.click(...PHOTO_TAP.takePhoto);
+  const camera = await nextChooser();
+  check('Take photo asks the phone for its camera',
+    (await camera.element().getAttribute('capture')) !== null && (await camera.element().getAttribute('accept')) === 'image/*');
+  check('no page errors while choosing a photo', problems.length === 0, problems.join(' | '));
+  await context.close();
+}
+
 (async () => {
   const server = await serve();
   const base = `http://127.0.0.1:${server.address().port}/`;
@@ -199,6 +285,7 @@ async function checkLiveWorkoutActions(browser, base) {
     await context.close();
 
     await checkLiveWorkoutActions(browser, base);
+    await checkExercisePhotos(browser, base);
 
     const tooOld = await openPage(browser, base, (p) => p.addInitScript(() => { WebAssembly.validate = () => false; }));
     await tooOld.page.waitForTimeout(1000);

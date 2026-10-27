@@ -10,12 +10,27 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 - **Web edition (not deployed yet).** Ember can now be built as a web app for iPhone and other
   current browsers, from the same code as the Android app: lifting workouts, templates, history,
-  the exercise library, settings, and backup export and import. Data stays in the browser. Runs,
-  photos and Health Connect stay Android-only for now. See `docs/web-edition.md`.
+  the exercise library, settings, and backup export and import. Data stays in the browser. Runs and
+  Health Connect stay Android-only for now. See `docs/web-edition.md`.
 - **Web edition: Add to Home Screen note and iPhone safe areas.** In a Safari tab on iPhone or iPad,
   a note explains how to add Ember to the Home Screen and why. The app keeps clear of the notch and
   the home indicator. Gyms show no Set position row and Home no run totals, since the web edition has
   no GPS or Run Mode.
+
+- **Web edition: exercise photos.** "Take photo" opens the camera and "Choose" the photo library
+  (Safari offers Take Photo or Photo Library). The photo is turned upright and shrunk to at most
+  1280 px on its long side as a JPEG before it is stored in the browser, so it stays a few hundred
+  kB. It shows wherever Android shows an exercise photo, and it travels in backups (export and import,
+  both ways with the Android app). A full device is reported in the editor and nothing half saved is
+  kept. Catalog pictures are still left out of the web edition.
+- **Web edition: share the workout image.** "Share as image" draws the same card as Android and
+  opens the share sheet with the PNG, or saves it as a download when the browser cannot share files.
+  Sharing as text and the Spotify button were already there.
+
+### Changed
+
+- Photo storage calls (`ExercisePhotos`, `PhotoArchive`) are now `suspend`, so the web edition can
+  write to IndexedDB. Android behaves as before.
 
 ### Fixed
 

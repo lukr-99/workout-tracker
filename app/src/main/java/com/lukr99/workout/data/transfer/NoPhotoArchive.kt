@@ -4,8 +4,8 @@ package com.lukr99.workout.data.transfer
 object NoPhotoArchive : PhotoArchive {
     override fun exportBytes(path: String): ByteArray? = null
     override fun exists(path: String): Boolean = false
-    override fun stage(exerciseId: String, bytes: ByteArray): String =
+    override suspend fun stage(exerciseId: String, bytes: ByteArray): String =
         error("This archive cannot store photos.")
-    override fun delete(path: String) = Unit
-    override fun deleteAllExcept(keep: Set<String>) = Unit
+    override suspend fun delete(path: String) = Unit
+    override suspend fun deleteAllExcept(keep: Set<String>) = Unit
 }
