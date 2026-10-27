@@ -4,6 +4,17 @@ Things that went wrong in this repository and took longer to find than to fix. S
 CodePrint's `docs/pitfalls/`, for the error text before debugging something surprising. The format
 is in CodePrint's `docs/pitfalls/README.md`. Newest first.
 
+## Playwright loses a file chooser opened right after `waitForEvent`
+
+- Symptom: a browser check times out waiting for `filechooser` after a click that really called
+  `input.click()` (a hook on `HTMLInputElement.click` shows it). It is flaky, and CI hit it every time.
+- Cause: `Promise.all([page.waitForEvent("filechooser"), click])` can click before Chromium has
+  switched file chooser interception on, so the native chooser opens and the event is lost.
+- Fix: register `page.on("filechooser", ...)` once, push the choosers to a queue and poll it.
+  See `checkExercisePhotos` in `tools/check-web-dist.cjs`.
+- Closed off by: the check uses the queue for every chooser; copy that pattern for new ones.
+- Seen: web edition photo check, 2026-10-27.
+
 ## The web edition wrote `.e-7` into JSON, and its build ran out of memory
 
 - Symptom: a document or backup written by the web edition did not parse (`Unexpected JSON token`)
@@ -185,14 +196,3 @@ is in CodePrint's `docs/pitfalls/README.md`. Newest first.
 - Closed off by: the fix lives in one place; reuse `ExercisePickerScreen`'s helper for any new
   full-screen dialog and check the frame with `dumpsys` on an emulator.
 - Seen: full-screen exercise picker, 2026-10-14.
-
-## Playwright loses a file chooser opened right after `waitForEvent`
-
-- Symptom: a browser check times out waiting for `filechooser` after a click that really called
-  `input.click()` (a hook on `HTMLInputElement.click` shows it). It is flaky, and CI hit it every time.
-- Cause: `Promise.all([page.waitForEvent("filechooser"), click])` can click before Chromium has
-  switched file chooser interception on, so the native chooser opens and the event is lost.
-- Fix: register `page.on("filechooser", ...)` once, push the choosers to a queue and poll it.
-  See `checkExercisePhotos` in `tools/check-web-dist.cjs`.
-- Closed off by: the check uses the queue for every chooser; copy that pattern for new ones.
-- Seen: web edition photo check, 2026-10-27.
