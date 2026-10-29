@@ -49,6 +49,11 @@ object RecordsEngine {
                     .thenBy { it.source.dateUtc }
                     .thenBy { it.source.sessionId },
             ).firstOrNull(),
+            mostReps = if (positiveLoad.isEmpty()) {
+                candidates.filter { it.set.reps > 0 }.bestSetBy { it.set.reps.toDouble() }
+            } else {
+                null
+            },
             repMaxes = repRange.mapNotNull { reps ->
                 positiveLoad.filter { it.set.reps == reps }
                     .bestCandidateBy { it.set.weightKg }
@@ -74,10 +79,18 @@ object RecordsEngine {
         candidate: StrengthSet,
         repRange: IntRange = 1..12,
     ): RecordAchievements {
-        if (!candidate.isWorkingSet() || candidate.weightKg <= 0 || candidate.reps <= 0) {
-            return RecordAchievements()
-        }
+        if (!candidate.isWorkingSet() || candidate.reps <= 0) return RecordAchievements()
         val previous = forExercise(sessions, exerciseId, repRange)
+        if (candidate.weightKg <= 0) {
+            // Bodyweight: only counts while the exercise has never been logged with a load.
+            val best = previous.mostReps
+            val unweighted = previous.heaviestSet == null && candidate.weightKg == 0.0
+            return if (unweighted && (best == null || candidate.reps > best.value)) {
+                RecordAchievements(setOf(RecordKind.MostReps))
+            } else {
+                RecordAchievements()
+            }
+        }
         val kinds = linkedSetOf<RecordKind>()
         if (previous.heaviestSet == null || candidate.weightKg > previous.heaviestSet.value) {
             kinds += RecordKind.HeaviestSet
@@ -100,6 +113,66 @@ object RecordsEngine {
             emptySet()
         }
         return RecordAchievements(kinds, repMaxReps)
+    }
+
+    /**
+     * Like [evaluateSet], for a set logged in a workout that is still open: [earlierSets] are the
+     * sets of this exercise already logged in the same workout and count as history. Without them,
+     * two equal sets in one workout would both be announced.
+     */
+    fun evaluateSetInWorkout(
+        sessions: Iterable<WorkoutSession>,
+        exerciseId: String,
+        candidate: StrengthSet,
+        earlierSets: List<StrengthSet>,
+        repRange: IntRange = 1..12,
+    ): RecordAchievements {
+        if (earlierSets.isEmpty()) return evaluateSet(sessions, exerciseId, candidate, repRange)
+        val open = WorkoutSession(
+            id = "open-workout",
+            name = "",
+            startedAtUtc = Long.MAX_VALUE,
+            completedDateUtc = Long.MAX_VALUE,
+            status = WorkoutSessionStatus.Completed,
+            entries = listOf(
+                WorkoutEntry(
+                    id = "open-entry",
+                    exerciseId = exerciseId,
+                    exerciseSnapshotName = "",
+                    exerciseSnapshotPrimaryBodyPart = "",
+                    strengthSets = earlierSets,
+                ),
+            ),
+        )
+        return evaluateSet(sessions + open, exerciseId, candidate, repRange)
+    }
+
+    /**
+     * The ids of the sets in [workout] that are a personal record, worked out again from scratch:
+     * sets are taken in order and each is compared with [history] and the sets before it. Use it
+     * when a workout is saved, so edited or removed sets leave no stale PR mark.
+     */
+    fun prSetIds(
+        history: Iterable<WorkoutSession>,
+        workout: WorkoutSession,
+        repRange: IntRange = 1..12,
+    ): Set<String> {
+        val before = history.filter { it.id != workout.id }
+        val seen = mutableMapOf<String, MutableList<StrengthSet>>()
+        val result = linkedSetOf<String>()
+        for (entry in workout.entries) {
+            for (set in entry.strengthSets) {
+                if (!set.isWorkingSet()) continue
+                val earlier = seen.getOrPut(entry.exerciseId) { mutableListOf() }
+                if (entry.exerciseId.isNotBlank() &&
+                    evaluateSetInWorkout(before, entry.exerciseId, set, earlier.toList(), repRange).isPersonalRecord
+                ) {
+                    result += set.id
+                }
+                earlier += set
+            }
+        }
+        return result
     }
 
     /** Evaluate all sets plus the aggregate volume of a candidate session. */

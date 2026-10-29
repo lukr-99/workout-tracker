@@ -9,6 +9,7 @@ data class RecordAchievements(
     /** The strongest record in plain words: e1RM beats heaviest set, which beats volume. */
     val headline: String
         get() = when {
+            RecordKind.MostReps in kinds -> "Most reps ever"
             RecordKind.Estimated1Rm in kinds -> "New estimated 1RM"
             RecordKind.HeaviestSet in kinds -> "Heaviest set ever"
             repMaxReps.isNotEmpty() -> "New ${repMaxReps.min()}-rep max"

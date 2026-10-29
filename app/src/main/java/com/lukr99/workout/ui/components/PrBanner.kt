@@ -39,6 +39,7 @@ fun PrBanner(
     headline: String,
     displayValue: Double,
     unitLabel: String,
+    valueSuffix: String = " $unitLabel e1RM",
     modifier: Modifier = Modifier,
 ) {
     val counted = remember1RmCountUp(displayValue)
@@ -68,7 +69,7 @@ fun PrBanner(
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Text(
-                " $unitLabel e1RM",
+                valueSuffix,
                 style = MaterialTheme.typography.labelSmall,
                 color = EmberTheme.colors.textSecondary,
                 modifier = Modifier.padding(bottom = 3.dp),

@@ -6,4 +6,6 @@ data class PrEvent(
     val exerciseName: String,
     val estimated1RmKg: Double,
     val headline: String,
+    /** Set for an unweighted exercise: the banner shows these reps instead of an estimated 1RM. */
+    val bodyweightReps: Int? = null,
 )

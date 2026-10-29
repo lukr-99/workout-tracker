@@ -8,4 +8,6 @@ data class ExerciseRecords(
     val bestSetVolume: SetRecord?,
     val bestSessionVolume: SessionVolumeRecord?,
     val repMaxes: List<RepMaxRecord>,
+    /** Most reps in one unweighted set. Only filled for an exercise never logged with a load. */
+    val mostReps: SetRecord? = null,
 )

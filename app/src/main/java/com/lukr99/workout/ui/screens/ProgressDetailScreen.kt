@@ -194,7 +194,7 @@ private fun GymLinesCard(detail: ExerciseProgressSummary, units: UnitSystem) {
 /** Personal records from `insights.records` — headline bests + the 1–12 rep-max table (Lyfta-style). */
 @Composable
 private fun RecordsCard(records: ExerciseRecords, units: UnitSystem) {
-    val hasAny = records.heaviestSet != null || records.repMaxes.isNotEmpty()
+    val hasAny = records.heaviestSet != null || records.repMaxes.isNotEmpty() || records.mostReps != null
     if (!hasAny) return
     Column(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
@@ -207,6 +207,9 @@ private fun RecordsCard(records: ExerciseRecords, units: UnitSystem) {
             Text("PR", style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.success, fontWeight = FontWeight.Bold)
         }
 
+        records.mostReps?.let {
+            RecordRow("Most reps", "${it.reps} reps", it.source)
+        }
         records.heaviestSet?.let {
             RecordRow("Heaviest set", "${Format.weight(it.weightKg, units)} ${Format.unitLabel(units)} × ${it.reps}", it.source)
         }

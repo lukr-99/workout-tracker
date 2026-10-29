@@ -7,6 +7,7 @@ import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutSessionStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -45,6 +46,61 @@ class RecordsEngineTest {
         assertTrue(improved.isPersonalRecord)
         assertTrue(RecordKind.HeaviestSet in improved.kinds)
         assertEquals(setOf(5), improved.repMaxReps)
+    }
+
+    @Test
+    fun firstEverSetIsARecordButAWarmupAndAnEmptySetAreNot() {
+        assertTrue(RecordsEngine.evaluateSet(emptyList(), ExerciseId, set(60.0, 5)).isPersonalRecord)
+        assertFalse(RecordsEngine.evaluateSet(emptyList(), ExerciseId, set(60.0, 5, warmup = true)).isPersonalRecord)
+        assertFalse(RecordsEngine.evaluateSet(emptyList(), ExerciseId, set(60.0, 0)).isPersonalRecord)
+    }
+
+    @Test
+    fun bodyweightExerciseTracksMostReps() {
+        val history = listOf(session("old", 1_000, listOf(set(0.0, 10), set(0.0, 12))))
+
+        assertEquals(12.0, RecordsEngine.forExercise(history, ExerciseId).mostReps!!.value, 0.0)
+        assertFalse(RecordsEngine.evaluateSet(history, ExerciseId, set(0.0, 12)).isPersonalRecord)
+        val better = RecordsEngine.evaluateSet(history, ExerciseId, set(0.0, 13))
+        assertEquals(setOf(RecordKind.MostReps), better.kinds)
+        assertEquals("Most reps ever", better.headline)
+    }
+
+    @Test
+    fun unweightedSetOnAWeightedExerciseIsNotARecord() {
+        val history = listOf(session("old", 1_000, listOf(set(80.0, 5))))
+
+        assertNull(RecordsEngine.forExercise(history, ExerciseId).mostReps)
+        assertFalse(RecordsEngine.evaluateSet(history, ExerciseId, set(0.0, 20)).isPersonalRecord)
+    }
+
+    @Test
+    fun setsEarlierInTheSameWorkoutCountAsHistory() {
+        val history = listOf(session("old", 1_000, listOf(set(100.0, 5))))
+        val first = set(105.0, 5)
+
+        assertTrue(RecordsEngine.evaluateSetInWorkout(history, ExerciseId, first, emptyList()).isPersonalRecord)
+        assertFalse(RecordsEngine.evaluateSetInWorkout(history, ExerciseId, set(105.0, 5), listOf(first)).isPersonalRecord)
+        assertFalse(RecordsEngine.evaluateSetInWorkout(history, ExerciseId, set(102.5, 5), listOf(first)).isPersonalRecord)
+        assertTrue(RecordsEngine.evaluateSetInWorkout(history, ExerciseId, set(107.5, 5), listOf(first)).isPersonalRecord)
+    }
+
+    @Test
+    fun prSetIdsAreRecomputedSoEditedAndRemovedSetsLeaveNoMark() {
+        val history = listOf(session("old", 1_000, listOf(set(100.0, 5))))
+        fun workout(vararg sets: StrengthSet) = session("today", 2_000, sets.toList())
+        val sets = arrayOf(set(105.0, 5), set(105.0, 5), set(110.0, 5))
+        val today = workout(*sets)
+
+        // The tie in the middle is no record, the heavier last set is.
+        assertEquals(setOf("today-set-0", "today-set-2"), RecordsEngine.prSetIds(history, today))
+        // The first set is edited down: the tie now becomes the record.
+        val edited = workout(set(95.0, 5), sets[1], sets[2])
+        assertEquals(setOf("today-set-1", "today-set-2"), RecordsEngine.prSetIds(history, edited))
+        // The best set is deleted: only the first heavy set is left.
+        assertEquals(setOf("today-set-0"), RecordsEngine.prSetIds(history, workout(sets[0], sets[1])))
+        // The workout is never compared with an older copy of itself.
+        assertEquals(setOf("today-set-0"), RecordsEngine.prSetIds(history + workout(sets[0]), workout(sets[0], sets[1])))
     }
 
     private fun session(id: String, date: Long, sets: List<StrengthSet>) = WorkoutSession(
