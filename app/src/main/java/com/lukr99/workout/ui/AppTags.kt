@@ -1,5 +1,7 @@
 package com.lukr99.workout.ui
 
+import com.lukr99.workout.ui.components.MuscleMapMode
+
 /**
  * Stable test tags for the app shell. The root turns on `testTagsAsResourceId`, so these names work
  * in Compose tests, `uiautomator dump`, Android CLI `layout` and Maestro `id:` selectors alike.
@@ -14,6 +16,15 @@ object AppTags {
     const val EXERCISE_PICKER_CLOSE = "exercise_picker_close"
     const val LOCATION_SHEET = "location_sheet"
     const val LOCATION_SETUP = "location_setup"
+    const val MUSCLE_MAP = "muscle_map"
+    const val MUSCLE_MAP_INFO = "muscle_map_info"
+    const val MUSCLE_MAP_INFO_SHEET = "muscle_map_info_sheet"
+
+    /** The Recovery or Weekly sets switch on the muscle map, like `muscle_map_mode_weeklysets`. */
+    fun muscleMapMode(mode: MuscleMapMode): String = "muscle_map_mode_${mode.name.lowercase()}"
+
+    /** A muscle row under the map, like `muscle_row_chest`. */
+    fun muscleRow(bodyPart: String): String = "muscle_row_${bodyPart.lowercase().replace(' ', '_')}"
 
     /** A row in the location picker, by location id, like `location_home`. */
     fun location(id: String): String = "location_$id"

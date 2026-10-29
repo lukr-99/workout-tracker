@@ -107,6 +107,11 @@ _Avoid_: Break, recovery (that is the body map)
 How hard a set felt, as reps in reserve (RIR) or a rate of perceived exertion (RPE).
 _Avoid_: Intensity, difficulty
 
+**Hard set**:
+A working set that ended within 4 reps of failure, or had no effort logged. The muscle map counts
+hard sets per muscle over the last 7 days, a helper muscle getting half a set.
+_Avoid_: Effective set, working set (that includes easy sets)
+
 **Library**:
 The tab with the exercise catalog and the templates.
 _Avoid_: Database, catalogue (in copy)

@@ -33,6 +33,17 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 ### Changed
 
+- **Muscle recovery is based on research now.** Each muscle recovers at its own speed: abs and
+  forearms fastest, quads and hamstrings slowest. Sets close to failure and slow negatives add more
+  fatigue, taken from RIR, RPE or the failure tag. Weight lifted no longer counts, so a normal session
+  shows as ready in 1 to 3 days instead of 5. Body part names like Quadriceps, Biceps brachii or Core
+  now match the right muscle, and Legs, Arms and Full Body spread over their muscles. See
+  `docs/research/muscle-recovery.md`.
+- **Weekly sets on the muscle map.** A switch on the Progress map shows hard sets per muscle in the
+  last 7 days against a 10 to 20 set target, with helper muscles counting half a set. Rows show when
+  each muscle will be ready.
+- **Info button on the muscle map.** It explains how recovery and weekly sets are counted, what the
+  colours mean, and lists the studies behind it with links.
 - Photo storage calls (`ExercisePhotos`, `PhotoArchive`) are now `suspend`, so the web edition can
   write to IndexedDB. Android behaves as before.
 

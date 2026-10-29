@@ -18,23 +18,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.dp
-import com.lukr99.workout.domain.recovery.RecoverySnapshot
-import com.lukr99.workout.ui.theme.EmberColors
+import com.lukr99.workout.domain.recovery.MuscleGroup
 import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
- * The deferred Phase 2 component, built in Phase 4: a stylised front/back muscle map whose regions
- * are tinted by `insights.recovery` readiness (green = ready, amber → red = fatigued; neutral when
- * untrained). Schematic rather than anatomical — enough to read at a glance, Lyfta-style.
+ * A stylised front and back muscle map. Each region is tinted by [tintOf] for its [MuscleGroup], or
+ * left neutral when that returns null. Schematic rather than anatomical: enough to read at a glance.
  */
 @Composable
-fun BodyHeatmap(recovery: RecoverySnapshot, modifier: Modifier = Modifier) {
+fun BodyHeatmap(tintOf: (MuscleGroup) -> Color?, modifier: Modifier = Modifier) {
     val base = MaterialTheme.colorScheme.surfaceVariant
-    val colors = EmberTheme.colors
-    val resolve: (List<String>) -> Color = { names ->
-        val vals = names.mapNotNull { recovery.forBodyPart(it)?.readiness }
-        readinessColor(if (vals.isEmpty()) null else vals.average(), base, colors)
-    }
+    // Blend toward the base a touch so a tint sits in the surface rather than glowing raw.
+    val resolve: (MuscleGroup) -> Color = { group -> tintOf(group)?.let { lerp(base, it, 0.82f) } ?: base }
 
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         FigureColumn("Front", Modifier.weight(1f)) { drawFront(resolve, base) }
@@ -77,65 +72,54 @@ private fun DrawScope.vOval(cx: Float, cy: Float, rx: Float, ry: Float, color: C
     )
 }
 
-private fun DrawScope.drawFront(colorOf: (List<String>) -> Color, base: Color) {
-    fun c(vararg n: String) = colorOf(n.asList())
+private fun DrawScope.drawFront(c: (MuscleGroup) -> Color, base: Color) {
     // Head + neck (neutral)
     vOval(60f, 20f, 13f, 14f, base)
     vRect(54f, 31f, 66f, 41f, base)
     // Delts
-    vOval(38f, 50f, 12f, 12f, c("Shoulders"))
-    vOval(82f, 50f, 12f, 12f, c("Shoulders"))
+    vOval(38f, 50f, 12f, 12f, c(MuscleGroup.Shoulders))
+    vOval(82f, 50f, 12f, 12f, c(MuscleGroup.Shoulders))
     // Chest
-    vRect(43f, 44f, 59f, 64f, c("Chest"))
-    vRect(61f, 44f, 77f, 64f, c("Chest"))
+    vRect(43f, 44f, 59f, 64f, c(MuscleGroup.Chest))
+    vRect(61f, 44f, 77f, 64f, c(MuscleGroup.Chest))
     // Biceps / upper arms
-    vRect(26f, 52f, 38f, 86f, c("Biceps", "Arms"))
-    vRect(82f, 52f, 94f, 86f, c("Biceps", "Arms"))
+    vRect(26f, 52f, 38f, 86f, c(MuscleGroup.Biceps))
+    vRect(82f, 52f, 94f, 86f, c(MuscleGroup.Biceps))
     // Forearms
-    vRect(24f, 88f, 35f, 120f, c("Forearms", "Arms"))
-    vRect(85f, 88f, 96f, 120f, c("Forearms", "Arms"))
+    vRect(24f, 88f, 35f, 120f, c(MuscleGroup.Forearms))
+    vRect(85f, 88f, 96f, 120f, c(MuscleGroup.Forearms))
     // Abs / core
-    vRect(50f, 66f, 70f, 106f, c("Abs", "Core"))
+    vRect(50f, 66f, 70f, 106f, c(MuscleGroup.Abs))
     // Quads
-    vRect(46f, 118f, 59f, 186f, c("Legs", "Quadriceps", "Quads"))
-    vRect(61f, 118f, 74f, 186f, c("Legs", "Quadriceps", "Quads"))
+    vRect(46f, 118f, 59f, 186f, c(MuscleGroup.Quads))
+    vRect(61f, 118f, 74f, 186f, c(MuscleGroup.Quads))
     // Calves (shins)
-    vRect(47f, 192f, 58f, 240f, c("Calves"))
-    vRect(62f, 192f, 73f, 240f, c("Calves"))
+    vRect(47f, 192f, 58f, 240f, c(MuscleGroup.Calves))
+    vRect(62f, 192f, 73f, 240f, c(MuscleGroup.Calves))
 }
 
-private fun DrawScope.drawBack(colorOf: (List<String>) -> Color, base: Color) {
-    fun c(vararg n: String) = colorOf(n.asList())
+private fun DrawScope.drawBack(c: (MuscleGroup) -> Color, base: Color) {
     // Head + neck
     vOval(60f, 20f, 13f, 14f, base)
     vRect(54f, 31f, 66f, 41f, base)
     // Rear delts
-    vOval(38f, 50f, 12f, 12f, c("Shoulders"))
-    vOval(82f, 50f, 12f, 12f, c("Shoulders"))
+    vOval(38f, 50f, 12f, 12f, c(MuscleGroup.Shoulders))
+    vOval(82f, 50f, 12f, 12f, c(MuscleGroup.Shoulders))
     // Upper back / traps + lats
-    vRect(44f, 44f, 76f, 72f, c("Back", "Traps"))
-    vRect(46f, 72f, 74f, 104f, c("Back", "Lats"))
+    vRect(44f, 44f, 76f, 72f, c(MuscleGroup.Back))
+    vRect(46f, 72f, 74f, 104f, c(MuscleGroup.Back))
     // Triceps
-    vRect(26f, 52f, 38f, 86f, c("Triceps", "Arms"))
-    vRect(82f, 52f, 94f, 86f, c("Triceps", "Arms"))
+    vRect(26f, 52f, 38f, 86f, c(MuscleGroup.Triceps))
+    vRect(82f, 52f, 94f, 86f, c(MuscleGroup.Triceps))
     // Forearms
-    vRect(24f, 88f, 35f, 120f, c("Forearms", "Arms"))
-    vRect(85f, 88f, 96f, 120f, c("Forearms", "Arms"))
+    vRect(24f, 88f, 35f, 120f, c(MuscleGroup.Forearms))
+    vRect(85f, 88f, 96f, 120f, c(MuscleGroup.Forearms))
     // Glutes
-    vRect(46f, 110f, 74f, 136f, c("Glutes"))
+    vRect(46f, 110f, 74f, 136f, c(MuscleGroup.Glutes))
     // Hamstrings
-    vRect(46f, 138f, 59f, 186f, c("Hamstrings", "Legs"))
-    vRect(61f, 138f, 74f, 186f, c("Hamstrings", "Legs"))
+    vRect(46f, 138f, 59f, 186f, c(MuscleGroup.Hamstrings))
+    vRect(61f, 138f, 74f, 186f, c(MuscleGroup.Hamstrings))
     // Calves
-    vRect(47f, 192f, 58f, 240f, c("Calves"))
-    vRect(62f, 192f, 73f, 240f, c("Calves"))
-}
-
-/** Readiness → tint: 100 green, ~50 amber, 0 red; null (untrained) → neutral base. */
-private fun readinessColor(readiness: Double?, base: Color, colors: EmberColors): Color {
-    if (readiness == null) return base
-    val f = (readiness / 100.0).coerceIn(0.0, 1.0).toFloat()
-    val hue = if (f < 0.5f) lerp(colors.danger, colors.warning, f * 2f) else lerp(colors.warning, colors.success, (f - 0.5f) * 2f)
-    // Blend toward the base a touch so it sits in the dark surface rather than glowing raw.
-    return lerp(base, hue, 0.82f)
+    vRect(47f, 192f, 58f, 240f, c(MuscleGroup.Calves))
+    vRect(62f, 192f, 73f, 240f, c(MuscleGroup.Calves))
 }
