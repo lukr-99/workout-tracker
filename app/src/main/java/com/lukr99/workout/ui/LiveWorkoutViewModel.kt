@@ -423,11 +423,16 @@ class LiveWorkoutViewModel(
         val entry = draftState.value?.entries?.firstOrNull { it.id == entryId } ?: return
         val set = entry.strengthSets.firstOrNull { it.id == setId } ?: return
         if (entry.exerciseId.isBlank() || set.isWarmup || SetTag.Warmup in set.effectiveTags) return
-        if (set.reps <= 0 || set.weightKg <= 0.0) return
+        if (set.reps <= 0) return
         val locationId = draftState.value?.locationId
+        val done = doneSetIdsState.value
+        val earlierSets = draftState.value?.entries.orEmpty()
+            .filter { it.exerciseId == entry.exerciseId }
+            .flatMap { it.strengthSets }
+            .filter { it.id != setId && it.id in done }
         viewModelScope.launch {
             val scope = repo.locationScope(entry.exerciseId, locationId)
-            val achievement = insights.evaluateSetRecord(entry.exerciseId, set, scope = scope)
+            val achievement = insights.evaluateSetRecord(entry.exerciseId, set, scope = scope, earlierSets = earlierSets)
             if (!achievement.isPersonalRecord) return@launch
             // Flag the set as a PR in the draft (persist so history keeps the badge).
             mutate { it.withSet(entryId, setId) { s -> s.copy(isPr = true) } }
@@ -436,6 +441,7 @@ class LiveWorkoutViewModel(
                 exerciseName = entry.exerciseSnapshotName,
                 estimated1RmKg = Estimates.epley(set.weightKg, set.reps),
                 headline = achievement.headline,
+                bodyweightReps = set.reps.takeIf { set.weightKg <= 0.0 },
             )
         }
     }
@@ -455,7 +461,13 @@ class LiveWorkoutViewModel(
         viewModelScope.launch {
             try {
                 persistJob?.cancelAndJoin()
-                val saved = persistMutex.withLock { repo.saveWorkoutSession(nowMillis().let { session.withUntickedSets(countUnticked, it).completedAt(it) }) }
+                val counted = nowMillis().let { session.withUntickedSets(countUnticked, it).completedAt(it) }
+                // Count the PR marks again, so a set edited or unticked after its banner keeps no stale mark.
+                val prIds = runCatching { insights.prSetIds(counted) { repo.locationScope(it, counted.locationId) } }.getOrNull()
+                val marked = if (prIds == null) counted else counted.copy(
+                    entries = counted.entries.map { e -> e.copy(strengthSets = e.strengthSets.map { it.copy(isPr = it.id in prIds) }) },
+                )
+                val saved = persistMutex.withLock { repo.saveWorkoutSession(marked) }
                 runCatching { afterSave(saved) }
                 clear()
                 onDone()

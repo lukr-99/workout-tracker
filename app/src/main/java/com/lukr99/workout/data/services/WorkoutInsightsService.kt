@@ -50,12 +50,26 @@ class WorkoutInsightsService(
         candidate: StrengthSet,
         repRange: IntRange = 1..12,
         scope: LocationScope = LocationScope.Shared,
-    ): RecordAchievements = RecordsEngine.evaluateSet(
+        earlierSets: List<StrengthSet> = emptyList(),
+    ): RecordAchievements = RecordsEngine.evaluateSetInWorkout(
         scope.apply(repository.getSessions()),
         exerciseId,
         candidate,
+        earlierSets,
         repRange,
     )
+
+    /** Which sets of [workout] are personal records, counted again from scratch (see [RecordsEngine.prSetIds]). */
+    suspend fun prSetIds(
+        workout: WorkoutSession,
+        scopeOf: suspend (exerciseId: String) -> LocationScope,
+    ): Set<String> {
+        val history = repository.getSessions()
+        return workout.entries.map { it.exerciseId }.distinct().flatMap { exerciseId ->
+            val own = workout.copy(entries = workout.entries.filter { it.exerciseId == exerciseId })
+            RecordsEngine.prSetIds(scopeOf(exerciseId).apply(history), own)
+        }.toSet()
+    }
 
     suspend fun evaluateSessionRecords(
         candidate: WorkoutSession,

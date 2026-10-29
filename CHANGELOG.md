@@ -8,6 +8,10 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 ### Added
 
+- **Better personal record marks.** A second equal set in the same workout is no longer announced
+  as a new record, and bodyweight exercises now get a "Most reps ever" record (shown in the Records
+  card). When you finish a workout the PR marks are counted again, so a set you edited or unticked
+  after its banner keeps no stale PR badge.
 - **Web edition (not deployed yet).** Ember can now be built as a web app for iPhone and other
   current browsers, from the same code as the Android app: lifting workouts, templates, history,
   the exercise library, settings, and backup export and import. Data stays in the browser. Runs and

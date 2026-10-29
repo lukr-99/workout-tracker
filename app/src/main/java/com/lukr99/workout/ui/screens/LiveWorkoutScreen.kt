@@ -288,8 +288,9 @@ fun LiveWorkoutScreen(
                     PrBanner(
                         exerciseName = ev.exerciseName,
                         headline = ev.headline,
-                        displayValue = Format.toDisplay(ev.estimated1RmKg, units),
+                        displayValue = ev.bodyweightReps?.toDouble() ?: Format.toDisplay(ev.estimated1RmKg, units),
                         unitLabel = Format.unitLabel(units),
+                        valueSuffix = if (ev.bodyweightReps != null) " reps" else " ${Format.unitLabel(units)} e1RM",
                     )
                 }
             }
