@@ -226,7 +226,7 @@ private fun smoothPath(points: List<Offset>): Path {
         val cur = points[i]
         val midX = (prev.x + cur.x) / 2f
         val midY = (prev.y + cur.y) / 2f
-        path.quadraticBezierTo(prev.x, prev.y, midX, midY)
+        path.quadraticTo(prev.x, prev.y, midX, midY)
     }
     path.lineTo(points.last().x, points.last().y)
     return path

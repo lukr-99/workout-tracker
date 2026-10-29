@@ -9,7 +9,7 @@ import kotlinx.serialization.encoding.Encoder
 
 /** Base for enums that must serialize as their Int ordinal (the MAUI wire value). */
 abstract class OrdinalEnumSerializer<T : Enum<T>>(
-    name: String,
+    private val name: String,
     private val values: Array<T>,
 ) : KSerializer<T> {
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor(name, PrimitiveKind.INT)
@@ -17,6 +17,6 @@ abstract class OrdinalEnumSerializer<T : Enum<T>>(
     override fun deserialize(decoder: Decoder): T {
         val ordinal = decoder.decodeInt()
         return values.getOrNull(ordinal)
-            ?: throw IllegalArgumentException("Unknown ${descriptor.serialName} ordinal $ordinal")
+            ?: throw IllegalArgumentException("Unknown $name ordinal $ordinal")
     }
 }
