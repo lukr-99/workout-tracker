@@ -6,6 +6,13 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 ## [Unreleased]
 
+### Fixed
+
+- **Turning the phone no longer drops you back to Home.** Rotating to landscape during a workout (or
+  in any other open screen, such as an editor or Settings) used to close it and show the main screen.
+  The open screen, the selected tab and an open Start chooser now stay as they were. If Android ends
+  Ember in the background, the workout screen reopens with the running workout.
+
 ## [2.10.0] - 2026-11-01
 
 ### Added

@@ -22,7 +22,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,7 +61,9 @@ import com.lukr99.workout.ui.settings.SettingsScreen
  */
 @Composable
 fun App(container: AppContainer) {
-    val nav = remember { Navigator() }
+    // Saveable, so turning the phone keeps the open screen (a live workout, an editor) instead of
+    // dropping back to Home when Android recreates the activity.
+    val nav = rememberSaveable(saver = Navigator.Saver) { Navigator() }
     val toast = rememberToastState()
 
     val homeVm: HomeViewModel = viewModel(factory = HomeViewModel.factory(container.repository, container.runRepository, container.whatsNew))
@@ -95,10 +97,17 @@ fun App(container: AppContainer) {
     val resumeMode = runActive || hasResumableLift
     val overlay = nav.top
     val reduceMotion = rememberReduceMotion()
-    var chooserOpen by remember { mutableStateOf(false) }
-    var resumeChooserOpen by remember { mutableStateOf(false) }
-    var previewTemplateId by remember { mutableStateOf<String?>(null) }
+    var chooserOpen by rememberSaveable { mutableStateOf(false) }
+    var resumeChooserOpen by rememberSaveable { mutableStateOf(false) }
+    var previewTemplateId by rememberSaveable { mutableStateOf<String?>(null) }
     val templates by homeVm.templates.collectAsState()
+
+    // After Android ends the app in the background, the restored stack can open the live workout
+    // with an empty view model. Reload the running session into it, or leave the workout screen when
+    // none is running any more. A rotation keeps the view model, so this does nothing then.
+    LaunchedEffect(Unit) {
+        if (Route.LiveWorkout in nav.stack) liveVm.reloadActive(onNone = { nav.popTo(Route.LiveWorkout) })
+    }
 
     fun startWorkout(templateId: String? = null) {
         liveVm.startOrResume(templateId)
