@@ -4,6 +4,20 @@ Things that went wrong in this repository and took longer to find than to fix. S
 CodePrint's `docs/pitfalls/`, for the error text before debugging something surprising. The format
 is in CodePrint's `docs/pitfalls/README.md`. Newest first.
 
+## Rotating the phone jumps back to Home
+
+- Symptom: turning the phone to landscape in a live workout (or any overlay screen) closes it and
+  shows the Home tab. The workout itself is still running.
+- Cause: Android recreates the activity on rotation. `App` kept its `Navigator` with
+  `remember { Navigator() }`, which does not survive that, so the tab and back-stack reset. View
+  models survive, so nothing looked lost except the screen. Tarot2Go had the same bug.
+- Fix: `rememberSaveable(saver = Navigator.Saver)`. The saver stores routes as plain strings so it
+  works in an Android Bundle and in the web edition. Small dialog flags in `App` use
+  `rememberSaveable` too.
+- Closed off by: `NavigatorRestoreTest`, which saves and restores every `Route`. A new route that the
+  saver forgets does not compile (`encode` is an exhaustive `when`) and fails that test's round trip.
+- Seen: live workout in landscape, 2026-11-01.
+
 ## Playwright loses a file chooser opened right after `waitForEvent`
 
 - Symptom: a browser check times out waiting for `filechooser` after a click that really called

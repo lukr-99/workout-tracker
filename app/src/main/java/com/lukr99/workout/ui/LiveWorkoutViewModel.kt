@@ -174,6 +174,20 @@ class LiveWorkoutViewModel(
         }
     }
 
+    /**
+     * Load the running session into an empty draft, for a workout screen restored after Android
+     * ended the app in the background. Never starts a new workout: with none running, [onNone] runs.
+     */
+    fun reloadActive(onNone: () -> Unit) {
+        if (draftState.value != null) return
+        viewModelScope.launch {
+            val session = repo.getActiveSession() ?: return@launch onNone()
+            if (draftState.value != null) return@launch
+            draftState.value = session
+            doneSetIdsState.value = session.setIdsMarkedDone
+        }
+    }
+
     /** "near Brno gym", shown beside the location chip when a fix matched a saved place. */
     private val nearHintState = MutableStateFlow<String?>(null)
     val nearHint: StateFlow<String?> = nearHintState.asStateFlow()
