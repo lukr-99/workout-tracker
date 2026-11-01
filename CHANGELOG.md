@@ -6,6 +6,8 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 ## [Unreleased]
 
+## [2.10.1] - 2026-11-01
+
 ### Fixed
 
 - **Turning the phone no longer drops you back to Home.** Rotating to landscape during a workout (or
