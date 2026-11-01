@@ -6,6 +6,8 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 ## [Unreleased]
 
+## [2.10.0] - 2026-11-01
+
 ### Added
 
 - **Better personal record marks.** A second equal set in the same workout is no longer announced
