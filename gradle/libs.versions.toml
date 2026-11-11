@@ -25,6 +25,9 @@ composeMultiplatform = "1.7.3"
 # JetBrains' multiplatform builds of the AndroidX lifecycle, for the web edition's ViewModels.
 jbLifecycle = "2.8.4"
 okhttp = "4.12.0"
+# Push for the Claude connector. 33.x is the last BOM whose AndroidX needs no newer compileSdk than 35.
+firebaseBom = "33.7.0"
+googleServices = "4.4.2"
 # Later 1.1 builds require compileSdk 36 / newer AGP. alpha11 is the newest 1.1 artifact compatible
 # with this repository's intentionally pinned compileSdk 35 / AGP 8.5 toolchain.
 healthConnect = "1.1.0-alpha11"
@@ -80,6 +83,8 @@ kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.
 jb-lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "jbLifecycle" }
 jb-lifecycle-runtime-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "jbLifecycle" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
+firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
 health-connect-client = { module = "androidx.health.connect:connect-client", version.ref = "healthConnect" }
 work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
 work-testing = { module = "androidx.work:work-testing", version.ref = "work" }
@@ -111,3 +116,4 @@ kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref 
 compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }

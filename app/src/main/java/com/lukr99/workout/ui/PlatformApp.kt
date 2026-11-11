@@ -10,6 +10,7 @@ import com.lukr99.workout.data.AppContainer
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.android.AndroidSettingsViewModel
+import com.lukr99.workout.ui.android.ClaudeSettingsViewModel
 import com.lukr99.workout.ui.android.rememberAndroidSettingsHost
 import com.lukr99.workout.ui.components.LocalSpotify
 import com.lukr99.workout.ui.components.UpdateCard
@@ -35,6 +36,7 @@ class PlatformApp internal constructor(
     private val container: AppContainer,
     private val updatesVm: UpdatesViewModel,
     private val settingsVm: AndroidSettingsViewModel,
+    private val claudeVm: ClaudeSettingsViewModel,
     private val routePlannerVm: RoutePlannerViewModel,
     private val liveRunVm: LiveRunViewModel,
     /** The runs view model, which the Progress tab also reads. */
@@ -93,7 +95,7 @@ class PlatformApp internal constructor(
 
     /** The platform's part of the Settings screen. */
     @Composable
-    fun rememberSettingsHost(): SettingsHost = rememberAndroidSettingsHost(settingsVm, updatesVm)
+    fun rememberSettingsHost(): SettingsHost = rememberAndroidSettingsHost(settingsVm, updatesVm, claudeVm)
 }
 
 /** Builds the [PlatformApp] and starts the launch update check. */
@@ -111,6 +113,7 @@ fun rememberPlatformApp(container: AppContainer): PlatformApp {
             container.runRepository,
         ),
     )
+    val claudeVm: ClaudeSettingsViewModel = viewModel(factory = ClaudeSettingsViewModel.factory(container.claude))
     val updatesVm: UpdatesViewModel = viewModel(factory = UpdatesViewModel.factory(container.updates, container.devicePrefs))
     val updateState by updatesVm.state.collectAsState()
     LaunchedEffect(Unit) { updatesVm.checkIfDue() }
@@ -127,5 +130,5 @@ fun rememberPlatformApp(container: AppContainer): PlatformApp {
             )
         }
     }
-    return PlatformApp(container, updatesVm, settingsVm, routePlannerVm, liveRunVm, runVm, liveRunState.isActive, updateCard)
+    return PlatformApp(container, updatesVm, settingsVm, claudeVm, routePlannerVm, liveRunVm, runVm, liveRunState.isActive, updateCard)
 }

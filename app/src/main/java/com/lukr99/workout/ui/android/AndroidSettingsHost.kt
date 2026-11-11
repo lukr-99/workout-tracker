@@ -29,27 +29,32 @@ import com.lukr99.workout.ui.settings.ToggleRow
 import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
- * Android's [SettingsHost]: the wger catalog, Health Connect, automatic backup and the updater.
+ * Android's [SettingsHost]: the wger catalog, Health Connect, automatic backup, the updater and the
+ * Claude connector.
  * The launchers are made here, at the top of the Settings screen, so a result still finds its
  * handler after the row that started it has scrolled out of the list.
  */
 @Composable
-fun rememberAndroidSettingsHost(vm: AndroidSettingsViewModel, updates: UpdatesViewModel): SettingsHost {
+fun rememberAndroidSettingsHost(vm: AndroidSettingsViewModel, updates: UpdatesViewModel, claude: ClaudeSettingsViewModel): SettingsHost {
     val healthPermissionLauncher = rememberLauncherForActivityResult(
         PermissionController.createRequestPermissionResultContract(),
     ) { granted -> vm.onHealthPermissionsResult(granted) }
     val backupFolderLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree(),
     ) { uri -> uri?.let(vm::enableBackup) }
+    // Claude's requests show as notifications; the push token itself needs no permission.
+    val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { claude.registerPush() }
     val updateState by updates.state.collectAsState()
-    return AndroidSettingsHost(vm, updates, healthPermissionLauncher, backupFolderLauncher, updateState.currentVersion)
+    return AndroidSettingsHost(vm, updates, claude, healthPermissionLauncher, backupFolderLauncher, notificationLauncher, updateState.currentVersion)
 }
 
 private class AndroidSettingsHost(
     private val vm: AndroidSettingsViewModel,
     private val updates: UpdatesViewModel,
+    private val claude: ClaudeSettingsViewModel,
     private val healthPermissionLauncher: ActivityResultLauncher<Set<String>>,
     private val backupFolderLauncher: ActivityResultLauncher<android.net.Uri?>,
+    private val notificationLauncher: ActivityResultLauncher<String>,
     override val appVersion: String,
 ) : SettingsHost {
 
@@ -62,6 +67,7 @@ private class AndroidSettingsHost(
             SettingsSlot.HealthConnect -> HealthConnectRows(onOpenPrivacy)
             SettingsSlot.Backup -> BackupRows()
             SettingsSlot.Updates -> UpdatesRows()
+            SettingsSlot.Claude -> ClaudeSettingsRows(claude)
         }
     }
 
@@ -70,6 +76,12 @@ private class AndroidSettingsHost(
         val health by vm.healthConnectUi.collectAsState()
         val updateState by updates.state.collectAsState()
         val toast = LocalToast.current
+        ClaudeSettingsDialogs(claude) { serverUrl, setupSecret ->
+            claude.connect(serverUrl, setupSecret, android.os.Build.MODEL)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                notificationLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
         LaunchedEffect(health.summary) {
             health.summary?.let { summary ->
                 toast("Health Connect: imported ${summary.imported}, exported ${summary.exported}, skipped ${summary.skipped}")

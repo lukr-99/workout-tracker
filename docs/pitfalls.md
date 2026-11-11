@@ -4,6 +4,18 @@ Things that went wrong in this repository and took longer to find than to fix. S
 CodePrint's `docs/pitfalls/`, for the error text before debugging something surprising. The format
 is in CodePrint's `docs/pitfalls/README.md`. Newest first.
 
+## Turning the phone loses what was typed in a dialog
+
+- Symptom: in Settings, Claude, the server address typed into the connect form is gone after
+  turning the phone to landscape and back. The dialog itself stays open.
+- Cause: the same trap as the next entry, one level down. The dialog's open flag lived in the view
+  model, which survives, but its text fields kept their values with `remember`, which does not.
+- Fix: `rememberSaveable` for every typed field (`ClaudeConnectDialog`). CodePrint's `RULES.md` now
+  asks for this on every screen and dialog, with a rotation check.
+- Closed off by: `ClaudeConnectDialogRestoreTest`, which types into the form, emulates the
+  activity being recreated, and connects with the restored text.
+- Seen: Claude connect form on the owner's phone, 2026-11-11.
+
 ## Rotating the phone jumps back to Home
 
 - Symptom: turning the phone to landscape in a live workout (or any overlay screen) closes it and

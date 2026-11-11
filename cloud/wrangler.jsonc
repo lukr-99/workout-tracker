@@ -1,0 +1,35 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "workout-tracker",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  // The OAuth provider fetches Claude's client metadata document from a public URL only.
+  "compatibility_flags": ["global_fetch_strictly_public"],
+  "durable_objects": {
+    "bindings": [{ "name": "OWNER", "class_name": "OwnerObject" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["OwnerObject"] }],
+  // Per Cloudflare location and per key: client address for device setup and the sign-in page,
+  // the connector device for tool calls. The periods are repeated in src/http/RateLimits.ts. The
+  // namespace ids are unique on the owner's Cloudflare account (QuickPocket 1001-1003, Lumen
+  // 2001-2004, Aletheia 3001-3004).
+  "ratelimits": [
+    { "name": "SETUP_LIMITER", "namespace_id": "4001", "simple": { "limit": 5, "period": 60 } },
+    { "name": "CONNECTOR_CODE_LIMITER", "namespace_id": "4002", "simple": { "limit": 10, "period": 60 } },
+    { "name": "CONNECTOR_CALL_LIMITER", "namespace_id": "4003", "simple": { "limit": 120, "period": 60 } }
+  ],
+  // OAuth grants, tokens (as hashes), and registered clients for the Claude connector: the
+  // workout-tracker-oauth namespace. An id is not a secret; using it needs the account's API token.
+  "kv_namespaces": [{ "binding": "OAUTH_KV", "id": "f903354f525445f4b3935eac7a29fa1f" }],
+  "vars": {
+    // How long a read tool waits for the phone to answer a share request (docs/connector.md).
+    "SHARE_WAIT_SECONDS": "25",
+    // How long shared workout data stays on the Worker before it is deleted.
+    "SHARE_KEEP_MINUTES": "30"
+  },
+  "rules": [
+    { "type": "Text", "globs": ["**/*.sql"], "fallthrough": true }
+  ],
+  "observability": { "enabled": true },
+  "dev": { "port": 8799, "ip": "127.0.0.1" }
+}
