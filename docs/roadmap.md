@@ -69,3 +69,22 @@ Goal: prepare for ecosystem growth.
 - Estimated 1RM and volume trend calculations
 - Wearable or health-platform integrations
 - Signed release automation and GitHub Actions CI
+
+## Next up (2026-11-11)
+
+Ranked ideas after the 2.10.1 release. Each one has an item on the Ember GoalMaker board.
+
+1. Web edition: read-only runs for runs imported from Android.
+2. Backup reminder when the last export is old.
+3. Progression suggestions: propose the next weight and reps from the last session.
+4. Plate calculator and warm-up set generator in the live workout.
+5. Training programs: multi-week plans that schedule templates and show what is next on Home.
+6. Body weight and measurements log with a chart.
+7. Home screen widget with the next workout and a start button.
+8. Wear OS or notification controls for the rest timer and set logging.
+
+Already on the board: favorites when searching for an exercise, AI chat in live workouts,
+first-launch personalization, sharable catalog and templates.
+
+Known tooling bugs: web CI check fails when Chromium cannot write its cache, and CI flakes on
+emulator and Robolectric downloads.
