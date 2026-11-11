@@ -45,3 +45,12 @@ captures/
 # Local tool state: Codex environments and a Visual Studio SDK path file.
 .codex/
 Directory.Build.props
+
+# The Claude connector Worker (cloud/): dependencies, local state and secrets.
+cloud/node_modules/
+cloud/.wrangler/
+cloud/.dev.vars*
+cloud/worker-configuration.d.ts
+
+# Firebase project file for push (docs/claude-connector.md); never committed, the repository is public.
+app/google-services.json
