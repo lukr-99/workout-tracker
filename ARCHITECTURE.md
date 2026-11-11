@@ -3,9 +3,11 @@
 ## Context
 
 Ember is a personal Android app for one owner. It logs strength workouts and records GPS runs.
-Everything runs on the phone: there is no backend and no account. The Room database on the phone is
-the source of truth. The versioned JSON export is the contract with anything outside the app:
-backups, restores and any future desktop tool.
+Everything runs on the phone: there is no account, and the Room database on the phone is the source
+of truth. The versioned JSON export is the contract with anything outside the app: backups, restores
+and any future desktop tool. The one server is optional: the owner's Claude connector in `cloud/`,
+which gets a short-lived copy of the training data only when Claude asks and the owner allows it
+([docs/claude-connector.md](docs/claude-connector.md), [ADR 0002](docs/adr/0002-claude-connector.md)).
 
 ## Modules and dependencies
 
@@ -22,7 +24,7 @@ settings/ (DataStore)    update/ (GitHub release updater)
 | Package | Responsibility | May depend on |
 |---|---|---|
 | `domain/` | Models and the export contract (`Models.kt`), analytics, records, recovery, progression, stats, queries, run maths, validated creation (`creation/WorkoutFactory`), snapshot copies (`WorkoutSnapshots.kt`) and live workout edits (`WorkoutDraftEdits.kt`). No Android imports. | nothing else in the app |
-| `data/` | the `WorkoutRepository` and `RunRepository` interfaces with their Room classes `RoomWorkoutRepository` and `RoomRunRepository` (the only Room users, with entity mapping in `WorkoutEntityMapping.kt`), numbered Room migrations in `data/migrations/`, import and export, backup, Health Connect, wger sync, images, location service, routing, map tiles, music. | `domain/`, `settings/` |
+| `data/` | the `WorkoutRepository` and `RunRepository` interfaces with their Room classes `RoomWorkoutRepository` and `RoomRunRepository` (the only Room users, with entity mapping in `WorkoutEntityMapping.kt`), numbered Room migrations in `data/migrations/`, import and export, backup, Health Connect, wger sync, images, location service, routing, map tiles, music, and the Claude connector's phone side (`data/claude/`). | `domain/`, `settings/` |
 | `settings/` | `SettingsStore` and `DevicePrefs` interfaces (theme, units, default rest; this phone's switches) with the Preferences DataStore classes `DataStoreSettingsStore` and `DataStoreDevicePrefs`. | nothing |
 | `update/` | The updater chain: `GitHubReleaseSource`, `VersionPolicy`, `ArtifactSelector`, `VerifiedDownloader` (HTTPS, size, SHA-256), `PackageSignatureCheck`, `FileProviderInstallerLauncher`, joined by `UpdateService`. Only the Android adapters touch Android. | nothing else in the app |
 | `ui/` | `App.kt` shell and custom `Navigator`, one ViewModel per area, screens in `ui/screens/` and `ui/run/`, shared pieces in `ui/components/` (`ScreenHeader`, `SearchField`, `SegmentedControl`, `FilterChip`, `BodyPartTag`), the theme in `ui/theme/`. | everything above |
@@ -35,8 +37,10 @@ is removed in the manifest.
 Android creates two classes itself and offers them no constructor injection. They read the container
 from `WorkoutApp`, and nothing else may:
 
-- `MainActivity`, which hands the container to `App`.
+- `MainActivity`, which hands the container to `App` and answers Claude's missed share requests.
 - `LocationService`, the foreground service that records runs.
+- `EmberMessagingService` and `ShareActionReceiver` (`data/claude/`), the Claude connector's push
+  messages and the Allow and Deny buttons on its notification.
 
 `LiveRunScreen` still builds its own `RunCues` (speech and vibration tied to the screen). The
 redesign replaces that screen and moves it into the container.
@@ -61,7 +65,8 @@ and `ui/theme/BarlowFonts.kt`. `data/AppContainer.kt` is one too: the web editio
 with the members `App` reads.
 
 Android-only code stays as it was: Room, Run Mode (`ui/run/`, `data/location`, `data/map`,
-`data/routing`), Health Connect, backup scheduling, the updater, wger sync and `domain/run/GpxCodec.kt`.
+`data/routing`), Health Connect, backup scheduling, the updater, wger sync, the Claude connector
+(`data/claude/`, `ui/android/ClaudeSettings*`) and `domain/run/GpxCodec.kt`.
 
 ## Theme
 
@@ -106,6 +111,11 @@ part's name.
 - **Health Connect:** optional. Exports finished workouts and runs, and imports workouts as
   sessions.
 - **Settings:** Preferences DataStore, included in every backup and restored by a replace-restore.
+- **Claude connector:** optional. `ShareRequestHandler` answers the server's share requests by the
+  share mode (Ask, Always share, Never) with a `ClaudeShare` built by `ClaudeShareBuilder`: the
+  export bundle without photos, settings or GPS traces, and runs with their splits. `ProposalInbox`
+  writes the templates and exercises Claude proposed, once the owner accepts them. The server's side
+  is the Worker in `cloud/`, with its own README and tests.
 
 ## Capability modules
 
@@ -117,17 +127,21 @@ part's name.
 | Routing | `RoutingClient` | OSRM public server |
 | Exercise catalog | `WgerSyncService` with `ExternalExerciseMerger` | wger REST API |
 | Exercise images | `FreeExerciseImageIndex`, `ExercisePhotoStore` | free-exercise-db, app files |
+| Claude connector | `ClaudeConnector` (`ClaudeApi`, `ShareRequestHandler`, `ProposalInbox`, `PushTokenSource`) | The owner's Worker in `cloud/`, OkHttp, Firebase Cloud Messaging |
 
 ## Connections
 
-All network use is optional, and the app works fully offline. Every peer is plain HTTPS with no
-authentication:
+All network use is optional, and the app works fully offline. Every peer but the Claude server is
+plain HTTPS with no authentication:
 
 - GitHub Releases API for updates.
 - `wger.de` for catalog sync.
 - `router.project-osrm.org` for snapping planned routes to roads.
 - OpenFreeMap tiles for the run map, with an offline tile cache.
 - `raw.githubusercontent.com` for free-exercise-db images.
+- The owner's Claude server (`cloud/`, a Cloudflare Worker), with this phone's bearer token, only
+  after the owner connects it in Settings, Claude. Firebase Cloud Messaging wakes Ember for it; the
+  messages carry no training data.
 
 Failures show as a message on the screen that started the call. There are no background retries.
 

@@ -12,6 +12,7 @@ requires this for every app that holds user data (`RULES.md`, Data lifecycle).
 | Settings: theme, units, default rest | `SettingsStore` | Preferences DataStore `settings` | Keys `theme_mode`, `units`, `default_rest_seconds` | Yes |
 | Personal exercise photos | `ExercisePhotoStore` | `files/exercise_images/` | JPEG, path in `Exercise.localImagePath` | Yes, scaled to 1600 px |
 | Automatic backup setup | `BackupScheduler` | Its own DataStore | Folder URI, interval, retention | No, it belongs to one phone |
+| Claude connector link | `DataStoreClaudeLinkStore` | Its own DataStore `claude` | Server address, this phone's token, share mode | No, it belongs to one phone |
 | A live run in progress | `RunSessionController` | Crash buffer in app files | Internal | No, it is saved as a run when it ends |
 | Offline map tiles | `OfflineTileCache` | MapLibre cache | MapLibre | No, it can be downloaded again |
 
@@ -39,6 +40,16 @@ A backup is one JSON file, the `ExportBundle` (`data/export/ExportBundle.kt`):
 
 **Save JSON** on the Data screen, the share sheet, and automatic backup all write this file. CSV
 export is a spreadsheet of workouts only, not a backup.
+
+## Data shared with Claude
+
+Only after the owner connects Ember to their Claude server (Settings, Claude), and only when Claude
+asks and the owner allows it, or always when they chose that. Ember sends a `ClaudeShare`
+([docs/claude-connector.md](claude-connector.md)): the backup's `ExportBundle` without photos,
+settings or runs, and each run without its GPS trace but with its kilometre splits. The server keeps
+the copy for 30 minutes and then deletes it; Stop sharing deletes it at once. Claude's proposals are
+kept on the server until the owner accepts or rejects them; accepting writes them into Ember like
+the owner's own templates and exercises.
 
 ## Backup paths
 
