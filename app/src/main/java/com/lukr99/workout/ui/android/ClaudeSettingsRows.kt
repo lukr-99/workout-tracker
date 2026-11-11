@@ -152,7 +152,7 @@ fun ClaudeSettingsDialogs(vm: ClaudeSettingsViewModel, onConnect: (serverUrl: St
 private fun ProposalRow(proposal: Proposal, busy: Boolean, onAccept: () -> Unit, onReject: () -> Unit) {
     SettingsRow(
         label = (if (proposal.isTemplate) "Template: " else "Exercise: ") + proposal.title,
-        hint = listOf(proposal.reason, details(proposal)).filter(String::isNotBlank).joinToString("\n"),
+        hint = listOf(proposal.reason, proposalDetails(proposal)).filter(String::isNotBlank).joinToString("\n"),
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             PillButton("Reject", busy = busy, onClick = onReject)
@@ -160,28 +160,6 @@ private fun ProposalRow(proposal: Proposal, busy: Boolean, onAccept: () -> Unit,
         }
     }
 }
-
-/** A proposal in a few lines: a template's exercises with their plan, or an exercise's body part and kit. */
-private fun details(proposal: Proposal): String = runCatching {
-    if (proposal.isTemplate) {
-        proposal.template().exercises.joinToString("\n") { item ->
-            val reps = when {
-                item.repsMin != null && item.repsMax != null && item.repsMin != item.repsMax -> "${item.repsMin}-${item.repsMax}"
-                else -> (item.repsMin ?: item.repsMax)?.toString()
-            }
-            val plan = listOfNotNull(
-                item.targetSets?.let { sets -> if (reps != null) "$sets x $reps" else "$sets sets" } ?: reps?.let { "$it reps" },
-                item.restSeconds?.let { "rest ${it / 60}:${(it % 60).toString().padStart(2, '0')}" },
-                item.supersetGroup?.let { "superset $it" },
-                item.notes.takeIf(String::isNotBlank),
-            )
-            if (plan.isEmpty()) item.name else "${item.name}: ${plan.joinToString(", ")}"
-        }
-    } else {
-        val exercise = proposal.exercise()
-        listOf(exercise.primaryBodyPart, exercise.category, exercise.equipment).filter(String::isNotBlank).joinToString(", ")
-    }
-}.getOrDefault("")
 
 private val CLOCK = DateTimeFormatter.ofPattern("HH:mm")
 

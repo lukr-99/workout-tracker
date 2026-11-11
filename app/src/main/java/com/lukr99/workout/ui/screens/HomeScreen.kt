@@ -83,6 +83,8 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     /** The "new version ready" card from the automatic update check, when there is one. */
     updateCard: (@Composable () -> Unit)? = null,
+    /** Claude's proposals waiting for the owner, when the platform has the Claude connector. */
+    claudeCard: (@Composable () -> Unit)? = null,
     locationSetupCard: (@Composable () -> Unit)? = null,
     /** False without Run Mode (the web edition): no run total, and the copy talks about workouts only. */
     showRuns: Boolean = true,
@@ -108,6 +110,7 @@ fun HomeScreen(
             }
         }
         updateCard?.let { card -> item(key = "update") { card() } }
+        claudeCard?.let { card -> item(key = "claude") { card() } }
         whatsNew?.let { note -> item(key = "whats-new") { WhatsNewCard(note, vm::dismissWhatsNew) } }
         locationSetupCard?.let { card -> item(key = "location-setup") { card() } }
         active?.let { session -> item { ResumeCard(session, onResume) } }
