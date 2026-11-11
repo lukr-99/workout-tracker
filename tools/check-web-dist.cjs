@@ -97,7 +97,12 @@ async function openPage(browser, base, setup) {
   const problems = [];
   page.on('pageerror', (error) => problems.push(`page error: ${error.message}`));
   page.on('console', (message) => {
-    if (message.type() === 'error') problems.push(`console: ${message.text().slice(0, 200)}`);
+    if (message.type() !== 'error') return;
+    const text = message.text();
+    // A runner whose disk will not take Chromium's cache writes aborts the streaming wasm compile.
+    // The page then falls back to an ArrayBuffer load and works; that is the runner, not the build.
+    if (/ERR_CACHE_WRITE_FAILURE|wasm streaming compile failed|falling back to ArrayBuffer/.test(text)) return;
+    problems.push(`console: ${text.slice(0, 200)}`);
   });
   await page.addInitScript(() => {
     document.addEventListener('securitypolicyviolation', (event) => {
