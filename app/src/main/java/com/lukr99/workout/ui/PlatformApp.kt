@@ -1,26 +1,29 @@
 package com.lukr99.workout.ui
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.ProvidedValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.ProvidedValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lukr99.workout.data.AppContainer
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.android.AndroidSettingsViewModel
+import com.lukr99.workout.ui.android.ClaudeProposalsCard
 import com.lukr99.workout.ui.android.ClaudeSettingsViewModel
 import com.lukr99.workout.ui.android.rememberAndroidSettingsHost
 import com.lukr99.workout.ui.components.LocalSpotify
+import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.UpdateCard
 import com.lukr99.workout.ui.run.LiveRunScreen
 import com.lukr99.workout.ui.run.LiveRunViewModel
 import com.lukr99.workout.ui.run.RoutePlannerScreen
 import com.lukr99.workout.ui.run.RoutePlannerViewModel
 import com.lukr99.workout.ui.run.RunDetailScreen
-import com.lukr99.workout.ui.run.RunningProgressSection
 import com.lukr99.workout.ui.run.RunViewModel
+import com.lukr99.workout.ui.run.RunningProgressSection
 import com.lukr99.workout.ui.run.RunsScreen
 import com.lukr99.workout.ui.settings.SettingsHost
 import kotlinx.coroutines.flow.first
@@ -45,6 +48,8 @@ class PlatformApp internal constructor(
     val liveRunActive: Boolean,
     /** Home's "update available" card, or null when there is no offer. */
     val updateCard: (@Composable () -> Unit)?,
+    /** Home's card for Claude's waiting proposals, or null when none wait. */
+    val claudeCard: (@Composable () -> Unit)?,
 ) {
     /** Whether this platform has Run Mode: the Runs tab and the Run choice under Start. */
     val hasRuns: Boolean = true
@@ -130,5 +135,30 @@ fun rememberPlatformApp(container: AppContainer): PlatformApp {
             )
         }
     }
-    return PlatformApp(container, updatesVm, settingsVm, claudeVm, routePlannerVm, liveRunVm, runVm, liveRunState.isActive, updateCard)
+    // Claude's proposals are checked each time Ember comes to the front, so they show without push.
+    val claude by claudeVm.ui.collectAsState()
+    LifecycleResumeEffect(claude.link) {
+        claudeVm.refreshProposals()
+        onPauseOrDispose { }
+    }
+    val claudeCard: (@Composable () -> Unit)? = if (claude.proposals.isEmpty()) {
+        null
+    } else {
+        {
+            val toast = LocalToast.current
+            LaunchedEffect(claude.message) {
+                claude.message?.let {
+                    toast(it)
+                    claudeVm.consumeMessage()
+                }
+            }
+            ClaudeProposalsCard(
+                proposals = claude.proposals,
+                busy = claude.busy == "proposal",
+                onAccept = claudeVm::accept,
+                onReject = claudeVm::reject,
+            )
+        }
+    }
+    return PlatformApp(container, updatesVm, settingsVm, claudeVm, routePlannerVm, liveRunVm, runVm, liveRunState.isActive, updateCard, claudeCard)
 }

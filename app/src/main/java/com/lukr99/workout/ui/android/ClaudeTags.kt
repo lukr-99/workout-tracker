@@ -5,4 +5,5 @@ object ClaudeTags {
     const val SERVER_ADDRESS = "claude_server_address"
     const val SETUP_SECRET = "claude_setup_secret"
     const val CONNECT = "claude_connect"
+    const val PROPOSALS_CARD = "claude_proposals_card"
 }

@@ -41,6 +41,9 @@ class PlatformApp internal constructor() {
     /** Home's "update available" card; the page updates through its service worker instead. */
     val updateCard: (@Composable () -> Unit)? = null
 
+    /** Home's card for Claude's proposals; the web edition has no Claude connector. */
+    val claudeCard: (@Composable () -> Unit)? = null
+
     /** Composition locals the platform provides to the whole app; none here. */
     val locals: Array<ProvidedValue<*>> = arrayOf()
 

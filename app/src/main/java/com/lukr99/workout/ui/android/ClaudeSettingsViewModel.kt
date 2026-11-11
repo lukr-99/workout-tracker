@@ -41,6 +41,17 @@ class ClaudeSettingsViewModel(private val claude: ClaudeConnector) : ViewModel()
         state.update { it.copy(share = share, requests = requests, proposals = proposals) }
     }
 
+    /**
+     * Reloads only the waiting proposals, for Home each time Ember comes to the front. Quiet: it
+     * changes nothing on the server and shows no error, since Home works without the server.
+     */
+    fun refreshProposals() {
+        if (state.value.link == null || state.value.busy != null) return
+        viewModelScope.launch {
+            runCatching { claude.inbox.pending() }.onSuccess { proposals -> state.update { it.copy(proposals = proposals) } }
+        }
+    }
+
     fun openConnect() = state.update { it.copy(connectOpen = true, error = null) }
 
     fun dismissConnect() = state.update { it.copy(connectOpen = false) }

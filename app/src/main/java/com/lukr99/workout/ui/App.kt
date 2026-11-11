@@ -170,6 +170,7 @@ fun App(container: AppContainer) {
                             onOpenRun = { nav.push(Route.RunDetail(it)) },
                             onOpenSettings = { nav.push(Route.Settings) },
                             updateCard = platform.updateCard,
+                            claudeCard = platform.claudeCard,
                             locationSetupCard = locationSetup?.let { setup ->
                                 {
                                     val toast = LocalToast.current

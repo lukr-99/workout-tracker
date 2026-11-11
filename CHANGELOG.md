@@ -14,8 +14,8 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
   minutes, then they are deleted. Choose "Always share" or "Never" instead, share before a chat, or
   stop sharing at any time. Photos and settings are never sent. See `docs/claude-connector.md`.
 - **Templates and exercises from Claude.** Claude can propose a template, with sets, reps, rest and
-  supersets for each exercise, or a new exercise with its steps. They wait in Settings, Claude until
-  you accept or reject them; nothing changes before that.
+  supersets for each exercise, or a new exercise with its steps. They show on Home, with Accept and
+  Reject, and in Settings, Claude; nothing changes until you accept them.
 
 ### Changed
 
