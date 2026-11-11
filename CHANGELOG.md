@@ -6,6 +6,21 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 ## [Unreleased]
 
+### Added
+
+- **Claude can look at your training.** Connect Ember to your own Claude server in Settings, Claude,
+  then add it to Claude as a connector. When Claude needs your data, Ember asks with a notification:
+  Allow shares your workouts, runs (without their GPS track), exercises and templates for 30
+  minutes, then they are deleted. Choose "Always share" or "Never" instead, share before a chat, or
+  stop sharing at any time. Photos and settings are never sent. See `docs/claude-connector.md`.
+- **Templates and exercises from Claude.** Claude can propose a template, with sets, reps, rest and
+  supersets for each exercise, or a new exercise with its steps. They wait in Settings, Claude until
+  you accept or reject them; nothing changes before that.
+
+### Changed
+
+- The privacy policy has a Claude section.
+
 ## [2.10.1] - 2026-11-01
 
 ### Fixed

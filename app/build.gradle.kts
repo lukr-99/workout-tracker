@@ -29,6 +29,11 @@ val releaseSigningReady = listOf(
     releaseKeyPassword,
 ).all { it != null }
 
+// Push for the Claude connector needs the owner's Firebase project file, app/google-services.json,
+// with both com.lukr99.workout and com.lukr99.workout.debug. It is never committed (the repository is
+// public), so builds without it, such as CI, have no push: Ember answers Claude when it is opened.
+if (file("google-services.json").isFile) apply(plugin = libs.plugins.google.services.get().pluginId)
+
 android {
     namespace = "com.lukr99.workout"
     compileSdk = 35
@@ -164,6 +169,8 @@ dependencies {
     implementation(libs.kotlinx.datetime)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.okhttp)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
     implementation(libs.coil.compose)
     implementation(libs.health.connect.client)
     implementation(libs.work.runtime.ktx)

@@ -1,5 +1,12 @@
 package com.lukr99.workout.data
 
+import com.lukr99.workout.data.claude.ClaudeApi
+import com.lukr99.workout.data.claude.ClaudeConnector
+import com.lukr99.workout.data.claude.ClaudeShareBuilder
+import com.lukr99.workout.data.claude.DataStoreClaudeLinkStore
+import com.lukr99.workout.data.claude.FirebasePushTokenSource
+import com.lukr99.workout.data.claude.ProposalInbox
+import com.lukr99.workout.data.claude.ShareRequestHandler
 import android.content.Context
 import androidx.core.content.pm.PackageInfoCompat
 import com.lukr99.workout.data.backup.BackupRunner
@@ -152,6 +159,23 @@ class AppContainer(context: Context) {
                 exportJson = { dataTransfer.exportJson().text },
                 gateway = SafBackupGateway(context),
             ),
+        )
+    }
+
+    /**
+     * The Claude connector (docs/claude-connector.md): this phone's link to the Claude server, the
+     * share handler, Claude's proposals and push. Android only; the web edition has none.
+     */
+    val claude: ClaudeConnector by lazy {
+        val store = DataStoreClaudeLinkStore(context)
+        val api = ClaudeApi(store)
+        val builder = ClaudeShareBuilder(repository, runRepository, settings, appVersion) { java.time.ZoneId.systemDefault().id }
+        ClaudeConnector(
+            store = store,
+            api = api,
+            sharing = ShareRequestHandler(api, builder, store),
+            inbox = ProposalInbox(api, repository),
+            pushTokens = FirebasePushTokenSource(context.applicationContext),
         )
     }
 

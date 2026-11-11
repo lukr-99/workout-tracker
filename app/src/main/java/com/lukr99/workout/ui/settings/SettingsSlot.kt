@@ -16,4 +16,7 @@ enum class SettingsSlot {
 
     /** The whole Updates section. */
     Updates,
+
+    /** The whole Claude section: the connector, sharing and Claude's proposals. */
+    Claude,
 }

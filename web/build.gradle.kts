@@ -42,6 +42,7 @@ val androidOnly = listOf(
     "data/ShareCardStyle.kt",
     "data/WorkoutShareCardRenderer.kt",
     "data/backup/",
+    "data/claude/",
     "data/health/",
     "data/location/",
     "data/map/",

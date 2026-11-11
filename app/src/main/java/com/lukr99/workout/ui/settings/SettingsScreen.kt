@@ -74,6 +74,7 @@ fun SettingsScreen(
         SettingsSection.entries.filter { section ->
             when (section) {
                 SettingsSection.HealthConnect -> host.has(SettingsSlot.HealthConnect)
+                SettingsSection.Claude -> host.has(SettingsSlot.Claude)
                 SettingsSection.Updates -> host.has(SettingsSlot.Updates)
                 else -> true
             }
@@ -188,6 +189,7 @@ fun SettingsScreen(
                             onSetPosition = locationsVm::setPositionHere,
                         )
                         SettingsSection.HealthConnect -> host.Rows(SettingsSlot.HealthConnect, onOpenPrivacy)
+                        SettingsSection.Claude -> host.Rows(SettingsSlot.Claude, onOpenPrivacy)
                         SettingsSection.YourData -> {
                             val hasBackup = host.has(SettingsSlot.Backup)
                             if (hasBackup) host.Rows(SettingsSlot.Backup, onOpenPrivacy)

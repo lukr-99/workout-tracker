@@ -70,6 +70,18 @@
                 <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
             </intent-filter>
         </activity-alias>
+        <!-- The Claude connector (docs/claude-connector.md): the server's content-free push messages,
+             and the Allow and Deny buttons on Claude's share request. -->
+        <service
+            android:name=".data.claude.EmberMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+        <receiver
+            android:name=".data.claude.ShareActionReceiver"
+            android:exported="false" />
         <!-- Run Mode (v2.1) live-run GPS service. `location` type keeps sampling with the screen
              off; not exported — only the app starts it. -->
         <service

@@ -76,16 +76,28 @@ fun PrivacyPolicyScreen(
             )
         }
 
+        PolicySection("Claude") {
+            Text(
+                "Claude is off until you connect it in Settings, Claude, to a server you run yourself. " +
+                    "Then, when Claude asks and you allow it (or always, if you choose), Ember sends your " +
+                    "workouts, runs without their GPS track, exercises and templates to that server. " +
+                    "Workouts you imported from Health Connect are among them. The copy is deleted after " +
+                    "30 minutes. Photos and settings are never sent. Claude can only propose templates " +
+                    "and exercises, which change nothing until you accept them.",
+            )
+        }
+
         PolicySection("Your choices") {
             Text(
                 "Health Connect access is optional. You can review or revoke permissions in Health " +
                     "Connect at any time, keep using Ember without connecting it, and disable " +
-                    "automatic backup from Settings.",
+                    "automatic backup from Settings. Claude can be set to never share, and removed " +
+                    "from Settings, Claude at any time.",
             )
         }
 
         Text(
-            "Last updated: July 26, 2026",
+            "Last updated: November 11, 2026",
             style = MaterialTheme.typography.labelSmall,
             color = EmberTheme.colors.textSecondary,
         )
