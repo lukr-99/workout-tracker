@@ -34,6 +34,9 @@ npm run dev        # local Worker on http://127.0.0.1:8799
 npm run deploy
 ```
 
+CI runs the typecheck and the tests on every change to `cloud/` (`.github/workflows/cloud.yml`).
+Deploying stays manual.
+
 Secrets (`npx wrangler secret put <name>`): `SETUP_SECRET` (at least 32 characters, required; Ember
 asks for it once when it connects) and `FCM_SERVICE_ACCOUNT` (a Firebase service-account key;
 without it nothing is pushed and Ember catches up when it is opened). For local runs put them in
