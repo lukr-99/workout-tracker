@@ -147,8 +147,12 @@ Failures show as a message on the screen that started the call. There are no bac
 
 ## Delivery
 
-- **Release:** `com.lukr99.workout`, signed with the owner's keystore, R8 on, arm64 only. It is
-  published as a GitHub Release with the APK attached.
+- **Release:** `com.lukr99.workout`, signed with the owner's keystore, R8 on, arm64 only. Pushing a
+  `v<versionName>` tag runs `.github/workflows/release.yml`, which builds and signs on GitHub with
+  the key from four repository secrets (uploaded once by `tools/setup-signing.ps1`), checks the
+  release certificate, and drafts a GitHub Release with `Ember-<version>.apk` and its `.sha256`.
+  Publishing the draft releases it. `tools/publish-release.ps1` does the same from a station with
+  the keystore, as the fallback.
 - **Debug and test:** `com.lukr99.workout.debug`, "Ember dev", version `x.y.z-dev`. It installs
   beside the release app and never updates itself.
 - **Updates:** Settings, Updates, Check. The updater compares the release tag with the installed
