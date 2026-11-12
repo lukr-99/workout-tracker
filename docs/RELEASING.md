@@ -106,21 +106,56 @@ Verify what's installed: `adb shell dumpsys package com.lukr99.workout | findstr
    `CHANGELOG.md` to `[<versionName>] - <date>`. If the release has something a user would
    notice, add a `WhatsNewNote` with the new `versionCode` to `domain/WhatsNew.kt`: three to five
    short lines. Home shows it once after the update. Merge that to `main`.
-2. On a clean `main`, run `.\tools\publish-release.ps1`. It:
-   - builds `assembleRelease`;
-   - checks the APK is signed with the release key (certificate SHA-256 `1db09253...19e3`);
-   - writes `dist/release-v<version>/Ember-<version>.apk` and its `.sha256`;
-   - creates a **draft** GitHub Release `v<version>` with both files and the changelog section as
-     notes.
+2. Tag the merge on `main` and push the tag:
 
-   Use `-DryRun` to stop before GitHub.
+   ```
+   git switch main; git pull
+   git tag v<versionName>
+   git push origin v<versionName>
+   ```
+
+   [`.github/workflows/release.yml`](../.github/workflows/release.yml) then, on GitHub:
+   - refuses to run without the four signing secrets, or when the tag is not `v<versionName>`;
+   - builds `assembleRelease`, signed with the key from the secrets;
+   - checks the APK is signed with the release key (certificate SHA-256 `1db09253...19e3`);
+   - creates a **draft** GitHub Release `v<version>` with `Ember-<version>.apk`, its `.sha256`, and
+     the changelog section as notes.
+
+   **Actions, Release, Run workflow** by hand does the same but creates no release: it keeps the APK
+   as a run artifact for a week, which makes a safe trial.
 3. Review the draft on GitHub and publish it. Only a published release is visible to the updater.
+
+**Without GitHub Actions**, from a station with the keystore in place: on a clean `main`, run
+`.\tools\publish-release.ps1` (`-DryRun` stops before GitHub). It does the same checks and creates
+the same draft. On a machine whose cmd AutoRun breaks batch files (`gradlew.bat`, `apksigner.bat`),
+run Gradle as `java -classpath gradle\wrapper\gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain`
+and apksigner as `java -jar <sdk>\build-tools\35.0.0\lib\apksigner.jar`.
 
 Installed copies from 2.5.2 and older pick the first `.apk` asset and ignore the checksum. They
 update fine from a release made this way, and from then on they verify.
 
-## Current state (2026-10-06)
+## Release signing on GitHub
 
-- Latest release: **v2.6.0** (`Ember-2.6.0.apk` and `Ember-2.6.0.apk.sha256`), published
-  2026-10-05. It is the first release the updater verifies by checksum.
-- Keystore created and backed up to the flash drive; **still needs a second backup copy**.
+The release workflow signs with four repository secrets: `KEYSTORE_BASE64` (the `.jks` file as
+base64), `KEYSTORE_STORE_PASSWORD`, `KEYSTORE_KEY_ALIAS` and `KEYSTORE_KEY_PASSWORD`, as in
+Tarot2Go. Upload them once from a station with the key:
+
+```
+powershell -ExecutionPolicy Bypass -File tools\setup-signing.ps1 -From D:\android-keystores\workout-tracker
+```
+
+The script reads `keystore.properties` and the keystore it names, refuses a keystore that does not
+hold the release certificate, and uploads the secrets through `gh` without printing them or putting
+them on a command line. It never makes a new key. Run it again only when the key or its password
+changes. GitHub secrets are encrypted and only workflows can read them; the keystore and its
+password are still never committed, because this repository is public. The offline backups above
+stay the only way to recover the key.
+
+## Current state (2026-11-12)
+
+- Latest release: **v2.11.0** (`Ember-2.11.0.apk` and `Ember-2.11.0.apk.sha256`), published
+  2026-11-12, made with `publish-release.ps1`'s steps from this station.
+- Release signing on GitHub: the workflow is in place; the four secrets are uploaded with
+  `tools/setup-signing.ps1`.
+- Keystore backed up on the flash drive (`android-keystores\workout-tracker`); **still needs a second
+  backup copy**.
