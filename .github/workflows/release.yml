@@ -1,0 +1,147 @@
+name: Release
+
+# Builds the signed release APK on GitHub and creates a DRAFT release the in-app updater can verify:
+# Ember-<version>.apk and Ember-<version>.apk.sha256 (docs/RELEASING.md). Pushing a v* tag does it;
+# "Run workflow" by hand builds and checks everything but creates no release. Nothing reaches the
+# updater until the draft is published. The signing key comes from four repository secrets, which
+# tools/setup-signing.ps1 uploads.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+# Least privilege: writing the draft release needs contents: write.
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  # SHA-256 of the release signing certificate (CN=lukr-99, OU=workout-tracker), as in
+  # tools/publish-release.ps1. An APK signed with another key could never update the installed app.
+  RELEASE_CERT_SHA256: 1db09253a4eec90556cbcc8f1a013e2d1b7037cec721f00e88cb73bdd88c19e3
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v6
+
+      # Fail closed: never build an unsigned release because a tag was pushed.
+      - name: Verify signing secrets are present
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_STORE_PASSWORD: ${{ secrets.KEYSTORE_STORE_PASSWORD }}
+          KEYSTORE_KEY_ALIAS: ${{ secrets.KEYSTORE_KEY_ALIAS }}
+          KEYSTORE_KEY_PASSWORD: ${{ secrets.KEYSTORE_KEY_PASSWORD }}
+        run: |
+          missing=0
+          for v in KEYSTORE_BASE64 KEYSTORE_STORE_PASSWORD KEYSTORE_KEY_ALIAS KEYSTORE_KEY_PASSWORD; do
+            if [ -z "${!v}" ]; then echo "Missing secret: $v"; missing=1; fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "Refusing to build an unsigned release. Run tools/setup-signing.ps1 to upload the secrets."
+            exit 1
+          fi
+
+      - name: Read the version and the release notes
+        run: |
+          VERSION=$(sed -nE 's/^[[:space:]]*versionName = "([^"]+)".*/\1/p' app/build.gradle.kts | head -n 1)
+          if [ -z "$VERSION" ]; then echo "Could not read versionName from app/build.gradle.kts."; exit 1; fi
+          if [ "$GITHUB_REF_TYPE" = "tag" ] && [ "${GITHUB_REF_NAME#v}" != "$VERSION" ]; then
+            echo "The tag ($GITHUB_REF_NAME) does not match versionName ($VERSION) in app/build.gradle.kts."
+            exit 1
+          fi
+          # The CHANGELOG.md section of this version, without its heading, as the release notes.
+          awk -v v="$VERSION" '
+            index($0, "## [" v "]") == 1 { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md | sed -e '/./,$!d' > "$RUNNER_TEMP/notes.md"
+          if [ ! -s "$RUNNER_TEMP/notes.md" ]; then
+            echo "CHANGELOG.md has no '## [$VERSION]' section. Move [Unreleased] under it first."
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          # The action defaults to "tools platform-tools", and sdkmanager no longer offers "tools".
+          packages: platform-tools
+
+      - name: Install Android SDK packages
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      # Outside the checkout, so no step can pick it up as a repository file.
+      - name: Decode the keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/keystore.jks"
+
+      # app/build.gradle.kts reads these when there is no keystore.properties.
+      - name: Build the signed release APK
+        env:
+          KEYSTORE_STORE_FILE: ${{ runner.temp }}/keystore.jks
+          KEYSTORE_STORE_PASSWORD: ${{ secrets.KEYSTORE_STORE_PASSWORD }}
+          KEYSTORE_KEY_ALIAS: ${{ secrets.KEYSTORE_KEY_ALIAS }}
+          KEYSTORE_KEY_PASSWORD: ${{ secrets.KEYSTORE_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleRelease --stacktrace
+
+      - name: Check it is signed with the release key
+        run: |
+          APK=app/build/outputs/apk/release/app-release.apk
+          test -f "$APK" || { echo "No signed release APK at $APK."; exit 1; }
+          FOUND=$("$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs "$APK" \
+            | sed -nE 's/^Signer #1 certificate SHA-256 digest: ([0-9a-f]{64})$/\1/p')
+          if [ "$FOUND" != "$RELEASE_CERT_SHA256" ]; then
+            echo "The APK is not signed with the release key. Found: ${FOUND:-none}"
+            exit 1
+          fi
+          echo "Signed with the release key."
+
+      # The names the in-app updater looks for (update/ArtifactSelector.kt).
+      - name: Package the APK and its checksum
+        run: |
+          mkdir -p dist
+          ASSET="Ember-${VERSION}.apk"
+          cp app/build/outputs/apk/release/app-release.apk "dist/$ASSET"
+          (cd dist && sha256sum "$ASSET" > "$ASSET.sha256")
+          cat "dist/$ASSET.sha256"
+          echo "ASSET=$ASSET" >> "$GITHUB_ENV"
+
+      - name: Create the draft release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "dist/$ASSET" "dist/$ASSET.sha256" \
+            --draft --verify-tag --title "Ember $VERSION" --notes-file "$RUNNER_TEMP/notes.md"
+          echo "Draft release $GITHUB_REF_NAME created. Review it on GitHub, then publish it."
+
+      # A run by hand is a rehearsal: keep the APK for a week so it can be checked.
+      - name: Keep the APK of a trial run
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ember-release-trial
+          path: dist/
+          retention-days: 7
+
+      - name: Remove the decoded keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/keystore.jks"
