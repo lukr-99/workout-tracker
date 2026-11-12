@@ -6,6 +6,8 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 ## [Unreleased]
 
+## [2.11.0] - 2026-11-11
+
 ### Added
 
 - **Claude can look at your training.** Connect Ember to your own Claude server in Settings, Claude,
