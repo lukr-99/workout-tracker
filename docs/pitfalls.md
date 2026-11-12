@@ -4,6 +4,23 @@ Things that went wrong in this repository and took longer to find than to fix. S
 CodePrint's `docs/pitfalls/`, for the error text before debugging something surprising. The format
 is in CodePrint's `docs/pitfalls/README.md`. Newest first.
 
+## `gradlew.bat` fails with "i was unexpected at this time."
+
+- Symptom: on the owner's notebook, every batch file started from an agent's shell fails at once:
+  `gradlew.bat`, `apksigner.bat`, and so `tools/publish-release.ps1`. A short `PATH` and JDK 17 in
+  `JAVA_HOME` do not help.
+- Cause: the cmd AutoRun hook (`HKCU\Software\Microsoft\Command Processor\AutoRun`) is
+  `C:\startscripts\fnm.cmd`, which fails in a non-interactive `cmd` before the batch file starts.
+  The same station's `JAVA_HOME` is a JDK 11 and Gradle needs an `ANDROID_HOME`, which hid the cause
+  at first.
+- Fix: run the jars directly with JDK 17 and `ANDROID_HOME` set: Gradle as
+  `java -classpath gradle\wrapper\gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain <tasks>`,
+  apksigner as `java -jar <sdk>\build-tools\35.0.0\lib\apksigner.jar`. Releases now sign on GitHub
+  (`docs/RELEASING.md`), so a station is only the fallback.
+- Closed off by: release signing in GitHub Actions; CodePrint's `docs/pitfalls/windows-tooling.md`
+  has the general entry.
+- Seen: building and publishing 2.11.0, 2026-11-11.
+
 ## Turning the phone loses what was typed in a dialog
 
 - Symptom: in Settings, Claude, the server address typed into the connect form is gone after
