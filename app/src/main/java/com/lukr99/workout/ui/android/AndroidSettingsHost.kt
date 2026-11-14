@@ -1,6 +1,7 @@
 package com.lukr99.workout.ui.android
 
 import androidx.activity.compose.rememberLauncherForActivityResult
+import com.lukr99.workout.ui.about.AboutEdition
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.padding
@@ -57,6 +58,7 @@ private class AndroidSettingsHost(
     private val notificationLauncher: ActivityResultLauncher<String>,
     override val appVersion: String,
 ) : SettingsHost {
+    override val edition: AboutEdition = AboutEdition.Android
 
     override fun has(slot: SettingsSlot): Boolean = true
 

@@ -6,6 +6,12 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 ## [Unreleased]
 
+### Added
+
+- **About page.** Settings, About Ember shows the version, who made Ember, links to send feedback on
+  Instagram or GitHub and to report bugs or ideas, what Ember keeps and where, and the credits and
+  licences. It is on Android and in the web edition.
+
 ## [2.11.0] - 2026-11-11
 
 ### Added
