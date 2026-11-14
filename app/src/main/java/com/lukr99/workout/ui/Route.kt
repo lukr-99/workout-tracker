@@ -14,4 +14,5 @@ sealed interface Route {
     data class ProgressDetail(val exerciseId: String) : Route
     data object DataTransfer : Route
     data object PrivacyPolicy : Route
+    data object About : Route
 }

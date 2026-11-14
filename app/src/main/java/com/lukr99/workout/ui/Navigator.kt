@@ -62,6 +62,7 @@ class Navigator {
             is Route.ProgressDetail -> arrayListOf("ProgressDetail", route.exerciseId)
             Route.DataTransfer -> arrayListOf("DataTransfer")
             Route.PrivacyPolicy -> arrayListOf("PrivacyPolicy")
+            Route.About -> arrayListOf("About")
         }
 
         private fun decode(parts: List<*>): Route? {
@@ -78,6 +79,7 @@ class Navigator {
                 "ProgressDetail" -> arg?.let(Route::ProgressDetail)
                 "DataTransfer" -> Route.DataTransfer
                 "PrivacyPolicy" -> Route.PrivacyPolicy
+                "About" -> Route.About
                 else -> null
             }
         }

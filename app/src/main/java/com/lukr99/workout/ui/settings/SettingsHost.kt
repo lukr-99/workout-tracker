@@ -1,6 +1,7 @@
 package com.lukr99.workout.ui.settings
 
 import androidx.compose.runtime.Composable
+import com.lukr99.workout.ui.about.AboutEdition
 
 /**
  * What Settings asks of the platform: its extra rows, its dialogs and the version text. Android
@@ -9,6 +10,9 @@ import androidx.compose.runtime.Composable
 interface SettingsHost {
     /** The version shown in the footer. */
     val appVersion: String
+
+    /** Which build this is, for the About page. */
+    val edition: AboutEdition
 
     /** Whether this platform has rows for [slot]. */
     fun has(slot: SettingsSlot): Boolean

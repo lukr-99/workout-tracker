@@ -46,6 +46,7 @@ import com.lukr99.workout.ui.screens.HomeScreen
 import com.lukr99.workout.ui.screens.LibraryScreen
 import com.lukr99.workout.ui.screens.LiveWorkoutScreen
 import com.lukr99.workout.ui.screens.PrivacyPolicyScreen
+import com.lukr99.workout.ui.about.AboutScreen
 import com.lukr99.workout.ui.screens.ProgressDetailScreen
 import com.lukr99.workout.ui.screens.ProgressHubScreen
 import com.lukr99.workout.ui.screens.TemplateEditorScreen
@@ -246,6 +247,7 @@ fun App(container: AppContainer) {
                                 locationsVm = locationsVm,
                                 onOpenData = { nav.push(Route.DataTransfer) },
                                 onOpenPrivacy = { nav.push(Route.PrivacyPolicy) },
+                                onOpenAbout = { nav.push(Route.About) },
                                 onBack = { nav.pop() },
                             )
                         }
@@ -282,6 +284,15 @@ fun App(container: AppContainer) {
                             BackChip(onBack = { nav.pop() }, modifier = Modifier.align(Alignment.TopEnd).padding(12.dp))
                         }
                         Route.PrivacyPolicy -> PrivacyPolicyScreen(onBack = { nav.pop() })
+                        Route.About -> {
+                            val host = platform.rememberSettingsHost()
+                            AboutScreen(
+                                version = host.appVersion,
+                                edition = host.edition,
+                                onOpenPrivacy = { nav.push(Route.PrivacyPolicy) },
+                                onBack = { nav.pop() },
+                            )
+                        }
                     }
                 }
             }

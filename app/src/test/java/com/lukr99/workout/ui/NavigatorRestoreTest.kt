@@ -36,6 +36,7 @@ class NavigatorRestoreTest {
         Route.WorkoutDetail("session-1"),
         Route.ProgressDetail("exercise-2"),
         Route.DataTransfer,
+        Route.About,
         Route.PrivacyPolicy,
     )
 
