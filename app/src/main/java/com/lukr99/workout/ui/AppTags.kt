@@ -19,6 +19,12 @@ object AppTags {
     const val MUSCLE_MAP = "muscle_map"
     const val MUSCLE_MAP_INFO = "muscle_map_info"
     const val MUSCLE_MAP_INFO_SHEET = "muscle_map_info_sheet"
+    const val SETTINGS_ABOUT = "settings_about"
+    const val ABOUT = "about"
+    const val ABOUT_AUTHOR = "about_author"
+    const val ABOUT_INSTAGRAM = "about_instagram"
+    const val ABOUT_GITHUB = "about_github"
+    const val ABOUT_ISSUES = "about_issues"
 
     /** The Recovery or Weekly sets switch on the muscle map, like `muscle_map_mode_weeklysets`. */
     fun muscleMapMode(mode: MuscleMapMode): String = "muscle_map_mode_${mode.name.lowercase()}"

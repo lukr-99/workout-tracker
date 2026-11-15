@@ -1,6 +1,7 @@
 package com.lukr99.workout.ui.settings
 
 import androidx.compose.runtime.Composable
+import com.lukr99.workout.ui.about.AboutEdition
 import com.lukr99.workout.web.WEB_VERSION_NAME
 
 /**
@@ -9,6 +10,8 @@ import com.lukr99.workout.web.WEB_VERSION_NAME
  */
 internal class WebSettingsHost : SettingsHost {
     override val appVersion: String = WEB_VERSION_NAME
+
+    override val edition: AboutEdition = AboutEdition.Web
 
     override fun has(slot: SettingsSlot): Boolean = false
 

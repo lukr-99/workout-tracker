@@ -4,6 +4,8 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.MaterialTheme
@@ -31,12 +34,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.lukr99.workout.settings.ThemeMode
 import com.lukr99.workout.settings.UnitSystem
+import com.lukr99.workout.ui.AppTags
 import com.lukr99.workout.ui.LocationsViewModel
 import com.lukr99.workout.ui.SettingsViewModel
 import com.lukr99.workout.ui.components.FilterChip
@@ -64,6 +70,7 @@ fun SettingsScreen(
     locationsVm: LocationsViewModel,
     onOpenData: () -> Unit,
     onOpenPrivacy: () -> Unit,
+    onOpenAbout: () -> Unit,
     onBack: () -> Unit,
 ) {
     val settings by vm.settings.collectAsState()
@@ -200,12 +207,14 @@ fun SettingsScreen(
                 }
             }
             item(key = "footer") {
-                Text(
-                    "Ember ${host.appVersion}",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = EmberTheme.colors.textTertiary,
-                    modifier = Modifier.fillMaxWidth().padding(top = 18.dp),
-                )
+                val colors = EmberTheme.colors
+                val shape = RoundedCornerShape(18.dp)
+                Column(
+                    Modifier.padding(top = 12.dp).fillMaxWidth().clip(shape).background(colors.surface)
+                        .border(1.dp, colors.border, shape).padding(horizontal = 16.dp).testTag(AppTags.SETTINGS_ABOUT),
+                ) {
+                    LinkRow("About Ember", "Version ${host.appVersion}, who made it, feedback and credits.", first = true, onClick = onOpenAbout)
+                }
             }
         }
     }
