@@ -1,0 +1,51 @@
+name: Web edition (Kiln)
+
+env:
+  DIST: web/build/dist/wasmJs/productionExecutable
+  PLAYWRIGHT_VERSION: "1.63.0"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: codeprint/runner:latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build the production web distribution
+        run: |
+          chmod +x gradlew
+          ./gradlew :web:wasmJsBrowserDistribution --stacktrace
+
+      - name: Run web tests
+        run: |
+          ./gradlew :web:wasmJsNodeTest --stacktrace
+
+      - name: Test the stamping script
+        run: python3 tools/test_stamp_web_dist.py
+
+      - name: Stamp the distribution
+        run: python3 tools/stamp_web_dist.py "$DIST"
+
+      - name: Check the distribution in a browser
+        run: |
+          PW="$(mktemp -d)"
+          npm install --prefix "$PW" --no-save --no-package-lock "playwright@${PLAYWRIGHT_VERSION}"
+          NODE_PATH="$PW/node_modules" node tools/check-web-dist.cjs "$DIST"
+
+      - name: Upload the web distribution
+        uses: actions/upload-artifact@v7
+        with:
+          name: ember-web
+          path: ${{ env.DIST }}
+          if-no-files-found: error
+
+      - name: Upload web test reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-test-reports
+          path: |
+            web/build/reports/tests/
+            web/build/test-results/
+          if-no-files-found: ignore

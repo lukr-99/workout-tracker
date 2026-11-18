@@ -1,0 +1,33 @@
+name: Android CI (Kiln)
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: codeprint/runner:latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build, test, and lint
+        run: |
+          chmod +x gradlew
+          ./gradlew testDebugUnitTest assembleDebug lintDebug --stacktrace
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Upload JVM test and lint reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: jvm-test-and-lint-reports
+          path: |
+            app/build/reports/tests/
+            app/build/test-results/
+            app/build/reports/lint-results-debug.html
+            app/build/reports/lint-results-debug.txt
+          if-no-files-found: warn
