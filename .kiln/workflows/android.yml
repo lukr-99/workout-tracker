@@ -10,14 +10,13 @@ jobs:
 
       - name: Build, test, and lint
         run: |
-          chmod +x gradlew
-          ./gradlew testDebugUnitTest assembleDebug lintDebug --stacktrace
+          bash gradlew testDebugUnitTest assembleDebug lintDebug --stacktrace
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
         with:
           name: debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
       - name: Upload JVM test and lint reports

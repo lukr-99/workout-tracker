@@ -14,12 +14,11 @@ jobs:
 
       - name: Build the production web distribution
         run: |
-          chmod +x gradlew
-          ./gradlew :web:wasmJsBrowserDistribution --stacktrace
+          bash gradlew :web:wasmJsBrowserDistribution --stacktrace
 
       - name: Run web tests
         run: |
-          ./gradlew :web:wasmJsNodeTest --stacktrace
+          bash gradlew :web:wasmJsNodeTest --stacktrace
 
       - name: Test the stamping script
         run: python3 tools/test_stamp_web_dist.py
@@ -30,6 +29,7 @@ jobs:
       - name: Check the distribution in a browser
         run: |
           PW="$(mktemp -d)"
+          export npm_config_cache="$PW/npm-cache"
           npm install --prefix "$PW" --no-save --no-package-lock "playwright@${PLAYWRIGHT_VERSION}"
           NODE_PATH="$PW/node_modules" node tools/check-web-dist.cjs "$DIST"
 
