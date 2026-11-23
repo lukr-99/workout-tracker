@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui.run
 
+import com.lukr99.workout.ui.i18n.RunText
 import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.ViewModel
@@ -86,7 +87,7 @@ class RunViewModel(
         viewModelScope.launch {
             val run = repo.getRun(id)
             _detail.value = run
-            _detailRouteName.value = run?.routeId?.let { repo.getRoute(it)?.name?.ifBlank { "Route" } }
+            _detailRouteName.value = run?.routeId?.let { repo.getRoute(it)?.name?.ifBlank { RunText.routeDefaultName.now() } }
         }
     }
 
@@ -140,13 +141,13 @@ class RunViewModel(
         viewModelScope.launch {
             val result = runCatching {
                 val text = documents.readText(uri)
-                val run = GpxCodec.decode(text) ?: error("No track points found")
+                val run = GpxCodec.decode(text) ?: error(RunText.noTrackPoints.now())
                 repo.saveRun(run)
                 run
             }
             _status.value = result.fold(
-                onSuccess = { "Imported run · ${(it.distanceMeters / 1000).format1()} km" },
-                onFailure = { "Couldn't import GPX: ${it.message}" },
+                onSuccess = { RunText.importedRun.now("km" to (it.distanceMeters / 1000).format1()) },
+                onFailure = { RunText.importFailed.now("reason" to (it.message ?: "")) },
             )
         }
     }
@@ -168,14 +169,14 @@ class RunViewModel(
                 ?: Polyline.decode(full.encodedPolyline)
             val bounds = OfflineTileCache.boundsForPath(path)
             if (bounds == null) {
-                _status.value = "This route has no path to cache."
+                _status.value = RunText.noPathToCache.now()
                 return@launch
             }
-            _status.value = "Caching map for offline…"
+            _status.value = RunText.cachingStart.now()
             offlineCache.download(bounds, full.name.ifBlank { "Route" }, object : OfflineTileCache.Listener {
-                override fun onProgress(percent: Int) { _status.value = "Caching map… $percent%" }
-                override fun onComplete() { _status.value = "Map cached for offline use." }
-                override fun onError(reason: String) { _status.value = "Offline caching failed: $reason" }
+                override fun onProgress(percent: Int) { _status.value = RunText.cachingProgress.now("percent" to percent) }
+                override fun onComplete() { _status.value = RunText.cachingDone.now() }
+                override fun onError(reason: String) { _status.value = RunText.cachingFailed.now("reason" to reason) }
             })
         }
     }

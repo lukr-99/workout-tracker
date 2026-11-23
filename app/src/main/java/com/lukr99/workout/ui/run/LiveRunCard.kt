@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui.run
 
+import com.lukr99.workout.ui.i18n.RunText
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -69,10 +70,10 @@ internal fun LiveRunCard(
             Badge(state, routeName, offRouteMeters)
         }
         Row(Modifier.fillMaxWidth()) {
-            RunMetric("Time", Pace.formatDuration(state.movingSeconds), Modifier.weight(1f))
-            RunMetric("Pace", runPaceLabel(state.avgPaceSecPerKm, units), Modifier.weight(1f))
+            RunMetric(RunText.time.text(), Pace.formatDuration(state.movingSeconds), Modifier.weight(1f))
+            RunMetric(RunText.pace.text(), runPaceLabel(state.avgPaceSecPerKm, units), Modifier.weight(1f))
             RunMetric(
-                "Split ${split?.index ?: (state.distanceMeters / splitMetersFor(units)).toInt() + 1}",
+                RunText.split.text("n" to (split?.index ?: ((state.distanceMeters / splitMetersFor(units)).toInt() + 1))),
                 split?.let { runPaceLabel(it.paceSecPerKm, units) } ?: "–",
                 Modifier.weight(1f),
             )
@@ -80,7 +81,7 @@ internal fun LiveRunCard(
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             ControlButton(
                 if (paused) Icons.Rounded.PlayArrow else Icons.Rounded.Pause,
-                if (paused) "Resume" else "Pause",
+                if (paused) RunText.resume.text() else RunText.pause.text(),
                 container = colors.primary,
                 content = colors.onPrimary,
                 modifier = Modifier.weight(1f),
@@ -88,7 +89,7 @@ internal fun LiveRunCard(
             )
             ControlButton(
                 Icons.Rounded.Stop,
-                "Finish",
+                RunText.finish.text(),
                 container = colors.surfaceRaised,
                 content = colors.textPrimary,
                 modifier = Modifier.weight(1f),
@@ -103,10 +104,10 @@ internal fun LiveRunCard(
 private fun Badge(state: LiveRunState, routeName: String?, offRouteMeters: Double?) {
     val colors = EmberTheme.colors
     val (text, tint) = when {
-        state.autoPaused -> "Auto-paused" to colors.primaryText
+        state.autoPaused -> RunText.autoPaused.text() to colors.primaryText
         routeName == null -> return
-        offRouteMeters != null && offRouteMeters > OFF_ROUTE_THRESHOLD_M -> "${offRouteMeters.toInt()} m off route" to colors.textSecondary
-        else -> "On route · $routeName" to colors.success
+        offRouteMeters != null && offRouteMeters > OFF_ROUTE_THRESHOLD_M -> RunText.offRoute.text("m" to offRouteMeters.toInt()) to colors.textSecondary
+        else -> RunText.onRoute.text("name" to routeName) to colors.success
     }
     Text(
         text,

@@ -28,6 +28,8 @@ import com.lukr99.workout.ui.DataTransferViewModel
 import com.lukr99.workout.data.transfer.ExportArtifact
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import com.lukr99.workout.ui.i18n.DataText
+import com.lukr99.workout.ui.i18n.LocalLanguage
 
 /**
  * Standalone Phase 3 surface. Phase 2 can route to it from Settings without changing its data
@@ -42,6 +44,7 @@ fun DataTransferScreen(
     // Counts and the live-session check feed the danger zone; refresh after every operation.
     LaunchedEffect(state.isWorking) { if (!state.isWorking) vm.refreshErase() }
     val scope = rememberCoroutineScope()
+    val lang = LocalLanguage.current
     val documents = rememberDocumentActions(
         onPicked = vm::previewImport,
         onSaveChosen = vm::saveExport,
@@ -52,11 +55,9 @@ fun DataTransferScreen(
         modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text("Data", style = MaterialTheme.typography.headlineMedium)
+        Text(DataText.title.text(), style = MaterialTheme.typography.headlineMedium)
         Text(
-            "Save JSON is a full backup: workouts, runs, routes, templates, exercises, photos and " +
-                "settings. Keep it somewhere outside the phone. CSV is a spreadsheet of your workouts " +
-                "and cannot restore anything. Every import shows a preview before it changes anything.",
+            DataText.intro.text(),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
@@ -65,34 +66,34 @@ fun DataTransferScreen(
                 onClick = documents.pickFile,
                 enabled = !state.isWorking,
                 modifier = Modifier.testTag(DataTags.IMPORT),
-            ) { Text("Import file") }
+            ) { Text(DataText.importFile.text()) }
             OutlinedButton(
                 onClick = { saveExport(scope, vm, documents, { vm.jsonArtifact() }) },
                 enabled = !state.isWorking,
                 modifier = Modifier.testTag(DataTags.SAVE_JSON),
-            ) { Text("Save JSON") }
+            ) { Text(DataText.saveJson.text()) }
             OutlinedButton(
                 onClick = { saveExport(scope, vm, documents, { vm.csvArtifact() }) },
                 enabled = !state.isWorking,
                 modifier = Modifier.testTag(DataTags.SAVE_CSV),
-            ) { Text("Save CSV") }
+            ) { Text(DataText.saveCsv.text()) }
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             OutlinedButton(
                 onClick = {
-                    shareExport(scope, vm, documents, "Share workout backup", { vm.jsonArtifact() })
+                    shareExport(scope, vm, documents, DataText.shareBackupTitle.get(lang), { vm.jsonArtifact() })
                 },
                 enabled = !state.isWorking,
                 modifier = Modifier.testTag(DataTags.SHARE_JSON),
-            ) { Text("Share JSON") }
+            ) { Text(DataText.shareJson.text()) }
             OutlinedButton(
                 onClick = {
-                    shareExport(scope, vm, documents, "Share workout CSV", { vm.csvArtifact() })
+                    shareExport(scope, vm, documents, DataText.shareCsvTitle.get(lang), { vm.csvArtifact() })
                 },
                 enabled = !state.isWorking,
                 modifier = Modifier.testTag(DataTags.SHARE_CSV),
-            ) { Text("Share CSV") }
+            ) { Text(DataText.shareCsv.text()) }
         }
 
         if (state.isWorking) {
@@ -120,7 +121,7 @@ fun DataTransferScreen(
             Text(commitMessage(result), color = MaterialTheme.colorScheme.primary)
         }
         if (state.erased) {
-            Text("All data deleted. Ember is back to a fresh start.", color = MaterialTheme.colorScheme.primary)
+            Text(DataText.allDeleted.text(), color = MaterialTheme.colorScheme.primary)
         }
 
         DataDangerZone(
@@ -132,16 +133,20 @@ fun DataTransferScreen(
     }
 }
 
+@Composable
 private fun commitMessage(result: ImportCommitResult): String {
     val restored = buildList {
-        add("${result.insertedSessions} workouts")
-        if (result.insertedRuns > 0 || result.insertedRoutes > 0) add("${result.insertedRuns} runs, ${result.insertedRoutes} routes")
-        if (result.restoredPhotos > 0) add("${result.restoredPhotos} photos")
-        if (result.restoredSettings) add("your settings")
+        add(DataText.workoutsCount.text(result.insertedSessions))
+        if (result.insertedRuns > 0 || result.insertedRoutes > 0) {
+            add(DataText.runsCount.text(result.insertedRuns) + ", " + DataText.routesCount.text(result.insertedRoutes))
+        }
+        if (result.restoredPhotos > 0) add(DataText.photosCount.text(result.restoredPhotos))
+        if (result.restoredSettings) add(DataText.yourSettings.text())
     }.joinToString(", ")
     return when (result.mode) {
-        RestoreMode.Replace -> "Replaced your data with the backup: $restored."
-        RestoreMode.Merge -> "Imported $restored. ${result.skippedSessions} were already here."
+        RestoreMode.Replace -> DataText.replacedMessage.text("restored" to restored)
+        RestoreMode.Merge ->
+            DataText.importedMessage.text("restored" to restored) + " " + DataText.alreadyHere.text(result.skippedSessions)
     }
 }
 
@@ -154,7 +159,7 @@ private fun saveExport(
     scope.launch {
         runCatching { build() }
             .onSuccess(documents.saveFile)
-            .onFailure { vm.reportError(it.message ?: "Operation failed.") }
+            .onFailure { vm.reportError(it.message ?: DataText.operationFailed.now()) }
     }
 }
 
@@ -168,6 +173,6 @@ private fun shareExport(
     scope.launch {
         runCatching { build() }
             .onSuccess { documents.shareFile(it, title) }
-            .onFailure { vm.reportError(it.message ?: "Operation failed.") }
+            .onFailure { vm.reportError(it.message ?: DataText.operationFailed.now()) }
     }
 }

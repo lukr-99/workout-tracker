@@ -31,6 +31,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.lukr99.workout.domain.Exercise
+import com.lukr99.workout.ui.i18n.NotesText
 import com.lukr99.workout.ui.theme.Numbers
 
 /**
@@ -48,6 +49,7 @@ fun ExerciseGuideSheet(
     val uriHandler = LocalUriHandler.current
     val toast = LocalToast.current
     val steps = exercise.instructionSteps
+    val noAppForLink = NotesText.noAppForLink.text()
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -78,18 +80,18 @@ fun ExerciseGuideSheet(
             }
 
             if (exercise.notes.isNotBlank()) {
-                NoteLine(Icons.Rounded.PushPin, label = null, text = exercise.notes, description = "Your note", maxLines = 10)
+                NoteLine(Icons.Rounded.PushPin, label = null, text = exercise.notes, description = NotesText.yourNote.text(), maxLines = 10)
             }
 
             Text(
-                "How to do it",
+                NotesText.howToDoIt.text(),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.semantics { heading() },
             )
             if (steps.isEmpty()) {
                 Text(
-                    "No steps yet. Add them with Edit, one step per line.",
+                    NotesText.noSteps.text(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -112,11 +114,11 @@ fun ExerciseGuideSheet(
                 exercise.videoUrl?.let { url ->
                     OutlinedButton(onClick = {
                         runCatching { uriHandler.openUri(url) }
-                            .onFailure { toast("No app here can open this link") }
+                            .onFailure { toast(noAppForLink) }
                     }) {
                         Icon(Icons.AutoMirrored.Rounded.OpenInNew, null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Open guide")
+                        Text(NotesText.openGuide.text())
                     }
                 }
                 Spacer(Modifier.weight(1f))
@@ -124,7 +126,7 @@ fun ExerciseGuideSheet(
                     TextButton(onClick = { onDismiss(); onEdit() }) {
                         Icon(Icons.Rounded.Edit, null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Edit")
+                        Text(NotesText.edit.text())
                     }
                 }
             }

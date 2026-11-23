@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewModelScope
+import com.lukr99.workout.ui.i18n.AppText
 import com.lukr99.workout.data.transfer.CsvExportOptions
 import com.lukr99.workout.data.transfer.DataTransferService
 import com.lukr99.workout.data.transfer.ExportArtifact
@@ -48,7 +49,7 @@ class DataTransferViewModel(
     }
 
     fun commitPreview() = launchOperation {
-        val preview = state.value.preview ?: error("There is no import preview to commit.")
+        val preview = state.value.preview ?: error(AppText.noImportPreview.now())
         val result = transfer.commitImport(preview)
         pickedText = null
         mutableState.update { it.copy(preview = null, commitResult = result) }
@@ -94,7 +95,7 @@ class DataTransferViewModel(
     }
 
     private suspend fun preview(mode: RestoreMode) {
-        val text = pickedText ?: error("Pick a file to import first.")
+        val text = pickedText ?: error(AppText.pickFileFirst.now())
         val preview = transfer.previewImport(text, pickedName, ImportOptions(mode = mode))
         mutableState.update { it.copy(preview = preview, commitResult = null, erased = false) }
     }
@@ -103,7 +104,7 @@ class DataTransferViewModel(
         viewModelScope.launch {
             mutableState.update { it.copy(isWorking = true, error = null) }
             runCatching { block() }
-                .onFailure { error -> mutableState.update { it.copy(error = error.message ?: "Operation failed.") } }
+                .onFailure { error -> mutableState.update { it.copy(error = error.message ?: AppText.operationFailed.now()) } }
             mutableState.update { it.copy(isWorking = false) }
         }
     }

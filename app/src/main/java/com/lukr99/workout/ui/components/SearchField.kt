@@ -29,6 +29,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.lukr99.workout.ui.i18n.CardsText
 import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
@@ -72,7 +73,7 @@ fun SearchField(
         }
         if (value.isNotEmpty()) {
             IconButton(onClick = { onValueChange("") }) {
-                Icon(Icons.Rounded.Close, contentDescription = "Clear search", tint = colors.textSecondary)
+                Icon(Icons.Rounded.Close, contentDescription = CardsText.clearSearch.text(), tint = colors.textSecondary)
             }
         } else {
             Spacer(Modifier.width(10.dp))

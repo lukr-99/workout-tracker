@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.lukr99.workout.ui.i18n.AppText
 import com.lukr99.workout.data.AppContainer
 import com.lukr99.workout.ui.components.LocalExerciseImageResolver
 import com.lukr99.workout.ui.components.LocalToast
@@ -70,7 +71,7 @@ fun App(container: AppContainer) {
     val homeVm: HomeViewModel = viewModel(factory = HomeViewModel.factory(container.repository, container.runRepository, container.whatsNew))
     val historyVm: HistoryViewModel = viewModel(factory = HistoryViewModel.factory(container.repository))
     val progressVm: ProgressViewModel = viewModel(factory = ProgressViewModel.factory(container.repository, container.workoutData, container.insights))
-    val settingsVm: SettingsViewModel = viewModel(factory = SettingsViewModel.factory(container.settings))
+    val settingsVm: SettingsViewModel = viewModel(factory = SettingsViewModel.factory(container.settings, container.devicePrefs))
     val libraryVm: LibraryViewModel = viewModel(factory = LibraryViewModel.factory(container.repository, container.workoutData, container.exercisePhotos))
     val liveVm: LiveWorkoutViewModel = viewModel(
         factory = LiveWorkoutViewModel.factory(
@@ -179,7 +180,7 @@ fun App(container: AppContainer) {
                                         unknownWorkouts = setup.unknownWorkouts,
                                         onSave = { name, assignPast ->
                                             locationsVm.finishSetup(name, assignPast) { moved ->
-                                                toast(if (moved > 0) "$name added, $moved workouts moved there" else "$name added")
+                                                toast(if (moved > 0) AppText.locationAddedMoved.now(moved, "name" to name) else AppText.locationAdded.now("name" to name))
                                             }
                                         },
                                         onDismiss = locationsVm::dismissSetup,
@@ -348,7 +349,7 @@ fun App(container: AppContainer) {
 @Composable
 private fun BackChip(onBack: () -> Unit, modifier: Modifier = Modifier) {
     Text(
-        "Done",
+        AppText.done.text(),
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.primary,
         modifier = modifier

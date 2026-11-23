@@ -71,13 +71,13 @@ fun SettingsCard(
             .padding(16.dp),
     ) {
         Text(
-            section.title,
+            section.title.text(),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = lerp(colors.textPrimary, colors.primaryText, maxOf(jump, scroll)),
             modifier = Modifier.semantics { heading() },
         )
-        Text(section.description, style = MaterialTheme.typography.bodyMedium, color = colors.textSecondary, modifier = Modifier.padding(top = 2.dp, bottom = 4.dp))
+        Text(section.description.text(), style = MaterialTheme.typography.bodyMedium, color = colors.textSecondary, modifier = Modifier.padding(top = 2.dp, bottom = 4.dp))
         content()
     }
 }

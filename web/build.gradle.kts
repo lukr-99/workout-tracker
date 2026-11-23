@@ -68,6 +68,7 @@ val androidOnly = listOf(
     "data/images/StripAccents.kt",
     "domain/LocalDecimals.kt",
     "ui/PlatformApp.kt",
+    "ui/i18n/PlatformLanguage.kt",
     "ui/PlatformBackHandler.kt",
     "ui/components/ExerciseImage.kt",
     "ui/components/FullScreenDialog.kt",

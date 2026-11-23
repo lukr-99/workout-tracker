@@ -50,6 +50,9 @@ import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.ExerciseFilter
 import com.lukr99.workout.ui.AppTags
+import com.lukr99.workout.ui.i18n.CardsText
+import com.lukr99.workout.ui.i18n.LocalLanguage
+import com.lukr99.workout.ui.i18n.PickerText
 import com.lukr99.workout.ui.theme.Accents
 import com.lukr99.workout.ui.theme.EmberTheme
 import kotlinx.coroutines.delay
@@ -67,7 +70,7 @@ fun ExercisePicker(
     exercises: List<Exercise>,
     onPick: (Exercise) -> Unit,
     onCreate: ((String) -> Unit)? = null,
-    title: String = "Add exercise",
+    title: String = PickerText.addExercise.text(),
     subtitle: String? = null,
     recentIds: List<String> = emptyList(),
     hint: (Exercise) -> String? = { null },
@@ -75,6 +78,7 @@ fun ExercisePicker(
     onClose: (() -> Unit)? = null,
 ) {
     val colors = EmberTheme.colors
+    val lang = LocalLanguage.current
     var query by remember { mutableStateOf("") }
     var debouncedQuery by remember { mutableStateOf("") }
     var category by remember { mutableStateOf<ExerciseCategory?>(null) }
@@ -98,18 +102,18 @@ fun ExercisePicker(
                 Text(title, style = MaterialTheme.typography.titleLarge, color = colors.textPrimary, modifier = Modifier.weight(1f))
                 if (onClose != null) {
                     IconButton(onClick = onClose, modifier = Modifier.testTag(AppTags.EXERCISE_PICKER_CLOSE)) {
-                        Icon(Icons.Rounded.Close, contentDescription = "Close", tint = colors.textSecondary)
+                        Icon(Icons.Rounded.Close, contentDescription = CardsText.close.text(), tint = colors.textSecondary)
                     }
                 }
             }
             if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodyLarge, color = colors.textSecondary)
             Spacer(Modifier.height(12.dp))
-            SearchField(query, { query = it }, placeholder = if (onCreate != null) "Search or type a new name" else "Search exercises")
+            SearchField(query, { query = it }, placeholder = if (onCreate != null) PickerText.searchOrNew.text() else PickerText.searchExercises.text())
             Spacer(Modifier.height(10.dp))
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip("All", category == null && bodyPart.isBlank(), { category = null; bodyPart = "" })
+                FilterChip(PickerText.all.text(), category == null && bodyPart.isBlank(), { category = null; bodyPart = "" })
                 ExerciseCategory.entries.forEach { option ->
-                    FilterChip(option.name, category == option, { category = option.takeUnless { category == option } })
+                    FilterChip(PickerText.category(option).text(), category == option, { category = option.takeUnless { category == option } })
                 }
                 bodyParts.forEach { part ->
                     FilterChip(part, bodyPart.equals(part, true), {
@@ -124,15 +128,15 @@ fun ExercisePicker(
                 item(key = "create") { CreateRow(createName) { onCreate(createName) } }
             }
             if (sections.recent.isNotEmpty()) {
-                header("Recent")
+                header(PickerText.recent.get(lang))
                 exerciseRows(sections.recent, picked, onPickMany != null, hint, onPick)
-                header("All exercises")
+                header(PickerText.allExercises.get(lang))
             }
             exerciseRows(sections.all, picked, onPickMany != null, hint, onPick)
             if (sections.recent.isEmpty() && sections.all.isEmpty()) {
                 item(key = "empty") {
                     Text(
-                        if (query.isBlank()) "No exercises match these filters." else "No exercise called “${query.trim()}” yet.",
+                        if (query.isBlank()) PickerText.noMatch.text() else PickerText.noneCalled.text("name" to query.trim()),
                         color = colors.textSecondary,
                         modifier = Modifier.padding(vertical = 20.dp),
                     )
@@ -212,8 +216,8 @@ private fun CreateRow(name: String, onClick: () -> Unit) {
     ) {
         Icon(Icons.Rounded.Add, null, tint = colors.primaryText)
         Column {
-            Text("Create “$name”", fontWeight = FontWeight.Bold, color = colors.primaryText)
-            Text("A quick form. You stay in the workout.", style = MaterialTheme.typography.labelLarge, color = colors.textSecondary)
+            Text(PickerText.create.text("name" to name), fontWeight = FontWeight.Bold, color = colors.primaryText)
+            Text(PickerText.quickForm.text(), style = MaterialTheme.typography.labelLarge, color = colors.textSecondary)
         }
     }
 }
@@ -240,7 +244,7 @@ private fun AddBar(count: Int, asSuperset: Boolean, onSuperset: () -> Unit, onAd
                     horizontalArrangement = Arrangement.spacedBy(7.dp),
                 ) {
                     Icon(Icons.Rounded.Layers, null, tint = if (asSuperset) colors.primaryText else colors.textPrimary, modifier = Modifier.size(18.dp))
-                    Text("As a superset", fontWeight = FontWeight.Bold, color = if (asSuperset) colors.primaryText else colors.textPrimary)
+                    Text(PickerText.asSuperset.text(), fontWeight = FontWeight.Bold, color = if (asSuperset) colors.primaryText else colors.textPrimary)
                 }
             }
             Box(
@@ -250,7 +254,7 @@ private fun AddBar(count: Int, asSuperset: Boolean, onSuperset: () -> Unit, onAd
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    if (count == 0) "Pick exercises" else "Add $count",
+                    if (count == 0) PickerText.pickExercises.text() else PickerText.addCount.text("n" to count),
                     fontWeight = FontWeight.Bold,
                     color = if (count == 0) colors.textSecondary else colors.onPrimary,
                 )

@@ -56,6 +56,7 @@ import com.lukr99.workout.ui.TemplateChoice
 import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
+import com.lukr99.workout.ui.i18n.LiveSheetsText
 
 /**
  * "Finish workout?" with the numbers so far. When the workout started from [template] and went
@@ -74,13 +75,15 @@ internal fun FinishWorkoutSheet(
     onDismiss: () -> Unit,
 ) {
     val colors = EmberTheme.colors
+    val newNameLabel = LiveSheetsText.newTemplateName.text()
     val unticked = session.untickedSetCount
     // Someone who never ticks would lose the whole workout, so then counting is the default.
     var countUnticked by remember { mutableStateOf(session.setIdsMarkedDone.isEmpty()) }
     val finished = remember(session, countUnticked) { session.withUntickedSets(countUnticked, nowUtcMillis) }
     val changes = remember(finished, template) { template?.changesIn(finished).orEmpty() }
     var choice by remember { mutableStateOf(TemplateChoice.Update) }
-    var newName by remember(template) { mutableStateOf(template?.let { "${it.name} copy" }.orEmpty()) }
+    val copyWord = LiveSheetsText.copySuffix.text()
+    var newName by remember(template) { mutableStateOf(template?.let { "${it.name} $copyWord" }.orEmpty()) }
     val sets = finished.entries.sumOf { e -> e.strengthSets.count { it.performedAtUtc != null } }
     val prs = finished.entries.sumOf { e -> e.strengthSets.count { it.isPr } }
     val volumeKg = finished.entries.sumOf { Estimates.volume(it.strengthSets) }
@@ -91,17 +94,17 @@ internal fun FinishWorkoutSheet(
         containerColor = colors.surface,
     ) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp).padding(bottom = 20.dp)) {
-            Text("Finish workout?", style = MaterialTheme.typography.titleLarge, color = colors.textPrimary)
+            Text(LiveSheetsText.finishTitle.text(), style = MaterialTheme.typography.titleLarge, color = colors.textPrimary)
             Text(session.name, style = MaterialTheme.typography.bodyLarge, color = colors.textSecondary)
             Row(Modifier.padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Stat(Format.duration(((nowUtcMillis - session.startedAtUtc) / 1000).coerceAtLeast(0)), "", "Time", Modifier.weight(1f))
-                Stat(Format.volume(volumeKg, units), Format.unitLabel(units), "Lifted", Modifier.weight(1f))
-                Stat(sets.toString(), "", "Sets", Modifier.weight(1f))
-                Stat(prs.toString(), "", "PRs", Modifier.weight(1f), highlight = prs > 0)
+                Stat(Format.duration(((nowUtcMillis - session.startedAtUtc) / 1000).coerceAtLeast(0)), "", LiveSheetsText.statTime.text(), Modifier.weight(1f))
+                Stat(Format.volume(volumeKg, units), Format.unitLabel(units), LiveSheetsText.statLifted.text(), Modifier.weight(1f))
+                Stat(sets.toString(), "", LiveSheetsText.statSets.text(), Modifier.weight(1f))
+                Stat(prs.toString(), "", LiveSheetsText.statPrs.text(), Modifier.weight(1f), highlight = prs > 0)
             }
             if (unticked > 0) {
                 Text(
-                    "${unticked} ${if (unticked == 1) "SET" else "SETS"} NOT TICKED",
+                    LiveSheetsText.notTicked.text(unticked),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
                     letterSpacing = 1.sp,
@@ -109,13 +112,13 @@ internal fun FinishWorkoutSheet(
                     modifier = Modifier.padding(top = 18.dp, bottom = 8.dp),
                 )
                 Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Choice("Leave them out", "Only sets you ticked are saved.", !countUnticked) { countUnticked = false }
-                    Choice("Count them as done", "Sets with reps are saved as done. Empty ones go.", countUnticked) { countUnticked = true }
+                    Choice(LiveSheetsText.leaveOut.text(), LiveSheetsText.leaveOutHint.text(), !countUnticked) { countUnticked = false }
+                    Choice(LiveSheetsText.countAsDone.text(), LiveSheetsText.countAsDoneHint.text(), countUnticked) { countUnticked = true }
                 }
             }
             if (template != null && changes.isNotEmpty()) {
                 Text(
-                    "YOU CHANGED ${template.name.uppercase()}",
+                    LiveSheetsText.youChanged.text("name" to template.name.uppercase()),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
                     letterSpacing = 1.sp,
@@ -126,9 +129,9 @@ internal fun FinishWorkoutSheet(
                     changes.forEach { ChangeLine(it) }
                 }
                 Column(Modifier.padding(top = 12.dp).selectableGroup(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Choice("Update ${template.name}", "Next time starts the way you just did it.", choice == TemplateChoice.Update) { choice = TemplateChoice.Update }
-                    Choice("Keep ${template.name} as it is", "Only this workout has the changes.", choice == TemplateChoice.Keep) { choice = TemplateChoice.Keep }
-                    Choice("Save as a new template", "Keeps ${template.name} and adds a copy with the changes.", choice == TemplateChoice.SaveAsNew) { choice = TemplateChoice.SaveAsNew }
+                    Choice(LiveSheetsText.updateTemplate.text("name" to template.name), LiveSheetsText.updateTemplateHint.text(), choice == TemplateChoice.Update) { choice = TemplateChoice.Update }
+                    Choice(LiveSheetsText.keepTemplate.text("name" to template.name), LiveSheetsText.keepTemplateHint.text(), choice == TemplateChoice.Keep) { choice = TemplateChoice.Keep }
+                    Choice(LiveSheetsText.saveAsNew.text(), LiveSheetsText.saveAsNewHint.text("name" to template.name), choice == TemplateChoice.SaveAsNew) { choice = TemplateChoice.SaveAsNew }
                 }
                 if (choice == TemplateChoice.SaveAsNew) {
                     val shape = RoundedCornerShape(14.dp)
@@ -139,13 +142,13 @@ internal fun FinishWorkoutSheet(
                         textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.textPrimary),
                         cursorBrush = SolidColor(colors.primary),
                         modifier = Modifier.padding(top = 10.dp).fillMaxWidth().clip(shape).background(colors.surfaceRaised)
-                            .border(1.dp, colors.border, shape).padding(14.dp).semantics { contentDescription = "New template name" },
+                            .border(1.dp, colors.border, shape).padding(14.dp).semantics { contentDescription = newNameLabel },
                     )
                 }
             }
             Row(Modifier.padding(top = 18.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Pill("Keep going", filled = false, Modifier.weight(1f), onDismiss)
-                Pill("Finish", filled = true, Modifier.weight(1f)) {
+                Pill(LiveSheetsText.keepGoing.text(), filled = false, Modifier.weight(1f), onDismiss)
+                Pill(LiveSheetsText.finish.text(), filled = true, Modifier.weight(1f)) {
                     onFinish(if (template != null && changes.isNotEmpty()) choice else TemplateChoice.Keep, newName, countUnticked)
                 }
             }
@@ -172,12 +175,12 @@ private fun Stat(value: String, unit: String, label: String, modifier: Modifier,
 private fun ChangeLine(change: TemplateChange) {
     val colors = EmberTheme.colors
     val (icon, tint, text) = when (change) {
-        is TemplateChange.Added -> Triple(Icons.Rounded.Add, colors.success, "Added ${change.exerciseName}")
-        is TemplateChange.Skipped -> Triple(Icons.Rounded.Remove, colors.textTertiary, "Skipped ${change.exerciseName}")
+        is TemplateChange.Added -> Triple(Icons.Rounded.Add, colors.success, LiveSheetsText.changeAdded.text("name" to change.exerciseName))
+        is TemplateChange.Skipped -> Triple(Icons.Rounded.Remove, colors.textTertiary, LiveSheetsText.changeSkipped.text("name" to change.exerciseName))
         is TemplateChange.SetCount -> Triple(
             Icons.Rounded.SwapVert,
             colors.primaryText,
-            "${change.exerciseName}: ${change.done} ${if (change.done == 1) "set" else "sets"}, the template has ${change.planned}",
+            LiveSheetsText.changeSetCount.text(change.done, "name" to change.exerciseName, "planned" to change.planned),
         )
     }
     Row(Modifier.padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {

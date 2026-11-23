@@ -52,6 +52,7 @@ import com.lukr99.workout.ui.components.BodyPartTag
 import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
+import com.lukr99.workout.ui.i18n.LiveSheetsText
 
 /**
  * The menu behind an exercise card's three dots: the last three times you did it, then what you
@@ -104,37 +105,37 @@ internal fun ExerciseMenuSheet(
                             .clickable(role = Role.Button, onClick = act(onFullHistory)).padding(end = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text("Full history", fontWeight = FontWeight.SemiBold, color = colors.primaryText)
+                        Text(LiveSheetsText.fullHistory.text(), fontWeight = FontWeight.SemiBold, color = colors.primaryText)
                         Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = colors.primaryText, modifier = Modifier.size(20.dp))
                     }
                 }
             }
             Column(Modifier.padding(top = 8.dp)) {
                 if (entry.isStrength) {
-                    Action(Icons.Rounded.SwapHoriz, "Replace exercise", "Machine taken? Swap it and keep your logged sets.", onClick = act(onReplace))
+                    Action(Icons.Rounded.SwapHoriz, LiveSheetsText.replaceExercise.text(), LiveSheetsText.replaceHint.text(), onClick = act(onReplace))
                 }
                 when {
-                    options.inSuperset -> Action(Icons.Rounded.LinkOff, "Leave the superset", "Do it on its own again.", onClick = act(onSuperset))
-                    options.nextName != null -> Action(Icons.Rounded.Link, "Superset with next", "Pair it with ${options.nextName}.", onClick = act(onSuperset))
-                    options.previousName != null -> Action(Icons.Rounded.Link, "Superset with previous", "Pair it with ${options.previousName}.", onClick = act(onSuperset))
+                    options.inSuperset -> Action(Icons.Rounded.LinkOff, LiveSheetsText.leaveSuperset.text(), LiveSheetsText.leaveSupersetHint.text(), onClick = act(onSuperset))
+                    options.nextName != null -> Action(Icons.Rounded.Link, LiveSheetsText.supersetNext.text(), LiveSheetsText.pairWith.text("name" to options.nextName), onClick = act(onSuperset))
+                    options.previousName != null -> Action(Icons.Rounded.Link, LiveSheetsText.supersetPrevious.text(), LiveSheetsText.pairWith.text("name" to options.previousName), onClick = act(onSuperset))
                 }
-                if (options.canMoveUp) Action(Icons.Rounded.ArrowUpward, "Move up", null, onClick = act(onMoveUp))
-                if (options.canMoveDown) Action(Icons.Rounded.ArrowDownward, "Move down", null, onClick = act(onMoveDown))
-                Action(Icons.AutoMirrored.Rounded.NoteAdd, if (entry.notes.isBlank()) "Add a note for today" else "Edit today's note", null, onClick = act(onEditNote))
+                if (options.canMoveUp) Action(Icons.Rounded.ArrowUpward, LiveSheetsText.moveUp.text(), null, onClick = act(onMoveUp))
+                if (options.canMoveDown) Action(Icons.Rounded.ArrowDownward, LiveSheetsText.moveDown.text(), null, onClick = act(onMoveDown))
+                Action(Icons.AutoMirrored.Rounded.NoteAdd, if (entry.notes.isBlank()) LiveSheetsText.addNoteToday.text() else LiveSheetsText.editNoteToday.text(), null, onClick = act(onEditNote))
                 if (entry.isStrength && onEditLocationNote != null) {
                     Action(
                         Icons.Rounded.Place,
-                        if (hasLocationNote) "Edit the gym note" else "Add a gym note",
-                        "Seat, pulley or setup at ${locationName ?: "this gym"}. Kept for next time.",
+                        if (hasLocationNote) LiveSheetsText.editGymNote.text() else LiveSheetsText.addGymNote.text(),
+                        LiveSheetsText.gymNoteHint.text("place" to (locationName ?: LiveSheetsText.thisGym.text())),
                         onClick = act(onEditLocationNote),
                     )
                 }
-                if (options.hasGuide) Action(Icons.Rounded.Info, "How to do it", "Steps, your note and the guide link.", onClick = act(onShowGuide))
+                if (options.hasGuide) Action(Icons.Rounded.Info, LiveSheetsText.howToDoIt.text(), LiveSheetsText.howToDoItHint.text(), onClick = act(onShowGuide))
                 val done = entry.strengthSets.count { it.performedAtUtc != null }
                 Action(
                     Icons.Rounded.Delete,
-                    "Remove from workout",
-                    if (done > 0) "Its $done done ${if (done == 1) "set goes" else "sets go"} too." else null,
+                    LiveSheetsText.removeFromWorkout.text(),
+                    if (done > 0) LiveSheetsText.removeDoneSets.text(done) else null,
                     danger = true,
                     onClick = act(onRemove),
                 )
@@ -147,7 +148,7 @@ internal fun ExerciseMenuSheet(
 private fun History(outings: List<ExerciseOuting>?, units: UnitSystem) {
     val colors = EmberTheme.colors
     Text(
-        "LAST 3 TIMES",
+        LiveSheetsText.lastThreeTimes.text(),
         style = MaterialTheme.typography.labelLarge,
         fontWeight = FontWeight.SemiBold,
         letterSpacing = 1.sp,
@@ -156,8 +157,8 @@ private fun History(outings: List<ExerciseOuting>?, units: UnitSystem) {
     )
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(colors.surfaceRaised).padding(horizontal = 12.dp, vertical = 4.dp)) {
         when {
-            outings == null -> Text("Loading…", color = colors.textSecondary, modifier = Modifier.padding(vertical = 10.dp))
-            outings.isEmpty() -> Text("First time. Nothing logged yet.", color = colors.textSecondary, modifier = Modifier.padding(vertical = 10.dp))
+            outings == null -> Text(LiveSheetsText.loading.text(), color = colors.textSecondary, modifier = Modifier.padding(vertical = 10.dp))
+            outings.isEmpty() -> Text(LiveSheetsText.firstTime.text(), color = colors.textSecondary, modifier = Modifier.padding(vertical = 10.dp))
             else -> outings.forEachIndexed { index, outing ->
                 if (index > 0) Box(Modifier.fillMaxWidth().padding(vertical = 0.dp).heightIn(min = 1.dp).background(colors.border))
                 Row(Modifier.fillMaxWidth().padding(vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -175,7 +176,7 @@ private fun History(outings: List<ExerciseOuting>?, units: UnitSystem) {
     }
     if (!outings.isNullOrEmpty()) {
         Text(
-            "Right column: best estimated 1RM (${Format.unitLabel(units)})",
+            LiveSheetsText.rightColumn.text("unit" to Format.unitLabel(units)),
             style = MaterialTheme.typography.labelSmall,
             color = colors.textSecondary,
             modifier = Modifier.padding(top = 6.dp),

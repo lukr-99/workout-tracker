@@ -2,6 +2,7 @@ package com.lukr99.workout.ui.screens
 
 import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.WorkoutEntry
+import com.lukr99.workout.ui.i18n.LiveWorkoutText
 
 /** The next set to do: the first set not done, in the first strength exercise that is not finished. */
 internal fun nextSet(entries: List<WorkoutEntry>, doneIds: Set<String>): Pair<WorkoutEntry, StrengthSet>? =
@@ -13,7 +14,9 @@ internal fun nextSet(entries: List<WorkoutEntry>, doneIds: Set<String>): Pair<Wo
 internal fun nextSetLabel(entries: List<WorkoutEntry>, doneIds: Set<String>): String? {
     val (entry, set) = nextSet(entries, doneIds) ?: return null
     val started = entry.strengthSets.any { it.id in doneIds }
-    return if (started) "set ${entry.strengthSets.indexOf(set) + 1} of ${entry.strengthSets.size}" else entry.exerciseSnapshotName
+    return if (started) {
+        LiveWorkoutText.nextSetOf.now("n" to entry.strengthSets.indexOf(set) + 1, "total" to entry.strengthSets.size)
+    } else entry.exerciseSnapshotName
 }
 
 /**

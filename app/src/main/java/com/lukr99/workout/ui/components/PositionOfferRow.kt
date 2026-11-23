@@ -11,6 +11,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.lukr99.workout.ui.i18n.CommonText
+import com.lukr99.workout.ui.i18n.LocationText
 import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
@@ -25,12 +27,12 @@ fun PositionOfferRow(placeName: String, onSave: () -> Unit, onDismiss: () -> Uni
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(
-            "Save this spot as $placeName?",
+            LocationText.saveSpot.text("name" to placeName),
             style = MaterialTheme.typography.bodySmall,
             color = EmberTheme.colors.textSecondary,
             modifier = Modifier.weight(1f),
         )
-        TextButton(onClick = onSave) { Text("Save") }
-        TextButton(onClick = onDismiss) { Text("No") }
+        TextButton(onClick = onSave) { Text(CommonText.save.text()) }
+        TextButton(onClick = onDismiss) { Text(LocationText.no.text()) }
     }
 }

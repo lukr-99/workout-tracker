@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lukr99.workout.ui.i18n.ChartsText
 import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
 
@@ -51,7 +52,7 @@ fun ProgressChart(
 ) {
     if (points.isEmpty()) {
         Box(modifier.fillMaxWidth().height(height), contentAlignment = Alignment.Center) {
-            EmptyHint("No data yet")
+            EmptyHint(ChartsText.noData.text())
         }
         return
     }
@@ -147,7 +148,7 @@ fun VolumeBars(
     valueFormat: (Double) -> String = { it.toString() },
 ) {
     if (bars.isEmpty()) {
-        Box(modifier.fillMaxWidth().height(height), contentAlignment = Alignment.Center) { EmptyHint("No data yet") }
+        Box(modifier.fillMaxWidth().height(height), contentAlignment = Alignment.Center) { EmptyHint(ChartsText.noData.text()) }
         return
     }
     val maxV = bars.maxOf { it.value }.takeIf { it > 0.0 } ?: 1.0

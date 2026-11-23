@@ -38,6 +38,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lukr99.workout.ui.i18n.CommonText
+import com.lukr99.workout.ui.i18n.SetLoggingText
 import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
 
@@ -82,8 +84,8 @@ fun SetEntrySheet(
                 Text(subtitle, style = MaterialTheme.typography.bodyLarge, color = colors.textSecondary)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                FieldCell("Weight", state.weight, unitLabel, state.field == SetField.Weight) { state = state.select(SetField.Weight) }
-                FieldCell("Reps", state.reps, null, state.field == SetField.Reps) { state = state.select(SetField.Reps) }
+                FieldCell(SetLoggingText.weight.text(), state.weight, unitLabel, state.field == SetField.Weight) { state = state.select(SetField.Weight) }
+                FieldCell(SetLoggingText.reps.text(), state.reps, null, state.field == SetField.Reps) { state = state.select(SetField.Reps) }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val steps = if (state.field == SetField.Weight) listOf(-weightStep, weightStep, weightStep * 2) else listOf(-1.0, 1.0, 2.0)
@@ -110,7 +112,7 @@ fun SetEntrySheet(
                         .clickable(role = Role.Button) { state = state.select(if (toReps) SetField.Reps else SetField.Weight) },
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(if (toReps) "Next: reps" else "Back to weight", fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                    Text(if (toReps) SetLoggingText.nextReps.text() else SetLoggingText.backToWeight.text(), fontWeight = FontWeight.Bold, color = colors.textPrimary)
                 }
                 Row(
                     Modifier.weight(1f).height(54.dp).clip(RoundedCornerShape(27.dp)).background(colors.primary)
@@ -119,7 +121,7 @@ fun SetEntrySheet(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(Icons.Rounded.Check, null, tint = colors.onPrimary, modifier = Modifier.size(20.dp))
-                    Text("  OK", fontWeight = FontWeight.Bold, color = colors.onPrimary)
+                    Text("  " + CommonText.ok.text(), fontWeight = FontWeight.Bold, color = colors.onPrimary)
                 }
             }
         }
@@ -176,7 +178,7 @@ private fun RowScope.Key(key: String, enabled: Boolean, onClick: () -> Unit) {
         contentAlignment = Alignment.Center,
     ) {
         if (key == SetEntryState.BACKSPACE) {
-            Icon(Icons.AutoMirrored.Rounded.Backspace, "Delete", tint = colors.textPrimary)
+            Icon(Icons.AutoMirrored.Rounded.Backspace, CommonText.delete.text(), tint = colors.textPrimary)
         } else {
             Text(key, style = Numbers.copy(fontSize = 26.sp), color = if (enabled) colors.textPrimary else colors.textTertiary)
         }

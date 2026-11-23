@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui.screens
 
+import com.lukr99.workout.ui.i18n.WorkoutDetailText
 import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -22,7 +23,7 @@ fun rememberWorkoutSharer(): WorkoutSharer {
             override suspend fun prepareImage(session: WorkoutSession, imperial: Boolean): PreparedWorkoutShare {
                 val prepared = renderer.prepare(session, imperial)
                 return PreparedWorkoutShare(prepared.bitmap.asImageBitmap()) {
-                    runCatching { context.startActivity(Intent.createChooser(prepared.intent, "Share workout")) }.isSuccess
+                    runCatching { context.startActivity(Intent.createChooser(prepared.intent, WorkoutDetailText.shareChooserTitle.now())) }.isSuccess
                 }
             }
 
@@ -32,7 +33,7 @@ fun rememberWorkoutSharer(): WorkoutSharer {
                     putExtra(Intent.EXTRA_SUBJECT, subject)
                     putExtra(Intent.EXTRA_TEXT, text)
                 }
-                return runCatching { context.startActivity(Intent.createChooser(intent, "Share workout")) }.isSuccess
+                return runCatching { context.startActivity(Intent.createChooser(intent, WorkoutDetailText.shareChooserTitle.now())) }.isSuccess
             }
         }
     }

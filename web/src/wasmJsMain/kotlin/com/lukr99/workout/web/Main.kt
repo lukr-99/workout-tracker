@@ -19,6 +19,7 @@ import com.lukr99.workout.settings.AppSettings
 import com.lukr99.workout.settings.ThemeMode
 import com.lukr99.workout.ui.App
 import com.lukr99.workout.ui.components.LocalReduceMotion
+import com.lukr99.workout.ui.i18n.ProvideLanguage
 import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.WorkoutTheme
 import com.lukr99.workout.web.platform.rememberAppearance
@@ -48,22 +49,26 @@ fun main() {
         val container = AppContainer(storage)
         // The saved theme is read before the first frame, so the canvas never starts in the wrong one.
         val firstSettings = container.settings.settings.first()
+        val firstLanguage = container.devicePrefs.language.first()
         CanvasBasedWindow(canvasElementId = "ember", title = "Ember") {
             // The same theme and motion setup as Android's MainActivity.
             val settings by container.settings.settings.collectAsState(initial = firstSettings)
+            val language by container.devicePrefs.language.collectAsState(initial = firstLanguage)
             val dark = when (settings.themeMode) {
                 ThemeMode.System -> isSystemInDarkTheme()
                 ThemeMode.Dark -> true
                 ThemeMode.Light -> false
             }
             LaunchedEffect(settings.themeMode, settings.accent) { rememberAppearance(settings.themeMode, settings.accent) }
-            WorkoutTheme(dark = dark, accent = settings.accent) {
-                CompositionLocalProvider(LocalReduceMotion provides settings.reduceMotion) {
-                    Box(Modifier.fillMaxSize().background(EmberTheme.colors.background).padding(rememberSafeAreaPadding())) {
-                        App(container)
-                        Column(Modifier.align(Alignment.TopCenter)) {
-                            StorageBanner(storage)
-                            InstallNote()
+            ProvideLanguage(language) {
+                WorkoutTheme(dark = dark, accent = settings.accent) {
+                    CompositionLocalProvider(LocalReduceMotion provides settings.reduceMotion) {
+                        Box(Modifier.fillMaxSize().background(EmberTheme.colors.background).padding(rememberSafeAreaPadding())) {
+                            App(container)
+                            Column(Modifier.align(Alignment.TopCenter)) {
+                                StorageBanner(storage)
+                                InstallNote()
+                            }
                         }
                     }
                 }

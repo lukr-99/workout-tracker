@@ -1,5 +1,7 @@
 package com.lukr99.workout.ui.run
 
+import com.lukr99.workout.ui.i18n.CommonText
+import com.lukr99.workout.ui.i18n.RunText
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -56,6 +58,8 @@ fun RoutePlannerScreen(
     val snapped by vm.snapped.collectAsState()
     val snapping by vm.snapping.collectAsState()
     val ember = MaterialTheme.colorScheme.primary.toArgb()
+    val savedText = RunText.routeSaved.text()
+    val saveFailedText = RunText.routeSaveFailed.text()
     var naming by remember { mutableStateOf(false) }
 
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -68,14 +72,14 @@ fun RoutePlannerScreen(
             modifier = Modifier.fillMaxSize(),
         )
 
-        CircleIcon(Icons.AutoMirrored.Rounded.ArrowBack, "Back", Modifier.align(Alignment.TopStart).padding(12.dp)) { onBack() }
+        CircleIcon(Icons.AutoMirrored.Rounded.ArrowBack, CommonText.back.text(), Modifier.align(Alignment.TopStart).padding(12.dp)) { onBack() }
 
         // Hint / snapping chip.
         Text(
             when {
-                snapping -> "Snapping to roads…"
-                waypoints.isEmpty() -> "Tap the map to drop waypoints"
-                waypoints.size == 1 -> "Tap again to draw a route"
+                snapping -> RunText.snapping.text()
+                waypoints.isEmpty() -> RunText.tapToDrop.text()
+                waypoints.size == 1 -> RunText.tapAgain.text()
                 else -> Format.distance(vm.distanceMeters, units)
             },
             style = MaterialTheme.typography.labelLarge,
@@ -101,7 +105,7 @@ fun RoutePlannerScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             PillButton(
-                label = "Undo",
+                label = RunText.undo.text(),
                 icon = Icons.AutoMirrored.Rounded.Undo,
                 container = MaterialTheme.colorScheme.surface,
                 content = MaterialTheme.colorScheme.onSurface,
@@ -109,7 +113,7 @@ fun RoutePlannerScreen(
                 modifier = Modifier.weight(1f),
             ) { vm.undo() }
             PillButton(
-                label = "Save route",
+                label = RunText.saveRoute.text(),
                 icon = null,
                 container = MaterialTheme.colorScheme.primary,
                 content = MaterialTheme.colorScheme.onPrimary,
@@ -127,7 +131,7 @@ fun RoutePlannerScreen(
                 naming = false
                 scope.launch {
                     val saved = vm.save(name)
-                    toast(if (saved != null) "Route saved" else "Couldn't save route")
+                    toast(if (saved != null) savedText else saveFailedText)
                     if (saved != null) onBack()
                 }
             },
@@ -140,7 +144,7 @@ private fun NameRouteDialog(defaultDistance: String, onDismiss: () -> Unit, onSa
     var text by remember { mutableStateOf("") }
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Save route") },
+        title = { Text(RunText.saveRoute.text()) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(defaultDistance, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -148,12 +152,12 @@ private fun NameRouteDialog(defaultDistance: String, onDismiss: () -> Unit, onSa
                     value = text,
                     onValueChange = { text = it },
                     singleLine = true,
-                    placeholder = { Text("River loop") },
+                    placeholder = { Text(RunText.routeNamePlaceholder.text()) },
                 )
             }
         },
-        confirmButton = { androidx.compose.material3.TextButton(onClick = { onSave(text) }) { Text("Save") } },
-        dismissButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = { onSave(text) }) { Text(CommonText.save.text()) } },
+        dismissButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text(CommonText.cancel.text()) } },
     )
 }
 

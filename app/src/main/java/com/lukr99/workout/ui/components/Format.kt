@@ -7,6 +7,7 @@ import com.lukr99.workout.domain.dateIn
 import com.lukr99.workout.domain.localDecimal
 import com.lukr99.workout.domain.nowMillis
 import com.lukr99.workout.domain.padded
+import com.lukr99.workout.ui.i18n.CommonText
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -90,9 +91,9 @@ object Format {
         val day = localDay(millis)
         val today = localDay(nowMillis)
         return when (val days = today.toEpochDays() - day.toEpochDays()) {
-            0 -> "Today"
-            1 -> "Yesterday"
-            in 2..6 -> "$days days ago"
+            0 -> CommonText.today.now()
+            1 -> CommonText.yesterday.now()
+            in 2..6 -> CommonText.daysAgo.now(days.toInt())
             else -> localDateText(day, if (day.year == today.year) DateStyle.ShortDay else DateStyle.DayYear)
         }
     }

@@ -53,6 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lukr99.workout.ui.i18n.AboutText
 import com.lukr99.workout.ui.AppTags
 import com.lukr99.workout.ui.components.rememberReduceMotion
 import com.lukr99.workout.ui.theme.BarlowCondensed
@@ -89,7 +90,7 @@ fun AboutAuthorCard(modifier: Modifier = Modifier) {
     ) {
         PlateMonogram(AuthorLinks.initials())
         Text(
-            "MADE BY",
+            AboutText.madeBy.text(),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
             letterSpacing = 2.4.sp,
@@ -104,7 +105,7 @@ fun AboutAuthorCard(modifier: Modifier = Modifier) {
             modifier = Modifier.padding(top = 2.dp).semantics { heading() },
         )
         Text(
-            "I built Ember for my own training, and I keep making it better.",
+            AboutText.authorBlurb.text(),
             style = MaterialTheme.typography.bodyMedium,
             color = colors.textSecondary,
             textAlign = TextAlign.Center,
@@ -114,13 +115,13 @@ fun AboutAuthorCard(modifier: Modifier = Modifier) {
         PlateDivider(Modifier.padding(vertical = 20.dp))
 
         Text(
-            "Tell me what you think",
+            AboutText.feedbackTitle.text(),
             style = MaterialTheme.typography.titleLarge,
             color = colors.textPrimary,
             modifier = Modifier.semantics { heading() },
         )
         Text(
-            "Feedback is welcome: what works, what does not, what is missing.",
+            AboutText.feedbackBody.text(),
             style = MaterialTheme.typography.bodyLarge,
             color = colors.textPrimary,
             textAlign = TextAlign.Center,
@@ -168,6 +169,7 @@ private fun ProfileButton(
     val colors = EmberTheme.colors
     val shape = RoundedCornerShape(16.dp)
     val ink = if (filled) colors.onPrimary else colors.textPrimary
+    val description = AboutText.profileDescription.text("site" to site, "handle" to handle)
     Row(
         modifier
             .heightIn(min = 60.dp)
@@ -175,7 +177,7 @@ private fun ProfileButton(
             .background(if (filled) colors.primary else colors.surface)
             .then(if (filled) Modifier else Modifier.border(1.5.dp, colors.primary.copy(alpha = 0.6f), shape))
             .clickable(role = Role.Button, onClick = onClick)
-            .semantics { contentDescription = "$site, $handle. Opens in the browser." }
+            .semantics { contentDescription = description }
             .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -208,8 +210,8 @@ private fun IssuesLink(onClick: () -> Unit, modifier: Modifier) {
     ) {
         Icon(Icons.Rounded.BugReport, contentDescription = null, tint = colors.primaryText, modifier = Modifier.size(22.dp))
         Column(Modifier.weight(1f)) {
-            Text("Report a bug or an idea", style = MaterialTheme.typography.titleMedium, color = colors.textPrimary)
-            Text("Ember's issues page on GitHub", style = MaterialTheme.typography.labelLarge, color = colors.textSecondary)
+            Text(AboutText.reportTitle.text(), style = MaterialTheme.typography.titleMedium, color = colors.textPrimary)
+            Text(AboutText.reportHint.text(), style = MaterialTheme.typography.labelLarge, color = colors.textSecondary)
         }
         Icon(Icons.AutoMirrored.Rounded.OpenInNew, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(18.dp))
     }

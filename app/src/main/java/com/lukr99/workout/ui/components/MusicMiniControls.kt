@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.lukr99.workout.ui.i18n.CardsText
 
 /**
  * The minimal, shared music control (R4) hosted on **both** the live run and live lift screens —
@@ -44,14 +45,14 @@ fun MusicMiniControls(modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
         ) {
-            TransportButton(Icons.Rounded.SkipPrevious, "Previous", transport.previous)
+            TransportButton(Icons.Rounded.SkipPrevious, CardsText.previous.text(), transport.previous)
             TransportButton(
                 if (transport.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                if (transport.isPlaying) "Pause" else "Play",
+                if (transport.isPlaying) CardsText.pause.text() else CardsText.play.text(),
                 transport.playPause,
                 primary = true,
             )
-            TransportButton(Icons.Rounded.SkipNext, "Next", transport.next)
+            TransportButton(Icons.Rounded.SkipNext, CardsText.next.text(), transport.next)
         }
     } else {
         // Small, unobtrusive note button — tap to open Spotify.
@@ -62,7 +63,7 @@ fun MusicMiniControls(modifier: Modifier = Modifier) {
             contentAlignment = Alignment.Center,
         ) {
             Icon(
-                Icons.Rounded.MusicNote, "Open Spotify",
+                Icons.Rounded.MusicNote, CardsText.openSpotify.text(),
                 tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp),
             )
         }

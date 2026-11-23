@@ -1,5 +1,7 @@
 package com.lukr99.workout.ui.run
 
+import com.lukr99.workout.ui.i18n.CommonText
+import com.lukr99.workout.ui.i18n.RunText
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -46,11 +48,11 @@ internal fun FinishSummarySheet(
                 .padding(22.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text("Run saved", color = MaterialTheme.colorScheme.onSurface, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text(RunText.runSaved.text(), color = MaterialTheme.colorScheme.onSurface, fontSize = 22.sp, fontWeight = FontWeight.Bold)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                RunMetric("Distance", Format.distance(summary.distanceMeters, units))
-                RunMetric("Time", Pace.formatDuration(summary.movingSeconds))
-                RunMetric("Pace", runPaceLabel(summary.avgPaceSecPerKm, units))
+                RunMetric(RunText.distance.text(), Format.distance(summary.distanceMeters, units))
+                RunMetric(RunText.time.text(), Pace.formatDuration(summary.movingSeconds))
+                RunMetric(RunText.pace.text(), runPaceLabel(summary.avgPaceSecPerKm, units))
             }
             if (summary.newRecords.isNotEmpty()) {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -58,7 +60,7 @@ internal fun FinishSummarySheet(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("🏅", fontSize = 16.sp)
                             Text(
-                                "  New record · ${prLabel(pr)}",
+                                "  " + RunText.newRecord.text("label" to prLabel(pr)),
                                 color = MaterialTheme.colorScheme.primary,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.SemiBold,
@@ -73,20 +75,21 @@ internal fun FinishSummarySheet(
                     .padding(vertical = 15.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("Done", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+                Text(CommonText.done.text(), color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
             }
         }
     }
 }
 
+@Composable
 private fun prLabel(pr: RunStats.PrKind): String = when (pr) {
-    RunStats.PrKind.Fastest1k -> "Fastest 1K"
-    RunStats.PrKind.Fastest5k -> "Fastest 5K"
-    RunStats.PrKind.Fastest10k -> "Fastest 10K"
-    RunStats.PrKind.FastestHalf -> "Fastest half marathon"
-    RunStats.PrKind.LongestRun -> "Longest run"
-    RunStats.PrKind.MostElevation -> "Most elevation"
-    RunStats.PrKind.BestAvgPace -> "Best average pace"
+    RunStats.PrKind.Fastest1k -> RunText.prFastest1k.text()
+    RunStats.PrKind.Fastest5k -> RunText.prFastest5k.text()
+    RunStats.PrKind.Fastest10k -> RunText.prFastest10k.text()
+    RunStats.PrKind.FastestHalf -> RunText.prFastestHalf.text()
+    RunStats.PrKind.LongestRun -> RunText.prLongestRun.text()
+    RunStats.PrKind.MostElevation -> RunText.prMostElevation.text()
+    RunStats.PrKind.BestAvgPace -> RunText.prBestAvgPace.text()
 }
 
 @Composable
@@ -108,11 +111,11 @@ internal fun FinishSheet(
                 .padding(22.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text("Finish run?", color = MaterialTheme.colorScheme.onSurface, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Text(RunText.finishRunQuestion.text(), color = MaterialTheme.colorScheme.onSurface, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                RunMetric("Distance", Format.distance(state.distanceMeters, units))
-                RunMetric("Time", Pace.formatDuration(state.movingSeconds))
-                RunMetric("Pace", runPaceLabel(state.avgPaceSecPerKm, units))
+                RunMetric(RunText.distance.text(), Format.distance(state.distanceMeters, units))
+                RunMetric(RunText.time.text(), Pace.formatDuration(state.movingSeconds))
+                RunMetric(RunText.pace.text(), runPaceLabel(state.avgPaceSecPerKm, units))
             }
             Box(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
@@ -120,11 +123,11 @@ internal fun FinishSheet(
                     .padding(vertical = 15.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("Save run", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+                Text(RunText.saveRun.text(), color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SecondaryButton("Keep running", Modifier.weight(1f), onCancel)
-                SecondaryButton("Discard", Modifier.weight(1f), onDiscard)
+                SecondaryButton(RunText.keepRunning.text(), Modifier.weight(1f), onCancel)
+                SecondaryButton(RunText.discard.text(), Modifier.weight(1f), onDiscard)
             }
         }
     }

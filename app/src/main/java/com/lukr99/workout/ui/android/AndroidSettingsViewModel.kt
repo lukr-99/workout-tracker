@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui.android
 
+import com.lukr99.workout.ui.i18n.DeviceSettingsText
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -76,7 +77,7 @@ class AndroidSettingsViewModel(
                 val summary = withContext(Dispatchers.IO) { wgerSync.sync(WgerSyncOptions()) }
                 CatalogSyncState.Done(summary)
             } catch (t: Throwable) {
-                CatalogSyncState.Failed(t.message ?: "Sync failed")
+                CatalogSyncState.Failed(t.message ?: DeviceSettingsText.catalogSyncFailed.now())
             }
         }
     }
@@ -103,7 +104,7 @@ class AndroidSettingsViewModel(
                 healthConnectState.value.copy(
                     refreshing = false,
                     connected = false,
-                    error = t.message ?: "Could not check Health Connect",
+                    error = t.message ?: DeviceSettingsText.healthCheckFailed.now(),
                 )
             }
         }
@@ -141,7 +142,7 @@ class AndroidSettingsViewModel(
             } catch (t: Throwable) {
                 healthConnectState.value.copy(
                     operation = null,
-                    error = t.message ?: "Health Connect sync failed",
+                    error = t.message ?: DeviceSettingsText.healthSyncFailed.now(),
                 )
             }
         }
@@ -192,7 +193,7 @@ class AndroidSettingsViewModel(
             try {
                 withContext(Dispatchers.IO) { action() }
             } catch (t: Throwable) {
-                backupErrorState.value = t.message ?: "Could not update automatic backup"
+                backupErrorState.value = t.message ?: DeviceSettingsText.backupUpdateFailed.now()
             } finally {
                 backupBusyState.value = false
             }

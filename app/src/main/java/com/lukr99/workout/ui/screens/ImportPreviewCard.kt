@@ -28,6 +28,8 @@ import com.lukr99.workout.data.transfer.TransferIssueSeverity
 import com.lukr99.workout.ui.components.ConfirmDialog
 import com.lukr99.workout.ui.components.FilterChip
 import com.lukr99.workout.ui.components.Format
+import com.lukr99.workout.ui.i18n.CommonText
+import com.lukr99.workout.ui.i18n.DataText
 
 /**
  * The import preview: what the file holds, Merge or Replace for an Ember backup, the issues found,
@@ -47,33 +49,39 @@ fun ImportPreviewCard(
 
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Import preview", style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
+            Text(DataText.previewTitle.text(), style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
             backupLine(summary.metadata)?.let {
                 Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Text(
-                "${summary.parsedSessions} workouts · ${summary.setCount} sets and activities · " +
-                    "${summary.insertedExercises} ${if (replacing) "exercises" else "new exercises"}",
+                DataText.workoutsCount.text(summary.parsedSessions) + " · " +
+                    DataText.setsAndActivities.text(summary.setCount) + " · " +
+                    (if (replacing) DataText.exercisesCount else DataText.newExercisesCount).text(summary.insertedExercises),
             )
             if (!replacing) {
                 Text(
-                    "${summary.insertedSessions} new · ${summary.changedSessions} changed · " +
-                        "${summary.skippedSessions} already here",
+                    DataText.sessionsNewChanged.text(
+                        "added" to summary.insertedSessions,
+                        "changed" to summary.changedSessions,
+                        "skipped" to summary.skippedSessions,
+                    ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             if (summary.insertedRuns > 0 || summary.insertedRoutes > 0 || summary.photos > 0) {
                 Text(
-                    "${summary.insertedRuns} runs · ${summary.insertedRoutes} routes · ${summary.photos} photos",
+                    DataText.runsCount.text(summary.insertedRuns) + " · " +
+                        DataText.routesCount.text(summary.insertedRoutes) + " · " +
+                        DataText.photosCount.text(summary.photos),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
             if (preview.plan.format == DataFormat.WorkoutJson) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip("Merge", !replacing, { onMode(RestoreMode.Merge) })
+                    FilterChip(DataText.merge.text(), !replacing, { onMode(RestoreMode.Merge) })
                     FilterChip(
-                        "Replace everything",
+                        DataText.replaceEverything.text(),
                         replacing,
                         { onMode(RestoreMode.Replace) },
                         accent = MaterialTheme.colorScheme.error,
@@ -81,10 +89,9 @@ fun ImportPreviewCard(
                 }
                 Text(
                     if (replacing) {
-                        "Deletes everything on this phone first, then restores this backup exactly as it " +
-                            "was saved, settings and photos included." + (preview.plan.replaces?.let { " ${lossLine(it)}" } ?: "")
+                        DataText.replaceHint.text() + (preview.plan.replaces?.let { " ${lossLine(it)}" } ?: "")
                     } else {
-                        "Adds what is new and merges what matches. Nothing on this phone is removed."
+                        DataText.mergeHint.text()
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = if (replacing) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -110,18 +117,18 @@ fun ImportPreviewCard(
                     } else {
                         ButtonDefaults.buttonColors()
                     },
-                ) { Text(if (replacing) "Replace my data" else "Import") }
-                OutlinedButton(onClick = onCancel) { Text("Cancel") }
+                ) { Text(if (replacing) DataText.replaceMyData.text() else DataText.importButton.text()) }
+                OutlinedButton(onClick = onCancel) { Text(CommonText.cancel.text()) }
             }
         }
     }
 
     if (confirmReplace) {
         ConfirmDialog(
-            title = "Replace all your data?",
+            title = DataText.replaceDialogTitle.text(),
             message = (preview.plan.replaces?.let { lossLine(it) + " " } ?: "") +
-                "The backup takes their place. This cannot be undone. Save a backup first if you are not sure.",
-            confirmLabel = "Replace",
+                DataText.replaceDialogMessage.text(),
+            confirmLabel = DataText.replace.text(),
             destructive = true,
             onConfirm = onCommit,
             onDismiss = { confirmReplace = false },
@@ -130,16 +137,23 @@ fun ImportPreviewCard(
 }
 
 /** "This deletes 120 workouts, 30 runs, ..." for the current store. */
+@Composable
 internal fun lossLine(counts: StoreCounts): String =
-    "This deletes ${counts.workouts} workouts, ${counts.runs} runs, ${counts.routes} routes, " +
-        "${counts.templates} templates and ${counts.exercises} exercises."
+    DataText.lossLine.text(
+        "workouts" to DataText.workoutsCount.text(counts.workouts),
+        "runs" to DataText.runsCount.text(counts.runs),
+        "routes" to DataText.routesCount.text(counts.routes),
+        "templates" to DataText.templatesCount.text(counts.templates),
+        "exercises" to DataText.exercisesCount.text(counts.exercises),
+    )
 
+@Composable
 private fun backupLine(metadata: Map<String, String>): String? {
     val version = metadata["appVersion"]
     val exported = metadata["exportedAtUtc"]?.let { runCatching { kotlinx.datetime.Instant.parse(it).toEpochMilliseconds() }.getOrNull() }
     return when {
-        version != null && exported != null -> "Ember $version backup from ${Format.fullDate(exported)}"
-        exported != null -> "Backup from ${Format.fullDate(exported)}"
+        version != null && exported != null -> DataText.emberBackupFrom.text("version" to version, "date" to Format.fullDate(exported))
+        exported != null -> DataText.backupFrom.text("date" to Format.fullDate(exported))
         else -> null
     }
 }

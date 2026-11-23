@@ -20,6 +20,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.lukr99.workout.ui.i18n.LocationText
 import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
@@ -45,13 +46,13 @@ fun SplitPromptCard(
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Text(
-            "Track $exerciseName separately per gym?",
+            LocationText.splitTitle.text("name" to exerciseName),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = colors.textPrimary,
         )
         Text(
-            "$detail. Per gym, last time, records and progress only count workouts at this gym.",
+            LocationText.splitBody.text("detail" to detail),
             style = MaterialTheme.typography.bodySmall,
             color = colors.textSecondary,
         )
@@ -60,9 +61,9 @@ fun SplitPromptCard(
             Modifier.fillMaxWidth().padding(top = 2.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
         ) {
-            CardButton("Don't ask again", filled = false, onClick = onNever)
-            CardButton("Not now", filled = false, onClick = onNotNow)
-            CardButton("Track per gym", filled = true, onClick = onTrack)
+            CardButton(LocationText.dontAskAgain.text(), filled = false, onClick = onNever)
+            CardButton(LocationText.notNow.text(), filled = false, onClick = onNotNow)
+            CardButton(LocationText.trackPerGym.text(), filled = true, onClick = onTrack)
         }
     }
 }

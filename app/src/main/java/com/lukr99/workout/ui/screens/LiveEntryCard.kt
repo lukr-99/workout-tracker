@@ -49,6 +49,7 @@ import com.lukr99.workout.ui.components.BodyPartTag
 import com.lukr99.workout.ui.stats
 import com.lukr99.workout.ui.statsSummary
 import com.lukr99.workout.ui.theme.EmberTheme
+import com.lukr99.workout.ui.i18n.LiveWorkoutText
 
 /** One exercise in the live workout: header, notes, sets (or cardio) and its start/finish action. */
 @Composable
@@ -97,7 +98,7 @@ fun LiveEntryCard(
             if (entry.supersetGroup != null) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        "SUPERSET · ${supersetPosition ?: 1} OF $supersetSize",
+                        LiveWorkoutText.supersetPosition.text("n" to (supersetPosition ?: 1), "total" to supersetSize),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.SemiBold,
@@ -107,7 +108,7 @@ fun LiveEntryCard(
                     if (supersetPosition == 1) {
                         TextButton(onClick = actions.onEditSuperset) {
                             Icon(Icons.Rounded.Edit, null, modifier = Modifier.size(14.dp))
-                            Text(" Edit")
+                            Text(" " + LiveWorkoutText.edit.text())
                         }
                     }
                 }
@@ -139,7 +140,7 @@ fun LiveEntryCard(
                 )
                 stats.bestSet?.let { best ->
                     Text(
-                        "Best set ${best.reps} × ${Format.weightWithUnit(best.weightKg, entryUnits)}",
+                        LiveWorkoutText.bestSet.text("reps" to best.reps, "weight" to Format.weightWithUnit(best.weightKg, entryUnits)),
                         style = MaterialTheme.typography.labelMedium,
                         color = EmberTheme.colors.textSecondary,
                     )
@@ -172,7 +173,7 @@ fun LiveEntryCard(
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(18.dp),
                     )
-                    Text(" Add set", color = MaterialTheme.colorScheme.primary)
+                    Text(" " + LiveWorkoutText.addSet.text(), color = MaterialTheme.colorScheme.primary)
                 }
             } else {
                 CardioEditor(
@@ -185,20 +186,20 @@ fun LiveEntryCard(
                     if (entry.notes.isBlank()) {
                         TextButton(onClick = actions.onEditNote) {
                             Icon(Icons.AutoMirrored.Rounded.NoteAdd, null, modifier = Modifier.size(18.dp))
-                            Text(" Add note")
+                            Text(" " + LiveWorkoutText.addNote.text())
                         }
                     }
                     Spacer(Modifier.weight(1f))
                     when {
                         entry.completedAtUtc != null -> TextButton(onClick = actions.onReopen) {
-                            Text("Reopen exercise")
+                            Text(LiveWorkoutText.reopenExercise.text())
                         }
                         entry.startedAtUtc == null -> TextButton(onClick = actions.onStart) {
                             Icon(Icons.Rounded.PlayArrow, null, modifier = Modifier.size(18.dp))
-                            Text(" Start exercise")
+                            Text(" " + LiveWorkoutText.startExercise.text())
                         }
                         else -> TextButton(onClick = actions.onFinish) {
-                            Text("Finish exercise", fontWeight = FontWeight.SemiBold)
+                            Text(LiveWorkoutText.finishExercise.text(), fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
@@ -229,9 +230,9 @@ private fun EntryHeader(
             }
             Text(
                 when {
-                    entry.completedAtUtc != null -> "Finished · ${Format.duration(durationSeconds)}"
-                    entry.startedAtUtc != null -> "In progress · ${Format.duration(durationSeconds)}"
-                    else -> "Not started"
+                    entry.completedAtUtc != null -> LiveWorkoutText.statusFinished.text("time" to Format.duration(durationSeconds))
+                    entry.startedAtUtc != null -> LiveWorkoutText.statusInProgress.text("time" to Format.duration(durationSeconds))
+                    else -> LiveWorkoutText.statusNotStarted.text()
                 },
                 style = MaterialTheme.typography.labelSmall,
                 color = if (entry.completedAtUtc != null) MaterialTheme.colorScheme.primary else EmberTheme.colors.textSecondary,
@@ -246,18 +247,18 @@ private fun EntryHeader(
             IconButton(onClick = actions.onToggleCollapsed) {
                 Icon(
                     if (collapsed) Icons.Rounded.ExpandMore else Icons.Rounded.ExpandLess,
-                    if (collapsed) "Expand finished exercise" else "Collapse finished exercise",
+                    if (collapsed) LiveWorkoutText.expandFinished.text() else LiveWorkoutText.collapseFinished.text(),
                     tint = EmberTheme.colors.textSecondary,
                 )
             }
         }
         if (hasGuide) {
             IconButton(onClick = actions.onShowGuide) {
-                Icon(Icons.Rounded.Info, "How to do ${entry.exerciseSnapshotName}", tint = EmberTheme.colors.textSecondary)
+                Icon(Icons.Rounded.Info, LiveWorkoutText.howToDo.text("name" to entry.exerciseSnapshotName), tint = EmberTheme.colors.textSecondary)
             }
         }
         IconButton(onClick = actions.onOpenMenu) {
-            Icon(Icons.Rounded.MoreVert, "More for ${entry.exerciseSnapshotName}", tint = EmberTheme.colors.textSecondary)
+            Icon(Icons.Rounded.MoreVert, LiveWorkoutText.moreFor.text("name" to entry.exerciseSnapshotName), tint = EmberTheme.colors.textSecondary)
         }
     }
 }

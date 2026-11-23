@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui
 
+import com.lukr99.workout.ui.i18n.AppText
 import com.lukr99.workout.data.WorkoutRepository
 import com.lukr99.workout.domain.LocationSplitHeuristic
 import com.lukr99.workout.domain.WorkoutSession
@@ -35,7 +36,7 @@ class SplitPrompts(
             exerciseName = entry.exerciseSnapshotName.ifBlank { exercise.name },
             hereKg = suggestion.hereTopKg,
             otherKg = suggestion.otherTopKg,
-            otherLocationName = repo.getLocation(suggestion.otherLocationId)?.name ?: "another gym",
+            otherLocationName = repo.getLocation(suggestion.otherLocationId)?.name ?: AppText.anotherGym.now(),
         )
     }
 }

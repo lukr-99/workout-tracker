@@ -1,3 +1,27 @@
 <resources>
     <string name="app_name">Ember</string>
+
+    <string name="claude_share_title">Claude asks for your training data</string>
+    <string name="claude_share_text">Share your workouts, runs and templates for 30 minutes?</string>
+    <string name="claude_share_big">Claude asks to read your workouts, runs, exercises and templates. They stay on your Claude server for 30 minutes and are then deleted.</string>
+    <string name="claude_action_allow">Allow</string>
+    <string name="claude_action_deny">Deny</string>
+    <plurals name="claude_inbox_title">
+        <item quantity="one">Claude proposed something</item>
+        <item quantity="other">Claude proposed %1$d things</item>
+    </plurals>
+    <string name="claude_inbox_text">Accept or reject in Settings, Claude.</string>
+    <string name="claude_channel_requests">Claude\'s requests</string>
+    <string name="claude_channel_requests_description">When Claude asks to read your training data</string>
+    <string name="claude_channel_proposals">Claude\'s proposals</string>
+    <string name="claude_channel_proposals_description">Templates and exercises Claude proposed</string>
+
+    <string name="run_notification_paused">Run paused</string>
+    <string name="run_notification_recording">Recording run</string>
+    <string name="run_notification_text">%1$s km · %2$s · %3$s /km</string>
+    <string name="run_notification_resume">Resume</string>
+    <string name="run_notification_pause">Pause</string>
+    <string name="run_notification_finish">Finish</string>
+    <string name="run_channel_name">Run tracking</string>
+    <string name="run_channel_description">Ongoing notification while a run is being recorded.</string>
 </resources>

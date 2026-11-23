@@ -42,6 +42,7 @@ import com.lukr99.workout.domain.WorkoutTemplate
 import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.theme.Accents
 import com.lukr99.workout.ui.theme.EmberTheme
+import com.lukr99.workout.ui.i18n.LiveWorkoutText
 
 /**
  * What an empty workout shows: a big "Add exercises" target, your recent exercises as chips that add
@@ -79,17 +80,17 @@ internal fun EmptyWorkoutStart(
             Box(Modifier.size(50.dp).clip(CircleShape).background(colors.primary), contentAlignment = Alignment.Center) {
                 Icon(Icons.Rounded.Add, null, tint = colors.onPrimary, modifier = Modifier.size(26.dp))
             }
-            Text("Add exercises", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = colors.textPrimary, modifier = Modifier.padding(top = 6.dp))
-            Text("Search the library, or type a new name", style = MaterialTheme.typography.labelLarge, color = colors.textSecondary)
+            Text(LiveWorkoutText.addExercises.text(), fontWeight = FontWeight.Bold, fontSize = 17.sp, color = colors.textPrimary, modifier = Modifier.padding(top = 6.dp))
+            Text(LiveWorkoutText.searchOrType.text(), style = MaterialTheme.typography.labelLarge, color = colors.textSecondary)
         }
         if (recent.isNotEmpty()) {
-            SectionLabel("Recent, tap to add")
+            SectionLabel(LiveWorkoutText.recentTapToAdd.text())
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 recent.forEach { exercise ->
                     val shape = RoundedCornerShape(50)
                     Row(
                         Modifier.heightIn(min = 40.dp).clip(shape).background(colors.surface).border(1.dp, colors.border, shape)
-                            .clickable(role = Role.Button, onClickLabel = "Add ${exercise.name}") { onQuickAdd(exercise) }
+                            .clickable(role = Role.Button, onClickLabel = LiveWorkoutText.addName.text("name" to exercise.name)) { onQuickAdd(exercise) }
                             .padding(start = 10.dp, end = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(7.dp),
@@ -102,7 +103,7 @@ internal fun EmptyWorkoutStart(
             }
         }
         if (repeatable.isNotEmpty()) {
-            SectionLabel("Repeat a workout")
+            SectionLabel(LiveWorkoutText.repeatWorkout.text())
             val shape = RoundedCornerShape(20.dp)
             Column(Modifier.fillMaxWidth().clip(shape).background(colors.surface).border(1.dp, colors.border, shape)) {
                 repeatable.forEachIndexed { index, past ->
@@ -112,7 +113,7 @@ internal fun EmptyWorkoutStart(
             }
         }
         if (templates.isNotEmpty()) {
-            SectionLabel("Or switch to a template")
+            SectionLabel(LiveWorkoutText.orSwitchTemplate.text())
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 templates.forEach { template ->
                     val shape = RoundedCornerShape(50)
@@ -123,7 +124,7 @@ internal fun EmptyWorkoutStart(
                         color = colors.textPrimary,
                         maxLines = 1,
                         modifier = Modifier.heightIn(min = 40.dp).clip(shape).border(1.dp, colors.border, shape)
-                            .clickable(role = Role.Button, onClickLabel = "Switch to ${template.name}") { onSwitch(template) }
+                            .clickable(role = Role.Button, onClickLabel = LiveWorkoutText.switchToName.text("name" to template.name)) { onSwitch(template) }
                             .padding(horizontal = 14.dp, vertical = 10.dp),
                     )
                 }
@@ -157,7 +158,7 @@ private fun RepeatRow(past: WorkoutSession, onRepeat: (WorkoutSession) -> Unit) 
         Column(Modifier.weight(1f)) {
             Text(past.name, fontWeight = FontWeight.SemiBold, color = colors.textPrimary, maxLines = 1)
             Text(
-                "${Format.relativeDay(past.completedDateUtc ?: past.startedAtUtc)} \u00b7 $count ${if (count == 1) "exercise" else "exercises"}",
+                LiveWorkoutText.dayAndExercises.text(count, "day" to Format.relativeDay(past.completedDateUtc ?: past.startedAtUtc)),
                 style = MaterialTheme.typography.labelLarge,
                 color = colors.textSecondary,
             )
@@ -165,13 +166,13 @@ private fun RepeatRow(past: WorkoutSession, onRepeat: (WorkoutSession) -> Unit) 
         val shape = RoundedCornerShape(50)
         Row(
             Modifier.heightIn(min = 40.dp).clip(shape).background(colors.surfaceRaised).border(1.dp, colors.border, shape)
-                .clickable(role = Role.Button, onClickLabel = "Copy ${past.name}") { onRepeat(past) }
+                .clickable(role = Role.Button, onClickLabel = LiveWorkoutText.copyName.text("name" to past.name)) { onRepeat(past) }
                 .padding(horizontal = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Icon(Icons.Rounded.ContentCopy, null, tint = colors.textPrimary, modifier = Modifier.size(16.dp))
-            Text("Copy", fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
+            Text(LiveWorkoutText.copy.text(), fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
         }
     }
 }

@@ -30,12 +30,11 @@ object ClaudeNotifications {
         ensureChannels(context)
         val notification = NotificationCompat.Builder(context, REQUEST_CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_claude)
-            .setContentTitle("Claude asks for your training data")
-            .setContentText("Share your workouts, runs and templates for 30 minutes?")
+            .setContentTitle(context.getString(R.string.claude_share_title))
+            .setContentText(context.getString(R.string.claude_share_text))
             .setStyle(
                 NotificationCompat.BigTextStyle().bigText(
-                    "Claude asks to read your workouts, runs, exercises and templates. They stay on your Claude server " +
-                        "for 30 minutes and are then deleted.",
+                    context.getString(R.string.claude_share_big),
                 ),
             )
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -43,8 +42,8 @@ object ClaudeNotifications {
             .setAutoCancel(true)
             .setTimeoutAfter(REQUEST_LIFETIME_MS)
             .setContentIntent(openEmber(context))
-            .addAction(0, "Allow", answer(context, ACTION_ALLOW, requestId))
-            .addAction(0, "Deny", answer(context, ACTION_DENY, requestId))
+            .addAction(0, context.getString(R.string.claude_action_allow), answer(context, ACTION_ALLOW, requestId))
+            .addAction(0, context.getString(R.string.claude_action_deny), answer(context, ACTION_DENY, requestId))
             .build()
         notify(context, notificationId(requestId), notification)
     }
@@ -62,8 +61,8 @@ object ClaudeNotifications {
         ensureChannels(context)
         val notification = NotificationCompat.Builder(context, INBOX_CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_claude)
-            .setContentTitle(if (pending == 1) "Claude proposed something" else "Claude proposed $pending things")
-            .setContentText("Accept or reject in Settings, Claude.")
+            .setContentTitle(context.resources.getQuantityString(R.plurals.claude_inbox_title, pending, pending))
+            .setContentText(context.getString(R.string.claude_inbox_text))
             .setAutoCancel(true)
             .setContentIntent(openEmber(context))
             .build()
@@ -84,13 +83,13 @@ object ClaudeNotifications {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(
-            NotificationChannel(REQUEST_CHANNEL, "Claude's requests", NotificationManager.IMPORTANCE_HIGH).apply {
-                description = "When Claude asks to read your training data"
+            NotificationChannel(REQUEST_CHANNEL, context.getString(R.string.claude_channel_requests), NotificationManager.IMPORTANCE_HIGH).apply {
+                description = context.getString(R.string.claude_channel_requests_description)
             },
         )
         manager.createNotificationChannel(
-            NotificationChannel(INBOX_CHANNEL, "Claude's proposals", NotificationManager.IMPORTANCE_DEFAULT).apply {
-                description = "Templates and exercises Claude proposed"
+            NotificationChannel(INBOX_CHANNEL, context.getString(R.string.claude_channel_proposals), NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = context.getString(R.string.claude_channel_proposals_description)
             },
         )
     }

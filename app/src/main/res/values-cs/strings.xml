@@ -1,0 +1,29 @@
+<resources>
+    <string name="app_name">Ember</string>
+
+    <string name="claude_share_title">Claude žádá o tvoje tréninková data</string>
+    <string name="claude_share_text">Sdílet tréninky, běhy a šablony na 30 minut?</string>
+    <string name="claude_share_big">Claude žádá o přečtení tvých tréninků, běhů, cviků a šablon. Zůstanou na tvém serveru Claude 30 minut a pak se smažou.</string>
+    <string name="claude_action_allow">Povolit</string>
+    <string name="claude_action_deny">Zamítnout</string>
+    <plurals name="claude_inbox_title">
+        <item quantity="one">Claude něco navrhl</item>
+        <item quantity="few">Claude navrhl %1$d věci</item>
+        <item quantity="many">Claude navrhl %1$d věci</item>
+        <item quantity="other">Claude navrhl %1$d věcí</item>
+    </plurals>
+    <string name="claude_inbox_text">Přijmi nebo zamítni v Nastavení, Claude.</string>
+    <string name="claude_channel_requests">Žádosti od Clauda</string>
+    <string name="claude_channel_requests_description">Když Claude žádá o přečtení tvých tréninkových dat</string>
+    <string name="claude_channel_proposals">Návrhy od Clauda</string>
+    <string name="claude_channel_proposals_description">Šablony a cviky, které Claude navrhl</string>
+
+    <string name="run_notification_paused">Běh pozastaven</string>
+    <string name="run_notification_recording">Zaznamenávám běh</string>
+    <string name="run_notification_text">%1$s km · %2$s · %3$s /km</string>
+    <string name="run_notification_resume">Pokračovat</string>
+    <string name="run_notification_pause">Pozastavit</string>
+    <string name="run_notification_finish">Dokončit</string>
+    <string name="run_channel_name">Záznam běhu</string>
+    <string name="run_channel_description">Trvalé oznámení, dokud se zaznamenává běh.</string>
+</resources>

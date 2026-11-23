@@ -1,5 +1,8 @@
 package com.lukr99.workout.ui.screens
 
+import com.lukr99.workout.ui.i18n.ProgressScreenText
+import com.lukr99.workout.ui.i18n.CommonText
+import com.lukr99.workout.ui.i18n.LocalLanguage
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -75,10 +78,10 @@ fun ProgressDetailScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(Icons.AutoMirrored.Rounded.ArrowBack, CommonText.back.text(), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Text(
-                detail?.name ?: "Exercise",
+                detail?.name ?: ProgressScreenText.exerciseFallback.text(),
                 style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground,
             )
         }
@@ -89,7 +92,7 @@ fun ProgressDetailScreen(
         val splitView = detail != null && detail.canSplitByGym && (byGym || noneHere)
 
         if (detail == null || (detail.points.isEmpty() && !noneHere)) {
-            EmptyState(Icons.AutoMirrored.Rounded.ShowChart, "No sets logged yet", "Log this exercise in a workout and its chart and records show up here.")
+            EmptyState(Icons.AutoMirrored.Rounded.ShowChart, ProgressScreenText.noSetsTitle.text(), ProgressScreenText.noSetsBody.text())
             return
         }
 
@@ -104,14 +107,14 @@ fun ProgressDetailScreen(
             }
             if (detail.scope.perLocation && !splitView) {
                 Text(
-                    "Tracked per gym. Showing ${locations.nameOf(detail.scope.locationId)} only.",
+                    ProgressScreenText.trackedPerGym.text("place" to locations.nameOf(detail.scope.locationId)),
                     style = MaterialTheme.typography.bodySmall,
                     color = EmberTheme.colors.textSecondary,
                 )
             }
             if (noneHere) {
                 Text(
-                    "No workouts at ${locations.nameOf(detail.scope.locationId)} yet. Here is every gym.",
+                    ProgressScreenText.noneHere.text("place" to locations.nameOf(detail.scope.locationId)),
                     style = MaterialTheme.typography.bodySmall,
                     color = EmberTheme.colors.textSecondary,
                 )
@@ -122,9 +125,9 @@ fun ProgressDetailScreen(
                 return@Column
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StatTile("Best e1RM", Format.weight(detail.bestE1rmKg, units), unit = Format.unitLabel(units), modifier = Modifier.weight(1f))
-                StatTile("Latest e1RM", Format.weight(detail.latestE1rmKg, units), unit = Format.unitLabel(units), modifier = Modifier.weight(1f))
-                StatTile("Sessions", detail.points.size.toString(), modifier = Modifier.weight(1f))
+                StatTile(ProgressScreenText.bestE1rmTile.text(), Format.weight(detail.bestE1rmKg, units), unit = Format.unitLabel(units), modifier = Modifier.weight(1f))
+                StatTile(ProgressScreenText.latestE1rmTile.text(), Format.weight(detail.latestE1rmKg, units), unit = Format.unitLabel(units), modifier = Modifier.weight(1f))
+                StatTile(ProgressScreenText.sessionsTile.text(), detail.points.size.toString(), modifier = Modifier.weight(1f))
             }
 
             Column(
@@ -132,7 +135,7 @@ fun ProgressDetailScreen(
                     .background(MaterialTheme.colorScheme.surface).padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text("Estimated 1RM", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
+                Text(ProgressScreenText.estimated1RmTitle.text(), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
                 ProgressChart(
                     points = detail.points.map { ChartPoint(Format.shortDate(it.dateMillis), it.e1rmKg) },
                     lineColor = EmberTheme.colors.violet,
@@ -145,7 +148,7 @@ fun ProgressDetailScreen(
                     .background(MaterialTheme.colorScheme.surface).padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text("Volume per session", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
+                Text(ProgressScreenText.volumePerSession.text(), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
                 VolumeBars(
                     bars = detail.points.takeLast(10).map { BarPoint(Format.shortDate(it.dateMillis), it.volumeKg) },
                     valueFormat = { Format.volume(it, units) },
@@ -154,7 +157,7 @@ fun ProgressDetailScreen(
 
             records?.let { RecordsCard(it, units) }
 
-            InlineHint(Icons.Rounded.TouchApp, "Tap or drag along the chart to see each workout.")
+            InlineHint(Icons.Rounded.TouchApp, ProgressScreenText.chartHint.text())
         }
     }
 }
@@ -172,22 +175,28 @@ private fun GymLinesCard(detail: ExerciseProgressSummary, units: UnitSystem) {
             dashed = series.locationId == null || index >= 5,
         )
     }
-    val summary = "Estimated 1RM by gym. " + detail.series.joinToString(" ") {
-        val count = it.points.size
-        "${it.name}: $count ${if (count == 1) "workout" else "workouts"}, latest ${Format.weight(it.latestE1rmKg, units)} $unit, best ${Format.weight(it.bestE1rmKg, units)} $unit."
+    val lang = LocalLanguage.current
+    val summary = ProgressScreenText.byGymSummaryIntro.get(lang) + " " + detail.series.joinToString(" ") {
+        ProgressScreenText.byGymSummaryItem.get(
+            lang, it.points.size,
+            "name" to it.name,
+            "latest" to Format.weight(it.latestE1rmKg, units),
+            "best" to Format.weight(it.bestE1rmKg, units),
+            "unit" to unit,
+        )
     }
     Column(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surface).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text("Estimated 1RM by gym", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
+        Text(ProgressScreenText.byGymTitle.text(), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
         MultiLineChart(
             lines = lines,
             summary = summary,
             valueFormat = { Format.weightWithUnit(it, units) },
         )
-        InlineHint(Icons.Rounded.TouchApp, "Tap or drag along the chart to compare gyms on a date.")
+        InlineHint(Icons.Rounded.TouchApp, ProgressScreenText.compareGymsHint.text())
     }
 }
 
@@ -202,30 +211,30 @@ private fun RecordsCard(records: ExerciseRecords, units: UnitSystem) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Records", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
+            Text(ProgressScreenText.records.text(), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
             androidx.compose.foundation.layout.Spacer(Modifier.weight(1f))
-            Text("PR", style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.success, fontWeight = FontWeight.Bold)
+            Text(ProgressScreenText.prBadge.text(), style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.success, fontWeight = FontWeight.Bold)
         }
 
         records.mostReps?.let {
-            RecordRow("Most reps", "${it.reps} reps", it.source)
+            RecordRow(ProgressScreenText.mostReps.text(), ProgressScreenText.repsCount.text(it.reps), it.source)
         }
         records.heaviestSet?.let {
-            RecordRow("Heaviest set", "${Format.weight(it.weightKg, units)} ${Format.unitLabel(units)} × ${it.reps}", it.source)
+            RecordRow(ProgressScreenText.heaviestSet.text(), "${Format.weight(it.weightKg, units)} ${Format.unitLabel(units)} × ${it.reps}", it.source)
         }
         records.bestEstimated1Rm?.let {
-            RecordRow("Best e1RM", Format.weightWithUnit(it.estimated1RmKg, units), it.source)
+            RecordRow(ProgressScreenText.bestE1rm.text(), Format.weightWithUnit(it.estimated1RmKg, units), it.source)
         }
         records.bestSetVolume?.let {
-            RecordRow("Best set volume", "${Format.volume(it.setVolumeKg, units)} ${Format.unitLabel(units)}", it.source)
+            RecordRow(ProgressScreenText.bestSetVolume.text(), "${Format.volume(it.setVolumeKg, units)} ${Format.unitLabel(units)}", it.source)
         }
         records.bestSessionVolume?.let {
-            RecordRow("Best session volume", "${Format.volume(it.volumeKg, units)} ${Format.unitLabel(units)} · ${it.setCount} sets", it.source)
+            RecordRow(ProgressScreenText.bestSessionVolume.text(), "${Format.volume(it.volumeKg, units)} ${Format.unitLabel(units)} · ${ProgressScreenText.setsCount.text(it.setCount)}", it.source)
         }
 
         if (records.repMaxes.isNotEmpty()) {
             androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outline)
-            Text("Rep maxes", style = MaterialTheme.typography.labelMedium, color = EmberTheme.colors.textSecondary)
+            Text(ProgressScreenText.repMaxes.text(), style = MaterialTheme.typography.labelMedium, color = EmberTheme.colors.textSecondary)
             records.repMaxes.sortedBy { it.reps }.forEach { rm ->
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text("${rm.reps}RM", style = MaterialTheme.typography.bodyMedium, color = EmberTheme.colors.textSecondary, modifier = Modifier.width(52.dp))

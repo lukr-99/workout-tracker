@@ -27,6 +27,9 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.lukr99.workout.ui.i18n.AboutText
+import com.lukr99.workout.ui.i18n.CommonText
+import com.lukr99.workout.ui.i18n.LocalLanguage
 import com.lukr99.workout.ui.AppTags
 import com.lukr99.workout.ui.components.RoundIconButton
 import com.lukr99.workout.ui.settings.LinkRow
@@ -57,8 +60,8 @@ fun AboutScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            RoundIconButton(Icons.AutoMirrored.Rounded.ArrowBack, "Back", onBack)
-            Text("About", style = MaterialTheme.typography.displayLarge, color = colors.textPrimary, modifier = Modifier.semantics { heading() })
+            RoundIconButton(Icons.AutoMirrored.Rounded.ArrowBack, CommonText.back.text(), onBack)
+            Text(AboutText.title.text(), style = MaterialTheme.typography.displayLarge, color = colors.textPrimary, modifier = Modifier.semantics { heading() })
         }
         AboutHero(version, edition)
         AboutAuthorCard()
@@ -66,7 +69,7 @@ fun AboutScreen(
         DataCard(edition, onOpenPrivacy)
         AboutCreditsCard(edition)
         Text(
-            "Copyright 2026 ${AuthorLinks.NAME}",
+            AboutText.copyright.text("name" to AuthorLinks.NAME),
             style = MaterialTheme.typography.labelLarge,
             color = colors.textTertiary,
             textAlign = TextAlign.Center,
@@ -79,9 +82,9 @@ fun AboutScreen(
 @Composable
 private fun Facts(version: String, edition: AboutEdition) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        FactTile("Version", version.removePrefix("v").ifBlank { "?" }, Modifier.weight(1f))
-        FactTile("Runs on", AboutContent.editionName(edition), Modifier.weight(1f))
-        FactTile("Account", "None", Modifier.weight(1f))
+        FactTile(AboutText.factVersion.text(), version.removePrefix("v").ifBlank { "?" }, Modifier.weight(1f))
+        FactTile(AboutText.factRunsOn.text(), AboutContent.editionName(edition, LocalLanguage.current), Modifier.weight(1f))
+        FactTile(AboutText.factAccount.text(), AboutText.factNone.text(), Modifier.weight(1f))
     }
 }
 
@@ -106,16 +109,16 @@ private fun DataCard(edition: AboutEdition, onOpenPrivacy: () -> Unit) {
         Modifier.fillMaxWidth().clip(shape).background(colors.surface).border(1.dp, colors.border, shape).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text("Your data", style = MaterialTheme.typography.titleMedium, color = colors.textPrimary, modifier = Modifier.semantics { heading() })
-        AboutContent.privacy(edition).forEach { line ->
+        Text(AboutText.dataTitle.text(), style = MaterialTheme.typography.titleMedium, color = colors.textPrimary, modifier = Modifier.semantics { heading() })
+        AboutContent.privacy(edition, LocalLanguage.current).forEach { line ->
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(Modifier.padding(top = 8.dp).size(7.dp).clip(CircleShape).background(colors.primary))
                 Text(line, style = MaterialTheme.typography.bodyMedium, color = colors.textSecondary, modifier = Modifier.weight(1f))
             }
         }
         LinkRow(
-            "Privacy policy",
-            if (edition == AboutEdition.Android) "The full text, with Health Connect and Claude." else "The full text.",
+            AboutText.privacyPolicy.text(),
+            if (edition == AboutEdition.Android) AboutText.privacyPolicyAndroid.text() else AboutText.privacyPolicyWeb.text(),
             onClick = onOpenPrivacy,
         )
     }

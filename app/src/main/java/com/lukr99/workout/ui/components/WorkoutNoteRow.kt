@@ -8,6 +8,8 @@ import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.lukr99.workout.ui.i18n.CardsText
+import com.lukr99.workout.ui.i18n.NotesText
 
 /**
  * The workout's own note at the top of a session. Empty, it is a quiet invitation to add one;
@@ -19,17 +21,17 @@ fun WorkoutNoteRow(note: String, onEdit: () -> Unit, modifier: Modifier = Modifi
         NoteLine(
             Icons.AutoMirrored.Rounded.NoteAdd,
             label = null,
-            text = "Add a note for this workout",
-            description = "Add workout note",
+            text = NotesText.addWorkoutNotePrompt.text(),
+            description = NotesText.addWorkoutNote.text(),
             onClick = onEdit,
             modifier = modifier.fillMaxWidth().padding(horizontal = 4.dp),
         )
     } else {
         NoteLine(
             Icons.AutoMirrored.Rounded.Notes,
-            label = "Workout",
+            label = CardsText.workout.text(),
             text = note,
-            description = "Workout note, tap to edit",
+            description = NotesText.workoutNoteEdit.text(),
             maxLines = 6,
             onClick = onEdit,
             modifier = modifier.fillMaxWidth().padding(horizontal = 4.dp),

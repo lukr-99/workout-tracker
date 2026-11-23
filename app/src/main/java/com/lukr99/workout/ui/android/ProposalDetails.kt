@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui.android
 
+import com.lukr99.workout.ui.i18n.ClaudeText
 import com.lukr99.workout.data.claude.Proposal
 
 /**
@@ -14,9 +15,9 @@ internal fun proposalDetails(proposal: Proposal): String = runCatching {
                 else -> (item.repsMin ?: item.repsMax)?.toString()
             }
             val plan = listOfNotNull(
-                item.targetSets?.let { sets -> if (reps != null) "$sets x $reps" else "$sets sets" } ?: reps?.let { "$it reps" },
-                item.restSeconds?.let { "rest ${it / 60}:${(it % 60).toString().padStart(2, '0')}" },
-                item.supersetGroup?.let { "superset $it" },
+                item.targetSets?.let { sets -> if (reps != null) "$sets x $reps" else ClaudeText.proposalSets.now(sets) } ?: reps?.let { ClaudeText.proposalReps.now("reps" to it) },
+                item.restSeconds?.let { ClaudeText.proposalRest.now("time" to "${it / 60}:${(it % 60).toString().padStart(2, '0')}") },
+                item.supersetGroup?.let { ClaudeText.proposalSuperset.now("group" to it) },
                 item.notes.takeIf(String::isNotBlank),
             )
             if (plan.isEmpty()) item.name else "${item.name}: ${plan.joinToString(", ")}"

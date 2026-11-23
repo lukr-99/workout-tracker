@@ -62,6 +62,8 @@ import com.lukr99.workout.ui.components.RoundIconButton
 import com.lukr99.workout.ui.components.WorkoutNoteRow
 import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
+import com.lukr99.workout.ui.i18n.LiveWorkoutText
+import com.lukr99.workout.ui.i18n.LocalLanguage
 
 /**
  * The live logging loop — start/resume → add exercises → log sets → rest → finish/discard. The
@@ -79,6 +81,7 @@ fun LiveWorkoutScreen(
     onWorkoutSaved: suspend (WorkoutSession) -> Unit = {},
 ) {
     val toast = LocalToast.current
+    val lang = LocalLanguage.current
     val draft by vm.draft.collectAsState()
     val doneIds by vm.doneSetIds.collectAsState()
     val rest by vm.rest.collectAsState()
@@ -144,11 +147,11 @@ fun LiveWorkoutScreen(
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             LiveTopBar(
-                name = session?.name ?: "Workout",
+                name = session?.name ?: LiveWorkoutText.defaultName.text(),
                 summary = listOf(
                     Format.duration(((nowUtcMillis - (session?.startedAtUtc ?: nowUtcMillis)) / 1000).coerceAtLeast(0)),
                     "${Format.volume(vm.estimatedVolumeKg(), units)} ${Format.unitLabel(units)}",
-                    "${doneIds.size} ${if (doneIds.size == 1) "set" else "sets"}",
+                    LiveWorkoutText.setsCount.text(doneIds.size),
                 ).joinToString(" \u00b7 "),
                 onRename = vm::rename,
                 onMinimise = onClose,
@@ -175,7 +178,7 @@ fun LiveWorkoutScreen(
                                 modifier = Modifier.testTag(LiveWorkoutTags.LOCATION),
                             )
                             nearHint?.let {
-                                Text("near $it", style = MaterialTheme.typography.labelMedium, color = EmberTheme.colors.textSecondary)
+                                Text(LiveWorkoutText.nearPlace.text("place" to it), style = MaterialTheme.typography.labelMedium, color = EmberTheme.colors.textSecondary)
                             }
                         }
                         positionOffer?.let { offer ->
@@ -240,7 +243,7 @@ fun LiveWorkoutScreen(
                             onWeight = { setId, kg -> vm.setWeight(entry.id, setId, kg) },
                             onToggleDone = { setId ->
                                 vm.toggleSetDone(entry.id, setId)
-                                if (setId !in doneIds) toast("Set logged")
+                                if (setId !in doneIds) toast(LiveWorkoutText.setLogged.get(lang))
                             },
                             onOptions = { setId -> sheet = LiveSheet.SetOptions(entry.id, setId) },
                             onAddSet = { vm.addSet(entry.id) },
@@ -256,19 +259,19 @@ fun LiveWorkoutScreen(
                         EmptyWorkoutStart(
                             recent = recentIds.mapNotNull(catalog::get).filterNot { it.isArchived },
                             onAddExercises = { sheet = LiveSheet.AddExercise },
-                            onQuickAdd = { vm.addExercise(it); toast("${it.name} added") },
+                            onQuickAdd = { vm.addExercise(it); toast(LiveWorkoutText.exerciseAdded.get(lang, "name" to it.name)) },
                             repeatable = repeatable,
                             templates = templates,
-                            onRepeat = { vm.repeatWorkout(it); toast("Copied ${it.name}") },
-                            onSwitch = { vm.switchToTemplate(it); toast("Switched to ${it.name}") },
+                            onRepeat = { vm.repeatWorkout(it); toast(LiveWorkoutText.workoutCopied.get(lang, "name" to it.name)) },
+                            onSwitch = { vm.switchToTemplate(it); toast(LiveWorkoutText.switchedTo.get(lang, "name" to it.name)) },
                         )
                     }
                 } else {
                     item(key = "set-hint") {
-                        InlineHint(Icons.Rounded.TouchApp, "Tap a set's number for tags, effort, a note, or to remove it.")
+                        InlineHint(Icons.Rounded.TouchApp, LiveWorkoutText.setHint.text())
                     }
                     item {
-                        AddButton("Add exercises", Modifier.testTag(LiveWorkoutTags.ADD_EXERCISE)) { sheet = LiveSheet.AddExercise }
+                        AddButton(LiveWorkoutText.addExercises.text(), Modifier.testTag(LiveWorkoutTags.ADD_EXERCISE)) { sheet = LiveSheet.AddExercise }
                     }
                 }
             }
@@ -290,7 +293,11 @@ fun LiveWorkoutScreen(
                         headline = ev.headline,
                         displayValue = ev.bodyweightReps?.toDouble() ?: Format.toDisplay(ev.estimated1RmKg, units),
                         unitLabel = Format.unitLabel(units),
-                        valueSuffix = if (ev.bodyweightReps != null) " reps" else " ${Format.unitLabel(units)} e1RM",
+                        valueSuffix = if (ev.bodyweightReps != null) {
+                            LiveWorkoutText.prReps.text()
+                        } else {
+                            LiveWorkoutText.prE1rm.text("unit" to Format.unitLabel(units))
+                        },
                     )
                 }
             }
@@ -304,10 +311,14 @@ fun LiveWorkoutScreen(
             splitPrompt?.let { prompt ->
                 SplitPromptCard(
                     exerciseName = prompt.exerciseName,
-                    detail = "${Format.weightWithUnit(prompt.hereKg, units)} here, ${Format.weightWithUnit(prompt.otherKg, units)} at ${prompt.otherLocationName}",
+                    detail = LiveWorkoutText.splitDetail.text(
+                        "here" to Format.weightWithUnit(prompt.hereKg, units),
+                        "other" to Format.weightWithUnit(prompt.otherKg, units),
+                        "place" to prompt.otherLocationName,
+                    ),
                     onTrack = {
                         vm.acceptSplit()
-                        toast("${prompt.exerciseName} is tracked per gym")
+                        toast(LiveWorkoutText.trackedPerGym.get(lang, "name" to prompt.exerciseName))
                     },
                     onNotNow = { vm.dismissSplit(never = false) },
                     onNever = { vm.dismissSplit(never = true) },
@@ -329,14 +340,14 @@ fun LiveWorkoutScreen(
                     modifier = Modifier.weight(1f).testTag(LiveWorkoutTags.DISCARD)
                         .clip(RoundedCornerShape(14.dp))
                         .background(MaterialTheme.colorScheme.surface),
-                ) { Text("Discard", color = MaterialTheme.colorScheme.error) }
+                ) { Text(LiveWorkoutText.discard.text(), color = MaterialTheme.colorScheme.error) }
             }
         }
     }
 
     if (pickingLocation) {
         LocationPickerSheet(
-            title = "Where are you training?",
+            title = LiveWorkoutText.whereTraining.text(),
             locations = locations,
             selectedId = session?.locationId,
             onPick = vm::setLocation,
@@ -392,7 +403,7 @@ private fun LiveTopBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        RoundIconButton(Icons.Rounded.KeyboardArrowDown, "Minimise workout", onMinimise)
+        RoundIconButton(Icons.Rounded.KeyboardArrowDown, LiveWorkoutText.minimise.text(), onMinimise)
         Column(Modifier.weight(1f)) {
             // Wraps to a second line instead of scrolling out of sight beside the buttons on a narrow
             // phone; a typed line break becomes a space, so the name stays one line.
@@ -411,7 +422,7 @@ private fun LiveTopBar(
                 .clickable(role = Role.Button, onClick = onFinish).padding(horizontal = 18.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Text("Finish", fontWeight = FontWeight.Bold, color = colors.onPrimary)
+            Text(LiveWorkoutText.finish.text(), fontWeight = FontWeight.Bold, color = colors.onPrimary)
         }
     }
 }

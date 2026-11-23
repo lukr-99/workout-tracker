@@ -27,6 +27,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import com.lukr99.workout.ui.i18n.CommonText
+import com.lukr99.workout.ui.i18n.NotesText
 
 /**
  * One sheet for every free-text note: the workout, an exercise in it, or a single set. Saving an
@@ -71,12 +73,12 @@ fun NoteEditorSheet(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (initial.isNotBlank()) {
                     TextButton(onClick = { onSave(""); onDismiss() }) {
-                        Text("Delete note", color = MaterialTheme.colorScheme.error)
+                        Text(NotesText.deleteNote.text(), color = MaterialTheme.colorScheme.error)
                     }
                 }
                 Spacer(Modifier.weight(1f))
-                TextButton(onClick = onDismiss) { Text("Cancel") }
-                Button(onClick = { onSave(text.trim()); onDismiss() }) { Text("Save") }
+                TextButton(onClick = onDismiss) { Text(CommonText.cancel.text()) }
+                Button(onClick = { onSave(text.trim()); onDismiss() }) { Text(CommonText.save.text()) }
             }
         }
     }

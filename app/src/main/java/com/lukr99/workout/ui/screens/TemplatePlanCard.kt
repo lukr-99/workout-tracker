@@ -1,5 +1,7 @@
 package com.lukr99.workout.ui.screens
 
+import com.lukr99.workout.ui.i18n.TemplateEditorText
+import com.lukr99.workout.ui.i18n.CommonText
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -65,6 +67,7 @@ internal fun TemplatePlanCard(row: TemplateRow, joinedAbove: Boolean, joinedBelo
     val top = if (joinedAbove) 6.dp else 18.dp
     val bottom = if (joinedBelow) 6.dp else 18.dp
     val shape = RoundedCornerShape(topStart = top, topEnd = top, bottomStart = bottom, bottomEnd = bottom)
+    val moveLabel = TemplateEditorText.holdToMove.text("name" to row.name)
     Column(
         Modifier.fillMaxWidth().clip(shape).background(colors.surface).border(1.dp, colors.border, shape)
             .drawBehind { if (row.supersetGroup != null && (joinedAbove || joinedBelow)) drawRect(rail, size = Size(3.dp.toPx(), size.height)) }
@@ -73,7 +76,7 @@ internal fun TemplatePlanCard(row: TemplateRow, joinedAbove: Boolean, joinedBelo
         if (row.supersetGroup != null && joinedBelow && !joinedAbove) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "SUPERSET · DONE AS ONE ROUND",
+                    TemplateEditorText.supersetBanner.text(),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp,
@@ -81,13 +84,13 @@ internal fun TemplatePlanCard(row: TemplateRow, joinedAbove: Boolean, joinedBelo
                     modifier = Modifier.weight(1f),
                 )
                 actions.onUngroup?.let { ungroup ->
-                    TextButton(onClick = ungroup) { Text("Ungroup", fontWeight = FontWeight.SemiBold, color = colors.primaryText) }
+                    TextButton(onClick = ungroup) { Text(TemplateEditorText.ungroup.text(), fontWeight = FontWeight.SemiBold, color = colors.primaryText) }
                 }
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
-                actions.dragHandle.size(width = 28.dp, height = 44.dp).semantics { contentDescription = "Hold to move ${row.name}" },
+                actions.dragHandle.size(width = 28.dp, height = 44.dp).semantics { contentDescription = moveLabel },
                 contentAlignment = Alignment.CenterStart,
             ) {
                 Icon(Icons.Rounded.DragIndicator, null, tint = colors.textTertiary, modifier = Modifier.size(22.dp))
@@ -100,13 +103,19 @@ internal fun TemplatePlanCard(row: TemplateRow, joinedAbove: Boolean, joinedBelo
         }
         Row(Modifier.padding(top = 10.dp, end = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Stepper(
-                label = "Sets",
+                label = TemplateEditorText.setsLabel.text(),
+                lessLabel = TemplateEditorText.setsLess.text(),
+                moreLabel = TemplateEditorText.setsMore.text(),
+                setLabel = TemplateEditorText.setsSet.text(),
                 value = row.targetSets?.toString() ?: "–",
                 onMinus = { actions.onChange(row.copy(targetSets = row.targetSets?.minus(1)?.takeIf { it > 0 })) },
                 onPlus = { actions.onChange(row.copy(targetSets = ((row.targetSets ?: 0) + 1).coerceAtMost(20))) },
             )
             Stepper(
-                label = "Reps",
+                label = TemplateEditorText.repsLabel.text(),
+                lessLabel = TemplateEditorText.repsLess.text(),
+                moreLabel = TemplateEditorText.repsMore.text(),
+                setLabel = TemplateEditorText.repsSet.text(),
                 value = repsText(row),
                 weight = 1.2f,
                 onValueClick = actions.onEditReps,
@@ -114,8 +123,11 @@ internal fun TemplatePlanCard(row: TemplateRow, joinedAbove: Boolean, joinedBelo
                 onPlus = { actions.onChange(row.withRepsShifted(1)) },
             )
             Stepper(
-                label = "Rest",
-                value = row.restSeconds?.let { Format.clock(it) } ?: "Auto",
+                label = TemplateEditorText.restLabel.text(),
+                lessLabel = TemplateEditorText.restLess.text(),
+                moreLabel = TemplateEditorText.restMore.text(),
+                setLabel = TemplateEditorText.restSet.text(),
+                value = row.restSeconds?.let { Format.clock(it) } ?: TemplateEditorText.restAuto.text(),
                 onMinus = { actions.onChange(row.copy(restSeconds = row.restSeconds?.minus(15)?.takeIf { it > 0 })) },
                 onPlus = { actions.onChange(row.copy(restSeconds = ((row.restSeconds ?: 45) + 15).coerceAtMost(600))) },
             )
@@ -141,6 +153,9 @@ private fun repsText(row: TemplateRow): String = when {
 @Composable
 private fun RowScope.Stepper(
     label: String,
+    lessLabel: String,
+    moreLabel: String,
+    setLabel: String,
     value: String,
     onMinus: () -> Unit,
     onPlus: () -> Unit,
@@ -155,7 +170,7 @@ private fun RowScope.Stepper(
                 .border(1.dp, colors.border, RoundedCornerShape(12.dp)),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            StepKey(Icons.Rounded.Remove, "Less ${label.lowercase()}", onMinus)
+            StepKey(Icons.Rounded.Remove, lessLabel, onMinus)
             Text(
                 value,
                 style = Numbers.copy(fontSize = 17.sp),
@@ -163,10 +178,10 @@ private fun RowScope.Stepper(
                 maxLines = 1,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 modifier = Modifier.weight(1f).then(
-                    if (onValueClick == null) Modifier else Modifier.clickable(role = Role.Button, onClickLabel = "Set the ${label.lowercase()}", onClick = onValueClick),
+                    if (onValueClick == null) Modifier else Modifier.clickable(role = Role.Button, onClickLabel = setLabel, onClick = onValueClick),
                 ),
             )
-            StepKey(Icons.Rounded.Add, "More ${label.lowercase()}", onPlus)
+            StepKey(Icons.Rounded.Add, moreLabel, onPlus)
         }
     }
 }
@@ -187,7 +202,7 @@ private fun CardMenu(row: TemplateRow, actions: TemplatePlanActions) {
     val colors = EmberTheme.colors
     Box {
         IconButton(onClick = { open = true }) {
-            Icon(Icons.Rounded.MoreVert, "More for ${row.name}", tint = colors.textSecondary)
+            Icon(Icons.Rounded.MoreVert, TemplateEditorText.moreFor.text("name" to row.name), tint = colors.textSecondary)
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             fun item(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector, danger: Boolean = false, action: () -> Unit): @Composable () -> Unit = {
@@ -197,14 +212,14 @@ private fun CardMenu(row: TemplateRow, actions: TemplatePlanActions) {
                     onClick = { open = false; action() },
                 )
             }
-            item(if (row.notes.isBlank()) "Add a note" else "Edit the note", Icons.AutoMirrored.Rounded.NoteAdd, action = actions.onEditNote)()
+            item(if (row.notes.isBlank()) TemplateEditorText.addNote.text() else TemplateEditorText.editNote.text(), Icons.AutoMirrored.Rounded.NoteAdd, action = actions.onEditNote)()
             actions.onToggleSuperset?.let { toggle ->
                 val joined = row.supersetGroup != null
-                item(if (joined) "Leave the superset" else "Superset with previous", if (joined) Icons.Rounded.LinkOff else Icons.Rounded.Link, action = toggle)()
+                item(if (joined) TemplateEditorText.leaveSuperset.text() else TemplateEditorText.supersetWithPrevious.text(), if (joined) Icons.Rounded.LinkOff else Icons.Rounded.Link, action = toggle)()
             }
-            actions.onMoveUp?.let { item("Move up", Icons.Rounded.ArrowUpward, action = it)() }
-            actions.onMoveDown?.let { item("Move down", Icons.Rounded.ArrowDownward, action = it)() }
-            item("Remove", Icons.Rounded.Delete, danger = true, action = actions.onRemove)()
+            actions.onMoveUp?.let { item(TemplateEditorText.moveUp.text(), Icons.Rounded.ArrowUpward, action = it)() }
+            actions.onMoveDown?.let { item(TemplateEditorText.moveDown.text(), Icons.Rounded.ArrowDownward, action = it)() }
+            item(TemplateEditorText.remove.text(), Icons.Rounded.Delete, danger = true, action = actions.onRemove)()
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui.screens
 
+import com.lukr99.workout.ui.i18n.WorkoutDetailText
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
@@ -58,7 +59,7 @@ fun rememberDocumentActions(
                     runCatching {
                         val intent = gateway.shareIntent(artifact)
                         context.startActivity(android.content.Intent.createChooser(intent, title))
-                    }.onFailure { onError(it.message ?: "Could not open the share sheet") }
+                    }.onFailure { onError(it.message ?: WorkoutDetailText.shareSheetFailed.now()) }
                 }
             },
         )

@@ -45,6 +45,8 @@ import androidx.compose.ui.unit.sp
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.ExerciseSource
+import com.lukr99.workout.ui.i18n.LocalLanguage
+import com.lukr99.workout.ui.i18n.PickerText
 import com.lukr99.workout.ui.theme.Accents
 import com.lukr99.workout.ui.theme.EmberTheme
 
@@ -62,6 +64,8 @@ fun QuickCreateSheet(
     onDismiss: () -> Unit,
 ) {
     val colors = EmberTheme.colors
+    val lang = LocalLanguage.current
+    val nameLabel = PickerText.name.text()
     var name by remember { mutableStateOf(initialName) }
     var category by remember { mutableStateOf(ExerciseCategory.Strength) }
     var main by remember { mutableStateOf("") }
@@ -75,10 +79,10 @@ fun QuickCreateSheet(
         containerColor = colors.surface,
     ) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp).padding(bottom = 20.dp)) {
-            Text("New exercise", style = MaterialTheme.typography.titleLarge, color = colors.textPrimary)
-            Text("Saved to your library and added to this workout.", style = MaterialTheme.typography.bodyLarge, color = colors.textSecondary)
+            Text(PickerText.newExercise.text(), style = MaterialTheme.typography.titleLarge, color = colors.textPrimary)
+            Text(PickerText.savedToLibrary.text(), style = MaterialTheme.typography.bodyLarge, color = colors.textSecondary)
 
-            Label("Name")
+            Label(PickerText.name.text())
             val shape = RoundedCornerShape(14.dp)
             BasicTextField(
                 value = name,
@@ -88,13 +92,13 @@ fun QuickCreateSheet(
                 cursorBrush = SolidColor(colors.primary),
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 modifier = Modifier.fillMaxWidth().clip(shape).background(colors.surfaceRaised).border(1.dp, colors.border, shape)
-                    .padding(horizontal = 14.dp, vertical = 14.dp).semantics { contentDescription = "Name" },
+                    .padding(horizontal = 14.dp, vertical = 14.dp).semantics { contentDescription = nameLabel },
             )
 
-            Label("Kind")
-            SegmentedControl(ExerciseCategory.entries, category, { category = it }, label = { it.name })
+            Label(PickerText.kind.text())
+            SegmentedControl(ExerciseCategory.entries, category, { category = it }, label = { PickerText.category(it).get(lang) })
 
-            Label("Main muscle")
+            Label(PickerText.mainMuscle.text())
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 bodyParts.forEach { part ->
                     FilterChip(part, main == part, {
@@ -104,22 +108,25 @@ fun QuickCreateSheet(
                 }
             }
 
-            Label("Also works")
+            Label(PickerText.alsoWorks.text())
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 bodyParts.filter { it != main }.forEach { part ->
                     FilterChip(part, part in also, { also = if (part in also) also - part else also + part }, dot = Accents.bodyPart(part))
                 }
             }
 
-            Label("Equipment")
+            Label(PickerText.equipmentLabel.text())
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                EQUIPMENT.forEach { item -> FilterChip(item, equipment == item, { equipment = if (equipment == item) "" else item }) }
+                // The stored value stays the English key; only the chip text follows the language.
+                EQUIPMENT.forEach { item ->
+                    FilterChip(PickerText.equipment(item).text(), equipment == item, { equipment = if (equipment == item) "" else item })
+                }
             }
 
             Row(Modifier.padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Rounded.Info, null, tint = colors.textSecondary, modifier = Modifier.size(18.dp))
                 Text(
-                    "Steps, a photo and a guide link can wait. Add them later from the Library.",
+                    PickerText.canWait.text(),
                     style = MaterialTheme.typography.labelLarge,
                     color = colors.textSecondary,
                 )
@@ -142,7 +149,7 @@ fun QuickCreateSheet(
                     },
                 contentAlignment = Alignment.Center,
             ) {
-                Text("Create and add", fontWeight = FontWeight.Bold, color = if (canCreate) colors.onPrimary else colors.textSecondary)
+                Text(PickerText.createAndAdd.text(), fontWeight = FontWeight.Bold, color = if (canCreate) colors.onPrimary else colors.textSecondary)
             }
         }
     }

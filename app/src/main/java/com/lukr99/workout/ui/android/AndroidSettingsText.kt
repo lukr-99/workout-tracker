@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui.android
 
+import com.lukr99.workout.ui.i18n.DeviceSettingsText
 import android.content.Intent
 import android.net.Uri
 import com.lukr99.workout.data.backup.BackupResult
@@ -13,10 +14,10 @@ internal fun healthAvailabilityLabel(
     availability: HealthConnectAvailability?,
     connected: Boolean,
 ): String = when (availability) {
-    HealthConnectAvailability.Available -> if (connected) "Connected" else "Available"
-    HealthConnectAvailability.ProviderUpdateRequired -> "Provider update required"
-    HealthConnectAvailability.Unavailable -> "Unavailable on this device"
-    null -> "Checking availability…"
+    HealthConnectAvailability.Available -> if (connected) DeviceSettingsText.healthConnected.now() else DeviceSettingsText.healthAvailable.now()
+    HealthConnectAvailability.ProviderUpdateRequired -> DeviceSettingsText.healthUpdateRequired.now()
+    HealthConnectAvailability.Unavailable -> DeviceSettingsText.healthUnavailable.now()
+    null -> DeviceSettingsText.healthChecking.now()
 }
 
 internal fun healthAvailabilityDetail(
@@ -24,10 +25,10 @@ internal fun healthAvailabilityDetail(
     connected: Boolean,
 ): String = when (availability) {
     HealthConnectAvailability.Available ->
-        if (connected) "Exercise and weight permissions granted" else "Connect to import or export workouts"
-    HealthConnectAvailability.ProviderUpdateRequired -> "Install or update Health Connect to continue"
-    HealthConnectAvailability.Unavailable -> "Health Connect is not supported by this device"
-    null -> "Reading provider status"
+        if (connected) DeviceSettingsText.healthPermissionsGranted.now() else DeviceSettingsText.healthConnectToImport.now()
+    HealthConnectAvailability.ProviderUpdateRequired -> DeviceSettingsText.healthInstallOrUpdate.now()
+    HealthConnectAvailability.Unavailable -> DeviceSettingsText.healthNotSupported.now()
+    null -> DeviceSettingsText.healthReadingStatus.now()
 }
 
 internal fun openHealthConnectListing(context: android.content.Context) {
@@ -42,8 +43,9 @@ internal fun openHealthConnectListing(context: android.content.Context) {
 }
 
 internal fun backupFolderLabel(treeUri: String?): String {
-    if (treeUri.isNullOrBlank()) return "Backup folder selected"
-    return Uri.decode(treeUri.substringAfterLast('/')).ifBlank { "Backup folder selected" }
+    val selected = DeviceSettingsText.backupFolderSelected.now()
+    if (treeUri.isNullOrBlank()) return selected
+    return Uri.decode(treeUri.substringAfterLast('/')).ifBlank { selected }
 }
 
 internal fun backupStatus(
@@ -55,12 +57,12 @@ internal fun backupStatus(
     uiError?.let { return it }
     val whenRun = lastRunUtcMillis?.let {
         DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(it))
-    } ?: return "No automatic backup has run yet"
+    } ?: return DeviceSettingsText.backupNeverRun.now()
     val resultLabel = when (result) {
-        BackupResult.Success -> "Succeeded"
-        BackupResult.Failed -> "Failed"
-        BackupResult.Disabled -> "Disabled"
-        BackupResult.NeverRun -> "Not run"
+        BackupResult.Success -> DeviceSettingsText.backupSucceeded.now()
+        BackupResult.Failed -> DeviceSettingsText.backupFailed.now()
+        BackupResult.Disabled -> DeviceSettingsText.backupDisabled.now()
+        BackupResult.NeverRun -> DeviceSettingsText.backupNotRun.now()
     }
     return listOfNotNull("$resultLabel · $whenRun", message?.takeIf(String::isNotBlank))
         .joinToString(" · ")

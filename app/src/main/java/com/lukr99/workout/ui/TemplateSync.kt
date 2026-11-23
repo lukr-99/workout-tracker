@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui
 
+import com.lukr99.workout.ui.i18n.AppText
 import com.lukr99.workout.data.WorkoutRepository
 import com.lukr99.workout.domain.WorkoutSession
 import com.lukr99.workout.domain.WorkoutTemplate
@@ -20,7 +21,7 @@ class TemplateSync(private val repo: WorkoutRepository) {
                 repo.saveTemplate(
                     updated.copy(
                         id = "",
-                        name = newName.trim().ifBlank { "${template.name} copy" },
+                        name = newName.trim().ifBlank { AppText.templateCopy.now("name" to template.name) },
                         // Fresh ids, so the copy never takes rows from the original template.
                         exercises = updated.exercises.map { it.copy(id = "") },
                     ),

@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui.screens
 
+import com.lukr99.workout.ui.i18n.TemplateEditorText
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -47,8 +48,8 @@ internal fun SupersetEditorSheet(
             Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text("Edit superset", style = MaterialTheme.typography.titleLarge)
-            Text("Exercises stay together and are performed as one round.", color = EmberTheme.colors.textSecondary)
+            Text(TemplateEditorText.editSuperset.text(), style = MaterialTheme.typography.titleLarge)
+            Text(TemplateEditorText.supersetHint.text(), color = EmberTheme.colors.textSecondary)
             members.forEachIndexed { index, entry ->
                 Row(
                     Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
@@ -56,16 +57,16 @@ internal fun SupersetEditorSheet(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text("${index + 1}. ${entry.exerciseSnapshotName}", modifier = Modifier.weight(1f))
-                    TextButton(onClick = { onRemoveEntry(entry.id) }) { Text("Remove") }
+                    TextButton(onClick = { onRemoveEntry(entry.id) }) { Text(TemplateEditorText.remove.text()) }
                 }
             }
             if (canAddBefore) TextButton(onClick = onAddBefore) {
-                Text("+ Add ${entries[positions.first() - 1].exerciseSnapshotName} before")
+                Text(TemplateEditorText.addBefore.text("name" to entries[positions.first() - 1].exerciseSnapshotName))
             }
             if (canAddAfter) TextButton(onClick = onAddAfter) {
-                Text("+ Add ${entries[positions.last() + 1].exerciseSnapshotName} after")
+                Text(TemplateEditorText.addAfter.text("name" to entries[positions.last() + 1].exerciseSnapshotName))
             }
-            TextButton(onClick = onUngroup) { Text("Ungroup superset", color = MaterialTheme.colorScheme.error) }
+            TextButton(onClick = onUngroup) { Text(TemplateEditorText.ungroupSuperset.text(), color = MaterialTheme.colorScheme.error) }
         }
     }
 }

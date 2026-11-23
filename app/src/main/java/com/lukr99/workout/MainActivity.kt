@@ -13,9 +13,11 @@ import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import com.lukr99.workout.data.claude.ClaudeNotifications
 import com.lukr99.workout.settings.AppSettings
+import com.lukr99.workout.settings.LanguageSetting
 import com.lukr99.workout.settings.ThemeMode
 import com.lukr99.workout.ui.App
 import com.lukr99.workout.ui.components.LocalReduceMotion
+import com.lukr99.workout.ui.i18n.ProvideLanguage
 import com.lukr99.workout.ui.theme.WorkoutTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -52,7 +54,11 @@ class MainActivity : ComponentActivity() {
         val firstSettings = runBlocking {
             withTimeoutOrNull(FIRST_SETTINGS_WAIT_MS) { container.settings.settings.first() }
         } ?: AppSettings()
+        val firstLanguage = runBlocking {
+            withTimeoutOrNull(FIRST_SETTINGS_WAIT_MS) { container.devicePrefs.language.first() }
+        } ?: LanguageSetting.System
         setContent {
+            val language by container.devicePrefs.language.collectAsState(initial = firstLanguage)
             val settings by container.settings.settings.collectAsState(initial = firstSettings)
             val dark = when (settings.themeMode) {
                 ThemeMode.System -> isSystemInDarkTheme()
@@ -61,9 +67,11 @@ class MainActivity : ComponentActivity() {
             }
             // Keep system-bar icons legible against whichever scheme is active.
             WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = !dark
-            WorkoutTheme(dark = dark, accent = settings.accent) {
-                CompositionLocalProvider(LocalReduceMotion provides settings.reduceMotion) {
-                    App(container)
+            ProvideLanguage(language) {
+                WorkoutTheme(dark = dark, accent = settings.accent) {
+                    CompositionLocalProvider(LocalReduceMotion provides settings.reduceMotion) {
+                        App(container)
+                    }
                 }
             }
         }

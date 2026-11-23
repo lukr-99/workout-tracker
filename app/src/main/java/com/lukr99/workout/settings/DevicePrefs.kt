@@ -23,6 +23,11 @@ interface DevicePrefs {
     /** Places where the "save this spot?" offer was already answered, so it is made once per place. */
     val positionOfferAnswered: Flow<Set<String>>
 
+    /** The language choice. [LanguageSetting.System] until the owner picks one. */
+    val language: Flow<LanguageSetting>
+
+    suspend fun setLanguage(language: LanguageSetting)
+
     suspend fun dismissLocationSetup()
 
     suspend fun setHealthAutoSend(on: Boolean)

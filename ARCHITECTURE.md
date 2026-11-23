@@ -57,7 +57,7 @@ version lives in `app/` and keeps the old behaviour; the web edition supplies a 
 package, name and signature. Each such file says "Each platform supplies this file" in its KDoc.
 Today they are: `domain/LocalDecimals.kt`, `data/images/StripAccents.kt`,
 `data/images/FreeExerciseImageIndexResource.kt`, `data/images/LocalPhotoModel.kt`,
-`ui/PlatformApp.kt` (Run Mode, the updater, Android-only Settings rows), `ui/PlatformBackHandler.kt`,
+`ui/PlatformApp.kt` (Run Mode, the updater, Android-only Settings rows), `ui/i18n/PlatformLanguage.kt`, `ui/PlatformBackHandler.kt`,
 `ui/components/` `ExerciseImage`, `FullScreenDialog`, `LocalDateText`, `MusicPlayback`,
 `SystemAnimationsOff` and `TestTagsAsResourceId`, `ui/screens/` `RememberDocumentActions`,
 `RememberExercisePhotoPicker` and `RememberWorkoutSharer`, `ui/settings/LocationPermissionRequest.kt`
@@ -76,6 +76,11 @@ Material scheme derived from it. `EmberPalette` holds the light and dark sets. U
 `EmberTheme.colors` or `MaterialTheme.colorScheme`, never a raw `Color`, so every screen works in
 both themes. The only fixed hues are the body-part dots in `Accents`, which always sit next to the
 part's name.
+
+## Text and languages
+
+User-facing text lives in message catalogs in `ui/i18n/`, English and Czech side by side, shared by
+Android and the web edition. See [docs/localization.md](docs/localization.md).
 
 ## Data flow
 

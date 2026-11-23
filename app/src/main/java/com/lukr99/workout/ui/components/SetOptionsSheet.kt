@@ -27,6 +27,7 @@ import com.lukr99.workout.domain.SetTag
 import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.effectiveTags
 import com.lukr99.workout.domain.repsInReserve
+import com.lukr99.workout.ui.i18n.SetLoggingText
 import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
@@ -55,16 +56,16 @@ fun SetOptionsSheet(
             Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text("Set options", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
+            Text(SetLoggingText.setOptions.text(), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
 
-            Text("Tags · choose any that apply", style = MaterialTheme.typography.labelMedium, color = EmberTheme.colors.textSecondary)
+            Text(SetLoggingText.tagsHint.text(), style = MaterialTheme.typography.labelMedium, color = EmberTheme.colors.textSecondary)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(SetTag.entries) { tag ->
                     FilterChip(tag.label, tag in set.effectiveTags, onClick = { onToggleTag(tag) })
                 }
             }
 
-            Text("Reps left in the tank", style = MaterialTheme.typography.labelMedium, color = EmberTheme.colors.textSecondary)
+            Text(SetLoggingText.repsLeft.text(), style = MaterialTheme.typography.labelMedium, color = EmberTheme.colors.textSecondary)
             val reserve = set.repsInReserve
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 (0..MAX_REPS_IN_RESERVE).forEach { reps ->
@@ -74,31 +75,31 @@ fun SetOptionsSheet(
             }
             Text(
                 when (reserve) {
-                    null -> "How many more reps you could have done. Leave it empty if you did not track it."
-                    MAX_REPS_IN_RESERVE -> "Same as RPE ${10 - reserve} or easier. Tap it again to clear."
-                    else -> "Same as RPE ${10 - reserve}. Tap it again to clear."
+                    null -> SetLoggingText.reserveEmpty.text()
+                    MAX_REPS_IN_RESERVE -> SetLoggingText.reserveOrEasier.text("rpe" to 10 - reserve)
+                    else -> SetLoggingText.reserveRpe.text("rpe" to 10 - reserve)
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = EmberTheme.colors.textSecondary,
             )
 
-            Text("Note", style = MaterialTheme.typography.labelMedium, color = EmberTheme.colors.textSecondary)
+            Text(SetLoggingText.note.text(), style = MaterialTheme.typography.labelMedium, color = EmberTheme.colors.textSecondary)
             NoteLine(
                 if (set.notes.isBlank()) Icons.AutoMirrored.Rounded.NoteAdd else Icons.AutoMirrored.Rounded.Notes,
                 label = null,
-                text = set.notes.ifBlank { "Add a note to this set" },
-                description = if (set.notes.isBlank()) "Add set note" else "Edit set note",
+                text = set.notes.ifBlank { SetLoggingText.addNoteToSet.text() },
+                description = if (set.notes.isBlank()) SetLoggingText.addSetNote.text() else SetLoggingText.editSetNote.text(),
                 onClick = onEditNote,
             )
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextButton(onClick = { onDuplicate(); onDismiss() }) {
                     Icon(Icons.Rounded.ContentCopy, null, modifier = Modifier.padding(end = 6.dp))
-                    Text("Duplicate")
+                    Text(SetLoggingText.duplicate.text())
                 }
                 TextButton(onClick = { onRemove(); onDismiss() }) {
                     Icon(Icons.Rounded.Delete, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.padding(end = 6.dp))
-                    Text("Remove set", color = MaterialTheme.colorScheme.error)
+                    Text(SetLoggingText.removeSet.text(), color = MaterialTheme.colorScheme.error)
                 }
             }
         }
@@ -106,15 +107,16 @@ fun SetOptionsSheet(
 }
 
 val SetTag.label: String
+    @Composable
     get() = when (this) {
-        SetTag.Warmup -> "Warm-up"
-        SetTag.Drop -> "Drop"
-        SetTag.ToFailure -> "To failure"
-        SetTag.Failed -> "Failed early"
-        SetTag.Negative -> "Negative"
-        SetTag.BackOff -> "Back-off"
-        SetTag.Finisher -> "Finisher"
-        SetTag.Explosive -> "Explosive"
-        SetTag.SlowEccentric -> "Slow down"
-        SetTag.SlowConcentric -> "Slow up"
+        SetTag.Warmup -> SetLoggingText.tagWarmup.text()
+        SetTag.Drop -> SetLoggingText.tagDrop.text()
+        SetTag.ToFailure -> SetLoggingText.tagToFailure.text()
+        SetTag.Failed -> SetLoggingText.tagFailed.text()
+        SetTag.Negative -> SetLoggingText.tagNegative.text()
+        SetTag.BackOff -> SetLoggingText.tagBackOff.text()
+        SetTag.Finisher -> SetLoggingText.tagFinisher.text()
+        SetTag.Explosive -> SetLoggingText.tagExplosive.text()
+        SetTag.SlowEccentric -> SetLoggingText.tagSlowDown.text()
+        SetTag.SlowConcentric -> SetLoggingText.tagSlowUp.text()
     }

@@ -15,6 +15,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.lukr99.workout.ui.i18n.CardsText
+import com.lukr99.workout.ui.i18n.CommonText
 
 /**
  * Confirms an action that loses data for good: the confirm button stays off until the owner types
@@ -40,7 +42,7 @@ fun TypeToConfirmDialog(
                 OutlinedTextField(
                     value = typed,
                     onValueChange = { typed = it },
-                    label = { Text("Type \"$word\" to confirm") },
+                    label = { Text(CardsText.typeToConfirm.text("word" to word)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -52,7 +54,7 @@ fun TypeToConfirmDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(CommonText.cancel.text()) }
         },
         containerColor = MaterialTheme.colorScheme.surface,
         titleContentColor = MaterialTheme.colorScheme.onBackground,

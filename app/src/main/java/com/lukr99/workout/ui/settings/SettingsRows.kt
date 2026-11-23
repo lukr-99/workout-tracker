@@ -31,6 +31,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.lukr99.workout.ui.i18n.SettingsText
 import com.lukr99.workout.ui.theme.EmberTheme
 
 /*
@@ -113,7 +114,7 @@ fun ButtonRow(
     action: String,
     first: Boolean = false,
     busy: Boolean = false,
-    busyLabel: String = "Working…",
+    busyLabel: String = SettingsText.working.text(),
     hintIsError: Boolean = false,
     onClick: () -> Unit,
 ) {
@@ -145,7 +146,7 @@ fun DangerZone(content: @Composable () -> Unit) {
         Modifier.padding(top = 10.dp).fillMaxWidth().clip(RoundedCornerShape(14.dp))
             .border(1.5.dp, colors.danger, RoundedCornerShape(14.dp)).padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
-        Text("DANGER ZONE", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = colors.danger)
+        Text(SettingsText.dangerZone.text(), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = colors.danger)
         content()
     }
 }

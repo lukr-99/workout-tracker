@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui.screens
 
+import com.lukr99.workout.ui.i18n.WorkoutDetailText
 import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -40,9 +41,9 @@ fun rememberExercisePhotoPicker(
                 runCatching {
                     withContext(Dispatchers.IO) {
                         context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-                            ?: error("The selected image could not be opened.")
+                            ?: error(WorkoutDetailText.photoNotOpened.now())
                     }
-                }.onSuccess(onPhoto).onFailure { onError(it.message ?: "Could not copy the selected photo") }
+                }.onSuccess(onPhoto).onFailure { onError(it.message ?: WorkoutDetailText.photoNotCopied.now()) }
             }
         }
     }
@@ -58,9 +59,9 @@ fun rememberExercisePhotoPicker(
         scope.launch {
             runCatching {
                 withContext(Dispatchers.IO) {
-                    file.readBytes().also { file.delete() }.also { require(it.isNotEmpty()) { "The camera did not return an image." } }
+                    file.readBytes().also { file.delete() }.also { require(it.isNotEmpty()) { WorkoutDetailText.cameraNoImage.now() } }
                 }
-            }.onSuccess(onPhoto).onFailure { onError(it.message ?: "Could not save the camera photo") }
+            }.onSuccess(onPhoto).onFailure { onError(it.message ?: WorkoutDetailText.cameraNotSaved.now()) }
         }
     }
 
@@ -72,7 +73,7 @@ fun rememberExercisePhotoPicker(
                         pendingCapture = it
                         camera.launch(it.first)
                     }
-                    .onFailure { onError(it.message ?: "Could not open the camera") }
+                    .onFailure { onError(it.message ?: WorkoutDetailText.cameraNotOpened.now()) }
             },
             choosePhoto = {
                 library.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
@@ -84,6 +85,6 @@ fun rememberExercisePhotoPicker(
 private fun captureTarget(context: Context): Pair<Uri, File> {
     val directory = File(context.cacheDir, "exercise-photo-captures").also(File::mkdirs)
     val file = File(directory, "${UUID.randomUUID()}.jpg")
-    check(file.createNewFile()) { "Could not create a camera image target." }
+    check(file.createNewFile()) { WorkoutDetailText.cameraTargetFailed.now() }
     return FileProvider.getUriForFile(context, "${context.packageName}.files", file) to file
 }

@@ -22,6 +22,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.lukr99.workout.data.transfer.StoreCounts
 import com.lukr99.workout.ui.components.TypeToConfirmDialog
+import com.lukr99.workout.ui.i18n.DataText
 
 /**
  * The danger zone at the end of the Data screen: "Delete all data", outlined in the danger color.
@@ -42,14 +43,10 @@ fun DataDangerZone(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text("Danger zone", style = MaterialTheme.typography.titleMedium, color = danger, modifier = Modifier.semantics { heading() })
-        Text("Delete all data", style = MaterialTheme.typography.bodyLarge)
+        Text(DataText.dangerZone.text(), style = MaterialTheme.typography.titleMedium, color = danger, modifier = Modifier.semantics { heading() })
+        Text(DataText.deleteAll.text(), style = MaterialTheme.typography.bodyLarge)
         Text(
-            blocker ?: (
-                "Removes every workout, run, route, template, custom exercise, photo and setting, " +
-                    "and turns off automatic backup. Your backup files stay where they are. " +
-                    "Data already in Health Connect stays there."
-                ),
+            blocker ?: DataText.deleteAllHint.text(),
             style = MaterialTheme.typography.bodyMedium,
             color = if (blocker != null) danger else MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -58,16 +55,16 @@ fun DataDangerZone(
             enabled = blocker == null && !working,
             modifier = Modifier.testTag(DataTags.DELETE_ALL),
             border = BorderStroke(1.dp, if (blocker == null) danger else MaterialTheme.colorScheme.outline),
-        ) { Text("Delete all data", color = if (blocker == null) danger else MaterialTheme.colorScheme.onSurfaceVariant) }
+        ) { Text(DataText.deleteAll.text(), color = if (blocker == null) danger else MaterialTheme.colorScheme.onSurfaceVariant) }
     }
 
     if (confirming) {
         TypeToConfirmDialog(
-            title = "Delete all data?",
+            title = DataText.deleteAllDialogTitle.text(),
             message = (counts?.let { lossLine(it) + " " } ?: "") +
-                "Ember goes back to a fresh install. This cannot be undone.",
-            word = "delete",
-            confirmLabel = "Delete everything",
+                DataText.deleteAllDialogMessage.text(),
+            word = DataText.deleteWord.text(),
+            confirmLabel = DataText.deleteEverything.text(),
             onConfirm = onErase,
             onDismiss = { confirming = false },
         )

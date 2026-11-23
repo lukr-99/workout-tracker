@@ -57,6 +57,8 @@ import com.lukr99.workout.ui.components.SearchField
 import com.lukr99.workout.ui.components.SegmentedControl
 import com.lukr99.workout.ui.theme.Accents
 import com.lukr99.workout.ui.theme.EmberTheme
+import com.lukr99.workout.ui.i18n.LibraryText
+import com.lukr99.workout.ui.i18n.LocalLanguage
 
 /** Library surface — Templates (with editor) and the exercise Catalog (search/filter, archive). */
 @Composable
@@ -70,16 +72,20 @@ fun LibraryScreen(
     onStartTemplate: (String) -> Unit,
     onOpenTemplate: (String) -> Unit,
 ) {
+    val lang = LocalLanguage.current
     var tab by remember { mutableStateOf(LibTab.Catalog) }
     val templates by vm.templates.collectAsState()
     val exercises by vm.exercises.collectAsState()
     val filter by vm.filter.collectAsState()
 
     Column(Modifier.fillMaxWidth()) {
-        ScreenHeader("Library", "${exercises.size} exercises · ${templates.size} templates") {
+        ScreenHeader(
+            LibraryText.title.text(),
+            LibraryText.exercisesCount.text(exercises.size) + " · " + LibraryText.templatesCount.text(templates.size),
+        ) {
             RoundIconButton(
                 Icons.Rounded.Add,
-                if (tab == LibTab.Templates) "New template" else "New exercise",
+                if (tab == LibTab.Templates) LibraryText.newTemplate.text() else LibraryText.newExercise.text(),
                 { if (tab == LibTab.Templates) onNewTemplate() else onNewExercise("") },
                 filled = true,
             )
@@ -89,7 +95,7 @@ fun LibraryScreen(
             options = listOf(LibTab.Catalog, LibTab.Templates),
             selected = tab,
             onSelect = { tab = it },
-            label = { if (it == LibTab.Catalog) "Exercises" else "Templates" },
+            label = { if (it == LibTab.Catalog) LibraryText.tabExercises.get(lang) else LibraryText.tabTemplates.get(lang) },
         )
         Spacer(Modifier.size(4.dp))
 
@@ -133,9 +139,9 @@ private fun TemplateList(
     if (templates.isEmpty()) {
         EmptyState(
             Icons.Rounded.ContentPaste,
-            "No templates yet",
-            "A template is a saved list of exercises to start a workout from, with a plan for each one if you like.",
-            action = "New template",
+            LibraryText.noTemplates.text(),
+            LibraryText.noTemplatesBody.text(),
+            action = LibraryText.newTemplate.text(),
             onAction = onNew,
         )
         return
@@ -150,17 +156,17 @@ private fun TemplateList(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp))
                     .background(EmberTheme.colors.surface)
                     .border(1.dp, EmberTheme.colors.border, RoundedCornerShape(18.dp))
-                    .clickable(onClickLabel = "Preview ${template.name}") { onEdit(template.id) }.padding(start = 14.dp, top = 12.dp, bottom = 12.dp, end = 10.dp),
+                    .clickable(onClickLabel = LibraryText.previewName.text("name" to template.name)) { onEdit(template.id) }.padding(start = 14.dp, top = 12.dp, bottom = 12.dp, end = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(template.name, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
                     Text(
-                        template.exercises.joinToString(", ") { it.exerciseName }.ifBlank { "No exercises" },
+                        template.exercises.joinToString(", ") { it.exerciseName }.ifBlank { LibraryText.noExercises.text() },
                         style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary, maxLines = 1,
                     )
                 }
-                RoundIconButton(Icons.Rounded.PlayArrow, "Start ${template.name}", { onStart(template.id) }, size = 42.dp)
+                RoundIconButton(Icons.Rounded.PlayArrow, LibraryText.startName.text("name" to template.name), { onStart(template.id) }, size = 42.dp)
             }
         }
     }
@@ -194,23 +200,23 @@ private fun CatalogList(
     }
     Column(Modifier.fillMaxWidth()) {
         Spacer(Modifier.size(8.dp))
-        SearchField(value = searchText, onValueChange = onSearch, placeholder = "Search exercises")
+        SearchField(value = searchText, onValueChange = onSearch, placeholder = LibraryText.searchPlaceholder.text())
         Spacer(Modifier.size(8.dp))
         Row(
             Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             FilterChip(
-                "All",
+                LibraryText.chipAll.text(),
                 selectedCategory == null && selectedBodyPart.isBlank() && selectedEquipment.isBlank(),
                 {
                     onCategory(null); onBodyPart(""); onEquipment("")
                 },
             )
-            FilterChip("Strength", selectedCategory == ExerciseCategory.Strength, {
+            FilterChip(LibraryText.chipStrength.text(), selectedCategory == ExerciseCategory.Strength, {
                 onCategory(if (selectedCategory == ExerciseCategory.Strength) null else ExerciseCategory.Strength)
             })
-            FilterChip("Cardio", selectedCategory == ExerciseCategory.Cardio, {
+            FilterChip(LibraryText.chipCardio.text(), selectedCategory == ExerciseCategory.Cardio, {
                 onCategory(if (selectedCategory == ExerciseCategory.Cardio) null else ExerciseCategory.Cardio)
             })
             bodyParts.forEach { part ->
@@ -218,7 +224,7 @@ private fun CatalogList(
                     onBodyPart(if (selectedBodyPart.equals(part, true)) "" else part)
                 }, dot = Accents.bodyPart(part))
             }
-            FilterChip("Archived", includeArchived, { onIncludeArchived(!includeArchived) })
+            FilterChip(LibraryText.chipArchived.text(), includeArchived, { onIncludeArchived(!includeArchived) })
         }
         if (equipmentOptions.isNotEmpty()) {
             Spacer(Modifier.size(8.dp))
@@ -226,7 +232,7 @@ private fun CatalogList(
                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                FilterChip("Any equipment", selectedEquipment.isBlank(), { onEquipment("") })
+                FilterChip(LibraryText.chipAnyEquipment.text(), selectedEquipment.isBlank(), { onEquipment("") })
                 equipmentOptions.forEach { item ->
                     FilterChip(item, selectedEquipment.equals(item, true), {
                         onEquipment(if (selectedEquipment.equals(item, true)) "" else item)
@@ -238,9 +244,9 @@ private fun CatalogList(
         if (exercises.isEmpty()) {
             EmptyState(
                 Icons.Rounded.SearchOff,
-                "No exercises match",
-                "Clear a filter or try another word. Or add it as your own exercise.",
-                action = if (searchText.isBlank()) "Create exercise" else "Create “${searchText.trim()}”",
+                LibraryText.noMatch.text(),
+                LibraryText.noMatchBody.text(),
+                action = if (searchText.isBlank()) LibraryText.createExercise.text() else LibraryText.createNamed.text("name" to searchText.trim()),
                 onAction = { onCreate(searchText.trim()) },
             )
         } else {
@@ -274,7 +280,7 @@ private fun CatalogRow(ex: Exercise, first: Boolean, last: Boolean, onEdit: () -
     Column(Modifier.fillMaxWidth().clip(shape).background(colors.surface)) {
         if (!first) Box(Modifier.fillMaxWidth().height(1.dp).background(colors.border))
         Row(
-            Modifier.fillMaxWidth().clickable(onClickLabel = "Edit ${ex.name}", onClick = onEdit).padding(start = 14.dp, top = 10.dp, bottom = 10.dp, end = 4.dp),
+            Modifier.fillMaxWidth().clickable(onClickLabel = LibraryText.editName.text("name" to ex.name), onClick = onEdit).padding(start = 14.dp, top = 10.dp, bottom = 10.dp, end = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -292,16 +298,16 @@ private fun CatalogRow(ex: Exercise, first: Boolean, last: Boolean, onEdit: () -
                     }
                 }
                 if (ex.notes.isNotBlank()) {
-                    NoteLine(Icons.Rounded.PushPin, label = null, text = ex.notes, description = "Exercise note", maxLines = 1)
+                    NoteLine(Icons.Rounded.PushPin, label = null, text = ex.notes, description = LibraryText.exerciseNote.text(), maxLines = 1)
                 }
             }
             if (ex.isArchived) {
                 IconButton(onClick = onRestore) {
-                    Icon(Icons.Rounded.Unarchive, "Restore ${ex.name}", tint = colors.primaryText, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Rounded.Unarchive, LibraryText.restoreName.text("name" to ex.name), tint = colors.primaryText, modifier = Modifier.size(20.dp))
                 }
             } else {
                 IconButton(onClick = onArchive) {
-                    Icon(Icons.Rounded.Archive, "Archive ${ex.name}", tint = colors.textSecondary, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Rounded.Archive, LibraryText.archiveName.text("name" to ex.name), tint = colors.textSecondary, modifier = Modifier.size(20.dp))
                 }
             }
         }

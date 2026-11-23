@@ -56,6 +56,8 @@ import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.GymNotesSection
 import com.lukr99.workout.ui.components.TrackPerGymRow
 import com.lukr99.workout.ui.components.resolvedExerciseImage
+import com.lukr99.workout.ui.i18n.LibraryText
+import com.lukr99.workout.ui.i18n.CommonText
 
 /**
  * Create or edit an exercise: photo, name, muscles, equipment, rest, how-to steps, a guide link and
@@ -114,7 +116,7 @@ fun ExerciseEditorScreen(
                     localImagePath = it
                     removedPhotoPath = null
                 }
-                    .onFailure { toast(it.message ?: "Could not save the photo") }
+                    .onFailure { toast(it.message ?: LibraryText.photoSaveFailed.now()) }
             }
         },
         onError = { message -> toast(message) },
@@ -145,29 +147,29 @@ fun ExerciseEditorScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onDone) {
-                Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(Icons.AutoMirrored.Rounded.ArrowBack, CommonText.back.text(), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Text(
-                if (exerciseId == null) "New exercise" else "Edit exercise",
+                if (exerciseId == null) LibraryText.newExercise.text() else LibraryText.editTitle.text(),
                 style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground,
             )
         }
         if (!loaded) {
             Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                Text("Loading…", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(LibraryText.loading.text(), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            SectionTitle("Exercise image")
+            SectionTitle(LibraryText.sectionImage.text())
             Row(verticalAlignment = Alignment.CenterVertically) {
                 ExerciseThumbnail(previewExercise, size = 80.dp)
                 Spacer(Modifier.size(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
                         when {
-                            !localImagePath.isNullOrBlank() -> "Personal photo"
+                            !localImagePath.isNullOrBlank() -> LibraryText.imagePersonal.text()
                             resolvedImage?.attribution != null -> resolvedImage.attribution
-                            resolvedImage != null -> "Exercise image"
-                            else -> "Body-part placeholder"
+                            resolvedImage != null -> LibraryText.imageExercise.text()
+                            else -> LibraryText.imagePlaceholder.text()
                         },
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -179,7 +181,7 @@ fun ExerciseEditorScreen(
                         }) {
                             Icon(Icons.Rounded.Delete, null)
                             Spacer(Modifier.size(6.dp))
-                            Text("Remove")
+                            Text(LibraryText.remove.text())
                         }
                     }
                 }
@@ -194,7 +196,7 @@ fun ExerciseEditorScreen(
                 ) {
                     Icon(Icons.Rounded.CameraAlt, null)
                     Spacer(Modifier.size(6.dp))
-                    Text("Take photo")
+                    Text(LibraryText.takePhoto.text())
                 }
                 OutlinedButton(
                     onClick = photoPicker.choosePhoto,
@@ -202,16 +204,16 @@ fun ExerciseEditorScreen(
                 ) {
                     Icon(Icons.Rounded.PhotoLibrary, null)
                     Spacer(Modifier.size(6.dp))
-                    Text("Choose")
+                    Text(LibraryText.choosePhoto.text())
                 }
             }
-            OutlinedTextField(name, { name = it }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(name, { name = it }, label = { Text(LibraryText.name.text()) }, singleLine = true, modifier = Modifier.fillMaxWidth())
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip("Strength", category == ExerciseCategory.Strength, { category = ExerciseCategory.Strength })
-                FilterChip("Cardio", category == ExerciseCategory.Cardio, { category = ExerciseCategory.Cardio })
+                FilterChip(LibraryText.categoryStrength.text(), category == ExerciseCategory.Strength, { category = ExerciseCategory.Strength })
+                FilterChip(LibraryText.categoryCardio.text(), category == ExerciseCategory.Cardio, { category = ExerciseCategory.Cardio })
             }
 
-            SectionTitle("Main muscle")
+            SectionTitle(LibraryText.sectionMainMuscle.text())
             BodyPartChips(
                 options = bodyPartOptions,
                 isSelected = { it.equals(bodyPart, ignoreCase = true) },
@@ -222,11 +224,11 @@ fun ExerciseEditorScreen(
             )
             OutlinedTextField(
                 bodyPart, { bodyPart = it },
-                label = { Text("Or type one") }, singleLine = true,
+                label = { Text(LibraryText.orTypeOne.text()) }, singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            SectionTitle("Also works")
+            SectionTitle(LibraryText.sectionAlsoWorks.text())
             BodyPartChips(
                 options = bodyPartOptions.filterNot { it.equals(bodyPart, ignoreCase = true) },
                 isSelected = { part -> secondary.any { it.equals(part, ignoreCase = true) } },
@@ -235,31 +237,30 @@ fun ExerciseEditorScreen(
                 },
             )
 
-            OutlinedTextField(equipment, { equipment = it }, label = { Text("Equipment (optional)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(equipment, { equipment = it }, label = { Text(LibraryText.equipment.text()) }, singleLine = true, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(
                 rest, { rest = it.filter(Char::isDigit) },
-                label = { Text("Default rest (seconds, optional)") }, singleLine = true,
+                label = { Text(LibraryText.defaultRest.text()) }, singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            SectionTitle("How to do it")
+            SectionTitle(LibraryText.sectionHowTo.text())
             OutlinedTextField(
                 instructions, { instructions = it },
-                label = { Text("Steps (optional)") },
-                supportingText = { Text("One step per line. They show as a numbered list behind the info button while you log.") },
+                label = { Text(LibraryText.steps.text()) },
+                supportingText = { Text(LibraryText.stepsHint.text()) },
                 minLines = 3,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 modifier = Modifier.fillMaxWidth(),
             )
             OutlinedTextField(
                 videoUrl, { videoUrl = it },
-                label = { Text("Guide or video link (optional)") },
+                label = { Text(LibraryText.guideLink.text()) },
                 isError = linkInvalid,
                 supportingText = {
                     Text(
-                        if (linkInvalid) "This does not look like a web address."
-                        else "For example a YouTube video. Opens in your browser.",
+                        if (linkInvalid) LibraryText.linkInvalid.text() else LibraryText.linkExample.text(),
                     )
                 },
                 singleLine = true,
@@ -267,19 +268,19 @@ fun ExerciseEditorScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            SectionTitle("Your note")
+            SectionTitle(LibraryText.sectionNote.text())
             OutlinedTextField(
                 notes, { notes = it },
-                label = { Text("Note (optional)") },
-                placeholder = { Text("Seat on 4, grip just outside the rings") },
-                supportingText = { Text("Pinned to this exercise every time you log it.") },
+                label = { Text(LibraryText.noteLabel.text()) },
+                placeholder = { Text(LibraryText.notePlaceholder.text()) },
+                supportingText = { Text(LibraryText.noteHint.text()) },
                 minLines = 2,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 modifier = Modifier.fillMaxWidth(),
             )
 
             if (category == ExerciseCategory.Strength) {
-                SectionTitle("Gyms")
+                SectionTitle(LibraryText.sectionGyms.text())
                 TrackPerGymRow(trackPerLocation, onChange = { trackPerLocation = it })
             }
 
@@ -322,16 +323,16 @@ fun ExerciseEditorScreen(
                     ) { result ->
                         if (result.isValid) {
                             vm.removeExercisePhoto(removedPhotoPath)
-                            toast(if (exerciseId == null) "Exercise created" else "Exercise saved")
+                            toast(if (exerciseId == null) LibraryText.created.now() else LibraryText.saved.now())
                             onDone()
                         } else {
-                            toast(result.issues.firstOrNull()?.message ?: "Could not save")
+                            toast(result.issues.firstOrNull()?.message ?: LibraryText.couldNotSave.now())
                         }
                     }
                 },
                 enabled = !linkInvalid,
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text(if (exerciseId == null) "Create exercise" else "Save changes") }
+            ) { Text(if (exerciseId == null) LibraryText.createButton.text() else LibraryText.saveChanges.text()) }
         }
     }
 }

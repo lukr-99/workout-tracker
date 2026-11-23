@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui.screens
 
+import com.lukr99.workout.ui.i18n.ProgressScreenText
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -61,24 +62,24 @@ fun ProgressScreen(
             Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 val month = state.context.workoutsThisMonth
                 StatTile(
-                    "Workouts", state.overview.workouts.toString(), modifier = Modifier.weight(1f).fillMaxHeight(),
-                    delta = if (month > 0) "+$month this month" else "None this month",
+                    ProgressScreenText.workouts.text(), state.overview.workouts.toString(), modifier = Modifier.weight(1f).fillMaxHeight(),
+                    delta = if (month > 0) ProgressScreenText.thisMonth.text("n" to month) else ProgressScreenText.noneThisMonth.text(),
                     deltaPositive = if (month > 0) true else null,
                 )
                 val change = state.context.volumeChangePercent
                 StatTile(
-                    "Volume, 4 wk", Format.volume(state.context.volumeLast4WeeksKg, units), unit = Format.unitLabel(units), modifier = Modifier.weight(1f).fillMaxHeight(),
-                    delta = change?.let { if (it >= 0) "+$it% vs 4 wk before" else "$it% vs 4 wk before" } ?: "last 4 weeks",
+                    ProgressScreenText.volume4Weeks.text(), Format.volume(state.context.volumeLast4WeeksKg, units), unit = Format.unitLabel(units), modifier = Modifier.weight(1f).fillMaxHeight(),
+                    delta = change?.let { ProgressScreenText.volumeVsBefore.text("change" to if (it >= 0) "+$it" else "$it") } ?: ProgressScreenText.last4Weeks.text(),
                     deltaPositive = change?.let { it >= 0 },
                 )
             }
         }
         item {
             Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StatTile("PR sets", state.context.prSetsLast30Days.toString(), modifier = Modifier.weight(1f).fillMaxHeight(), delta = "last 30 days")
+                StatTile(ProgressScreenText.prSets.text(), state.context.prSetsLast30Days.toString(), modifier = Modifier.weight(1f).fillMaxHeight(), delta = ProgressScreenText.last30Days.text())
                 StatTile(
-                    "Streak", state.overview.streakWeeks.toString(), unit = "wk", modifier = Modifier.weight(1f).fillMaxHeight(),
-                    delta = state.context.bestStreakWeeks.takeIf { it > 0 }?.let { "best $it wk" },
+                    ProgressScreenText.streak.text(), state.overview.streakWeeks.toString(), unit = ProgressScreenText.weekShort.text(), modifier = Modifier.weight(1f).fillMaxHeight(),
+                    delta = state.context.bestStreakWeeks.takeIf { it > 0 }?.let { ProgressScreenText.bestStreak.text("n" to it) },
                 )
             }
         }
@@ -94,9 +95,9 @@ fun ProgressScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Row(verticalAlignment = Alignment.Bottom) {
-                    Text("Weekly volume", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.weight(1f))
+                    Text(ProgressScreenText.weeklyVolume.text(), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.weight(1f))
                     Text(
-                        "${Format.volume(state.context.volumeThisWeekKg, units)} ${Format.unitLabel(units)} this week",
+                        ProgressScreenText.volumeThisWeek.text("value" to Format.volume(state.context.volumeThisWeekKg, units), "unit" to Format.unitLabel(units)),
                         style = MaterialTheme.typography.labelLarge,
                         color = EmberTheme.colors.textSecondary,
                     )
@@ -109,14 +110,14 @@ fun ProgressScreen(
         }
 
         item {
-            Text("Exercises", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
+            Text(ProgressScreenText.exercises.text(), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
         }
         if (state.exercises.isEmpty()) {
             item {
                 if (state.loaded) {
-                    EmptyState(Icons.AutoMirrored.Rounded.ShowChart, "No progress yet", "Finish a workout with a few sets. Each exercise you log gets a chart of its best sets here.")
+                    EmptyState(Icons.AutoMirrored.Rounded.ShowChart, ProgressScreenText.emptyTitle.text(), ProgressScreenText.emptyBody.text())
                 } else {
-                    EmptyHint("Loading…")
+                    EmptyHint(ProgressScreenText.loading.text())
                 }
             }
         } else {
@@ -137,9 +138,9 @@ private fun ExerciseRow(summary: ExerciseProgressSummary, units: UnitSystem, onC
         Column(Modifier.weight(1f)) {
             Text(summary.name, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, maxLines = 1)
             if (summary.points.isEmpty()) {
-                Text("No workouts at this gym yet", style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
+                Text(ProgressScreenText.noWorkoutsAtGym.text(), style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
             } else Row(verticalAlignment = Alignment.Bottom) {
-                Text("Est 1RM ", style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
+                Text(ProgressScreenText.estimated1Rm.text() + " ", style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
                 Text(Format.weightWithUnit(summary.bestE1rmKg, units), style = Numbers.copy(fontSize = 14.sp), color = MaterialTheme.colorScheme.onBackground)
                 if (summary.deltaKg != 0.0) {
                     val up = summary.deltaKg > 0

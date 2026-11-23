@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.lukr99.workout.domain.WorkoutEntry
 import com.lukr99.workout.ui.theme.Accents
 import com.lukr99.workout.ui.theme.EmberTheme
+import com.lukr99.workout.ui.i18n.LiveWorkoutText
 
 /**
  * An exercise further down the workout, folded to one row so the one you are on stays in view:
@@ -34,11 +35,10 @@ internal fun CompactEntryRow(entry: WorkoutEntry, onOpen: () -> Unit, modifier: 
     val colors = EmberTheme.colors
     val shape = RoundedCornerShape(18.dp)
     val planned = listOfNotNull(
-        "Superset".takeIf { entry.supersetGroup != null },
+        LiveWorkoutText.superset.text().takeIf { entry.supersetGroup != null },
         when {
-            !entry.isStrength -> "Cardio"
-            entry.strengthSets.size == 1 -> "1 set planned"
-            else -> "${entry.strengthSets.size} sets planned"
+            !entry.isStrength -> LiveWorkoutText.cardio.text()
+            else -> LiveWorkoutText.setsPlanned.text(entry.strengthSets.size)
         },
     ).joinToString(" · ")
     Row(
@@ -47,7 +47,7 @@ internal fun CompactEntryRow(entry: WorkoutEntry, onOpen: () -> Unit, modifier: 
             .clip(shape)
             .background(colors.surface)
             .border(1.dp, colors.border, shape)
-            .clickable(onClickLabel = "Open ${entry.exerciseSnapshotName}", onClick = onOpen)
+            .clickable(onClickLabel = LiveWorkoutText.openName.text("name" to entry.exerciseSnapshotName), onClick = onOpen)
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
