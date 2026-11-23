@@ -74,7 +74,7 @@ background. A run recorded on the web only works with the screen on the whole ti
   storage (`web/storage/`) and the JavaScript glue (`web/platform/`).
 - The storage logic itself is shared code in `app/src/main/java/com/lukr99/workout/data/document/`,
   so the JVM tests in `:app` hold it to the same contract as the Room repository.
-- `web/src/wasmJsMain/resources/` holds the page: `index.html`, `boot.css`, `boot.js` (browser check,
+- `web/src/wasmJsMain/resources/` holds the page: `index.html`, `boot.css`, `appearance.js` (saved theme and accent before the first paint), `boot.js` (browser check,
   loading screen, "too old" and "could not start" screens, update banner), `sw.js` (offline copy),
   `manifest.webmanifest`, `apple-touch-icon.png`, `icons/`, `_headers` (CSP and security headers) and
   `404.html`. The icons come from the Android launcher icon; regenerate them with
