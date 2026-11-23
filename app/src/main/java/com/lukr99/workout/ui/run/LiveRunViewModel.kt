@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui.run
 
+import com.lukr99.workout.ui.i18n.RunText
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
@@ -62,7 +63,7 @@ class LiveRunViewModel(
         }
         viewModelScope.launch {
             val route = repo.getRoute(routeId)
-            _plannedName.value = route?.name?.ifBlank { "your route" }
+            _plannedName.value = route?.name?.ifBlank { RunText.yourRoute.now() }
             _plannedRoute.value = route?.let { r ->
                 r.points.takeIf { it.isNotEmpty() }?.map { it.lat to it.lon }
                     ?: Polyline.decode(r.encodedPolyline)

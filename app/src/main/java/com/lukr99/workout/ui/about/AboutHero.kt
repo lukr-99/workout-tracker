@@ -36,6 +36,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lukr99.workout.ui.i18n.LocalLanguage
 import com.lukr99.workout.ui.components.rememberReduceMotion
 import com.lukr99.workout.ui.theme.EmberTheme
 
@@ -46,6 +47,7 @@ import com.lukr99.workout.ui.theme.EmberTheme
 @Composable
 fun AboutHero(version: String, edition: AboutEdition, modifier: Modifier = Modifier) {
     val colors = EmberTheme.colors
+    val language = LocalLanguage.current
     val shape = RoundedCornerShape(24.dp)
     val drift = rememberSparkDrift()
     Box(
@@ -83,7 +85,7 @@ fun AboutHero(version: String, edition: AboutEdition, modifier: Modifier = Modif
                 modifier = Modifier.padding(top = 16.dp).semantics { heading() },
             )
             Text(
-                AboutContent.TAGLINE.uppercase(),
+                AboutContent.tagline(language).uppercase(),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.6.sp,
@@ -92,14 +94,14 @@ fun AboutHero(version: String, edition: AboutEdition, modifier: Modifier = Modif
                 modifier = Modifier.padding(top = 2.dp),
             )
             Text(
-                AboutContent.summary(edition),
+                AboutContent.summary(edition, language),
                 style = MaterialTheme.typography.bodyLarge,
                 color = colors.textSecondary,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 modifier = Modifier.padding(top = 12.dp),
             )
             Text(
-                AboutContent.versionLabel(version),
+                AboutContent.versionLabel(version, language),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = colors.textPrimary,

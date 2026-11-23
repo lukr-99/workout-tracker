@@ -1,5 +1,8 @@
 package com.lukr99.workout.ui.android
 
+import com.lukr99.workout.ui.i18n.LocalLanguage
+import com.lukr99.workout.ui.i18n.CommonText
+import com.lukr99.workout.ui.i18n.ClaudeText
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,75 +36,76 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun ClaudeSettingsRows(vm: ClaudeSettingsViewModel) {
     val state by vm.ui.collectAsState()
+    val lang = LocalLanguage.current
     LaunchedEffect(state.link) { if (state.link != null) vm.refresh() }
     val link = state.link
     if (link == null) {
         ButtonRow(
-            label = "Not connected",
-            hint = state.error ?: "Let Claude read your workouts and runs when you allow it, and propose templates. Needs your own Claude server.",
+            label = ClaudeText.notConnected.text(),
+            hint = state.error ?: ClaudeText.notConnectedHint.text(),
             hintIsError = state.error != null,
-            action = "Connect",
+            action = ClaudeText.connect.text(),
             first = true,
             onClick = vm::openConnect,
         )
         return
     }
     SettingsRow(
-        label = "Connected",
-        hint = state.error ?: (link.serverUrl.removePrefix("https://") + if (state.pushOn) "" else ". Push is off, so Ember asks when you open it."),
+        label = ClaudeText.connected.text(),
+        hint = state.error ?: (link.serverUrl.removePrefix("https://") + if (state.pushOn) "" else ClaudeText.pushOff.text()),
         hintIsError = state.error != null,
         first = true,
-    ) { PillButton("Disconnect", busy = state.busy == "disconnect", onClick = vm::disconnect) }
+    ) { PillButton(ClaudeText.disconnect.text(), busy = state.busy == "disconnect", onClick = vm::disconnect) }
 
     state.requests.forEach { request ->
-        SettingsRow("Claude asks for your data", "Allow shares your workouts, runs and templates for 30 minutes.") {
+        SettingsRow(ClaudeText.asksTitle.text(), ClaudeText.asksHint.text()) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                PillButton("Deny", busy = state.busy == "request", onClick = { vm.answer(request.id, allow = false) })
-                PillButton("Allow", busy = state.busy == "request", onClick = { vm.answer(request.id, allow = true) })
+                PillButton(ClaudeText.deny.text(), busy = state.busy == "request", onClick = { vm.answer(request.id, allow = false) })
+                PillButton(ClaudeText.allow.text(), busy = state.busy == "request", onClick = { vm.answer(request.id, allow = true) })
             }
         }
     }
-    SettingsRow("When Claude asks for your data", "Ask me shows Allow and Deny. Shared data is deleted from the server after 30 minutes.")
+    SettingsRow(ClaudeText.whenAsksTitle.text(), ClaudeText.whenAsksHint.text())
     SegmentedControl(
         options = ShareMode.entries,
         selected = state.shareMode,
         onSelect = vm::setShareMode,
         label = {
             when (it) {
-                ShareMode.Ask -> "Ask me"
-                ShareMode.Automatic -> "Always share"
-                ShareMode.Never -> "Never"
+                ShareMode.Ask -> ClaudeText.modeAsk.get(lang)
+                ShareMode.Automatic -> ClaudeText.modeAutomatic.get(lang)
+                ShareMode.Never -> ClaudeText.modeNever.get(lang)
             }
         },
         modifier = Modifier.padding(bottom = 8.dp),
     )
     ButtonRow(
-        label = "Shared data",
-        hint = state.share?.let { "Shared at ${clock(it.sharedAt)}, deleted at ${clock(it.keepUntil)}." } ?: "Nothing is shared now. Share before a chat to skip the request.",
-        action = "Share now",
+        label = ClaudeText.sharedData.text(),
+        hint = state.share?.let { ClaudeText.sharedAt.text("from" to clock(it.sharedAt), "until" to clock(it.keepUntil)) } ?: ClaudeText.nothingShared.text(),
+        action = ClaudeText.shareNow.text(),
         busy = state.busy == "share",
-        busyLabel = "Sharing…",
+        busyLabel = ClaudeText.sharing.text(),
         onClick = vm::shareNow,
     )
     if (state.share != null) {
-        ButtonRow("Stop sharing", "Deletes the copy on the server now.", "Delete", busy = state.busy == "stop", onClick = vm::stopSharing)
+        ButtonRow(ClaudeText.stopSharing.text(), ClaudeText.stopSharingHint.text(), ClaudeText.delete.text(), busy = state.busy == "stop", onClick = vm::stopSharing)
     }
     ButtonRow(
-        label = "Connect Claude",
-        hint = "Shows the address and a one-time code for Claude's Connectors settings.",
-        action = "Get code",
+        label = ClaudeText.connectClaude.text(),
+        hint = ClaudeText.connectClaudeHint.text(),
+        action = ClaudeText.getCode.text(),
         busy = state.busy == "code",
         onClick = vm::getCode,
     )
     if (state.proposals.isEmpty()) {
-        SettingsRow("Claude's proposals", "Nothing waits for you. Templates and exercises Claude proposes show here.")
+        SettingsRow(ClaudeText.proposalsTitle.text(), ClaudeText.proposalsEmpty.text())
     } else {
         state.proposals.forEach { ProposalRow(it, busy = state.busy == "proposal", onAccept = { vm.accept(it) }, onReject = { vm.reject(it) }) }
     }
     ButtonRow(
-        label = "Remove Claude",
-        hint = "Stops Claude reading Ember at once. Remove the connector in Claude too.",
-        action = "Remove",
+        label = ClaudeText.removeClaude.text(),
+        hint = ClaudeText.removeHint.text(),
+        action = ClaudeText.remove.text(),
         busy = state.busy == "remove",
         onClick = vm::removeClaude,
     )
@@ -126,24 +130,25 @@ fun ClaudeSettingsDialogs(vm: ClaudeSettingsViewModel, onConnect: (serverUrl: St
     }
     state.code?.let { code ->
         val clipboard = LocalClipboardManager.current
+        val addressCopied = ClaudeText.addressCopied.text()
         AlertDialog(
             onDismissRequest = vm::dismissCode,
-            title = { Text("Connect Claude") },
+            title = { Text(ClaudeText.connectClaude.text()) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("In Claude, open Settings, Connectors, Add custom connector, and paste this address:", color = EmberTheme.colors.textSecondary)
+                    Text(ClaudeText.codeIntro.text(), color = EmberTheme.colors.textSecondary)
                     Text(code.mcpUrl, style = MaterialTheme.typography.bodyMedium, fontFamily = FontFamily.Monospace)
-                    Text("On the sign-in page that opens, enter this code. It works once, until ${clock(code.expiresAt)}.", color = EmberTheme.colors.textSecondary)
+                    Text(ClaudeText.codeSignIn.text("time" to clock(code.expiresAt)), color = EmberTheme.colors.textSecondary)
                     Text(code.code, style = MaterialTheme.typography.headlineMedium, fontFamily = FontFamily.Monospace)
                 }
             },
             confirmButton = {
                 TextButton(onClick = {
                     clipboard.setText(AnnotatedString(code.mcpUrl))
-                    toast("Address copied.")
-                }) { Text("Copy address") }
+                    toast(addressCopied)
+                }) { Text(ClaudeText.copyAddress.text()) }
             },
-            dismissButton = { TextButton(onClick = vm::dismissCode) { Text("Done") } },
+            dismissButton = { TextButton(onClick = vm::dismissCode) { Text(CommonText.done.text()) } },
         )
     }
 }
@@ -151,12 +156,12 @@ fun ClaudeSettingsDialogs(vm: ClaudeSettingsViewModel, onConnect: (serverUrl: St
 @Composable
 private fun ProposalRow(proposal: Proposal, busy: Boolean, onAccept: () -> Unit, onReject: () -> Unit) {
     SettingsRow(
-        label = (if (proposal.isTemplate) "Template: " else "Exercise: ") + proposal.title,
+        label = (if (proposal.isTemplate) ClaudeText.templatePrefix.text() else ClaudeText.exercisePrefix.text()) + proposal.title,
         hint = listOf(proposal.reason, proposalDetails(proposal)).filter(String::isNotBlank).joinToString("\n"),
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            PillButton("Reject", busy = busy, onClick = onReject)
-            PillButton("Accept", busy = busy, onClick = onAccept)
+            PillButton(ClaudeText.reject.text(), busy = busy, onClick = onReject)
+            PillButton(ClaudeText.accept.text(), busy = busy, onClick = onAccept)
         }
     }
 }

@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.lukr99.workout.ui.i18n.CardsText
 
 /**
  * The `＋ Start` chooser (locked shell decision): pick a **Lift** (existing live workout) or a **Run**
@@ -52,12 +53,12 @@ fun StartChooserSheet(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Text(
-                "Start",
+                CardsText.start.text(),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )
-            ChooserRow(Icons.Rounded.FitnessCenter, "Lift", "Log a strength workout", onLift, AppTags.START_LIFT)
-            ChooserRow(Icons.AutoMirrored.Rounded.DirectionsRun, "Run", "Track a run with GPS + map", onRun, AppTags.START_RUN)
+            ChooserRow(Icons.Rounded.FitnessCenter, CardsText.lift.text(), CardsText.logStrength.text(), onLift, AppTags.START_LIFT)
+            ChooserRow(Icons.AutoMirrored.Rounded.DirectionsRun, CardsText.run.text(), CardsText.trackRun.text(), onRun, AppTags.START_RUN)
         }
     }
 }
@@ -84,12 +85,12 @@ fun ResumeChooserSheet(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Text(
-                "Resume",
+                CardsText.resume.text(),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )
-            ChooserRow(Icons.Rounded.FitnessCenter, "Lift", "Back to your live workout", onLift, AppTags.START_LIFT)
-            ChooserRow(Icons.AutoMirrored.Rounded.DirectionsRun, "Run", "Back to your live run", onRun, AppTags.START_RUN)
+            ChooserRow(Icons.Rounded.FitnessCenter, CardsText.lift.text(), CardsText.backToWorkout.text(), onLift, AppTags.START_LIFT)
+            ChooserRow(Icons.AutoMirrored.Rounded.DirectionsRun, CardsText.run.text(), CardsText.backToRun.text(), onRun, AppTags.START_RUN)
         }
     }
 }

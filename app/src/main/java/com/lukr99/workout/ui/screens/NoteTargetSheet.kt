@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui.screens
 
+import com.lukr99.workout.ui.i18n.NoteSheetText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import com.lukr99.workout.domain.WorkoutSession
@@ -21,9 +22,9 @@ fun NoteTargetSheet(
 ) {
     when (target) {
         NoteTarget.Workout -> NoteEditorSheet(
-            title = "Workout note",
+            title = NoteSheetText.workoutTitle.text(),
             initial = session.notes,
-            hint = "How the session felt, sleep, anything worth remembering. Shown in your history.",
+            hint = NoteSheetText.workoutHint.text(),
             onSave = onSaveWorkout,
             onDismiss = onDismiss,
         )
@@ -34,10 +35,10 @@ fun NoteTargetSheet(
                 return
             }
             NoteEditorSheet(
-                title = "Note · ${entry.exerciseSnapshotName}",
+                title = NoteSheetText.entryTitle.text("name" to entry.exerciseSnapshotName),
                 initial = entry.notes,
-                hint = "Next time you log this exercise, this note shows up as \"Last time\".",
-                placeholder = "Grip felt off, go up 2.5 kg next time",
+                hint = NoteSheetText.entryHint.text(),
+                placeholder = NoteSheetText.entryPlaceholder.text(),
                 onSave = { onSaveEntry(target.entryId, it) },
                 onDismiss = onDismiss,
             )
@@ -50,9 +51,9 @@ fun NoteTargetSheet(
                 return
             }
             NoteEditorSheet(
-                title = "Set ${index + 1} note",
+                title = NoteSheetText.setTitle.text("n" to index + 1),
                 initial = entry.strengthSets[index].notes,
-                hint = "A note on just this set, like a spotter or a pause.",
+                hint = NoteSheetText.setHint.text(),
                 onSave = { onSaveSet(target.entryId, target.setId, it) },
                 onDismiss = onDismiss,
             )

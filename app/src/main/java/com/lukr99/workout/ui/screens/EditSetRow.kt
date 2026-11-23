@@ -32,6 +32,7 @@ import com.lukr99.workout.ui.components.SetTagChips
 import com.lukr99.workout.ui.components.ValueCell
 import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
+import com.lukr99.workout.ui.i18n.LiveWorkoutText
 
 /** One set of a past workout: reps and weight open the number pad, plus a note and remove. */
 @Composable
@@ -70,13 +71,13 @@ internal fun EditSetRow(
         IconButton(onClick = onNote, modifier = Modifier.size(38.dp)) {
             Icon(
                 Icons.AutoMirrored.Rounded.NoteAdd,
-                if (set.notes.isBlank()) "Add note to set ${index + 1}" else "Edit note on set ${index + 1}",
+                if (set.notes.isBlank()) LiveWorkoutText.addSetNote.text("n" to index + 1) else LiveWorkoutText.editSetNote.text("n" to index + 1),
                 tint = if (set.notes.isBlank()) EmberTheme.colors.textSecondary else MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(16.dp),
             )
         }
         IconButton(onClick = onRemove, modifier = Modifier.size(38.dp)) {
-            Icon(Icons.Rounded.Delete, "Remove set", tint = EmberTheme.colors.textSecondary, modifier = Modifier.size(16.dp))
+            Icon(Icons.Rounded.Delete, LiveWorkoutText.removeSet.text(), tint = EmberTheme.colors.textSecondary, modifier = Modifier.size(16.dp))
         }
     }
     SetTagChips(set, Modifier.fillMaxWidth().padding(start = 48.dp, top = 3.dp))
@@ -84,14 +85,14 @@ internal fun EditSetRow(
 
     when (editingWeight) {
         false -> com.lukr99.workout.ui.components.NumberPadSheet(
-            title = "Set ${index + 1} · Reps",
+            title = LiveWorkoutText.setReps.text("n" to index + 1),
             initial = set.reps.toDouble(),
             quickStep = 1.0,
             onValue = { onReps(it.toInt()) },
             onDismiss = { editingWeight = null },
         )
         true -> com.lukr99.workout.ui.components.NumberPadSheet(
-            title = "Set ${index + 1} · Weight",
+            title = LiveWorkoutText.setWeight.text("n" to index + 1),
             initial = Format.toDisplay(set.weightKg, units),
             quickStep = 2.5,
             allowDecimal = true,

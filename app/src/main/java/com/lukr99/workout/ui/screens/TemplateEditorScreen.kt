@@ -1,5 +1,8 @@
 package com.lukr99.workout.ui.screens
 
+import com.lukr99.workout.ui.i18n.TemplateEditorText
+import com.lukr99.workout.ui.i18n.CommonText
+import com.lukr99.workout.ui.i18n.NoteSheetText
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -118,10 +121,10 @@ fun TemplateEditorScreen(
         ),
     ) { result ->
         if (result.isValid) {
-            toast(if (templateId == null) "Template created" else "Template saved")
+            toast(if (templateId == null) TemplateEditorText.created.now() else TemplateEditorText.saved.now())
             onDone()
         } else {
-            toast(result.issues.firstOrNull()?.message ?: "Could not save")
+            toast(result.issues.firstOrNull()?.message ?: TemplateEditorText.couldNotSave.now())
         }
     }
 
@@ -131,9 +134,9 @@ fun TemplateEditorScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            RoundIconButton(Icons.AutoMirrored.Rounded.ArrowBack, "Back", onDone)
+            RoundIconButton(Icons.AutoMirrored.Rounded.ArrowBack, CommonText.back.text(), onDone)
             Text(
-                if (templateId == null) "New template" else "Edit template",
+                if (templateId == null) TemplateEditorText.newTemplate.text() else TemplateEditorText.editTemplate.text(),
                 style = MaterialTheme.typography.titleLarge,
                 color = colors.textPrimary,
                 modifier = Modifier.weight(1f),
@@ -145,7 +148,7 @@ fun TemplateEditorScreen(
                     .clickable(enabled = canSave, role = Role.Button) { save() }.padding(horizontal = 20.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(if (templateId == null) "Create" else "Save", fontWeight = FontWeight.Bold, color = if (canSave) colors.onPrimary else colors.textSecondary)
+                Text(if (templateId == null) TemplateEditorText.create.text() else CommonText.save.text(), fontWeight = FontWeight.Bold, color = if (canSave) colors.onPrimary else colors.textSecondary)
             }
         }
 
@@ -165,12 +168,12 @@ fun TemplateEditorScreen(
             state = listState,
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 40.dp),
         ) {
-            item(key = "name") { Field("Name", name, "Push day", singleLine = true) { name = it } }
-            item(key = "notes") { Field("Template note", notes, "Heavy bench first. Short rests on the accessories.", singleLine = false) { notes = it } }
+            item(key = "name") { Field(TemplateEditorText.nameLabel.text(), name, TemplateEditorText.namePlaceholder.text(), singleLine = true) { name = it } }
+            item(key = "notes") { Field(TemplateEditorText.noteLabel.text(), notes, TemplateEditorText.notePlaceholder.text(), singleLine = false) { notes = it } }
             item(key = "exercises-title") {
                 Row(Modifier.padding(top = 20.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        "EXERCISES · ${rows.size}",
+                        TemplateEditorText.exercisesHeader.text("n" to rows.size),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
                         letterSpacing = 1.sp,
@@ -178,7 +181,7 @@ fun TemplateEditorScreen(
                         modifier = Modifier.weight(1f),
                     )
                     if (rows.size > 1) {
-                        Text("Hold the dots to move", style = MaterialTheme.typography.labelLarge, color = colors.textSecondary)
+                        Text(TemplateEditorText.holdDots.text(), style = MaterialTheme.typography.labelLarge, color = colors.textSecondary)
                     }
                 }
             }
@@ -228,12 +231,12 @@ fun TemplateEditorScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(Icons.Rounded.Add, null, tint = colors.primaryText, modifier = Modifier.size(20.dp))
-                    Text("  Add exercises", fontWeight = FontWeight.Bold, color = colors.primaryText)
+                    Text("  " + TemplateEditorText.addExercises.text(), fontWeight = FontWeight.Bold, color = colors.primaryText)
                 }
             }
             item(key = "footer") {
                 Text(
-                    "Changes here only affect new workouts. Logged workouts stay as they were.",
+                    TemplateEditorText.footer.text(),
                     style = MaterialTheme.typography.labelLarge,
                     color = colors.textSecondary,
                     modifier = Modifier.fillMaxWidth().padding(top = 14.dp),
@@ -247,8 +250,8 @@ fun TemplateEditorScreen(
             exercises = catalog,
             onDismiss = { showPicker = false },
             onPick = {},
-            title = "Add exercises",
-            subtitle = "They go to the end of the template with 3 sets each.",
+            title = TemplateEditorText.addExercises.text(),
+            subtitle = TemplateEditorText.pickerSubtitle.text(),
             onPickMany = { picked, asSuperset ->
                 val group = if (asSuperset && picked.size > 1) (rows.mapNotNull { it.supersetGroup }.maxOrNull() ?: 0) + 1 else null
                 rows.addAll(picked.map { TemplateRow(newId(), it.id, it.name, it.primaryBodyPart, notes = "", targetSets = 3, supersetGroup = group) })
@@ -263,9 +266,9 @@ fun TemplateEditorScreen(
             editingNoteFor = null
         } else {
             NoteEditorSheet(
-                title = "Note · ${rows[index].name}",
+                title = NoteSheetText.entryTitle.text("name" to rows[index].name),
                 initial = rows[index].notes,
-                hint = "Copied into the workout when you start this template, like \"pause on the chest\".",
+                hint = TemplateEditorText.rowNoteHint.text(),
                 onSave = { text -> rows[index] = rows[index].copy(notes = text) },
                 onDismiss = { editingNoteFor = null },
             )

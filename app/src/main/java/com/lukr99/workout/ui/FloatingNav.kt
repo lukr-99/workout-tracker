@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lukr99.workout.ui.i18n.AppText
 import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
@@ -68,6 +69,7 @@ internal fun FloatingNav(
 @Composable
 private fun NavItem(tab: Tab, current: Tab, modifier: Modifier, onClick: () -> Unit) {
     val on = tab == current
+    val label = tab.label.text()
     val tint = if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
     Column(
         modifier.testTag(AppTags.nav(tab)).clip(RoundedCornerShape(16.dp)).clickable(onClick = onClick).padding(vertical = 3.dp),
@@ -78,10 +80,10 @@ private fun NavItem(tab: Tab, current: Tab, modifier: Modifier, onClick: () -> U
                 if (on) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f) else Color.Transparent,
                 CircleShape,
             ).padding(horizontal = 12.dp, vertical = 5.dp),
-        ) { Icon(tab.icon, tab.label, tint = tint, modifier = Modifier.size(20.dp)) }
+        ) { Icon(tab.icon, label, tint = tint, modifier = Modifier.size(20.dp)) }
         Spacer(Modifier.height(2.dp))
         Text(
-            tab.label, color = tint, fontSize = 12.sp,
+            label, color = tint, fontSize = 12.sp,
             fontWeight = if (on) FontWeight.SemiBold else FontWeight.Medium,
             maxLines = 1, softWrap = false,
         )
@@ -99,14 +101,14 @@ private fun StartAction(resumeMode: Boolean, onStart: () -> Unit, modifier: Modi
         ) {
             Icon(
                 if (resumeMode) Icons.Rounded.PlayArrow else Icons.Rounded.Add,
-                contentDescription = if (resumeMode) "Resume workout" else "Start workout",
+                contentDescription = if (resumeMode) AppText.resumeWorkout.text() else AppText.startWorkout.text(),
                 tint = EmberTheme.colors.onPrimary,
                 modifier = Modifier.size(28.dp),
             )
         }
         Spacer(Modifier.height(2.dp))
         Text(
-            if (resumeMode) "Resume" else "Start",
+            if (resumeMode) AppText.resume.text() else AppText.start.text(),
             color = MaterialTheme.colorScheme.primary, fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false,
             textAlign = TextAlign.Center,

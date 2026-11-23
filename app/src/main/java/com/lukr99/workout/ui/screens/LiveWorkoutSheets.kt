@@ -23,6 +23,9 @@ import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.NoteEditorSheet
 import com.lukr99.workout.ui.components.QuickCreateSheet
 import com.lukr99.workout.ui.components.SetOptionsSheet
+import com.lukr99.workout.ui.i18n.LiveWorkoutText
+import com.lukr99.workout.ui.i18n.LiveSheetsText
+import com.lukr99.workout.ui.i18n.LocalLanguage
 
 /** Shows the one sheet or dialog [sheet] names over the live workout. [onSheet] opens another or closes it. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,6 +47,7 @@ internal fun LiveWorkoutSheets(
     toast: (String) -> Unit,
 ) {
     val close = { onSheet(null) }
+    val lang = LocalLanguage.current
     val entries = session?.entries.orEmpty()
     when (sheet) {
         null -> Unit
@@ -54,15 +58,21 @@ internal fun LiveWorkoutSheets(
                 exercises = exercises,
                 onDismiss = close,
                 onPick = {},
-                title = "Add exercises",
-                subtitle = "Pick one or more. They go to the end of the workout.",
+                title = LiveWorkoutText.addExercises.get(lang),
+                subtitle = LiveSheetsText.pickerSubtitle.get(lang),
                 recentIds = recentIds,
-                hint = { ex -> lastSets[ex.id]?.maxByOrNull { it.weightKg }?.let { "Last ${Format.weight(it.weightKg, units)} × ${it.reps}" } },
+                hint = { ex -> lastSets[ex.id]?.maxByOrNull { it.weightKg }?.let { LiveSheetsText.lastWeightReps.get(lang, "weight" to Format.weight(it.weightKg, units), "reps" to it.reps) } },
                 onCreate = { onSheet(LiveSheet.QuickCreate(it)) },
                 onPickMany = { picked, asSuperset ->
                     vm.addExercises(picked, asSuperset)
                     close()
-                    toast(if (picked.size == 1) "${picked.single().name} added" else "${picked.size} exercises added")
+                    toast(
+                        if (picked.size == 1) {
+                            LiveSheetsText.oneExerciseAdded.get(lang, "name" to picked.single().name)
+                        } else {
+                            LiveSheetsText.exercisesAdded.get(lang, picked.size)
+                        },
+                    )
                 },
             )
         }
@@ -72,17 +82,17 @@ internal fun LiveWorkoutSheets(
             onCreate = {
                 vm.createAndAdd(it)
                 close()
-                toast("${it.name} created and added")
+                toast(LiveSheetsText.createdAndAdded.get(lang, "name" to it.name))
             },
             onDismiss = { onSheet(LiveSheet.AddExercise) },
         )
         is LiveSheet.Replace -> {
             val entry = entries.firstOrNull { it.id == sheet.entryId } ?: return close()
             val sameKind = exercises.filter { it.category == entry.entryType && it.id != entry.exerciseId }
-            ExercisePickerScreen(sameKind, onDismiss = close, title = "Replace ${entry.exerciseSnapshotName}", onPick = {
+            ExercisePickerScreen(sameKind, onDismiss = close, title = LiveSheetsText.replaceTitle.get(lang, "name" to entry.exerciseSnapshotName), onPick = {
                 vm.replaceExercise(entry.id, it)
                 close()
-                toast("Swapped for ${it.name}")
+                toast(LiveSheetsText.swappedFor.get(lang, "name" to it.name))
             })
         }
         is LiveSheet.Menu -> {
@@ -152,10 +162,10 @@ internal fun LiveWorkoutSheets(
             val locationId = remember(sheet) { session?.locationId } ?: return close()
             if (session?.locationId != locationId) return close()
             NoteEditorSheet(
-                title = "Gym note · ${entry.exerciseSnapshotName}",
+                title = LiveSheetsText.gymNoteTitle.get(lang, "name" to entry.exerciseSnapshotName),
                 initial = locationNotes[entry.exerciseId].orEmpty(),
-                hint = "Setup for ${locations.nameOf(session?.locationId)} only, like \"double pulley, seat 4\". It shows on this exercise every time you train here.",
-                placeholder = "Double pulley, seat 4",
+                hint = LiveSheetsText.gymNoteSheetHint.get(lang, "place" to locations.nameOf(session?.locationId)),
+                placeholder = LiveSheetsText.gymNotePlaceholder.get(lang),
                 onSave = { vm.setLocationNote(entry.exerciseId, locationId, it) },
                 onDismiss = close,
             )
@@ -191,9 +201,9 @@ internal fun LiveWorkoutSheets(
                         onClose()
                         toast(
                             when {
-                                from == null || choice == TemplateChoice.Keep -> "Workout saved"
-                                choice == TemplateChoice.Update -> "Workout saved, ${from.name} updated"
-                                else -> "Workout saved as a new template too"
+                                from == null || choice == TemplateChoice.Keep -> LiveSheetsText.workoutSaved.get(lang)
+                                choice == TemplateChoice.Update -> LiveSheetsText.workoutSavedUpdated.get(lang, "name" to from.name)
+                                else -> LiveSheetsText.workoutSavedNewTemplate.get(lang)
                             },
                         )
                     }
@@ -202,9 +212,9 @@ internal fun LiveWorkoutSheets(
             )
         }
         LiveSheet.ConfirmDiscard -> ConfirmDialog(
-            title = "Discard workout?",
-            message = "This session will not be saved to your history.",
-            confirmLabel = "Discard",
+            title = LiveSheetsText.discardTitle.get(lang),
+            message = LiveSheetsText.discardMessage.get(lang),
+            confirmLabel = LiveSheetsText.discardConfirm.get(lang),
             destructive = true,
             onConfirm = { vm.discard { onClose() } },
             onDismiss = close,

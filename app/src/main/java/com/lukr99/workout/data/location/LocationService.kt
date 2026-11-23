@@ -206,11 +206,11 @@ class LocationService : Service() {
 
     private fun buildNotification(state: LiveRunState): Notification {
         val paused = state.phase == RunTracker.Phase.Paused
-        val distanceKm = "%.2f km".format(state.distanceMeters / Pace.METERS_PER_KM)
+        val distanceKm = "%.2f".format(state.distanceMeters / Pace.METERS_PER_KM)
         val time = Pace.formatDuration(state.movingSeconds)
         val pace = Pace.formatPace(state.avgPaceSecPerKm)
-        val title = if (paused) "Run paused" else "Recording run"
-        val text = "$distanceKm · $time · $pace /km"
+        val title = getString(if (paused) R.string.run_notification_paused else R.string.run_notification_recording)
+        val text = getString(R.string.run_notification_text, distanceKm, time, pace)
 
         val content = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java),
@@ -228,11 +228,11 @@ class LocationService : Service() {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
         if (paused) {
-            builder.addAction(0, "Resume", action(ACTION_RESUME))
+            builder.addAction(0, getString(R.string.run_notification_resume), action(ACTION_RESUME))
         } else {
-            builder.addAction(0, "Pause", action(ACTION_PAUSE))
+            builder.addAction(0, getString(R.string.run_notification_pause), action(ACTION_PAUSE))
         }
-        builder.addAction(0, "Finish", action(ACTION_STOP))
+        builder.addAction(0, getString(R.string.run_notification_finish), action(ACTION_STOP))
         return builder.build()
     }
 
@@ -247,9 +247,9 @@ class LocationService : Service() {
     private fun createChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                CHANNEL_ID, "Run tracking", NotificationManager.IMPORTANCE_LOW,
+                CHANNEL_ID, getString(R.string.run_channel_name), NotificationManager.IMPORTANCE_LOW,
             ).apply {
-                description = "Ongoing notification while a run is being recorded."
+                description = getString(R.string.run_channel_description)
                 setShowBadge(false)
             }
             notifications.createNotificationChannel(channel)

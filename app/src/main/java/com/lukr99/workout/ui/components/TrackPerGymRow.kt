@@ -17,22 +17,23 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.lukr99.workout.ui.i18n.LocationText
 import com.lukr99.workout.ui.theme.EmberTheme
 
 /** The exercise editor's "Track per gym" switch, with what it does and that nothing is lost. */
 @Composable
 fun TrackPerGymRow(checked: Boolean, onChange: (Boolean) -> Unit, modifier: Modifier = Modifier) {
     val colors = EmberTheme.colors
+    val title = LocationText.trackPerGym.text()
     Row(
         modifier.fillMaxWidth().clickable(role = Role.Switch) { onChange(!checked) }.padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Column(Modifier.weight(1f)) {
-            Text("Track per gym", style = MaterialTheme.typography.titleMedium, color = colors.textPrimary)
+            Text(title, style = MaterialTheme.typography.titleMedium, color = colors.textPrimary)
             Text(
-                "For machines that differ between gyms. Last time, records and progress only count workouts " +
-                    "at the gym you are in. Turn it off to see all gyms together again; no history is lost.",
+                LocationText.trackPerGymHelp.text(),
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.textSecondary,
             )
@@ -40,7 +41,7 @@ fun TrackPerGymRow(checked: Boolean, onChange: (Boolean) -> Unit, modifier: Modi
         Switch(
             checked = checked,
             onCheckedChange = onChange,
-            modifier = Modifier.semantics { contentDescription = "Track per gym" },
+            modifier = Modifier.semantics { contentDescription = title },
             colors = SwitchDefaults.colors(checkedTrackColor = colors.primary, checkedThumbColor = colors.onPrimary),
         )
     }

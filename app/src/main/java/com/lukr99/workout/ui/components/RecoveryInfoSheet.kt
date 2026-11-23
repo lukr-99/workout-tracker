@@ -33,6 +33,7 @@ import com.lukr99.workout.domain.recovery.MuscleGroup
 import com.lukr99.workout.domain.recovery.RecoveryConfig
 import com.lukr99.workout.domain.recovery.WeeklyVolumeStatus
 import com.lukr99.workout.ui.AppTags
+import com.lukr99.workout.ui.i18n.RecoveryText
 import com.lukr99.workout.ui.theme.EmberTheme
 import kotlin.math.roundToInt
 
@@ -60,58 +61,49 @@ fun RecoveryInfoSheet(config: RecoveryConfig, onDismiss: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
-                "How the muscle map works",
+                RecoveryText.infoTitle.text(),
                 style = MaterialTheme.typography.titleLarge,
                 color = colors.textPrimary,
                 modifier = Modifier.semantics { heading() },
             )
 
-            Heading("Recovery")
+            Heading(RecoveryText.headingRecovery.text())
             Body(
-                "Each working set adds fatigue to the muscles it trains. The main muscle gets a full set " +
-                    "and each secondary muscle gets ${share(config.secondaryMuscleContribution)} a set. " +
-                    "Warm-ups do not count.",
+                if (config.secondaryMuscleContribution == 0.5) {
+                    RecoveryText.infoFatigueHalf.text()
+                } else {
+                    RecoveryText.infoFatiguePercent.text("p" to (config.secondaryMuscleContribution * 100).roundToInt())
+                },
             )
-            Body(
-                "Sets close to failure count more. A set to failure counts as ${config.maxEffort} sets and an " +
-                    "easy set as ${config.minEffort}. Without reps in reserve or RPE, a set counts as 1. " +
-                    "Negatives and slow lowering count a bit more, because they cause more muscle damage.",
+            Body(RecoveryText.infoEffort.text("max" to config.maxEffort, "min" to config.minEffort))
+            Body(RecoveryText.infoFades.text("times" to halfLives(config)))
+            Swatch(colors.success, RecoveryText.swatchReady.text("pct" to config.readyThreshold.roundToInt()))
+            Swatch(
+                colors.warning,
+                RecoveryText.swatchRecovering.text(
+                    "from" to config.fatiguedThreshold.roundToInt(),
+                    "to" to config.readyThreshold.roundToInt() - 1,
+                ),
             )
-            Body(
-                "Fatigue fades over time. Half of it is gone after about ${halfLives(config)}. " +
-                    "Big leg muscles take longest. A muscle shows as ready when 6 hard sets would be about " +
-                    "90% recovered, which is 1.5 to 3 days for most muscles.",
-            )
-            Swatch(colors.success, "Ready: ${config.readyThreshold.roundToInt()}% or more")
-            Swatch(colors.warning, "Recovering: ${config.fatiguedThreshold.roundToInt()} to ${config.readyThreshold.roundToInt() - 1}%")
-            Swatch(colors.danger, "Fatigued: below ${config.fatiguedThreshold.roundToInt()}%")
-            Swatch(MaterialTheme.colorScheme.surfaceVariant, "Gray: not trained in the last 2 weeks")
+            Swatch(colors.danger, RecoveryText.swatchFatigued.text("pct" to config.fatiguedThreshold.roundToInt()))
+            Swatch(MaterialTheme.colorScheme.surfaceVariant, RecoveryText.swatchGray.text())
 
-            Heading("Weekly sets")
-            Body(
-                "Counts hard sets in the last 7 days, with the same full and half sets. A set with " +
-                    "${config.easySetRir.roundToInt()} or more reps in reserve is too easy to count.",
-            )
-            Body(
-                "Studies link ${sets(target.start)} to ${sets(target.endInclusive)} hard sets per muscle per week " +
-                    "with the most muscle growth. Fewer still help. More add little and are harder to recover from. " +
-                    "The line under each bar marks that range.",
-            )
-            Swatch(MuscleTints.weekly(WeeklyVolumeStatus.Below, colors)!!, "Below ${sets(target.start)} sets")
-            Swatch(colors.success, "${sets(target.start)} to ${sets(target.endInclusive)} sets: in range")
-            Swatch(colors.violet, "Above ${sets(target.endInclusive)} sets")
+            Heading(RecoveryText.headingWeekly.text())
+            Body(RecoveryText.infoWeeklyCount.text("n" to config.easySetRir.roundToInt()))
+            Body(RecoveryText.infoStudies.text("from" to sets(target.start), "to" to sets(target.endInclusive)))
+            Swatch(MuscleTints.weekly(WeeklyVolumeStatus.Below, colors)!!, RecoveryText.swatchBelowSets.text("v" to sets(target.start)))
+            Swatch(colors.success, RecoveryText.swatchRangeSets.text("from" to sets(target.start), "to" to sets(target.endInclusive)))
+            Swatch(colors.violet, RecoveryText.swatchAboveSets.text("v" to sets(target.endInclusive)))
 
-            Heading("Keep in mind")
-            Body(
-                "This is an estimate. Sleep, food, stress and how used you are to the training matter too. " +
-                    "If a muscle still feels sore or weak, give it more time.",
-            )
+            Heading(RecoveryText.headingKeepInMind.text())
+            Body(RecoveryText.infoEstimate.text())
 
-            Heading("Sources")
+            Heading(RecoveryText.headingSources.text())
+            val openSource = RecoveryText.openSource.text()
             RecoverySources.all.forEach { source ->
                 Column(
                     Modifier.fillMaxWidth()
-                        .clickable(role = Role.Button, onClickLabel = "Open source") { uriHandler.openUri(source.url) }
+                        .clickable(role = Role.Button, onClickLabel = openSource) { uriHandler.openUri(source.url) }
                         .padding(vertical = 4.dp),
                 ) {
                     Text(source.title, style = MaterialTheme.typography.bodyMedium, color = colors.primaryText)
@@ -146,14 +138,18 @@ private fun Swatch(color: Color, label: String) {
     }
 }
 
-private fun share(value: Double): String = if (value == 0.5) "half" else "${(value * 100).roundToInt()}% of"
-
 /** "12 hours for forearms and abs, 15 for shoulders, ...", from the config's half-lives. */
+@Composable
 private fun halfLives(config: RecoveryConfig): String {
+    val and = RecoveryText.and.text()
     val groups = MuscleGroup.entries.groupBy { config.halfLifeFor(it).roundToInt() }.entries.sortedBy { it.key }
     return groups.mapIndexed { index, (hours, muscles) ->
-        val names = muscles.map { it.label.lowercase() }
-        val list = if (names.size == 1) names.single() else names.dropLast(1).joinToString(", ") + " and " + names.last()
-        if (index == 0) "$hours hours for $list" else "$hours for $list"
-    }.let { parts -> parts.dropLast(1).joinToString(", ") + " and " + parts.last() }
+        val names = muscles.map { RecoveryText.muscleName(it).text() }
+        val list = if (names.size == 1) names.single() else names.dropLast(1).joinToString(", ") + " $and " + names.last()
+        if (index == 0) {
+            RecoveryText.firstHalfLife.text("h" to hours, "list" to list)
+        } else {
+            RecoveryText.nextHalfLife.text("h" to hours, "list" to list)
+        }
+    }.let { parts -> parts.dropLast(1).joinToString(", ") + " $and " + parts.last() }
 }

@@ -19,6 +19,7 @@ import com.lukr99.workout.data.images.ExerciseImageResolver
 import com.lukr99.workout.data.images.ExerciseImageSource
 import com.lukr99.workout.data.images.ResolvedExerciseImage
 import com.lukr99.workout.domain.Exercise
+import com.lukr99.workout.ui.i18n.PickerText
 
 val LocalExerciseImageResolver = compositionLocalOf<ExerciseImageResolver?> { null }
 
@@ -73,7 +74,7 @@ fun ExerciseThumbnail(
         if (resolved != null) {
             ExerciseImage(
                 model = resolved.model,
-                contentDescription = "${exercise.name} illustration",
+                contentDescription = PickerText.illustration.text("name" to exercise.name),
                 modifier = Modifier.matchParentSize(),
             )
         }

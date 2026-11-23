@@ -1,5 +1,7 @@
 package com.lukr99.workout.ui.screens
 
+import com.lukr99.workout.ui.i18n.WorkoutDetailText
+import com.lukr99.workout.ui.i18n.CommonText
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -102,7 +104,7 @@ fun WorkoutDetailScreen(
     val session = draft
     if (session == null) {
         Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-            Text("Loading…", color = EmberTheme.colors.textSecondary)
+            Text(WorkoutDetailText.loading.text(), color = EmberTheme.colors.textSecondary)
         }
         return
     }
@@ -117,7 +119,7 @@ fun WorkoutDetailScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(Icons.AutoMirrored.Rounded.ArrowBack, CommonText.back.text(), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Column(Modifier.weight(1f)) {
                 BasicTextField(
@@ -133,26 +135,26 @@ fun WorkoutDetailScreen(
                 IconButton(onClick = { shareMenu = true }, enabled = !preparingShare) {
                     Icon(
                         Icons.Rounded.Share,
-                        if (preparingShare) "Preparing share preview" else "Share workout",
+                        if (preparingShare) WorkoutDetailText.preparingShare.text() else WorkoutDetailText.shareWorkout.text(),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 DropdownMenu(expanded = shareMenu, onDismissRequest = { shareMenu = false }) {
                     DropdownMenuItem(
-                        text = { Text("Share image") },
+                        text = { Text(WorkoutDetailText.shareImage.text()) },
                         onClick = {
                             shareMenu = false
                             scope.launch {
                                 preparingShare = true
                                 runCatching { sharer.prepareImage(session, units == UnitSystem.Imperial) }
                                     .onSuccess { preparedShare = it }
-                                    .onFailure { toast("Could not prepare the share image") }
+                                    .onFailure { toast(WorkoutDetailText.couldNotPrepareImage.now()) }
                                 preparingShare = false
                             }
                         },
                     )
                     DropdownMenuItem(
-                        text = { Text("Share as text") },
+                        text = { Text(WorkoutDetailText.shareAsText.text()) },
                         onClick = {
                             shareMenu = false
                             val text = WorkoutShareSummary.text(
@@ -160,15 +162,15 @@ fun WorkoutDetailScreen(
                                 imperial = units == UnitSystem.Imperial,
                                 dateLabel = Format.fullDate(session.completedDateUtc ?: session.startedAtUtc),
                             )
-                            if (!sharer.shareText(session.name.ifBlank { "Workout" }, text)) {
-                                toast("Could not open the share sheet")
+                            if (!sharer.shareText(session.name.ifBlank { WorkoutDetailText.workoutFallback.now() }, text)) {
+                                toast(WorkoutDetailText.couldNotOpenShareSheet.now())
                             }
                         },
                     )
                 }
             }
             TextButton(onClick = { vm.save(session) { onBack() } }) {
-                Text("Save", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                Text(CommonText.save.text(), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
             }
         }
 
@@ -222,13 +224,13 @@ fun WorkoutDetailScreen(
                         IconButton(onClick = { noteTarget = NoteTarget.Entry(entry.id) }) {
                             Icon(
                                 Icons.AutoMirrored.Rounded.NoteAdd,
-                                if (entry.notes.isBlank()) "Add note" else "Edit note",
+                                if (entry.notes.isBlank()) WorkoutDetailText.addNote.text() else WorkoutDetailText.editNote.text(),
                                 tint = EmberTheme.colors.textSecondary,
                                 modifier = Modifier.size(18.dp),
                             )
                         }
                         IconButton(onClick = { draft = session.copy(entries = session.entries.filterNot { it.id == entry.id }) }) {
-                            Icon(Icons.Rounded.Delete, "Remove exercise", tint = EmberTheme.colors.textSecondary, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Rounded.Delete, WorkoutDetailText.removeExercise.text(), tint = EmberTheme.colors.textSecondary, modifier = Modifier.size(18.dp))
                         }
                     }
                     ExerciseNotesPanel(
@@ -259,7 +261,7 @@ fun WorkoutDetailScreen(
                             }
                         }) {
                             Icon(Icons.Rounded.Add, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
-                            Text(" Add set", color = MaterialTheme.colorScheme.primary)
+                            Text(" " + WorkoutDetailText.addSet.text(), color = MaterialTheme.colorScheme.primary)
                         }
                     } else {
                         com.lukr99.workout.ui.components.CardioEditor(
@@ -279,7 +281,7 @@ fun WorkoutDetailScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(Icons.Rounded.Add, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                    Text("  Add exercise", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                    Text("  " + WorkoutDetailText.addExercise.text(), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                 }
             }
             item {
@@ -290,11 +292,11 @@ fun WorkoutDetailScreen(
                     TextButton(
                         onClick = { vm.makeTemplate(sessionId) {} },
                         modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surface),
-                    ) { Text("Make template", color = MaterialTheme.colorScheme.primary) }
+                    ) { Text(WorkoutDetailText.makeTemplate.text(), color = MaterialTheme.colorScheme.primary) }
                     TextButton(
                         onClick = { confirmDelete = true },
                         modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surface),
-                    ) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+                    ) { Text(CommonText.delete.text(), color = MaterialTheme.colorScheme.error) }
                 }
             }
         }
@@ -322,14 +324,14 @@ fun WorkoutDetailScreen(
             preview = preview,
             onDismiss = { preparedShare = null },
             onShare = {
-                if (!preview.share()) toast("Could not open the share sheet")
+                if (!preview.share()) toast(WorkoutDetailText.couldNotOpenShareSheet.now())
             },
         )
     }
 
     if (pickingLocation) {
         LocationPickerSheet(
-            title = "Where was this workout?",
+            title = WorkoutDetailText.whereWasWorkout.text(),
             locations = locations,
             selectedId = session.locationId,
             onPick = { id -> draft = session.copy(locationId = id) },
@@ -356,9 +358,9 @@ fun WorkoutDetailScreen(
 
     if (confirmDelete) {
         ConfirmDialog(
-            title = "Delete workout?",
-            message = "This permanently removes the session from your history.",
-            confirmLabel = "Delete",
+            title = WorkoutDetailText.deleteTitle.text(),
+            message = WorkoutDetailText.deleteMessage.text(),
+            confirmLabel = CommonText.delete.text(),
             destructive = true,
             onConfirm = { vm.delete(sessionId) { onBack() } },
             onDismiss = { confirmDelete = false },

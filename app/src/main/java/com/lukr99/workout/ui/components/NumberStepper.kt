@@ -38,6 +38,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.lukr99.workout.ui.i18n.CardsText
 import androidx.compose.ui.unit.sp
 import com.lukr99.workout.ui.theme.Numbers
 import kotlinx.coroutines.delay
@@ -77,7 +78,7 @@ fun NumberStepper(
             .background(MaterialTheme.colorScheme.surfaceVariant),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        StepButton(Icons.Rounded.Remove, "decrease") { onValueChange(clamp(value - step)) }
+        StepButton(Icons.Rounded.Remove, CardsText.decrease.text()) { onValueChange(clamp(value - step)) }
         Box(Modifier.width(valueWidth), contentAlignment = Alignment.Center) {
             if (editing) {
                 BasicTextField(
@@ -117,7 +118,7 @@ fun NumberStepper(
                 )
             }
         }
-        StepButton(Icons.Rounded.Add, "increase") { onValueChange(clamp(value + step)) }
+        StepButton(Icons.Rounded.Add, CardsText.increase.text()) { onValueChange(clamp(value + step)) }
     }
 }
 

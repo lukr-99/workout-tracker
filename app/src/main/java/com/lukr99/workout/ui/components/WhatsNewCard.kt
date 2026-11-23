@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.lukr99.workout.domain.WhatsNewNote
+import com.lukr99.workout.ui.i18n.CardsText
 import com.lukr99.workout.ui.theme.EmberTheme
 
 /** The card on Home after an update: what changed, in a few lines, until "Got it" puts it away. */
@@ -60,7 +61,7 @@ fun WhatsNewCard(note: WhatsNewNote, onDismiss: () -> Unit, modifier: Modifier =
             }
         }
         Text(
-            "Got it",
+            CardsText.gotIt.text(),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
             color = colors.onPrimary,
@@ -68,7 +69,7 @@ fun WhatsNewCard(note: WhatsNewNote, onDismiss: () -> Unit, modifier: Modifier =
                 .align(Alignment.End)
                 .clip(RoundedCornerShape(50))
                 .background(colors.primary)
-                .clickable(role = Role.Button, onClickLabel = "Hide what's new", onClick = onDismiss)
+                .clickable(role = Role.Button, onClickLabel = CardsText.hideWhatsNew.text(), onClick = onDismiss)
                 .padding(horizontal = 18.dp, vertical = 10.dp),
         )
     }

@@ -2,6 +2,7 @@ package com.lukr99.workout.ui
 
 import com.lukr99.workout.domain.ExerciseCategory
 import com.lukr99.workout.domain.LocationScope
+import com.lukr99.workout.ui.i18n.AppText
 
 data class ExerciseProgressSummary(
     val exerciseId: String,
@@ -24,8 +25,8 @@ data class ExerciseProgressSummary(
     val canSplitByGym: Boolean get() = if (scope.perLocation) series.isNotEmpty() else series.size >= 2
 
     /** The switch's first option: the line the chart opens on. */
-    val defaultViewLabel: String get() = if (scope.perLocation) "This gym" else "All gyms"
+    val defaultViewLabel: String get() = if (scope.perLocation) AppText.thisGym.now() else AppText.allGyms.now()
 
     /** The switch's second option: one line per place. */
-    val splitViewLabel: String get() = if (scope.perLocation) "All gyms" else "By gym"
+    val splitViewLabel: String get() = if (scope.perLocation) AppText.allGyms.now() else AppText.byGym.now()
 }

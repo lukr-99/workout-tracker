@@ -31,6 +31,8 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.lukr99.workout.ui.i18n.CommonText
+import com.lukr99.workout.ui.i18n.LocationText
 import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
@@ -57,7 +59,7 @@ fun LocationSetupCard(
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Icon(Icons.Rounded.Place, contentDescription = null, tint = colors.primaryText, modifier = Modifier.size(22.dp))
             Text(
-                "Where do you train?",
+                LocationText.whereTrain.text(),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = colors.textPrimary,
@@ -65,14 +67,14 @@ fun LocationSetupCard(
             )
         }
         Text(
-            "Name your main gym. Machines differ between gyms, so Ember can keep their numbers apart.",
+            LocationText.nameMainGym.text(),
             style = MaterialTheme.typography.bodyMedium,
             color = colors.textPrimary,
         )
         OutlinedTextField(
             value = name,
             onValueChange = { name = it },
-            placeholder = { Text("Brno gym") },
+            placeholder = { Text(LocationText.gymPlaceholder.text()) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -83,19 +85,19 @@ fun LocationSetupCard(
         ) {
             Checkbox(checked = assignPast, onCheckedChange = null, modifier = Modifier.padding(end = 8.dp))
             Text(
-                if (unknownWorkouts == 1) "My past workout was there" else "My $unknownWorkouts past workouts were there",
+                LocationText.pastWorkoutsThere.text(unknownWorkouts),
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.textPrimary,
             )
         }
         Text(
-            "Otherwise they stay at Unknown location and still count everywhere. You can move them later in History.",
+            LocationText.otherwiseUnknown.text(),
             style = MaterialTheme.typography.bodySmall,
             color = colors.textSecondary,
         )
         Row(Modifier.align(Alignment.End), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            CardButton("Not now", filled = false, onClick = onDismiss)
-            CardButton("Save", filled = true, enabled = name.isNotBlank()) { onSave(name.trim(), assignPast) }
+            CardButton(LocationText.notNow.text(), filled = false, onClick = onDismiss)
+            CardButton(CommonText.save.text(), filled = true, enabled = name.isNotBlank()) { onSave(name.trim(), assignPast) }
         }
     }
 }

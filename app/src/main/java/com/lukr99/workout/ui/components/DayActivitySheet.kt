@@ -31,6 +31,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.lukr99.workout.domain.DayActivity
 import com.lukr99.workout.ui.AppTags
+import com.lukr99.workout.ui.i18n.CardsText
 import com.lukr99.workout.ui.theme.EmberTheme
 
 /** Lists a day's workouts and runs when Home's week strip has more than one on the tapped day. */
@@ -60,7 +61,7 @@ fun DayActivitySheet(
                     Modifier.testTag(AppTags.dayActivity(activity.id))
                         .fillMaxWidth().clip(RoundedCornerShape(16.dp))
                         .background(colors.surfaceRaised)
-                        .clickable(role = Role.Button, onClickLabel = "Open ${activity.name}") { onOpen(activity) }
+                        .clickable(role = Role.Button, onClickLabel = CardsText.openActivity.text("name" to activity.name)) { onOpen(activity) }
                         .padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -68,14 +69,14 @@ fun DayActivitySheet(
                     Box(Modifier.size(40.dp).clip(CircleShape).background(colors.primary), contentAlignment = Alignment.Center) {
                         Icon(
                             if (activity.isRun) Icons.AutoMirrored.Rounded.DirectionsRun else Icons.Rounded.FitnessCenter,
-                            contentDescription = if (activity.isRun) "Run" else "Workout",
+                            contentDescription = if (activity.isRun) CardsText.run.text() else CardsText.workout.text(),
                             tint = colors.onPrimary,
                             modifier = Modifier.size(20.dp),
                         )
                     }
                     Column(Modifier.weight(1f)) {
                         Text(
-                            activity.name.ifBlank { if (activity.isRun) "Run" else "Workout" },
+                            activity.name.ifBlank { if (activity.isRun) CardsText.run.text() else CardsText.workout.text() },
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = colors.textPrimary,

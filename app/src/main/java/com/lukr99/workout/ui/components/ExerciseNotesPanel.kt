@@ -26,6 +26,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.lukr99.workout.domain.PreviousEntryNote
+import com.lukr99.workout.ui.i18n.CommonText
+import com.lukr99.workout.ui.i18n.NotesText
 
 /**
  * The notes that travel with an exercise while you log it, most lasting first:
@@ -39,7 +41,7 @@ fun ExerciseNotesPanel(
     entryNote: String,
     onEditEntryNote: (() -> Unit)?,
     modifier: Modifier = Modifier,
-    entryNoteLabel: String? = "Today",
+    entryNoteLabel: String? = CommonText.today.text(),
     /** The machine note at the workout's gym, like "double pulley, seat 4". */
     locationNote: String = "",
     locationName: String? = null,
@@ -50,23 +52,23 @@ fun ExerciseNotesPanel(
     if (exerciseNote.isBlank() && previous == null && entryNote.isBlank() && locationNote.isBlank()) return
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         if (exerciseNote.isNotBlank()) {
-            NoteLine(Icons.Rounded.PushPin, label = null, text = exerciseNote, description = "Exercise note")
+            NoteLine(Icons.Rounded.PushPin, label = null, text = exerciseNote, description = NotesText.exerciseNote.text())
         }
         if (locationNote.isNotBlank()) {
             NoteLine(
                 Icons.Rounded.Place,
                 label = locationName,
                 text = locationNote,
-                description = "Machine note for this gym",
+                description = NotesText.machineNote.text(),
                 onClick = onEditLocationNote,
             )
         }
         if (previous != null) {
             NoteLine(
                 Icons.Rounded.History,
-                label = "Last time, ${Format.shortDate(previous.atUtc)}",
+                label = NotesText.lastTime.text("date" to Format.shortDate(previous.atUtc)),
                 text = previous.text,
-                description = "Note from last time",
+                description = NotesText.noteFromLastTime.text(),
             )
         }
         if (entryNote.isNotBlank()) {
@@ -74,7 +76,7 @@ fun ExerciseNotesPanel(
                 Icons.AutoMirrored.Rounded.Notes,
                 label = entryNoteLabel,
                 text = entryNote,
-                description = "Note for this workout",
+                description = NotesText.noteForWorkout.text(),
                 onClick = onEditEntryNote,
             )
         }

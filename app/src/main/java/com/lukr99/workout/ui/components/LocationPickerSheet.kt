@@ -42,6 +42,7 @@ import com.lukr99.workout.domain.Location
 import com.lukr99.workout.domain.LocationKind
 import com.lukr99.workout.domain.forPicker
 import com.lukr99.workout.ui.AppTags
+import com.lukr99.workout.ui.i18n.LocationText
 import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
@@ -78,7 +79,7 @@ fun LocationPickerSheet(
         ) {
             Text(title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
             Text(
-                "Exercises you track per gym show the numbers from here.",
+                LocationText.pickerHelp.text(),
                 style = MaterialTheme.typography.bodySmall,
                 color = EmberTheme.colors.textSecondary,
                 modifier = Modifier.padding(bottom = 8.dp),
@@ -91,18 +92,18 @@ fun LocationPickerSheet(
                     modifier = Modifier.testTag(AppTags.location(location.id)),
                 ) { onPick(location.id); onDismiss() }
             }
-            PickerRow(Icons.Rounded.QuestionMark, Location.UNKNOWN_NAME, showSelection && selectedId == null) {
+            PickerRow(Icons.Rounded.QuestionMark, LocationText.unknownLocation.text(), showSelection && selectedId == null) {
                 onPick(null); onDismiss()
             }
-            PickerRow(Icons.Rounded.Add, "Add a gym", selected = false, accent = true) { adding = true }
+            PickerRow(Icons.Rounded.Add, LocationText.addGym.text(), selected = false, accent = true) { adding = true }
         }
     }
     if (adding) {
         TextEntryDialog(
-            title = "Add a gym",
+            title = LocationText.addGym.text(),
             initial = "",
-            placeholder = "Brno gym",
-            confirmLabel = "Add",
+            placeholder = LocationText.gymPlaceholder.text(),
+            confirmLabel = LocationText.add.text(),
             onDismiss = { adding = false },
             onSave = { name -> onAddGym(name); onDismiss() },
         )
@@ -140,6 +141,6 @@ private fun PickerRow(
             color = if (accent) colors.primaryText else colors.textPrimary,
             modifier = Modifier.weight(1f),
         )
-        if (selected) Icon(Icons.Rounded.Check, contentDescription = "Selected", tint = colors.primaryText, modifier = Modifier.size(22.dp))
+        if (selected) Icon(Icons.Rounded.Check, contentDescription = LocationText.selected.text(), tint = colors.primaryText, modifier = Modifier.size(22.dp))
     }
 }

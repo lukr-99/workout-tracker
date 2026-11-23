@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.lukr99.workout.ui.i18n.CommonText
 import androidx.compose.ui.unit.sp
 import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
@@ -184,7 +185,7 @@ private fun KeyButton(label: String, modifier: Modifier = Modifier, onClick: () 
         if (label == "⌫") {
             Icon(
                 Icons.AutoMirrored.Rounded.Backspace,
-                "delete",
+                CommonText.delete.text(),
                 tint = EmberTheme.colors.textSecondary,
                 modifier = Modifier.padding(2.dp),
             )

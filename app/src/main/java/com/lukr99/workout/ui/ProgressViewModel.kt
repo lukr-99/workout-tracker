@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui
 
+import com.lukr99.workout.ui.i18n.AppText
 import com.lukr99.workout.domain.nowMillis
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -90,7 +91,7 @@ class ProgressViewModel(
                 .mapNotNull { r -> r.dimensions[DimensionKeys.Week]?.let { it to (r.metrics[MetricKeys.VolumeKg]?.value ?: 0.0) } }
                 .sortedBy { it.first }
                 .takeLast(10)
-                .map { (week, vol) -> WeeklyVolume(label = week.substringAfter("-W").let { "W$it" }, volumeKg = vol) }
+                .map { (week, vol) -> WeeklyVolume(label = week.substringAfter("-W").let { AppText.weekLabel.now("n" to it) }, volumeKg = vol) }
 
             uiState.value = ProgressUiState(
                 loaded = true,

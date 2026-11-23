@@ -68,6 +68,10 @@ import com.lukr99.workout.ui.components.weekdayName
 import com.lukr99.workout.ui.components.WhatsNewCard
 import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
+import com.lukr99.workout.ui.i18n.HomeText
+import com.lukr99.workout.ui.i18n.CommonText
+import com.lukr99.workout.ui.i18n.SettingsText
+import com.lukr99.workout.ui.i18n.AppText
 
 /** Home: what is in progress, how the week is going, and the fastest ways to start. */
 @Composable
@@ -105,8 +109,8 @@ fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            ScreenHeader("Today", localDateText(Format.today(), DateStyle.Header)) {
-                RoundIconButton(Icons.Rounded.Settings, "Settings", onOpenSettings)
+            ScreenHeader(CommonText.today.text(), localDateText(Format.today(), DateStyle.Header)) {
+                RoundIconButton(Icons.Rounded.Settings, SettingsText.title.text(), onOpenSettings)
             }
         }
         updateCard?.let { card -> item(key = "update") { card() } }
@@ -114,20 +118,19 @@ fun HomeScreen(
         whatsNew?.let { note -> item(key = "whats-new") { WhatsNewCard(note, vm::dismissWhatsNew) } }
         locationSetupCard?.let { card -> item(key = "location-setup") { card() } }
         active?.let { session -> item { ResumeCard(session, onResume) } }
-        item { SectionLabel("This week") { Streak(snapshot.consistency.currentWeeklyStreak) } }
+        item { SectionLabel(HomeText.thisWeek.text()) { Streak(snapshot.consistency.currentWeeklyStreak) } }
         item { WeekCard(week, units, showRuns) { if (it.isRun) onOpenRun(it.id) else onOpenSession(it.id) } }
         if (templates.isNotEmpty()) {
-            item { SectionLabel("Start from a template") { TextLink("All templates", onOpenTemplates) } }
+            item { SectionLabel(HomeText.startFromTemplate.text()) { TextLink(HomeText.allTemplates.text(), onOpenTemplates) } }
             item { TemplateCard(templates.take(4), lastDone, onStartTemplate, onOpenTemplate) }
         }
-        item { SectionLabel("Recent") {} }
+        item { SectionLabel(HomeText.recent.text()) {} }
         if (recent.isEmpty()) {
             item {
                 EmptyState(
                     Icons.Rounded.History,
-                    if (showRuns) "No workouts or runs yet" else "No workouts yet",
-                    if (showRuns) "Tap the orange Start button below to log a workout or record a run."
-                    else "Tap the orange Start button below to log a workout.",
+                    if (showRuns) HomeText.emptyTitleBoth.text() else HomeText.emptyTitleWorkouts.text(),
+                    if (showRuns) HomeText.emptyBodyBoth.text() else HomeText.emptyBodyWorkouts.text(),
                 )
             }
         } else {
@@ -171,7 +174,7 @@ private fun Streak(weeks: Int) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         Icon(Icons.Rounded.LocalFireDepartment, null, tint = EmberTheme.colors.primaryText, modifier = Modifier.size(16.dp))
         Text(
-            if (weeks == 1) "1 week streak" else "$weeks week streak",
+            HomeText.weekStreak.text(weeks),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
             color = EmberTheme.colors.primaryText,
@@ -195,7 +198,7 @@ private fun ResumeCard(session: WorkoutSession, onResume: () -> Unit) {
     ) {
         Column(Modifier.weight(1f)) {
             Text(
-                "IN PROGRESS · $minutes MIN",
+                HomeText.inProgress.text("n" to minutes),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp,
@@ -203,7 +206,7 @@ private fun ResumeCard(session: WorkoutSession, onResume: () -> Unit) {
             )
             Text(session.name, style = MaterialTheme.typography.titleLarge, color = colors.textPrimary)
             Text(
-                "$finished of ${session.entries.size} exercises · $doneSets sets done",
+                HomeText.exercisesOf.text(session.entries.size, "done" to finished) + " · " + HomeText.setsDone.text(doneSets),
                 style = MaterialTheme.typography.labelLarge,
                 color = colors.textSecondary,
             )
@@ -215,7 +218,7 @@ private fun ResumeCard(session: WorkoutSession, onResume: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Icon(Icons.Rounded.PlayArrow, null, tint = colors.onPrimary, modifier = Modifier.size(18.dp))
-            Text("Resume", color = colors.onPrimary, fontWeight = FontWeight.Bold)
+            Text(AppText.resume.text(), color = colors.onPrimary, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -243,10 +246,10 @@ internal fun WeekCard(week: TrainingWeek, units: UnitSystem, showRuns: Boolean =
         Box(Modifier.fillMaxWidth().height(1.dp).background(colors.border))
         Spacer(Modifier.height(12.dp))
         Row(Modifier.fillMaxWidth()) {
-            WeekTotal(week.workouts.toString(), "", if (week.workouts == 1) "Workout" else "Workouts", Modifier.weight(1f))
-            WeekTotal(Format.volume(week.liftedKg, units), Format.unitLabel(units), "Lifted", Modifier.weight(1f))
+            WeekTotal(week.workouts.toString(), "", HomeText.totalWorkouts.text(week.workouts), Modifier.weight(1f))
+            WeekTotal(Format.volume(week.liftedKg, units), Format.unitLabel(units), HomeText.totalLifted.text(), Modifier.weight(1f))
             if (showRuns) {
-                WeekTotal(shortDistance(week.runMeters, units), if (units == UnitSystem.Imperial) "mi" else "km", "Run", Modifier.weight(1f))
+                WeekTotal(shortDistance(week.runMeters, units), if (units == UnitSystem.Imperial) "mi" else "km", HomeText.totalRun.text(), Modifier.weight(1f))
             }
         }
     }
@@ -265,15 +268,16 @@ private fun DayMark(day: TrainingDay, modifier: Modifier, onClick: () -> Unit) {
     val colors = EmberTheme.colors
     val name = weekdayName(day.date.dayOfWeek, narrow = false)
     val what = when {
-        day.lifted && day.ran -> "workout and run"
-        day.lifted -> "workout"
-        day.ran -> "run"
-        else -> "rest"
+        day.lifted && day.ran -> HomeText.dayWorkoutAndRun.text()
+        day.lifted -> HomeText.dayWorkout.text()
+        day.ran -> HomeText.dayRun.text()
+        else -> HomeText.dayRest.text()
     }
+    val todaySuffix = HomeText.dayToday.text()
     val clickLabel = when {
-        day.activities.size > 1 -> "Choose a workout or run"
-        day.ran -> "Open run"
-        else -> "Open workout"
+        day.activities.size > 1 -> HomeText.chooseActivity.text()
+        day.ran -> HomeText.openRun.text()
+        else -> HomeText.openWorkout.text()
     } + ", " + Format.longDay(day.date)
     val tap = if (day.trained) {
         Modifier.clip(RoundedCornerShape(12.dp)).clickable(role = Role.Button, onClickLabel = clickLabel, onClick = onClick)
@@ -282,7 +286,7 @@ private fun DayMark(day: TrainingDay, modifier: Modifier, onClick: () -> Unit) {
     }
     Column(
         modifier.testTag(AppTags.homeDay(day.date)).heightIn(min = 48.dp).then(tap).padding(vertical = 4.dp)
-            .semantics(mergeDescendants = true) { contentDescription = "$name: $what" + if (day.isToday) ", today" else "" },
+            .semantics(mergeDescendants = true) { contentDescription = "$name: $what" + if (day.isToday) todaySuffix else "" },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
@@ -327,9 +331,10 @@ private fun TemplateCard(templates: List<WorkoutTemplate>, lastDone: Map<String,
             .border(1.dp, colors.border, RoundedCornerShape(20.dp)),
     ) {
         templates.forEachIndexed { index, template ->
+            val startLabel = HomeText.startName.text("name" to template.name)
             if (index > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(colors.border))
             Row(
-                Modifier.fillMaxWidth().clickable(onClickLabel = "Preview ${template.name}") { onOpen(template.id) }.padding(horizontal = 14.dp, vertical = 12.dp),
+                Modifier.fillMaxWidth().clickable(onClickLabel = HomeText.previewName.text("name" to template.name)) { onOpen(template.id) }.padding(horizontal = 14.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
@@ -338,7 +343,7 @@ private fun TemplateCard(templates: List<WorkoutTemplate>, lastDone: Map<String,
                     Text(
                         listOfNotNull(
                             lastDone[template.id]?.let { Format.relativeDay(it) },
-                            template.exercises.sortedBy { it.sortOrder }.joinToString { it.exerciseName }.ifBlank { "No exercises yet" },
+                            template.exercises.sortedBy { it.sortOrder }.joinToString { it.exerciseName }.ifBlank { HomeText.noExercisesYet.text() },
                         ).joinToString(" · "),
                         style = MaterialTheme.typography.labelLarge,
                         color = colors.textSecondary,
@@ -350,7 +355,7 @@ private fun TemplateCard(templates: List<WorkoutTemplate>, lastDone: Map<String,
                     Modifier.size(42.dp).clip(CircleShape).background(colors.surfaceRaised)
                         .border(1.dp, colors.border, CircleShape)
                         .clickable(role = Role.Button) { onStart(template.id) }
-                        .semantics { contentDescription = "Start ${template.name}" },
+                        .semantics { contentDescription = startLabel },
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(Icons.Rounded.PlayArrow, null, tint = colors.primaryText, modifier = Modifier.size(22.dp))
@@ -375,7 +380,7 @@ private fun RecentRow(row: HomeRecent, units: UnitSystem, onClick: () -> Unit) {
         ) {
             Icon(
                 if (row.isRun) Icons.AutoMirrored.Rounded.DirectionsRun else Icons.Rounded.FitnessCenter,
-                contentDescription = if (row.isRun) "Run" else "Workout",
+                contentDescription = if (row.isRun) HomeText.run.text() else HomeText.workout.text(),
                 tint = colors.textSecondary,
                 modifier = Modifier.size(19.dp),
             )

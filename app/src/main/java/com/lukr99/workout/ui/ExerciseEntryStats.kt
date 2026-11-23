@@ -1,6 +1,7 @@
 package com.lukr99.workout.ui
 
 import kotlin.math.roundToLong
+import com.lukr99.workout.ui.i18n.AppText
 import com.lukr99.workout.domain.nowMillis
 import com.lukr99.workout.domain.Estimates
 import com.lukr99.workout.domain.StrengthSet
@@ -49,8 +50,8 @@ fun WorkoutEntry.statsSummary(
     val stats = stats(nowUtcMillis, includeUnperformed)
     return if (isStrength) {
         buildList {
-            add("${stats.sets} sets")
-            add("${stats.reps} reps")
+            add(AppText.statsSets.now(stats.sets))
+            add(AppText.statsReps.now(stats.reps))
             add("${Format.volume(stats.volumeKg, units)} ${Format.unitLabel(units)}")
             stats.durationSeconds?.let { add(Format.duration(it)) }
         }.joinToString("  •  ")
@@ -61,9 +62,9 @@ fun WorkoutEntry.statsSummary(
             cardioData?.calories?.let { add("${it.roundToLong()} kcal") }
             stats.durationSeconds?.let { elapsed ->
                 val loggedDuration = cardioData?.durationSeconds?.toLong()
-                if (loggedDuration == null || elapsed != loggedDuration) add("${Format.duration(elapsed)} elapsed")
+                if (loggedDuration == null || elapsed != loggedDuration) add(AppText.statsElapsed.now("time" to Format.duration(elapsed)))
             }
-            if (isEmpty()) add("No cardio stats")
+            if (isEmpty()) add(AppText.statsNoCardio.now())
         }.joinToString("  •  ")
     }
 }

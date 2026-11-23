@@ -1,5 +1,7 @@
 package com.lukr99.workout.ui.run
 
+import com.lukr99.workout.ui.i18n.CommonText
+import com.lukr99.workout.ui.i18n.RunText
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -79,14 +81,14 @@ fun RunDetailScreen(
     val scope = rememberCoroutineScope()
 
     fun launchShare(intent: android.content.Intent) {
-        runCatching { context.startActivity(android.content.Intent.createChooser(intent, "Share run")) }
+        runCatching { context.startActivity(android.content.Intent.createChooser(intent, RunText.shareRun.now())) }
     }
 
     LaunchedEffect(runId) { vm.openRun(runId) }
 
     val current = run
     if (current == null || current.id != runId) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { EmptyHint("Loading run…") }
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { EmptyHint(RunText.loadingRun.text()) }
         return
     }
 
@@ -106,16 +108,16 @@ fun RunDetailScreen(
                 fitTrace = true,
                 modifier = Modifier.fillMaxSize(),
             )
-            RoundIcon(Icons.AutoMirrored.Rounded.ArrowBack, "Back", Modifier.align(Alignment.TopStart).padding(12.dp)) { onBack() }
+            RoundIcon(Icons.AutoMirrored.Rounded.ArrowBack, CommonText.back.text(), Modifier.align(Alignment.TopStart).padding(12.dp)) { onBack() }
             Row(
                 Modifier.align(Alignment.TopEnd).padding(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Box {
-                    RoundIcon(Icons.Rounded.Share, "Share run", Modifier) { shareMenu = true }
+                    RoundIcon(Icons.Rounded.Share, RunText.shareRun.text(), Modifier) { shareMenu = true }
                     DropdownMenu(expanded = shareMenu, onDismissRequest = { shareMenu = false }) {
                         DropdownMenuItem(
-                            text = { Text("Share image") },
+                            text = { Text(RunText.shareImage.text()) },
                             onClick = {
                                 shareMenu = false
                                 scope.launch {
@@ -125,7 +127,7 @@ fun RunDetailScreen(
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text("Export GPX") },
+                            text = { Text(RunText.exportGpx.text()) },
                             onClick = {
                                 shareMenu = false
                                 scope.launch {
@@ -135,7 +137,7 @@ fun RunDetailScreen(
                         )
                     }
                 }
-                RoundIcon(Icons.Rounded.Delete, "Delete run", Modifier) { confirmingDelete = true }
+                RoundIcon(Icons.Rounded.Delete, RunText.deleteRun.text(), Modifier) { confirmingDelete = true }
             }
         }
 
@@ -144,7 +146,7 @@ fun RunDetailScreen(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(
-                        current.notes.ifBlank { "Run" },
+                        current.notes.ifBlank { RunText.run.text() },
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground,
@@ -165,29 +167,29 @@ fun RunDetailScreen(
                                 modifier = Modifier.size(15.dp),
                             )
                             Text(
-                                "  Planned route · $name",
+                                "  " + RunText.plannedRoute.text("name" to name),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary,
                             )
                         }
                     }
                 }
-                RoundIcon(Icons.Rounded.Edit, "Edit notes", Modifier, surface = true) { editing = true }
+                RoundIcon(Icons.Rounded.Edit, RunText.editNotes.text(), Modifier, surface = true) { editing = true }
             }
 
             // Hero stats (2×2).
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StatTile("Distance", Format.distance(current.distanceMeters, units), Modifier.weight(1f))
-                StatTile("Moving time", Pace.formatDuration(current.movingSeconds), Modifier.weight(1f))
+                StatTile(RunText.distance.text(), Format.distance(current.distanceMeters, units), Modifier.weight(1f))
+                StatTile(RunText.movingTime.text(), Pace.formatDuration(current.movingSeconds), Modifier.weight(1f))
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StatTile("Avg pace", paceLabel(current.avgPaceSecPerKm, units), Modifier.weight(1f))
-                StatTile("Elevation", "${current.elevationGainM.toInt()} m", Modifier.weight(1f))
+                StatTile(RunText.avgPace.text(), paceLabel(current.avgPaceSecPerKm, units), Modifier.weight(1f))
+                StatTile(RunText.elevation.text(), "${current.elevationGainM.toInt()} m", Modifier.weight(1f))
             }
 
             if (splits.isNotEmpty()) {
-                SectionCard(title = "Splits") { SplitTable(splits, units) }
-                SectionCard(title = "Pace") {
+                SectionCard(title = RunText.splits.text()) { SplitTable(splits, units) }
+                SectionCard(title = RunText.pace.text()) {
                     ProgressChart(
                         points = splits.filter { it.isFull }.map {
                             val p = if (units == UnitSystem.Imperial) Pace.paceSecPerMile(it.paceSecPerKm) else it.paceSecPerKm
@@ -201,7 +203,7 @@ fun RunDetailScreen(
 
             val elevationPoints = remember(current.id) { elevationChart(current.trace) }
             if (elevationPoints.size >= 2) {
-                SectionCard(title = "Elevation") {
+                SectionCard(title = RunText.elevation.text()) {
                     ProgressChart(
                         points = elevationPoints,
                         height = 150.dp,
@@ -222,16 +224,16 @@ fun RunDetailScreen(
     if (confirmingDelete) {
         AlertDialog(
             onDismissRequest = { confirmingDelete = false },
-            title = { Text("Delete run?") },
-            text = { Text("This permanently removes the run and its trace.") },
+            title = { Text(RunText.deleteRunQuestion.text()) },
+            text = { Text(RunText.deleteRunBody.text()) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmingDelete = false
                     vm.deleteRun(current.id)
                     onBack()
-                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+                }) { Text(CommonText.delete.text(), color = MaterialTheme.colorScheme.error) }
             },
-            dismissButton = { TextButton(onClick = { confirmingDelete = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { confirmingDelete = false }) { Text(CommonText.cancel.text()) } },
         )
     }
 }
@@ -241,17 +243,17 @@ private fun NotesDialog(initial: String, onDismiss: () -> Unit, onSave: (String)
     var text by remember { mutableStateOf(initial) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Run notes") },
+        title = { Text(RunText.runNotes.text()) },
         text = {
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },
-                placeholder = { Text("Morning run, felt strong…") },
+                placeholder = { Text(RunText.runNotesPlaceholder.text()) },
                 singleLine = false,
             )
         },
-        confirmButton = { TextButton(onClick = { onSave(text.trim()) }) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = { onSave(text.trim()) }) { Text(CommonText.save.text()) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(CommonText.cancel.text()) } },
     )
 }
 

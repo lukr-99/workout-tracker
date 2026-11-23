@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui.android
 
+import com.lukr99.workout.ui.i18n.ClaudeText
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -57,21 +58,22 @@ fun ClaudeProposalsCard(
                     Text(it, style = MaterialTheme.typography.bodySmall, color = colors.textSecondary)
                 }
                 Row(Modifier.align(Alignment.End), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    PillButton("Reject", busy = busy) { onReject(proposal) }
-                    PillButton("Accept", busy = busy) { onAccept(proposal) }
+                    PillButton(ClaudeText.reject.text(), busy = busy) { onReject(proposal) }
+                    PillButton(ClaudeText.accept.text(), busy = busy) { onAccept(proposal) }
                 }
             }
         }
         if (proposals.size > SHOWN) {
-            Text("${proposals.size - SHOWN} more in Settings, Claude.", style = MaterialTheme.typography.bodyMedium, color = colors.textSecondary)
+            Text(ClaudeText.moreInSettings.text("n" to proposals.size - SHOWN), style = MaterialTheme.typography.bodyMedium, color = colors.textSecondary)
         }
     }
 }
 
 private const val SHOWN = 2
 
+@Composable
 private fun title(proposals: List<Proposal>): String = when {
-    proposals.size > 1 -> "Claude proposed ${proposals.size} things"
-    proposals.single().isTemplate -> "Claude proposed a template"
-    else -> "Claude proposed an exercise"
+    proposals.size > 1 -> ClaudeText.proposedMany.text(proposals.size)
+    proposals.single().isTemplate -> ClaudeText.proposedTemplate.text()
+    else -> ClaudeText.proposedExercise.text()
 }

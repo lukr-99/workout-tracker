@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.dp
 import com.lukr99.workout.domain.recovery.MuscleGroup
+import com.lukr99.workout.ui.i18n.ChartsText
 import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
@@ -32,8 +33,8 @@ fun BodyHeatmap(tintOf: (MuscleGroup) -> Color?, modifier: Modifier = Modifier) 
     val resolve: (MuscleGroup) -> Color = { group -> tintOf(group)?.let { lerp(base, it, 0.82f) } ?: base }
 
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        FigureColumn("Front", Modifier.weight(1f)) { drawFront(resolve, base) }
-        FigureColumn("Back", Modifier.weight(1f)) { drawBack(resolve, base) }
+        FigureColumn(ChartsText.front.text(), Modifier.weight(1f)) { drawFront(resolve, base) }
+        FigureColumn(ChartsText.back.text(), Modifier.weight(1f)) { drawBack(resolve, base) }
     }
 }
 

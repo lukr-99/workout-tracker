@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewModelScope
+import com.lukr99.workout.ui.i18n.AppText
+import com.lukr99.workout.ui.i18n.Msg
 import com.lukr99.workout.settings.DevicePrefs
 import com.lukr99.workout.update.UpdateCheck
 import com.lukr99.workout.update.UpdateCheckSchedule
@@ -54,24 +56,23 @@ class UpdatesViewModel(
 
     fun check() {
         if (state.value.busy) return
-        mutableState.update { it.copy(busy = true, progress = 0f, status = "Checking for updates…") }
+        mutableState.update { it.copy(busy = true, progress = 0f, status = AppText.updateChecking.now()) }
         viewModelScope.launch {
             val status = runCatching { service.check() }.fold(
                 onSuccess = { result ->
                     when (result) {
-                        UpdateCheck.UpToDate -> "You're on the latest version."
+                        UpdateCheck.UpToDate -> AppText.updateUpToDate.now()
                         UpdateCheck.DevelopmentBuild ->
-                            "This is Ember dev, a development build. It does not update itself."
+                            AppText.updateDevBuild.now()
                         is UpdateCheck.Available -> {
                             mutableState.update { it.copy(offer = result.offer) }
-                            "Update available: v${result.offer.version}"
+                            AppText.updateAvailable.now("version" to result.offer.version)
                         }
                         is UpdateCheck.NotVerifiable ->
-                            "v${result.version} is out but cannot be verified (${result.reason}) " +
-                                "Download it from the releases page instead."
+                            AppText.updateNotVerifiable.now("version" to result.version, "reason" to result.reason)
                     }
                 },
-                onFailure = { failure("Check failed", it) },
+                onFailure = { failure(AppText.updateCheckFailed, it) },
             )
             mutableState.update { it.copy(busy = false, status = status) }
         }
@@ -80,20 +81,20 @@ class UpdatesViewModel(
     fun downloadAndInstall() {
         val offer = state.value.offer ?: return
         if (state.value.busy) return
-        mutableState.update { it.copy(busy = true, progress = 0f, status = "Downloading v${offer.version}… 0%") }
+        mutableState.update { it.copy(busy = true, progress = 0f, status = AppText.updateDownloading.now("version" to offer.version, "percent" to 0)) }
         viewModelScope.launch {
             runCatching {
                 service.download(offer) { fraction ->
                     mutableState.update {
-                        it.copy(progress = fraction, status = "Downloading v${offer.version}… ${(fraction * 100).toInt()}%")
+                        it.copy(progress = fraction, status = AppText.updateDownloading.now("version" to offer.version, "percent" to (fraction * 100).toInt()))
                     }
                 }
             }.onSuccess { apk ->
-                mutableState.update { it.copy(busy = false, offer = null, status = "Opening the installer…") }
+                mutableState.update { it.copy(busy = false, offer = null, status = AppText.updateOpeningInstaller.now()) }
                 runCatching { service.install(apk) }
-                    .onFailure { error -> mutableState.update { it.copy(status = failure("Couldn't open the installer", error)) } }
+                    .onFailure { error -> mutableState.update { it.copy(status = failure(AppText.updateInstallerFailed, error)) } }
             }.onFailure { error ->
-                mutableState.update { it.copy(busy = false, status = failure("Download failed", error)) }
+                mutableState.update { it.copy(busy = false, status = failure(AppText.updateDownloadFailed, error)) }
             }
         }
     }
@@ -103,10 +104,10 @@ class UpdatesViewModel(
     }
 
     /** A failure for the status line, logged so it can be found later. */
-    private fun failure(prefix: String, cause: Throwable): String {
-        Log.w("Updates", prefix, cause)
+    private fun failure(prefix: Msg, cause: Throwable): String {
+        Log.w("Updates", prefix.en, cause)
         val detail = cause.message?.takeIf(String::isNotBlank) ?: cause::class.java.simpleName
-        return "$prefix: $detail"
+        return "${prefix.now()}: $detail"
     }
 
     companion object {

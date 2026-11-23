@@ -1,5 +1,7 @@
 package com.lukr99.workout.ui.screens
 
+import com.lukr99.workout.ui.i18n.WorkoutDetailText
+import com.lukr99.workout.ui.i18n.CommonText
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -42,19 +44,19 @@ internal fun WorkoutSharePreviewSheet(
             Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text("Share preview", style = MaterialTheme.typography.titleLarge)
-            Text("This exact image will be shared.", color = EmberTheme.colors.textSecondary)
+            Text(WorkoutDetailText.sharePreview.text(), style = MaterialTheme.typography.titleLarge)
+            Text(WorkoutDetailText.sharePreviewHint.text(), color = EmberTheme.colors.textSecondary)
             Image(
                 bitmap = preview.image,
-                contentDescription = "Workout share image preview",
+                contentDescription = WorkoutDetailText.sharePreviewDescription.text(),
                 modifier = Modifier.fillMaxWidth().aspectRatio(preview.image.width.toFloat() / preview.image.height)
                     .clip(RoundedCornerShape(16.dp)),
             )
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = onDismiss) { Text("Cancel") }
+                TextButton(onClick = onDismiss) { Text(CommonText.cancel.text()) }
                 TextButton(onClick = onShare) {
                     Icon(Icons.Rounded.Share, null, modifier = Modifier.size(18.dp))
-                    Text(" Share")
+                    Text(" " + WorkoutDetailText.share.text())
                 }
             }
         }

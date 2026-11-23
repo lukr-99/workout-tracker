@@ -19,6 +19,8 @@ import com.lukr99.workout.domain.point
 import com.lukr99.workout.ui.components.LocalToast
 import com.lukr99.workout.ui.components.TextEntryDialog
 import com.lukr99.workout.ui.components.icon
+import com.lukr99.workout.ui.i18n.CommonText
+import com.lukr99.workout.ui.i18n.SettingsText
 import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
@@ -40,7 +42,7 @@ internal fun LocationsSettings(
         settingPosition = location.id
         onSetPosition(location) { found ->
             settingPosition = null
-            toast(if (found) "Saved the position of ${location.name}." else "No location fix. Try again outside or near a window.")
+            toast(if (found) SettingsText.locationSaved.now("name" to location.name) else SettingsText.locationNoFix.now())
         }
     }
     var pendingPermission by remember { mutableStateOf<Location?>(null) }
@@ -51,8 +53,8 @@ internal fun LocationsSettings(
             place == null -> Unit
             result == LocationPermissionResult.Precise -> capture(place)
             result == LocationPermissionResult.ApproximateOnly ->
-                toast("Saving a position needs precise location. Turn on Precise for Ember in the phone's settings.")
-            else -> toast("Location permission is needed to save a position.")
+                toast(SettingsText.locationNeedsPrecise.now())
+            else -> toast(SettingsText.locationNeedsPermission.now())
         }
     }
 
@@ -62,23 +64,23 @@ internal fun LocationsSettings(
     val archived = locations.filter(Location::isArchived).sortedBy { it.name.lowercase() }
 
     ButtonRow(
-        label = "Add a gym",
-        hint = "Pick the location when you start a workout. Exercises you track per gym keep their numbers apart.",
-        action = "Add",
+        label = SettingsText.addGym.text(),
+        hint = SettingsText.addGymHint.text(),
+        action = SettingsText.add.text(),
         first = true,
         onClick = { adding = true },
     )
     (active + archived).forEach { location ->
         SettingsRow(
             label = location.name,
-            hint = if (location.isArchived) "Archived. Its workouts keep it." else kindLabel(location),
+            hint = if (location.isArchived) SettingsText.archivedHint.text() else kindLabel(location),
             onClick = { renaming = location },
         ) {
             Icon(location.kind.icon(), contentDescription = null, tint = EmberTheme.colors.textSecondary, modifier = Modifier.size(20.dp))
             Column(verticalArrangement = Arrangement.spacedBy(6.dp), horizontalAlignment = Alignment.End) {
                 if (CAN_SAVE_POSITIONS && !location.isArchived && location.kind != LocationKind.Outdoors) {
                     PillButton(
-                        if (location.point == null) "Set position" else "Update position",
+                        if (location.point == null) SettingsText.setPosition.text() else SettingsText.updatePosition.text(),
                         busy = settingPosition == location.id,
                         onClick = {
                             if (hasLocationPermission()) capture(location)
@@ -89,42 +91,44 @@ internal fun LocationsSettings(
                         },
                     )
                 }
-                PillButton(if (location.isArchived) "Restore" else "Archive", onClick = { onArchive(location, !location.isArchived) })
+                PillButton(if (location.isArchived) SettingsText.restore.text() else SettingsText.archive.text(), onClick = { onArchive(location, !location.isArchived) })
             }
         }
     }
 
     if (adding) {
         TextEntryDialog(
-            title = "Add a gym",
+            title = SettingsText.addGym.text(),
             initial = "",
-            placeholder = "Brno gym",
-            confirmLabel = "Add",
+            placeholder = SettingsText.gymPlaceholder.text(),
+            confirmLabel = SettingsText.add.text(),
             onDismiss = { adding = false },
             onSave = onAddGym,
         )
     }
     renaming?.let { location ->
         TextEntryDialog(
-            title = "Rename location",
+            title = SettingsText.renameLocation.text(),
             initial = location.name,
             placeholder = location.name,
-            confirmLabel = "Save",
+            confirmLabel = CommonText.save.text(),
             onDismiss = { renaming = null },
             onSave = { onRename(location, it) },
         )
     }
 }
 
+@Composable
 private fun kindLabel(location: Location): String = when (location.kind) {
-    LocationKind.Outdoors -> "Built in. Has no fixed position. Tap to rename."
-    LocationKind.Home -> "Built in. ${positionLabel(location)}".trimEnd()
-    LocationKind.Gym -> "Gym. ${positionLabel(location)}".trimEnd()
+    LocationKind.Outdoors -> SettingsText.outdoorsKind.text()
+    LocationKind.Home -> SettingsText.homeKind.text("position" to positionLabel(location)).trimEnd()
+    LocationKind.Gym -> SettingsText.gymKind.text("position" to positionLabel(location)).trimEnd()
 }
 
+@Composable
 private fun positionLabel(location: Location): String = when {
     !CAN_SAVE_POSITIONS -> ""
-    location.point == null -> "No position yet, so it is not suggested by GPS."
-    else -> "Position saved. Suggested when you are near."
+    location.point == null -> SettingsText.noPosition.text()
+    else -> SettingsText.positionSaved.text()
 }
 

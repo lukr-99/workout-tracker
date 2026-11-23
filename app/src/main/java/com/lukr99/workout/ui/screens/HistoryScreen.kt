@@ -49,6 +49,8 @@ import com.lukr99.workout.ui.components.LocationPickerSheet
 import com.lukr99.workout.ui.components.SearchField
 import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
+import com.lukr99.workout.ui.i18n.HistoryText
+import com.lukr99.workout.ui.i18n.LocalLanguage
 
 /**
  * Past-session list, searchable, drilling into [WorkoutDetailScreen]. A long press starts picking
@@ -65,6 +67,7 @@ fun HistoryScreen(
     val search by vm.search.collectAsState()
     val locations by locationsVm.locations.collectAsState()
     val toast = LocalToast.current
+    val lang = LocalLanguage.current
     var picked by remember { mutableStateOf(emptySet<String>()) }
     var moving by remember { mutableStateOf(false) }
     fun toggle(id: String) { picked = if (id in picked) picked - id else picked + id }
@@ -76,7 +79,7 @@ fun HistoryScreen(
     ) {
         item {
             if (picked.isEmpty()) {
-                SearchField(value = search, onValueChange = vm::setSearch, placeholder = "Search workouts")
+                SearchField(value = search, onValueChange = vm::setSearch, placeholder = HistoryText.searchPlaceholder.text())
             } else {
                 SelectionBar(
                     count = picked.size,
@@ -89,9 +92,9 @@ fun HistoryScreen(
         if (history.isEmpty()) {
             item {
                 if (search.isBlank()) {
-                    EmptyState(Icons.Rounded.History, "No workouts yet", "Workouts you finish show up here, newest first. Tap Start below to log one.")
+                    EmptyState(Icons.Rounded.History, HistoryText.emptyTitle.text(), HistoryText.emptyBody.text())
                 } else {
-                    EmptyState(Icons.Rounded.SearchOff, "No workouts match “${search.trim()}”", "Search looks at workout names. Try a shorter word.")
+                    EmptyState(Icons.Rounded.SearchOff, HistoryText.noMatchTitle.text("query" to search.trim()), HistoryText.noMatchBody.text())
                 }
             }
         } else {
@@ -110,21 +113,21 @@ fun HistoryScreen(
 
     if (moving) {
         LocationPickerSheet(
-            title = "Move ${picked.size} ${if (picked.size == 1) "workout" else "workouts"} to",
+            title = HistoryText.moveTitle.text(picked.size),
             locations = locations,
             selectedId = null,
             showSelection = false,
             onPick = { locationId ->
                 val ids = picked
                 locationsVm.moveWorkouts(ids, locationId) { moved ->
-                    toast("Moved $moved ${if (moved == 1) "workout" else "workouts"} to ${locations.nameOf(locationId)}")
+                    toast(HistoryText.movedTo.get(lang, moved, "place" to locations.nameOf(locationId)))
                 }
                 picked = emptySet()
             },
             onAddGym = { name ->
                 val ids = picked
                 locationsVm.addGym(name) { gym ->
-                    locationsVm.moveWorkouts(ids, gym.id) { moved -> toast("Moved $moved to ${gym.name}") }
+                    locationsVm.moveWorkouts(ids, gym.id) { moved -> toast(HistoryText.movedToGym.get(lang, "n" to moved, "place" to gym.name)) }
                 }
                 picked = emptySet()
             },
@@ -141,12 +144,12 @@ private fun SelectionBar(count: Int, onMove: () -> Unit, onSelectAll: () -> Unit
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        IconButton(onClick = onCancel) { Icon(Icons.Rounded.Close, "Stop selecting", tint = colors.textPrimary) }
-        Text("$count selected", style = MaterialTheme.typography.titleSmall, color = colors.textPrimary, modifier = Modifier.weight(1f))
-        TextButton(onClick = onSelectAll) { Text("All") }
+        IconButton(onClick = onCancel) { Icon(Icons.Rounded.Close, HistoryText.stopSelecting.text(), tint = colors.textPrimary) }
+        Text(HistoryText.selectedCount.text("n" to count), style = MaterialTheme.typography.titleSmall, color = colors.textPrimary, modifier = Modifier.weight(1f))
+        TextButton(onClick = onSelectAll) { Text(HistoryText.all.text()) }
         TextButton(onClick = onMove) {
             Icon(Icons.Rounded.Place, null, modifier = Modifier.padding(end = 4.dp))
-            Text("Move to location", fontWeight = FontWeight.SemiBold)
+            Text(HistoryText.moveToLocation.text(), fontWeight = FontWeight.SemiBold)
         }
     }
 }
@@ -167,21 +170,21 @@ private fun HistoryRow(
         Modifier.fillMaxWidth().clip(shape)
             .background(if (picked) colors.primarySoft else MaterialTheme.colorScheme.surface)
             .then(if (picked) Modifier.border(1.dp, colors.primary, shape) else Modifier)
-            .combinedClickable(role = Role.Button, onLongClickLabel = "Select", onClick = onClick, onLongClick = onLongClick)
+            .combinedClickable(role = Role.Button, onLongClickLabel = HistoryText.select.text(), onClick = onClick, onLongClick = onLongClick)
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            if (picked) Icon(Icons.Rounded.CheckCircle, "Selected", tint = colors.primaryText, modifier = Modifier.padding(end = 8.dp))
+            if (picked) Icon(Icons.Rounded.CheckCircle, HistoryText.selected.text(), tint = colors.primaryText, modifier = Modifier.padding(end = 8.dp))
             Text(summary.name, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.weight(1f))
             Text(Format.date(summary.completedDateUtc ?: summary.startedAtUtc), style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
         }
         Text(locations.nameOf(summary.locationId), style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)
         Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            Metric(summary.exerciseCount.toString(), "exercises")
-            Metric(summary.strengthSetCount.toString(), "sets")
+            Metric(summary.exerciseCount.toString(), HistoryText.exercisesLabel.text(summary.exerciseCount))
+            Metric(summary.strengthSetCount.toString(), HistoryText.setsLabel.text(summary.strengthSetCount))
             Metric(Format.volume(summary.totalVolumeKg, units), Format.unitLabel(units))
-            if (summary.cardioMinutes > 0) Metric(summary.cardioMinutes.toString(), "cardio min")
+            if (summary.cardioMinutes > 0) Metric(summary.cardioMinutes.toString(), HistoryText.cardioMin.text())
         }
         if (summary.bodyPartsSummary.isNotBlank()) {
             Text(summary.bodyPartsSummary, style = MaterialTheme.typography.labelSmall, color = EmberTheme.colors.textSecondary)

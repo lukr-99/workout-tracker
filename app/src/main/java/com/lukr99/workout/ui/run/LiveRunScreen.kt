@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui.run
 
+import com.lukr99.workout.ui.i18n.RunText
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -193,7 +194,7 @@ fun LiveRunScreen(
         // While recording, leaving keeps the run going in the background, so it reads as minimise.
         CircleIconButton(
             if (idle) Icons.Rounded.Close else Icons.Rounded.ExpandMore,
-            if (idle) "Close" else "Minimise run",
+            if (idle) RunText.close.text() else RunText.minimiseRun.text(),
             Modifier.align(Alignment.TopStart).padding(12.dp),
         ) { onClose() }
 
@@ -210,7 +211,7 @@ fun LiveRunScreen(
                 // the needle always points to true north. Grouped with recenter/music, off the stats.
                 CircleIconButton(
                     Icons.Rounded.Navigation,
-                    if (headingFollow) "Face north" else "Lock to heading",
+                    if (headingFollow) RunText.faceNorth.text() else RunText.lockToHeading.text(),
                     Modifier,
                     iconRotation = -mapBearing,
                     tint = if (headingFollow) emberColor else MaterialTheme.colorScheme.onSurface,
@@ -218,14 +219,14 @@ fun LiveRunScreen(
                     headingFollow = !headingFollow
                     compassSignal++
                 }
-                CircleIconButton(Icons.Rounded.MyLocation, "Recenter", Modifier) {
+                CircleIconButton(Icons.Rounded.MyLocation, RunText.recenter.text(), Modifier) {
                     headingFollow = true
                     recenterSignal++
                 }
             }
             CircleIconButton(
                 if (darkMap) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
-                if (darkMap) "Light map" else "Dark map",
+                if (darkMap) RunText.lightMap.text() else RunText.darkMap.text(),
                 Modifier,
             ) { darkMap = !darkMap }
         }
@@ -318,10 +319,10 @@ private fun StartButton(modifier: Modifier, onClick: () -> Unit) {
                 .clickable(onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Rounded.PlayArrow, "Start run", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(44.dp))
+            Icon(Icons.Rounded.PlayArrow, RunText.startRunDescription.text(), tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(44.dp))
         }
         Text(
-            "Start",
+            RunText.start.text(),
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(top = 8.dp),
@@ -362,15 +363,14 @@ private fun LocationRationale(onEnable: () -> Unit, modifier: Modifier) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Rounded.Place, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
             Text(
-                "  Location for your run",
+                "  " + RunText.locationTitle.text(),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground,
             )
         }
         Text(
-            "Ember uses your location to draw your route and measure distance and pace. It only tracks " +
-                "while a run is active, never in the background.",
+            RunText.locationBody.text(),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -379,7 +379,7 @@ private fun LocationRationale(onEnable: () -> Unit, modifier: Modifier) {
                 .clickable(onClick = onEnable).padding(vertical = 12.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Text("Enable location", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onPrimary)
+            Text(RunText.enableLocation.text(), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onPrimary)
         }
     }
 }

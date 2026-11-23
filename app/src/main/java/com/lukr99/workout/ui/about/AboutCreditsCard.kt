@@ -30,6 +30,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.lukr99.workout.ui.i18n.AboutText
+import com.lukr99.workout.ui.i18n.LocalLanguage
 import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
@@ -50,12 +52,12 @@ fun AboutCreditsCard(edition: AboutEdition, modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Text(
-            "Credits and licences",
+            AboutText.creditsTitle.text(),
             style = MaterialTheme.typography.titleMedium,
             color = colors.textPrimary,
             modifier = Modifier.semantics { heading() },
         )
-        AboutContent.credits(edition).forEachIndexed { index, credit ->
+        AboutContent.credits(edition, LocalLanguage.current).forEachIndexed { index, credit ->
             if (index > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(colors.border))
             CreditRow(credit)
         }

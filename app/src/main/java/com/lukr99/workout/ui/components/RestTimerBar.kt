@@ -35,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lukr99.workout.ui.i18n.SetLoggingText
 import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
 
@@ -98,7 +99,7 @@ fun RestTimerBar(
         Column(Modifier.weight(1f)) {
             Text(Format.clock(remainingSeconds), style = Numbers.copy(fontSize = 28.sp), color = colors.textPrimary)
             Text(
-                if (next != null) "Rest · next is $next" else "Rest",
+                if (next != null) SetLoggingText.restNext.text("next" to next) else SetLoggingText.rest.text(),
                 style = MaterialTheme.typography.labelLarge,
                 color = colors.textSecondary,
                 maxLines = 1,
@@ -106,7 +107,7 @@ fun RestTimerBar(
             )
         }
         Pill("+15s", filled = false, onClick = onAdd15)
-        Pill("Skip", filled = true, onClick = onSkip)
+        Pill(SetLoggingText.skip.text(), filled = true, onClick = onSkip)
     }
 }
 

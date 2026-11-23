@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui.run
 
+import com.lukr99.workout.ui.i18n.RunText
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
@@ -79,7 +80,7 @@ class RoutePlannerViewModel(
         val snap = _snapped.value ?: return null
         if (snap.points.size < 2) return null
         val route = Route(
-            name = name.trim().ifBlank { "Route" },
+            name = name.trim().ifBlank { RunText.routeDefaultName.now() },
             distanceMeters = snap.distanceMeters,
             elevationGainM = 0.0,
             encodedPolyline = Polyline.encodeRoute(snap.points),

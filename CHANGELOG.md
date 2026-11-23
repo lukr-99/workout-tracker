@@ -8,6 +8,11 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 ### Added
 
+- **Czech language.** Settings, Appearance, Language lets you pick System, English or Čeština. System
+  follows the phone or browser. Screens, dialogs, counts (with the right Czech forms for 1, 2 to 4
+  and 5 or more), dates and the Android notifications are translated, on Android and in the web
+  edition. Text that comes from the data layer, like import problems, is still English. See
+  `docs/localization.md`.
 - **Accent colours.** Settings, Appearance now lets you pick the colour of buttons, rings and
   highlights: Ember orange (the default), blue, green, rose or purple. Every colour keeps its text
   readable in light and dark. The choice is saved, comes back with a backup and shows from the first

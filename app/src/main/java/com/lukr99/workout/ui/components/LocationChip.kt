@@ -23,6 +23,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.lukr99.workout.ui.i18n.LocationText
 import com.lukr99.workout.ui.theme.EmberTheme
 
 /** "Location: Brno gym ▾". One tap opens the location picker. */
@@ -35,14 +36,14 @@ fun LocationChip(name: String, onClick: () -> Unit, modifier: Modifier = Modifie
             .heightIn(min = 36.dp)
             .clip(shape)
             .border(BorderStroke(1.dp, colors.border), shape)
-            .clickable(role = Role.Button, onClickLabel = "Change location", onClick = onClick)
+            .clickable(role = Role.Button, onClickLabel = LocationText.changeLocation.text(), onClick = onClick)
             .padding(start = 10.dp, end = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(Icons.Rounded.Place, contentDescription = null, tint = colors.primaryText, modifier = Modifier.size(18.dp))
         Text(
-            "Location: $name",
+            LocationText.chip.text("name" to name),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
             color = colors.textPrimary,

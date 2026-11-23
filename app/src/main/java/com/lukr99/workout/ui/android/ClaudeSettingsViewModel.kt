@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui.android
 
+import com.lukr99.workout.ui.i18n.ClaudeText
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -58,7 +59,7 @@ class ClaudeSettingsViewModel(private val claude: ClaudeConnector) : ViewModel()
 
     fun connect(serverUrl: String, setupSecret: String, deviceName: String) = launchAction("connect") {
         val push = claude.connect(serverUrl, setupSecret, deviceName)
-        state.update { it.copy(connectOpen = false, pushOn = push, message = "Connected. Now connect Claude.") }
+        state.update { it.copy(connectOpen = false, pushOn = push, message = ClaudeText.messageConnected.now()) }
     }
 
     /** After the notification permission answer: sends the push token, if there is one. */
@@ -69,7 +70,7 @@ class ClaudeSettingsViewModel(private val claude: ClaudeConnector) : ViewModel()
 
     fun disconnect() = launchAction("disconnect") {
         claude.disconnect()
-        state.update { it.copy(share = null, proposals = emptyList(), code = null, message = "Ember is no longer connected on this phone.") }
+        state.update { it.copy(share = null, proposals = emptyList(), code = null, message = ClaudeText.messageDisconnected.now()) }
     }
 
     fun setShareMode(mode: ShareMode) {
@@ -78,7 +79,7 @@ class ClaudeSettingsViewModel(private val claude: ClaudeConnector) : ViewModel()
 
     fun shareNow() = launchAction("share") {
         val share = claude.sharing.shareNow()
-        state.update { it.copy(share = share, message = "Shared for 30 minutes.") }
+        state.update { it.copy(share = share, message = ClaudeText.messageShared.now()) }
     }
 
     /** The owner answers an open request here instead of in the notification. */
@@ -89,14 +90,14 @@ class ClaudeSettingsViewModel(private val claude: ClaudeConnector) : ViewModel()
             current.copy(
                 requests = current.requests.filterNot { it.id == requestId },
                 share = share,
-                message = if (allow) "Shared with Claude for 30 minutes." else "Claude's request was declined.",
+                message = if (allow) ClaudeText.messageAllowed.now() else ClaudeText.messageDeclined.now(),
             )
         }
     }
 
     fun stopSharing() = launchAction("stop") {
         claude.api.forgetShare()
-        state.update { it.copy(share = null, message = "The shared copy is deleted.") }
+        state.update { it.copy(share = null, message = ClaudeText.messageShareDeleted.now()) }
     }
 
     fun getCode() = launchAction("code") {
@@ -108,18 +109,18 @@ class ClaudeSettingsViewModel(private val claude: ClaudeConnector) : ViewModel()
 
     fun accept(proposal: Proposal) = launchAction("proposal") {
         claude.inbox.accept(proposal)
-        state.update { current -> current.copy(proposals = current.proposals - proposal, message = "Added \"${proposal.title}\".") }
+        state.update { current -> current.copy(proposals = current.proposals - proposal, message = ClaudeText.messageAdded.now("title" to proposal.title)) }
     }
 
     fun reject(proposal: Proposal) = launchAction("proposal") {
         claude.inbox.reject(proposal)
-        state.update { current -> current.copy(proposals = current.proposals - proposal, message = "Rejected \"${proposal.title}\".") }
+        state.update { current -> current.copy(proposals = current.proposals - proposal, message = ClaudeText.messageRejected.now("title" to proposal.title)) }
     }
 
     fun removeClaude() = launchAction("remove") {
         val removed = claude.removeClaude()
         state.update {
-            it.copy(message = if (removed == 0) "Claude was not connected." else "Claude can no longer read Ember. Remove the connector in Claude too.")
+            it.copy(message = if (removed == 0) ClaudeText.messageNotConnected.now() else ClaudeText.messageRemoved.now())
         }
     }
 
@@ -132,7 +133,7 @@ class ClaudeSettingsViewModel(private val claude: ClaudeConnector) : ViewModel()
             try {
                 block()
             } catch (e: Exception) {
-                state.update { it.copy(error = e.message ?: "Something went wrong.") }
+                state.update { it.copy(error = e.message ?: ClaudeText.somethingWrong.now()) }
             } finally {
                 state.update { it.copy(busy = null) }
             }

@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui.screens
 
+import com.lukr99.workout.ui.i18n.TemplateEditorText
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -72,9 +73,9 @@ fun TemplatePreviewSheet(
             Text(template.name, style = MaterialTheme.typography.titleLarge, color = colors.textPrimary)
             Text(
                 listOfNotNull(
-                    "${exercises.size} ${if (exercises.size == 1) "exercise" else "exercises"}",
-                    "about $minutes min".takeIf { minutes > 0 },
-                    data.lastDoneUtc?.let { "last done ${Format.relativeDay(it).replaceFirstChar(Char::lowercase)}" },
+                    TemplateEditorText.exerciseCount.text(exercises.size),
+                    TemplateEditorText.aboutMinutes.text("n" to minutes).takeIf { minutes > 0 },
+                    data.lastDoneUtc?.let { TemplateEditorText.lastDone.text("when" to Format.relativeDay(it).replaceFirstChar(Char::lowercase)) },
                 ).joinToString(" · "),
                 style = MaterialTheme.typography.bodyLarge,
                 color = colors.textSecondary,
@@ -89,8 +90,8 @@ fun TemplatePreviewSheet(
                 }
             }
             Row(Modifier.padding(top = 16.dp, bottom = 4.dp)) {
-                Label("Plan", Modifier.weight(1f))
-                Label("Sets × reps", Modifier)
+                Label(TemplateEditorText.plan.text(), Modifier.weight(1f))
+                Label(TemplateEditorText.setsTimesReps.text(), Modifier)
             }
             exercises.forEachIndexed { index, ex ->
                 val groupAbove = index > 0 && ex.supersetGroup != null && exercises[index - 1].supersetGroup == ex.supersetGroup
@@ -102,7 +103,7 @@ fun TemplatePreviewSheet(
                     Modifier.weight(1f).height(54.dp).clip(RoundedCornerShape(27.dp)).background(colors.surfaceRaised)
                         .border(1.dp, colors.border, RoundedCornerShape(27.dp)).clickable(role = Role.Button, onClick = onEdit),
                     contentAlignment = Alignment.Center,
-                ) { Text("Edit", fontWeight = FontWeight.Bold, color = colors.textPrimary) }
+                ) { Text(TemplateEditorText.edit.text(), fontWeight = FontWeight.Bold, color = colors.textPrimary) }
                 Row(
                     Modifier.weight(2f).height(54.dp).clip(RoundedCornerShape(27.dp)).background(colors.primary)
                         .clickable(role = Role.Button, onClick = onStart),
@@ -110,7 +111,7 @@ fun TemplatePreviewSheet(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(Icons.Rounded.PlayArrow, null, tint = colors.onPrimary)
-                    Text(" Start workout", fontWeight = FontWeight.Bold, color = colors.onPrimary)
+                    Text(" " + TemplateEditorText.startWorkout.text(), fontWeight = FontWeight.Bold, color = colors.onPrimary)
                 }
             }
         }
@@ -149,7 +150,7 @@ private fun PlanRow(
         Column(horizontalAlignment = Alignment.End) {
             Text(planText(ex), style = Numbers.copy(fontSize = 18.sp), color = colors.textPrimary)
             data.lastSets[ex.exerciseId]?.maxByOrNull { it.weightKg }?.let {
-                Text("Last ${Format.weight(it.weightKg, units)} × ${it.reps}", style = MaterialTheme.typography.labelSmall, color = colors.textTertiary)
+                Text(TemplateEditorText.lastSet.text("weight" to Format.weight(it.weightKg, units), "reps" to it.reps), style = MaterialTheme.typography.labelSmall, color = colors.textTertiary)
             }
         }
     }
@@ -163,7 +164,7 @@ internal fun planText(ex: WorkoutTemplateExercise): String {
     }
     return when {
         ex.targetSets != null && reps != null -> "${ex.targetSets} × $reps"
-        ex.targetSets != null -> "${ex.targetSets} ${if (ex.targetSets == 1) "set" else "sets"}"
+        ex.targetSets != null -> TemplateEditorText.setCount.now(ex.targetSets)
         reps != null -> "× $reps"
         else -> "–"
     }

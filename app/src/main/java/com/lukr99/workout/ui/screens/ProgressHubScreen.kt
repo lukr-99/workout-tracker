@@ -1,5 +1,7 @@
 package com.lukr99.workout.ui.screens
 
+import com.lukr99.workout.ui.i18n.ProgressScreenText
+import com.lukr99.workout.ui.i18n.LocalLanguage
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,15 +37,22 @@ fun ProgressHubScreen(
     runningSection: (@Composable () -> Unit)? = null,
 ) {
     var pane by remember { mutableStateOf(HubPane.Progress) }
+    val lang = LocalLanguage.current
 
     Column(Modifier.fillMaxWidth()) {
-        ScreenHeader("Progress", "How your training is going")
+        ScreenHeader(ProgressScreenText.hubTitle.text(), ProgressScreenText.hubSubtitle.text())
         Spacer(Modifier.height(12.dp))
         SegmentedControl(
             options = HubPane.entries.filter { it != HubPane.Running || runningSection != null },
             selected = pane,
             onSelect = { pane = it },
-            label = { it.name },
+            label = {
+                when (it) {
+                    HubPane.Progress -> ProgressScreenText.paneProgress
+                    HubPane.Running -> ProgressScreenText.paneRunning
+                    HubPane.History -> ProgressScreenText.paneHistory
+                }.get(lang)
+            },
             modifier = Modifier.padding(bottom = 12.dp),
         )
         when (pane) {

@@ -1,5 +1,7 @@
 package com.lukr99.workout.ui.android
 
+import com.lukr99.workout.ui.i18n.LocalLanguage
+import com.lukr99.workout.ui.i18n.DeviceSettingsText
 import androidx.activity.compose.rememberLauncherForActivityResult
 import com.lukr99.workout.ui.about.AboutEdition
 import androidx.activity.result.ActivityResultLauncher
@@ -78,6 +80,7 @@ private class AndroidSettingsHost(
         val health by vm.healthConnectUi.collectAsState()
         val updateState by updates.state.collectAsState()
         val toast = LocalToast.current
+        val lang = LocalLanguage.current
         ClaudeSettingsDialogs(claude) { serverUrl, setupSecret ->
             claude.connect(serverUrl, setupSecret, android.os.Build.MODEL)
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
@@ -86,17 +89,24 @@ private class AndroidSettingsHost(
         }
         LaunchedEffect(health.summary) {
             health.summary?.let { summary ->
-                toast("Health Connect: imported ${summary.imported}, exported ${summary.exported}, skipped ${summary.skipped}")
+                toast(
+                    DeviceSettingsText.healthSummary.get(
+                        lang,
+                        "imported" to summary.imported,
+                        "exported" to summary.exported,
+                        "skipped" to summary.skipped,
+                    ),
+                )
                 vm.consumeHealthSummary()
             }
         }
         updateState.offer?.let { offer ->
             AlertDialog(
                 onDismissRequest = updates::dismissOffer,
-                confirmButton = { TextButton(enabled = !updateState.busy, onClick = updates::downloadAndInstall) { Text("Download and install") } },
-                dismissButton = { TextButton(enabled = !updateState.busy, onClick = updates::dismissOffer) { Text("Later") } },
-                title = { Text("Ember ${offer.version}") },
-                text = { Text(offer.notes.ifBlank { "A new version is available." }.take(600), color = EmberTheme.colors.textSecondary) },
+                confirmButton = { TextButton(enabled = !updateState.busy, onClick = updates::downloadAndInstall) { Text(DeviceSettingsText.updateDownload.text()) } },
+                dismissButton = { TextButton(enabled = !updateState.busy, onClick = updates::dismissOffer) { Text(DeviceSettingsText.updateLater.text()) } },
+                title = { Text(DeviceSettingsText.updateOfferTitle.text("version" to offer.version)) },
+                text = { Text(offer.notes.ifBlank { DeviceSettingsText.updateNewVersion.get(lang) }.take(600), color = EmberTheme.colors.textSecondary) },
             )
         }
     }
@@ -106,17 +116,17 @@ private class AndroidSettingsHost(
         val syncState by vm.catalogSync.collectAsState()
         val running = syncState is AndroidSettingsViewModel.CatalogSyncState.Running
         ButtonRow(
-            label = "Exercise catalog",
+            label = DeviceSettingsText.catalogTitle.text(),
             hint = when (val state = syncState) {
                 is AndroidSettingsViewModel.CatalogSyncState.Done ->
-                    "Added ${state.summary.added}, updated ${state.summary.updated}, skipped ${state.summary.skipped}."
+                    DeviceSettingsText.catalogDone.text("added" to state.summary.added, "updated" to state.summary.updated, "skipped" to state.summary.skipped)
                 is AndroidSettingsViewModel.CatalogSyncState.Failed -> state.message
-                else -> "Download the open wger exercise database. Your own exercises are never changed."
+                else -> DeviceSettingsText.catalogHint.text()
             },
             hintIsError = syncState is AndroidSettingsViewModel.CatalogSyncState.Failed,
-            action = "Sync now",
+            action = DeviceSettingsText.catalogSync.text(),
             busy = running,
-            busyLabel = "Syncing…",
+            busyLabel = DeviceSettingsText.catalogSyncing.text(),
             onClick = vm::syncCatalog,
         )
     }
@@ -129,25 +139,25 @@ private class AndroidSettingsHost(
         val status = health.error ?: healthAvailabilityDetail(health.availability, health.connected)
         when (health.availability) {
             HealthConnectAvailability.Available -> if (!health.connected) {
-                ButtonRow("Not connected", status, "Connect", first = true, busy = health.refreshing) {
+                ButtonRow(DeviceSettingsText.healthNotConnected.text(), status, DeviceSettingsText.healthConnect.text(), first = true, busy = health.refreshing) {
                     healthPermissionLauncher.launch(vm.healthConnectPermissions)
                 }
             } else {
-                SettingsRow("Connected", status, first = true, hintIsError = health.error != null)
+                SettingsRow(DeviceSettingsText.healthConnected.text(), status, first = true, hintIsError = health.error != null)
                 ToggleRow(
-                    "Send finished workouts and runs",
-                    "Each one goes to Health Connect when you finish it.",
+                    DeviceSettingsText.healthSendTitle.text(),
+                    DeviceSettingsText.healthSendHint.text(),
                     checked = healthAutoSend,
                     onChange = vm::setHealthAutoSend,
                 )
-                ButtonRow("Send everything now", "Workouts and runs Health Connect does not have yet.", "Export", busy = health.operation != null, onClick = vm::exportToHealthConnect)
-                ButtonRow("Bring workouts in", "Imports workouts from other apps as sessions.", "Import", busy = health.operation != null, onClick = vm::importFromHealthConnect)
+                ButtonRow(DeviceSettingsText.healthSendAllTitle.text(), DeviceSettingsText.healthSendAllHint.text(), DeviceSettingsText.healthExport.text(), busy = health.operation != null, onClick = vm::exportToHealthConnect)
+                ButtonRow(DeviceSettingsText.healthBringInTitle.text(), DeviceSettingsText.healthBringInHint.text(), DeviceSettingsText.healthImport.text(), busy = health.operation != null, onClick = vm::importFromHealthConnect)
             }
             HealthConnectAvailability.ProviderUpdateRequired ->
-                ButtonRow("Update needed", status, "Install", first = true) { openHealthConnectListing(context) }
+                ButtonRow(DeviceSettingsText.healthUpdateNeeded.text(), status, DeviceSettingsText.healthInstall.text(), first = true) { openHealthConnectListing(context) }
             else -> SettingsRow(healthAvailabilityLabel(health.availability, health.connected), status, first = true)
         }
-        LinkRow("Privacy policy", "What Ember reads and why.", onClick = onOpenPrivacy)
+        LinkRow(DeviceSettingsText.privacyTitle.text(), DeviceSettingsText.privacyHint.text(), onClick = onOpenPrivacy)
     }
 
     @Composable
@@ -156,21 +166,22 @@ private class AndroidSettingsHost(
         val backupOptions by vm.backupOptions.collectAsState()
         val backupBusy by vm.backupBusy.collectAsState()
         val backupError by vm.backupError.collectAsState()
+        val lang = LocalLanguage.current
         ToggleRow(
-            label = "Automatic backup",
+            label = DeviceSettingsText.backupTitle.text(),
             hint = if (backup.enabled) {
                 "${backupFolderLabel(backup.treeUri)}. ${backupStatus(backup.lastRunUtcMillis, backup.lastResult, backup.lastMessage, backupError)}"
             } else {
-                "Saves a full backup to a folder you pick, on this phone or in the cloud."
+                DeviceSettingsText.backupHint.text()
             },
             checked = backup.enabled,
             first = true,
             busy = backupBusy,
         ) { enabled -> if (enabled) backupFolderLauncher.launch(null) else vm.disableBackup() }
-        SettingsRow("How often", null)
+        SettingsRow(DeviceSettingsText.backupHowOften.text(), null)
         val interval = if (backup.enabled) backup.intervalHours else backupOptions.intervalHours
-        SegmentedControl(listOf(24L, 168L), interval, { vm.setBackupInterval(it) }, label = { if (it == 24L) "Daily" else "Weekly" }, modifier = Modifier.padding(bottom = 8.dp))
-        SettingsRow("Backups to keep", "Older automatic backups are deleted. Other files are never touched.")
+        SegmentedControl(listOf(24L, 168L), interval, { vm.setBackupInterval(it) }, label = { if (it == 24L) DeviceSettingsText.backupDaily.get(lang) else DeviceSettingsText.backupWeekly.get(lang) }, modifier = Modifier.padding(bottom = 8.dp))
+        SettingsRow(DeviceSettingsText.backupKeepTitle.text(), DeviceSettingsText.backupKeepHint.text())
         val kept = if (backup.enabled) backup.retentionCount else backupOptions.retentionCount
         SegmentedControl(listOf(3, 7, 14), kept, { vm.setBackupRetention(it) }, label = { it.toString() }, modifier = Modifier.padding(bottom = 8.dp))
     }
@@ -181,21 +192,21 @@ private class AndroidSettingsHost(
         val autoCheck by updates.autoCheck.collectAsState()
         val uriHandler = LocalUriHandler.current
         ButtonRow(
-            label = "Version ${updateState.currentVersion}",
-            hint = updateState.status.ifBlank { "Checks GitHub for a newer, signed release." },
-            action = "Check now",
+            label = DeviceSettingsText.updateVersion.text("version" to updateState.currentVersion),
+            hint = updateState.status.ifBlank { DeviceSettingsText.updateHint.text() },
+            action = DeviceSettingsText.updateCheckNow.text(),
             first = true,
             busy = updateState.busy,
-            busyLabel = "Checking…",
+            busyLabel = DeviceSettingsText.updateChecking.text(),
             onClick = updates::check,
         )
         ToggleRow(
-            "Check automatically",
-            "Looks once a day when you open Ember, and says so on Home when an update is ready.",
+            DeviceSettingsText.updateAutoTitle.text(),
+            DeviceSettingsText.updateAutoHint.text(),
             checked = autoCheck,
             onChange = updates::setAutoCheck,
         )
-        LinkRow("All releases on GitHub", "Release notes and the manual download.", outside = true) {
+        LinkRow(DeviceSettingsText.updateReleasesTitle.text(), DeviceSettingsText.updateReleasesHint.text(), outside = true) {
             runCatching { uriHandler.openUri(UpdatesViewModel.RELEASES_URL) }
         }
     }

@@ -25,6 +25,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.lukr99.workout.settings.AccentColor
 import com.lukr99.workout.ui.AppTags
+import com.lukr99.workout.ui.i18n.Msg
+import com.lukr99.workout.ui.i18n.SettingsText
 import com.lukr99.workout.ui.theme.AccentPalette
 import com.lukr99.workout.ui.theme.EmberTheme
 
@@ -42,6 +44,7 @@ fun AccentPicker(selected: AccentColor, onSelect: (AccentColor) -> Unit, modifie
         AccentColor.entries.forEach { accent ->
             val swatch = AccentPalette.swatch(accent)
             val isSelected = accent == selected
+            val accentName = accentLabel(accent).text()
             Box(
                 Modifier
                     .size(44.dp)
@@ -51,7 +54,7 @@ fun AccentPicker(selected: AccentColor, onSelect: (AccentColor) -> Unit, modifie
                     .clip(CircleShape)
                     .background(swatch.fill)
                     .selectable(isSelected, role = Role.RadioButton, onClick = { onSelect(accent) })
-                    .semantics { contentDescription = accent.name }
+                    .semantics { contentDescription = accentName }
                     .testTag(AppTags.accent(accent)),
                 contentAlignment = Alignment.Center,
             ) {
@@ -59,4 +62,12 @@ fun AccentPicker(selected: AccentColor, onSelect: (AccentColor) -> Unit, modifie
             }
         }
     }
+}
+
+private fun accentLabel(accent: AccentColor): Msg = when (accent) {
+    AccentColor.Ember -> SettingsText.accentEmber
+    AccentColor.Blue -> SettingsText.accentBlue
+    AccentColor.Green -> SettingsText.accentGreen
+    AccentColor.Rose -> SettingsText.accentRose
+    AccentColor.Purple -> SettingsText.accentPurple
 }

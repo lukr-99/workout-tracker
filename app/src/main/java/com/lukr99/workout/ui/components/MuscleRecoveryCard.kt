@@ -42,6 +42,7 @@ import com.lukr99.workout.domain.recovery.RecoveryState
 import com.lukr99.workout.domain.recovery.RecoverySnapshot
 import com.lukr99.workout.domain.recovery.WeeklyVolumeStatus
 import com.lukr99.workout.ui.AppTags
+import com.lukr99.workout.ui.i18n.RecoveryText
 import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
 import kotlin.math.ceil
@@ -71,16 +72,19 @@ fun MuscleRecoveryCard(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 6.dp, end = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Muscle recovery", style = MaterialTheme.typography.titleMedium, color = colors.textPrimary)
+            Text(RecoveryText.muscleRecovery.text(), style = MaterialTheme.typography.titleMedium, color = colors.textPrimary)
             IconButton(onClick = { showInfo = true }, modifier = Modifier.testTag(AppTags.MUSCLE_MAP_INFO)) {
-                Icon(Icons.Outlined.Info, contentDescription = "How this is calculated", tint = colors.textSecondary, modifier = Modifier.size(20.dp))
+                Icon(Icons.Outlined.Info, contentDescription = RecoveryText.howCalculated.text(), tint = colors.textSecondary, modifier = Modifier.size(20.dp))
             }
             Spacer(Modifier.weight(1f))
             Text(
                 if (mode == MuscleMapMode.Recovery) {
-                    "${recovery.averageReadiness.roundToInt()}% ready"
+                    RecoveryText.percentReady.text("pct" to recovery.averageReadiness.roundToInt())
                 } else {
-                    "${groups.count { it.weeklyStatus == WeeklyVolumeStatus.InRange }} of ${groups.size} in range"
+                    RecoveryText.inRangeCount.text(
+                        "n" to groups.count { it.weeklyStatus == WeeklyVolumeStatus.InRange },
+                        "total" to groups.size,
+                    )
                 },
                 style = MaterialTheme.typography.labelMedium,
                 color = colors.textSecondary,
@@ -91,7 +95,7 @@ fun MuscleRecoveryCard(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 MuscleMapMode.entries.forEach { option ->
                     FilterChip(
-                        option.label,
+                        option.label.text(),
                         selected = mode == option,
                         onClick = { mode = option },
                         modifier = Modifier.testTag(AppTags.muscleMapMode(option)),
@@ -113,9 +117,9 @@ fun MuscleRecoveryCard(
                 when (mode) {
                     MuscleMapMode.Recovery -> RecoveryState.entries.map { MuscleTints.recovery(it, colors) to stateLabel(it) }
                     MuscleMapMode.WeeklySets -> listOf(
-                        MuscleTints.weekly(WeeklyVolumeStatus.Below, colors)!! to "Below ${sets(target.start)}",
-                        colors.success to "${sets(target.start)} to ${sets(target.endInclusive)} sets",
-                        colors.violet to "Above ${sets(target.endInclusive)}",
+                        MuscleTints.weekly(WeeklyVolumeStatus.Below, colors)!! to RecoveryText.below.text("v" to sets(target.start)),
+                        colors.success to RecoveryText.rangeSets.text("from" to sets(target.start), "to" to sets(target.endInclusive)),
+                        colors.violet to RecoveryText.above.text("v" to sets(target.endInclusive)),
                     )
                 },
             )
@@ -124,7 +128,7 @@ fun MuscleRecoveryCard(
                 MuscleMapMode.Recovery -> {
                     val trained = recovery.muscles.filter { it.lastTrainedAtUtc != null }.sortedBy { it.readiness }
                     if (trained.isEmpty()) {
-                        Text("No sets in the last two weeks.", style = MaterialTheme.typography.bodyMedium, color = colors.textSecondary)
+                        Text(RecoveryText.noSets.text(), style = MaterialTheme.typography.bodyMedium, color = colors.textSecondary)
                     }
                     trained.forEach { RecoveryRow(it, recovery.calculatedAtUtc) }
                 }
@@ -185,7 +189,7 @@ private fun WeeklyRow(m: MuscleRecovery, target: ClosedFloatingPointRange<Double
             }
         }
         Text(
-            "${sets(m.weeklySetCount)} sets",
+            setsText(m.weeklySetCount),
             style = Numbers.copy(fontSize = 12.sp), color = colors.textSecondary, maxLines = 1,
             modifier = Modifier.width(64.dp).padding(start = 8.dp),
         )
@@ -218,29 +222,37 @@ private fun Bar(fraction: Double, tint: Color, modifier: Modifier) {
     }
 }
 
+@Composable
 internal fun stateLabel(state: RecoveryState): String = when (state) {
-    RecoveryState.Ready -> "Ready"
-    RecoveryState.Recovering -> "Recovering"
-    RecoveryState.Fatigued -> "Fatigued"
+    RecoveryState.Ready -> RecoveryText.stateReady.text()
+    RecoveryState.Recovering -> RecoveryText.stateRecovering.text()
+    RecoveryState.Fatigued -> RecoveryText.stateFatigued.text()
 }
 
+@Composable
 private fun weeklyLabel(status: WeeklyVolumeStatus): String = when (status) {
-    WeeklyVolumeStatus.None -> "None"
-    WeeklyVolumeStatus.Below -> "Below"
-    WeeklyVolumeStatus.InRange -> "In range"
-    WeeklyVolumeStatus.Above -> "Above"
+    WeeklyVolumeStatus.None -> RecoveryText.weeklyNone.text()
+    WeeklyVolumeStatus.Below -> RecoveryText.weeklyBelow.text()
+    WeeklyVolumeStatus.InRange -> RecoveryText.weeklyInRange.text()
+    WeeklyVolumeStatus.Above -> RecoveryText.weeklyAbove.text()
 }
 
 /** "Ready", or how long until the muscle reaches the ready level, like "Ready in 20 h". */
+@Composable
 private fun readyText(m: MuscleRecovery, nowUtc: Long): String {
     val readyAt = m.readyAtUtc ?: return stateLabel(m.state)
     val hours = ceil((readyAt - nowUtc) / 3_600_000.0).toInt()
     return when {
-        hours <= 0 -> "Ready"
-        hours < 48 -> "Ready in $hours h"
-        else -> "Ready in ${ceil(hours / 24.0).toInt()} d"
+        hours <= 0 -> RecoveryText.stateReady.text()
+        hours < 48 -> RecoveryText.readyInHours.text("n" to hours)
+        else -> RecoveryText.readyInDays.text("n" to ceil(hours / 24.0).toInt())
     }
 }
+
+/** "7.5 sets", with the noun in the right form. A fraction takes the "few" form in Czech. */
+@Composable
+internal fun setsText(value: Double): String =
+    RecoveryText.setsCount.text(if (value % 1.0 == 0.0) value.toInt() else 2, "v" to sets(value))
 
 /** A set count with at most one decimal, like 12 or 7.5. */
 internal fun sets(value: Double): String {

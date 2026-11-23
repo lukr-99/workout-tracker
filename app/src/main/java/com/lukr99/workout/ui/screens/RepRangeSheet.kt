@@ -1,5 +1,7 @@
 package com.lukr99.workout.ui.screens
 
+import com.lukr99.workout.ui.i18n.TemplateEditorText
+import com.lukr99.workout.ui.i18n.CommonText
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -58,16 +60,16 @@ internal fun RepRangeSheet(
     ) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp).padding(bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Column {
-                Text("Reps for $exerciseName", style = MaterialTheme.typography.titleLarge, color = colors.textPrimary)
-                Text("Aim for the range; the workout starts each set at the top.", style = MaterialTheme.typography.bodyLarge, color = colors.textSecondary)
+                Text(TemplateEditorText.repsFor.text("name" to exerciseName), style = MaterialTheme.typography.titleLarge, color = colors.textPrimary)
+                Text(TemplateEditorText.repRangeHint.text(), style = MaterialTheme.typography.bodyLarge, color = colors.textSecondary)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Counter("From", min, Modifier.weight(1f)) { min = it.coerceIn(1, 100); if (max < min) max = min }
-                Counter("To", max, Modifier.weight(1f)) { max = it.coerceIn(1, 100); if (min > max) min = max }
+                Counter(TemplateEditorText.from.text(), min, Modifier.weight(1f)) { min = it.coerceIn(1, 100); if (max < min) max = min }
+                Counter(TemplateEditorText.to.text(), max, Modifier.weight(1f)) { max = it.coerceIn(1, 100); if (min > max) min = max }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Button("No range", filled = false, Modifier.weight(1f)) { onSave(null, null); onDismiss() }
-                Button("Save", filled = true, Modifier.weight(1f)) { onSave(min, max); onDismiss() }
+                Button(TemplateEditorText.noRange.text(), filled = false, Modifier.weight(1f)) { onSave(null, null); onDismiss() }
+                Button(CommonText.save.text(), filled = true, Modifier.weight(1f)) { onSave(min, max); onDismiss() }
             }
         }
     }
@@ -82,9 +84,9 @@ private fun Counter(label: String, value: Int, modifier: Modifier, onValue: (Int
     ) {
         Text(label.uppercase(), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = colors.textSecondary)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            Key(Icons.Rounded.Remove, "$label fewer") { onValue(value - 1) }
+            Key(Icons.Rounded.Remove, TemplateEditorText.fewer.text("label" to label)) { onValue(value - 1) }
             Text(value.toString(), style = Numbers.copy(fontSize = 34.sp), color = colors.textPrimary)
-            Key(Icons.Rounded.Add, "$label more") { onValue(value + 1) }
+            Key(Icons.Rounded.Add, TemplateEditorText.more.text("label" to label)) { onValue(value + 1) }
         }
     }
 }

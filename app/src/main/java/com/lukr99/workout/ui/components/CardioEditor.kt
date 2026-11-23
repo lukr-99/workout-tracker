@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lukr99.workout.domain.CardioEntryData
+import com.lukr99.workout.ui.i18n.ChartsText
 import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
@@ -48,14 +49,14 @@ fun CardioEditor(
 
     when (editing) {
         0 -> NumberPadSheet(
-            title = "Duration (minutes)",
+            title = ChartsText.cardioDuration.text(),
             initial = (cardio.durationSeconds / 60).toDouble(),
             quickStep = 1.0,
             onValue = { onChange(cardio.copy(durationSeconds = (it * 60).toInt())) },
             onDismiss = { editing = null },
         )
         1 -> NumberPadSheet(
-            title = "Distance (km)",
+            title = ChartsText.cardioDistance.text(),
             initial = cardio.distanceKm ?: 0.0,
             quickStep = 0.5,
             allowDecimal = true,
@@ -64,7 +65,7 @@ fun CardioEditor(
             onDismiss = { editing = null },
         )
         2 -> NumberPadSheet(
-            title = "Calories",
+            title = ChartsText.cardioCalories.text(),
             initial = cardio.calories ?: 0.0,
             quickStep = 10.0,
             onValue = { onChange(cardio.copy(calories = it.takeIf { v -> v > 0.0 })) },

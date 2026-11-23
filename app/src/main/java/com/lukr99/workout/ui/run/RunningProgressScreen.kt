@@ -1,5 +1,6 @@
 package com.lukr99.workout.ui.run
 
+import com.lukr99.workout.ui.i18n.RunText
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -48,8 +49,8 @@ fun RunningProgressSection(
     if (!stats.hasRuns) {
         EmptyState(
             Icons.AutoMirrored.Rounded.DirectionsRun,
-            "No runs yet",
-            "Record a run in the Runs tab. Your distance, pace trend and personal records show up here.",
+            RunText.noRunsTitle.text(),
+            RunText.noRunsProgress.text(),
             modifier,
         )
         return
@@ -61,12 +62,12 @@ fun RunningProgressSection(
     ) {
         // Totals.
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            StatTile("Total distance", Format.distance(stats.totals.distanceMeters, units), Modifier.weight(1f))
-            StatTile("Runs", "${stats.totals.runCount}", Modifier.weight(1f))
-            StatTile("Streak", "${stats.streakWeeks}", unit = "wk", modifier = Modifier.weight(1f))
+            StatTile(RunText.totalDistance.text(), Format.distance(stats.totals.distanceMeters, units), Modifier.weight(1f))
+            StatTile(RunText.runs.text(), "${stats.totals.runCount}", Modifier.weight(1f))
+            StatTile(RunText.streak.text(), "${stats.streakWeeks}", unit = RunText.weekUnit.text(), modifier = Modifier.weight(1f))
         }
 
-        SectionCard(title = "Weekly distance") {
+        SectionCard(title = RunText.weeklyDistance.text()) {
             VolumeBars(
                 bars = stats.weekly.map { BarPoint(weekLabel(it.startUtc), distanceValue(it.distanceMeters, units)) },
                 valueFormat = { "%.1f".format(it) },
@@ -75,7 +76,7 @@ fun RunningProgressSection(
 
         val trend = stats.paceTrend
         if (trend.size >= 2) {
-            SectionCard(title = "Average pace") {
+            SectionCard(title = RunText.averagePace.text()) {
                 ProgressChart(
                     points = trend.map { (whenUtc, secPerKm) ->
                         val p = if (units == UnitSystem.Imperial) Pace.paceSecPerMile(secPerKm) else secPerKm
@@ -86,15 +87,15 @@ fun RunningProgressSection(
             }
         }
 
-        SectionCard(title = "Personal records") {
+        SectionCard(title = RunText.personalRecords.text()) {
             val r = stats.records
-            PrRow("Fastest 1K", r.fastest1k?.let { paceText(it.paceSecPerKm, units) })
-            PrRow("Fastest 5K", r.fastest5k?.let { paceText(it.paceSecPerKm, units) })
-            PrRow("Fastest 10K", r.fastest10k?.let { paceText(it.paceSecPerKm, units) })
-            PrRow("Fastest half", r.fastestHalf?.let { paceText(it.paceSecPerKm, units) })
-            PrRow("Longest run", r.longestRun?.let { Format.distance(it.value, units) })
-            PrRow("Best avg pace", r.bestAvgPace?.let { paceText(it.value, units) })
-            PrRow("Most elevation", r.mostElevation?.let { "${it.value.toInt()} m" })
+            PrRow(RunText.prFastest1k.text(), r.fastest1k?.let { paceText(it.paceSecPerKm, units) })
+            PrRow(RunText.prFastest5k.text(), r.fastest5k?.let { paceText(it.paceSecPerKm, units) })
+            PrRow(RunText.prFastest10k.text(), r.fastest10k?.let { paceText(it.paceSecPerKm, units) })
+            PrRow(RunText.progressHalf.text(), r.fastestHalf?.let { paceText(it.paceSecPerKm, units) })
+            PrRow(RunText.prLongestRun.text(), r.longestRun?.let { Format.distance(it.value, units) })
+            PrRow(RunText.progressBestAvg.text(), r.bestAvgPace?.let { paceText(it.value, units) })
+            PrRow(RunText.prMostElevation.text(), r.mostElevation?.let { "${it.value.toInt()} m" })
         }
     }
 }

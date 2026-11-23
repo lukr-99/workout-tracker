@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.lukr99.workout.domain.Exercise
 import com.lukr99.workout.ui.AppTags
+import com.lukr99.workout.ui.i18n.PickerText
 import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
@@ -26,7 +27,7 @@ fun ExercisePickerScreen(
     onDismiss: () -> Unit,
     onPick: (Exercise) -> Unit,
     onCreate: ((String) -> Unit)? = null,
-    title: String = "Add exercise",
+    title: String = PickerText.addExercise.text(),
     subtitle: String? = null,
     recentIds: List<String> = emptyList(),
     hint: (Exercise) -> String? = { null },

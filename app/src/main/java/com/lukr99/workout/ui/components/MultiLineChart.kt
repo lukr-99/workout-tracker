@@ -35,6 +35,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.lukr99.workout.ui.i18n.ChartsText
 import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
@@ -52,7 +53,7 @@ fun MultiLineChart(
 ) {
     val all = lines.flatMap { it.points }
     if (all.isEmpty()) {
-        Box(modifier.fillMaxWidth().height(height), contentAlignment = Alignment.Center) { EmptyHint("No data yet") }
+        Box(modifier.fillMaxWidth().height(height), contentAlignment = Alignment.Center) { EmptyHint(ChartsText.noData.text()) }
         return
     }
     val minT = all.minOf { it.dateMillis }

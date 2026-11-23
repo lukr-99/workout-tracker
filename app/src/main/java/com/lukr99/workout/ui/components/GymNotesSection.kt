@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.lukr99.workout.domain.Location
 import com.lukr99.workout.domain.forPicker
+import com.lukr99.workout.ui.i18n.NotesText
 import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
@@ -47,21 +48,22 @@ fun GymNotesSection(
     var editing by remember { mutableStateOf<Location?>(null) }
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
-            "Notes by gym",
+            NotesText.notesByGym.text(),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.semantics { heading() },
         )
         Text(
-            "Machine setup that differs between places, like the seat or which pulley. Shown while you log this exercise there.",
+            NotesText.gymNotesHelp.text(),
             style = MaterialTheme.typography.bodyMedium,
             color = colors.textSecondary,
         )
         places.forEach { place ->
             val note = notes[place.id].orEmpty()
+            val editLabel = NotesText.editNoteFor.text("name" to place.name)
             Row(
                 Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                    .clickable(role = Role.Button, onClickLabel = "Edit note for ${place.name}") { editing = place },
+                    .clickable(role = Role.Button, onClickLabel = editLabel) { editing = place },
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
@@ -69,23 +71,23 @@ fun GymNotesSection(
                 Column(Modifier.weight(1f)) {
                     Text(place.name, style = MaterialTheme.typography.labelLarge, color = colors.textPrimary)
                     Text(
-                        note.ifBlank { "No note" },
+                        note.ifBlank { NotesText.noNote.text() },
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (note.isBlank()) colors.textTertiary else colors.textSecondary,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                Icon(Icons.Rounded.Edit, "Edit note for ${place.name}", tint = colors.textSecondary, modifier = Modifier.size(18.dp))
+                Icon(Icons.Rounded.Edit, editLabel, tint = colors.textSecondary, modifier = Modifier.size(18.dp))
             }
         }
     }
     editing?.let { place ->
         NoteEditorSheet(
-            title = "Note · ${place.name}",
+            title = NotesText.noteTitle.text("name" to place.name),
             initial = notes[place.id].orEmpty(),
-            hint = "Setup for ${place.name} only. Leave it empty to remove the note.",
-            placeholder = "Double pulley, seat 4",
+            hint = NotesText.noteHint.text("name" to place.name),
+            placeholder = NotesText.notePlaceholder.text(),
             onSave = { onSave(place.id, it) },
             onDismiss = { editing = null },
         )

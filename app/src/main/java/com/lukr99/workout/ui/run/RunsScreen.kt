@@ -1,5 +1,7 @@
 package com.lukr99.workout.ui.run
 
+import com.lukr99.workout.ui.i18n.CommonText
+import com.lukr99.workout.ui.i18n.RunText
 import android.Manifest
 import android.content.pm.PackageManager
 import android.widget.Toast
@@ -117,19 +119,19 @@ fun RunsScreen(
         contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 120.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item { ScreenHeader("Runs", weekSummary(runs, units)) }
+        item { ScreenHeader(RunText.runs.text(), weekSummary(runs, units)) }
         item { StartRunButton(gpsLabel(permitted, hasFix, accuracy), onStartRun) }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                SecondaryButton(Icons.Rounded.Map, "Plan a route", Modifier.weight(1f), onPlanRoute)
-                SecondaryButton(Icons.Rounded.Upload, "Import GPX", Modifier.weight(1f)) {
+                SecondaryButton(Icons.Rounded.Map, RunText.planRoute.text(), Modifier.weight(1f), onPlanRoute)
+                SecondaryButton(Icons.Rounded.Upload, RunText.importGpx.text(), Modifier.weight(1f)) {
                     importLauncher.launch(arrayOf("application/gpx+xml", "application/xml", "text/xml", "*/*"))
                 }
             }
         }
 
         if (routes.isNotEmpty()) {
-            item { SectionLabel("Saved routes") }
+            item { SectionLabel(RunText.savedRoutes.text()) }
             item {
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     routes.forEach { route ->
@@ -146,10 +148,10 @@ fun RunsScreen(
             }
         }
 
-        item { SectionLabel("Recent runs") }
+        item { SectionLabel(RunText.recentRuns.text()) }
         if (runs.isEmpty()) {
             item {
-                EmptyState(Icons.AutoMirrored.Rounded.DirectionsRun, "No runs yet", "Tap Start a run above to record one with GPS, or import a GPX file from another app.")
+                EmptyState(Icons.AutoMirrored.Rounded.DirectionsRun, RunText.noRunsTitle.text(), RunText.noRunsHint.text())
             }
         } else {
             items(runs, key = { it.id }) { run -> RunRow(run, units) { onOpenRun(run.id) } }
@@ -166,14 +168,14 @@ fun RunsScreen(
     deleting?.let { route ->
         AlertDialog(
             onDismissRequest = { deleting = null },
-            title = { Text("Delete route?") },
-            text = { Text("This removes “${route.name.ifBlank { "Route" }}” permanently.") },
+            title = { Text(RunText.deleteRouteQuestion.text()) },
+            text = { Text(RunText.deleteRouteBody.text("name" to route.name.ifBlank { RunText.routeDefaultName.text() })) },
             confirmButton = {
                 TextButton(onClick = { vm.deleteRoute(route.id); deleting = null }) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text(CommonText.delete.text(), color = MaterialTheme.colorScheme.error)
                 }
             },
-            dismissButton = { TextButton(onClick = { deleting = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { deleting = null }) { Text(CommonText.cancel.text()) } },
         )
     }
 }
@@ -183,21 +185,22 @@ private fun RenameRouteDialog(initial: String, onDismiss: () -> Unit, onSave: (S
     var text by remember { mutableStateOf(initial) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Rename route") },
+        title = { Text(RunText.renameRouteTitle.text()) },
         text = {
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },
-                placeholder = { Text("Riverside loop") },
+                placeholder = { Text(RunText.renameRoutePlaceholder.text()) },
                 singleLine = true,
             )
         },
-        confirmButton = { TextButton(onClick = { onSave(text.trim()) }) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = { onSave(text.trim()) }) { Text(CommonText.save.text()) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(CommonText.cancel.text()) } },
     )
 }
 
 /** "12.3 km this week", counted from Monday. */
+@Composable
 private fun weekSummary(runs: List<Run>, units: UnitSystem): String {
     val zone = java.time.ZoneId.systemDefault()
     val monday = java.time.LocalDate.now(zone).with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
@@ -205,7 +208,7 @@ private fun weekSummary(runs: List<Run>, units: UnitSystem): String {
     val meters = runs.filter { it.startedAtUtc >= start }.sumOf { it.distanceMeters }
     val value = if (units == UnitSystem.Imperial) meters / 1_609.344 else meters / 1_000.0
     val unit = if (units == UnitSystem.Imperial) "mi" else "km"
-    return "${"%.1f".format(value).replace(Regex("[.,]0$"), "")} $unit this week"
+    return RunText.weekSummary.text("distance" to "${"%.1f".format(value).replace(Regex("[.,]0$"), "")} $unit")
 }
 
 @Composable
@@ -249,23 +252,23 @@ private fun RouteCard(
     val shape = RoundedCornerShape(18.dp)
     Column(
         Modifier.width(156.dp).clip(shape).background(colors.surface).border(1.dp, colors.border, shape)
-            .clickable(onClickLabel = "Run ${route.name.ifBlank { "this route" }}", onClick = onStart).padding(10.dp),
+            .clickable(onClickLabel = RunText.runRouteLabel.text("name" to route.name.ifBlank { RunText.thisRoute.text() }), onClick = onStart).padding(10.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         MiniRoute(route.encodedPolyline, Modifier.fillMaxWidth().height(80.dp), points = route.points.map { it.lat to it.lon })
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(route.name.ifBlank { "Route" }, fontWeight = FontWeight.SemiBold, color = colors.textPrimary, maxLines = 1)
+                Text(route.name.ifBlank { RunText.routeDefaultName.text() }, fontWeight = FontWeight.SemiBold, color = colors.textPrimary, maxLines = 1)
                 Text(Format.distance(route.distanceMeters, units), style = MaterialTheme.typography.labelLarge, color = colors.textSecondary)
             }
             Box {
                 IconButton(onClick = { menu = true }, modifier = Modifier.size(36.dp)) {
-                    Icon(Icons.Rounded.MoreVert, "Options for ${route.name.ifBlank { "route" }}", tint = colors.textSecondary)
+                    Icon(Icons.Rounded.MoreVert, RunText.routeOptions.text("name" to route.name.ifBlank { RunText.routeWord.text() }), tint = colors.textSecondary)
                 }
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                    DropdownMenuItem(text = { Text("Rename") }, onClick = { menu = false; onRename() })
-                    DropdownMenuItem(text = { Text("Save offline") }, onClick = { menu = false; onSaveOffline() })
-                    DropdownMenuItem(text = { Text("Delete", color = colors.danger) }, onClick = { menu = false; onDelete() })
+                    DropdownMenuItem(text = { Text(RunText.rename.text()) }, onClick = { menu = false; onRename() })
+                    DropdownMenuItem(text = { Text(RunText.saveOffline.text()) }, onClick = { menu = false; onSaveOffline() })
+                    DropdownMenuItem(text = { Text(CommonText.delete.text(), color = colors.danger) }, onClick = { menu = false; onDelete() })
                 }
             }
         }
@@ -285,7 +288,7 @@ private fun StartRunButton(subtitle: String, onStartRun: () -> Unit) {
             Icon(Icons.Rounded.PlayArrow, null, tint = colors.onPrimary, modifier = Modifier.size(28.dp))
         }
         Column {
-            Text("Start a run", style = MaterialTheme.typography.titleLarge, color = colors.onPrimary)
+            Text(RunText.startRun.text(), style = MaterialTheme.typography.titleLarge, color = colors.onPrimary)
             Text(subtitle, style = MaterialTheme.typography.labelLarge, color = colors.onPrimary.copy(alpha = 0.8f))
         }
     }
@@ -303,7 +306,7 @@ private fun RunRow(run: Run, units: UnitSystem, onClick: () -> Unit) {
     ) {
         MiniRoute(run.encodedPolyline, Modifier.width(72.dp).height(54.dp))
         Column(Modifier.weight(1f)) {
-            Text(run.notes.lineSequence().firstOrNull()?.ifBlank { null } ?: "Run", fontWeight = FontWeight.SemiBold, color = colors.textPrimary, maxLines = 1)
+            Text(run.notes.lineSequence().firstOrNull()?.ifBlank { null } ?: RunText.run.text(), fontWeight = FontWeight.SemiBold, color = colors.textPrimary, maxLines = 1)
             Text(Format.relativeDay(run.startedAtUtc), style = MaterialTheme.typography.labelLarge, color = colors.textSecondary)
             Text(
                 "${Pace.formatDuration(run.durationSeconds)} \u00b7 ${Pace.formatPace(paceForUnits(run.avgPaceSecPerKm, units))} ${paceLabel(units)}",

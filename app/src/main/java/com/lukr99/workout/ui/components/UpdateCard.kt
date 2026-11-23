@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.lukr99.workout.ui.i18n.CardsText
 import com.lukr99.workout.ui.theme.EmberTheme
 
 /**
@@ -40,9 +41,9 @@ fun UpdateCard(version: String, busy: Boolean, status: String, onUpdate: () -> U
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Icon(Icons.Rounded.SystemUpdate, null, tint = colors.primaryText, modifier = Modifier.size(22.dp))
             Column(Modifier.weight(1f)) {
-                Text("Ember $version is ready", style = MaterialTheme.typography.titleMedium, color = colors.textPrimary)
+                Text(CardsText.updateReady.text("version" to version), style = MaterialTheme.typography.titleMedium, color = colors.textPrimary)
                 Text(
-                    if (busy) status else "A signed update from GitHub. Your data stays as it is.",
+                    if (busy) status else CardsText.updateBody.text(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.textSecondary,
                 )
@@ -51,14 +52,14 @@ fun UpdateCard(version: String, busy: Boolean, status: String, onUpdate: () -> U
         if (!busy) {
             Row(Modifier.align(Alignment.End), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    "Later",
+                    CardsText.later.text(),
                     fontWeight = FontWeight.SemiBold,
                     color = colors.textSecondary,
                     modifier = Modifier.clip(RoundedCornerShape(50)).clickable(role = Role.Button, onClick = onLater)
                         .padding(horizontal = 16.dp, vertical = 10.dp),
                 )
                 Text(
-                    "Update",
+                    CardsText.update.text(),
                     fontWeight = FontWeight.SemiBold,
                     color = colors.onPrimary,
                     modifier = Modifier.clip(RoundedCornerShape(50)).background(colors.primary)

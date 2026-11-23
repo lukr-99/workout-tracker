@@ -43,6 +43,7 @@ import com.lukr99.workout.domain.SetTag
 import com.lukr99.workout.domain.StrengthSet
 import com.lukr99.workout.domain.effectiveTags
 import com.lukr99.workout.settings.UnitSystem
+import com.lukr99.workout.ui.i18n.SetLoggingText
 import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.Numbers
 
@@ -72,6 +73,11 @@ fun SetRow(
     val bg by animateColorAsState(if (done) colors.surface else colors.surfaceRaised, label = "setRowBg")
     var editing by remember { mutableStateOf<SetField?>(null) }
     val shape = RoundedCornerShape(14.dp)
+    val lastTimeDescription = previous?.let {
+        SetLoggingText.lastTimeFor.text(it.reps, "w" to Format.weight(it.weightKg, units), "unit" to Format.unitLabel(units))
+    } ?: SetLoggingText.noLastTime.text()
+    val weightLabel = SetLoggingText.weightSet.text("n" to index + 1)
+    val repsLabel = SetLoggingText.repsSet.text("n" to index + 1)
 
     Row(
         modifier
@@ -89,18 +95,18 @@ fun SetRow(
             style = Numbers.copy(fontSize = 14.sp, fontWeight = FontWeight.Medium),
             color = colors.textTertiary,
             maxLines = 1,
-            modifier = Modifier.weight(1f).semantics { contentDescription = previous?.let { "Last time ${Format.weight(it.weightKg, units)} ${Format.unitLabel(units)} for ${it.reps}" } ?: "No last time" },
+            modifier = Modifier.weight(1f).semantics { contentDescription = lastTimeDescription },
         )
         ValueCell(
             display = SetEntryState.trim(Format.toDisplay(set.weightKg, units)),
             done = done,
-            label = "Weight, set ${index + 1}",
+            label = weightLabel,
             modifier = Modifier.width(76.dp),
         ) { editing = SetField.Weight }
         ValueCell(
             display = set.reps.toString(),
             done = done,
-            label = "Reps, set ${index + 1}",
+            label = repsLabel,
             modifier = Modifier.width(60.dp),
         ) { editing = SetField.Reps }
         DoneCheck(done, index, onToggleDone)
@@ -109,14 +115,16 @@ fun SetRow(
     SetNoteLine(set)
 
     editing?.let { field ->
-        val last = previous?.let { " \u00b7 last time ${Format.weight(it.weightKg, units)} \u00d7 ${it.reps}" }.orEmpty()
+        val last = previous?.let {
+            SetLoggingText.lastTimeInline.text("w" to Format.weight(it.weightKg, units), "reps" to it.reps)
+        }.orEmpty()
         SetEntrySheet(
             title = exerciseName,
-            subtitle = "Set ${index + 1} of $total$last",
+            subtitle = SetLoggingText.setOfTotal.text("n" to index + 1, "total" to total) + last,
             initial = SetEntryState.of(Format.toDisplay(set.weightKg, units), set.reps, field),
             unitLabel = Format.unitLabel(units),
             weightStep = if (units == UnitSystem.Imperial) 5.0 else 2.5,
-            copyLabel = before?.let { "Set $index" },
+            copyLabel = before?.let { SetLoggingText.setNumber.text("n" to index) },
             copyFrom = before?.let { Format.toDisplay(it.weightKg, units) to it.reps },
             onChange = { weight, reps ->
                 onWeightKg(Format.toKg(weight, units))
@@ -156,6 +164,7 @@ private fun DoneCheck(done: Boolean, index: Int, onToggleDone: () -> Unit) {
         label = "checkSpring",
     )
     val shape = RoundedCornerShape(12.dp)
+    val doneDescription = SetLoggingText.setDone.text("n" to index + 1)
     Box(
         Modifier
             .size(42.dp)
@@ -166,7 +175,7 @@ private fun DoneCheck(done: Boolean, index: Int, onToggleDone: () -> Unit) {
                 if (!done) haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
                 onToggleDone()
             }
-            .semantics { contentDescription = "Set ${index + 1} done" },
+            .semantics { contentDescription = doneDescription },
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -188,7 +197,7 @@ private fun DoneCheck(done: Boolean, index: Int, onToggleDone: () -> Unit) {
 @Composable
 fun SetTagChips(set: StrengthSet, modifier: Modifier = Modifier) {
     val visibleTags = buildList {
-        if (set.isPr) add("PR" to EmberTheme.colors.success)
+        if (set.isPr) add(SetLoggingText.badgePr.text() to EmberTheme.colors.success)
         set.effectiveTags.forEach { tag ->
             add(tag.label to when (tag) {
                 SetTag.Warmup -> EmberTheme.colors.warning
@@ -223,7 +232,7 @@ fun SetNoteLine(set: StrengthSet, modifier: Modifier = Modifier) {
         Icons.AutoMirrored.Rounded.Notes,
         label = null,
         text = set.notes,
-        description = "Set note",
+        description = SetLoggingText.setNote.text(),
         maxLines = 2,
         modifier = modifier.padding(start = 48.dp),
     )
@@ -237,10 +246,10 @@ fun SetColumnHeader(units: UnitSystem, modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        ColumnLabel("SET", Modifier.width(34.dp))
-        ColumnLabel("PREVIOUS", Modifier.weight(1f), start = true)
+        ColumnLabel(SetLoggingText.columnSet.text(), Modifier.width(34.dp))
+        ColumnLabel(SetLoggingText.columnPrevious.text(), Modifier.weight(1f), start = true)
         ColumnLabel(Format.unitLabel(units).uppercase(), Modifier.width(76.dp))
-        ColumnLabel("REPS", Modifier.width(60.dp))
+        ColumnLabel(SetLoggingText.columnReps.text(), Modifier.width(60.dp))
         Spacer(Modifier.width(42.dp))
     }
 }
@@ -260,20 +269,21 @@ private fun ColumnLabel(text: String, modifier: Modifier, start: Boolean = false
 @Composable
 private fun SetBadge(index: Int, set: StrengthSet, onClick: () -> Unit) {
     val (label, tint) = when {
-        set.isPr -> "PR" to EmberTheme.colors.success
+        set.isPr -> SetLoggingText.badgePr.text() to EmberTheme.colors.success
         SetTag.Failed in set.effectiveTags -> "!" to MaterialTheme.colorScheme.error
-        set.isWarmup || SetTag.Warmup in set.effectiveTags -> "W" to EmberTheme.colors.warning
-        SetTag.ToFailure in set.effectiveTags -> "TF" to MaterialTheme.colorScheme.primary
-        SetTag.Drop in set.effectiveTags -> "D" to MaterialTheme.colorScheme.secondary
-        SetTag.Finisher in set.effectiveTags -> "F" to MaterialTheme.colorScheme.primary
+        set.isWarmup || SetTag.Warmup in set.effectiveTags -> SetLoggingText.badgeWarmup.text() to EmberTheme.colors.warning
+        SetTag.ToFailure in set.effectiveTags -> SetLoggingText.badgeToFailure.text() to MaterialTheme.colorScheme.primary
+        SetTag.Drop in set.effectiveTags -> SetLoggingText.badgeDrop.text() to MaterialTheme.colorScheme.secondary
+        SetTag.Finisher in set.effectiveTags -> SetLoggingText.badgeFinisher.text() to MaterialTheme.colorScheme.primary
         else -> "${index + 1}" to EmberTheme.colors.textSecondary
     }
+    val optionsLabel = SetLoggingText.setOptions.text()
     Box(
         Modifier
             .size(34.dp)
             .clip(CircleShape)
             .background(tint.copy(alpha = 0.15f))
-            .clickable(role = Role.Button, onClickLabel = "Set options", onClick = onClick),
+            .clickable(role = Role.Button, onClickLabel = optionsLabel, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Text(label, style = Numbers.copy(fontSize = 13.sp, fontWeight = FontWeight.Bold), color = tint)
