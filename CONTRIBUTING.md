@@ -20,6 +20,9 @@ $env:ANDROID_SERIAL = 'emulator-5554'
 CI also runs the instrumented tests on a Gradle managed device (`pixel2Api35DebugAndroidTest`) and
 parses every PowerShell script under `tools/` and `installer/`.
 
+On the owner's PC the same checks run locally in Kiln (`kiln run .kiln/workflows/android.yml --repo .`).
+See "CI with Kiln" in `AGENTS.md`. GitHub Actions stays the fallback.
+
 ### Screenshots and the emulator loop
 
 - `ComponentScreenshotTest` renders key components in light and dark on the JVM (Robolectric and
