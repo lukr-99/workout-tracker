@@ -11,6 +11,7 @@ import com.lukr99.workout.domain.run.Route
 import com.lukr99.workout.domain.run.RoutePoint
 import com.lukr99.workout.domain.run.Run
 import com.lukr99.workout.domain.run.TracePoint
+import com.lukr99.workout.settings.AccentColor
 import com.lukr99.workout.settings.ThemeMode
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -234,6 +235,7 @@ class DocumentDatabaseTest {
         val store = FakeDocumentStore()
         val tab = Tab(store)
         tab.settings.setThemeMode(ThemeMode.Light)
+        tab.settings.setAccent(AccentColor.Green)
         tab.settings.setDefaultRestSeconds(99_999)
         tab.prefs.dismissLocationSetup()
         tab.prefs.markPositionOfferAnswered("gym")
@@ -241,6 +243,7 @@ class DocumentDatabaseTest {
 
         val reopened = Tab(store)
         assertEquals(ThemeMode.Light, reopened.settings.settings.first().themeMode)
+        assertEquals(AccentColor.Green, reopened.settings.settings.first().accent)
         assertEquals(3_600, reopened.settings.settings.first().defaultRestSeconds)
         assertTrue(reopened.prefs.locationSetupDismissed.first())
         assertEquals(setOf("gym"), reopened.prefs.positionOfferAnswered.first())

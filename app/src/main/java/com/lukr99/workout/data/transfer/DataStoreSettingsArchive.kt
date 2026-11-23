@@ -1,6 +1,7 @@
 package com.lukr99.workout.data.transfer
 
 import com.lukr99.workout.data.export.SettingsSnapshot
+import com.lukr99.workout.settings.AccentColor
 import com.lukr99.workout.settings.AppSettings
 import com.lukr99.workout.settings.SettingsStore
 import com.lukr99.workout.settings.ThemeMode
@@ -14,6 +15,7 @@ class DataStoreSettingsArchive(private val store: SettingsStore) : SettingsArchi
         val current = store.settings.first()
         return SettingsSnapshot(
             themeMode = current.themeMode.name,
+            accent = current.accent.name,
             units = current.units.name,
             defaultRestSeconds = current.defaultRestSeconds,
             reduceMotion = current.reduceMotion,
@@ -25,6 +27,7 @@ class DataStoreSettingsArchive(private val store: SettingsStore) : SettingsArchi
         store.replaceAll(
             AppSettings(
                 themeMode = ThemeMode.entries.firstOrNull { it.name == snapshot.themeMode } ?: defaults.themeMode,
+                accent = AccentColor.entries.firstOrNull { it.name == snapshot.accent } ?: defaults.accent,
                 units = UnitSystem.entries.firstOrNull { it.name == snapshot.units } ?: defaults.units,
                 defaultRestSeconds = snapshot.defaultRestSeconds,
                 reduceMotion = snapshot.reduceMotion,

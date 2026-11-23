@@ -13,7 +13,7 @@ describe("Ember's share", () => {
     const parsed = SharedBundleParser.parse(share);
     if (!parsed.ok) throw new Error(parsed.problems.join("\n"));
     const { bundle } = parsed;
-    expect(bundle).toMatchObject({ timeZone: "Europe/Prague", units: "metric", appVersion: "2.11.0", formatVersion: "1.13" });
+    expect(bundle).toMatchObject({ timeZone: "Europe/Prague", units: "metric", appVersion: "2.11.0", formatVersion: "1.14" });
     expect(bundle.exercises.map((exercise) => [exercise.name, exercise.category])).toEqual([
       ["Bench Press", "strength"],
       ["Treadmill", "cardio"],

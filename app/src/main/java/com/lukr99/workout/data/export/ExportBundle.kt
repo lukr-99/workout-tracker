@@ -27,6 +27,7 @@ import kotlinx.serialization.Serializable
  * **Version 1.12** adds training locations: the `locations` list, `locationId` on workouts, and
  * `trackPerLocation` and `splitPromptMuted` on exercises.
  * **Version 1.13** adds `locationNotes`, the machine note for each exercise and location.
+ * **Version 1.14** adds the accent colour to the settings snapshot (`settings.accent`).
  * Older exports omit them (they default empty), and the reader accepts all earlier published
  * versions and ignores unknown fields, so older exports and future tools interoperate.
  */
@@ -49,7 +50,7 @@ data class ExportBundle(
     val locationNotes: List<ExerciseLocationNote> = emptyList(),
 ) {
     companion object {
-        const val CURRENT_VERSION = "1.13"
-        val SUPPORTED_VERSIONS = setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "1.10", "1.11", "1.12", "1.13")
+        const val CURRENT_VERSION = "1.14"
+        val SUPPORTED_VERSIONS = setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "1.10", "1.11", "1.12", "1.13", "1.14")
     }
 }
