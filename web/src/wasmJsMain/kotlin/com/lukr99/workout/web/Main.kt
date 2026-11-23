@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -20,8 +21,10 @@ import com.lukr99.workout.ui.App
 import com.lukr99.workout.ui.components.LocalReduceMotion
 import com.lukr99.workout.ui.theme.EmberTheme
 import com.lukr99.workout.ui.theme.WorkoutTheme
+import com.lukr99.workout.web.platform.rememberAppearance
 import com.lukr99.workout.web.storage.WebStorage
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -43,15 +46,18 @@ fun main() {
         // Like WorkoutApp on Android: the starter catalog goes in once, into an empty store.
         storage.repository.ensureSeeded()
         val container = AppContainer(storage)
+        // The saved theme is read before the first frame, so the canvas never starts in the wrong one.
+        val firstSettings = container.settings.settings.first()
         CanvasBasedWindow(canvasElementId = "ember", title = "Ember") {
             // The same theme and motion setup as Android's MainActivity.
-            val settings by container.settings.settings.collectAsState(initial = AppSettings())
+            val settings by container.settings.settings.collectAsState(initial = firstSettings)
             val dark = when (settings.themeMode) {
                 ThemeMode.System -> isSystemInDarkTheme()
                 ThemeMode.Dark -> true
                 ThemeMode.Light -> false
             }
-            WorkoutTheme(dark = dark) {
+            LaunchedEffect(settings.themeMode, settings.accent) { rememberAppearance(settings.themeMode, settings.accent) }
+            WorkoutTheme(dark = dark, accent = settings.accent) {
                 CompositionLocalProvider(LocalReduceMotion provides settings.reduceMotion) {
                     Box(Modifier.fillMaxSize().background(EmberTheme.colors.background).padding(rememberSafeAreaPadding())) {
                         App(container)

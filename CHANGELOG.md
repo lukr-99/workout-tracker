@@ -8,6 +8,10 @@ The format is inspired by Keep a Changelog, and this project currently uses simp
 
 ### Added
 
+- **Accent colours.** Settings, Appearance now lets you pick the colour of buttons, rings and
+  highlights: Ember orange (the default), blue, green, rose or purple. Every colour keeps its text
+  readable in light and dark. The choice is saved, comes back with a backup and shows from the first
+  frame, on Android and in the web edition. Backups are now format 1.14.
 - **About page.** Settings, About Ember shows the version, who made Ember, links to send feedback on
   Instagram or GitHub and to report bugs or ideas, what Ember keeps and where, and the credits and
   licences. It is on Android and in the web edition.

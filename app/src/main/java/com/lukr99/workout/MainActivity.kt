@@ -17,7 +17,10 @@ import com.lukr99.workout.settings.ThemeMode
 import com.lukr99.workout.ui.App
 import com.lukr99.workout.ui.components.LocalReduceMotion
 import com.lukr99.workout.ui.theme.WorkoutTheme
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Single-activity Compose host. Edge-to-edge; the theme is [WorkoutTheme] (dark-first) with an
@@ -44,8 +47,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val container = (application as WorkoutApp).container
+        // Read the saved theme before the first frame, with the splash screen still up, so a phone
+        // set to Dark never draws one light frame (and an accent never starts as orange).
+        val firstSettings = runBlocking {
+            withTimeoutOrNull(FIRST_SETTINGS_WAIT_MS) { container.settings.settings.first() }
+        } ?: AppSettings()
         setContent {
-            val settings by container.settings.settings.collectAsState(initial = AppSettings())
+            val settings by container.settings.settings.collectAsState(initial = firstSettings)
             val dark = when (settings.themeMode) {
                 ThemeMode.System -> isSystemInDarkTheme()
                 ThemeMode.Dark -> true
@@ -53,11 +61,16 @@ class MainActivity : ComponentActivity() {
             }
             // Keep system-bar icons legible against whichever scheme is active.
             WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = !dark
-            WorkoutTheme(dark = dark) {
+            WorkoutTheme(dark = dark, accent = settings.accent) {
                 CompositionLocalProvider(LocalReduceMotion provides settings.reduceMotion) {
                     App(container)
                 }
             }
         }
+    }
+
+    private companion object {
+        /** Longest the first frame waits for the saved settings. DataStore normally answers in a few ms. */
+        const val FIRST_SETTINGS_WAIT_MS = 400L
     }
 }

@@ -7,7 +7,7 @@
   <title>Ember</title>
   <meta name="description" content="Log lifting workouts, track progress and keep your history on your own phone.">
   <meta name="theme-color" content="#0F0D0C">
-  <meta name="color-scheme" content="dark">
+  <meta name="color-scheme" content="dark light">
   <meta name="format-detection" content="telephone=no">
 
   <!-- Installable web app, including "Add to Home Screen" on iPhone. -->
@@ -21,6 +21,31 @@
   <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
 
+  <!-- Sets the saved theme and accent before the first paint, so the loading screen and the page
+       behind the canvas never flash the wrong colours. The app saves the choice under
+       "ember.appearance" as "Mode|Accent" (see platform/BrowserAppearance.kt). -->
+  <script>
+    (function () {
+      var dark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+      function apply() {
+        var mode = 'System', accent = 'Ember';
+        try {
+          var parts = (localStorage.getItem('ember.appearance') || '').split('|');
+          if (parts[0]) mode = parts[0];
+          if (parts[1]) accent = parts[1];
+        } catch (e) {}
+        var isDark = mode === 'Dark' || (mode !== 'Light' && (!dark || dark.matches));
+        var root = document.documentElement;
+        root.setAttribute('data-theme', isDark ? 'dark' : 'light');
+        root.setAttribute('data-accent', accent.toLowerCase());
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', isDark ? '#0F0D0C' : '#F7F4F0');
+      }
+      window.emberApplyAppearance = apply;
+      if (dark && dark.addEventListener) dark.addEventListener('change', apply);
+      apply();
+    })();
+  </script>
   <link rel="stylesheet" href="boot.css">
   <!-- boot.js checks the browser first and only then loads ember.js. -->
   <script src="boot.js" defer></script>

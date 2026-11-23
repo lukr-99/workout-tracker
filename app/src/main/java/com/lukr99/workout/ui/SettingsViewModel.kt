@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewModelScope
+import com.lukr99.workout.settings.AccentColor
 import com.lukr99.workout.settings.AppSettings
 import com.lukr99.workout.settings.SettingsStore
 import com.lukr99.workout.settings.ThemeMode
@@ -25,6 +26,7 @@ class SettingsViewModel(private val store: SettingsStore) : ViewModel() {
         store.settings.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppSettings())
 
     fun setTheme(mode: ThemeMode) = viewModelScope.launch { store.setThemeMode(mode) }.let { }
+    fun setAccent(accent: AccentColor) = viewModelScope.launch { store.setAccent(accent) }.let { }
     fun setUnits(units: UnitSystem) = viewModelScope.launch { store.setUnits(units) }.let { }
     fun setReduceMotion(on: Boolean) = viewModelScope.launch { store.setReduceMotion(on) }.let { }
     fun setDefaultRest(seconds: Int) = viewModelScope.launch {

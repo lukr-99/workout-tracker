@@ -8,14 +8,20 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
+import com.lukr99.workout.settings.AccentColor
 
 /**
  * App theme. [EmberTheme.colors] carries the semantic colours; the Material scheme is derived from
- * the same set, so Material components (sheets, dialogs, switches) match in both themes.
+ * the same set (theme mode and accent), so Material components (sheets, dialogs, switches) match in both themes.
  */
 @Composable
-fun WorkoutTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
-    val colors = if (dark) EmberPalette.Dark else EmberPalette.Light
+fun WorkoutTheme(
+    dark: Boolean = isSystemInDarkTheme(),
+    accent: AccentColor = AccentColor.Ember,
+    content: @Composable () -> Unit,
+) {
+    val colors = remember(dark, accent) { EmberPalette.colors(dark, accent) }
     CompositionLocalProvider(LocalEmberColors provides colors) {
         MaterialTheme(
             colorScheme = colors.toMaterial(),
