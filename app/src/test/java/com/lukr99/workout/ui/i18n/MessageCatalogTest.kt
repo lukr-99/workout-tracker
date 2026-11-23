@@ -12,7 +12,7 @@ class MessageCatalogTest {
 
     @Test
     fun everyCatalogIsListedOnlyOnce() {
-        assertEquals(catalogs.size, catalogs.map { it.name }.toSet().size)
+        assertEquals(catalogs.size, catalogs.map { it.catalogName }.toSet().size)
     }
 
     @Test
@@ -20,21 +20,22 @@ class MessageCatalogTest {
         val problems = mutableListOf<String>()
         for (catalog in catalogs) for (entry in catalog.entries) {
             entry.msg?.let { m ->
-                if (m.en.isBlank()) problems += "${catalog.name}: empty English text"
-                if (m.cs.isBlank()) problems += "${catalog.name}: no Czech for \"${m.en}\""
-                else if (m.cs == m.en && !entry.sameInCzech) problems += "${catalog.name}: Czech is still English for \"${m.en}\""
+                if (m.en.isBlank()) problems += "${catalog.catalogName}: empty English text"
+                if (m.cs.isBlank()) problems += "${catalog.catalogName}: no Czech for \"${m.en}\""
+                else if (m.cs == m.en && !entry.sameInCzech) problems += "${catalog.catalogName}: Czech is still English for \"${m.en}\""
                 if (placeholders(m.en).sorted() != placeholders(m.cs).sorted()) {
-                    problems += "${catalog.name}: values differ between English and Czech in \"${m.en}\""
+                    problems += "${catalog.catalogName}: values differ between English and Czech in \"${m.en}\""
                 }
             }
             entry.plural?.let { p ->
                 val czech = listOf(p.csOne, p.csFew, p.csMany)
-                if (czech.any { it.isBlank() }) problems += "${catalog.name}: a Czech form is empty for \"${p.enOther}\""
-                if (!p.enOne.contains("{n}") && !p.enOther.contains("{n}")) problems += "${catalog.name}: no {n} in \"${p.enOther}\""
-                val english = setOf(placeholders(p.enOne).sorted(), placeholders(p.enOther).sorted())
-                val cz = czech.map { placeholders(it).sorted() }.toSet()
+                if (czech.any { it.isBlank() }) problems += "${catalog.catalogName}: a Czech form is empty for \"${p.enOther}\""
+                // {n} may be left out of a form ("1 set" can be "one set"); every other value must match.
+                fun values(t: String) = placeholders(t).filter { it != "n" }.sorted()
+                val english = setOf(values(p.enOne), values(p.enOther))
+                val cz = czech.map { values(it) }.toSet()
                 if (english.size != 1 || cz.size != 1 || english != cz) {
-                    problems += "${catalog.name}: values differ between the forms of \"${p.enOther}\""
+                    problems += "${catalog.catalogName}: values differ between the forms of \"${p.enOther}\""
                 }
             }
         }

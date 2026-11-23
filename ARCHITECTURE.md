@@ -77,6 +77,11 @@ Material scheme derived from it. `EmberPalette` holds the light and dark sets. U
 both themes. The only fixed hues are the body-part dots in `Accents`, which always sit next to the
 part's name.
 
+## Text and languages
+
+User-facing text lives in message catalogs in `ui/i18n/`, English and Czech side by side, shared by
+Android and the web edition. See [docs/localization.md](docs/localization.md).
+
 ## Data flow
 
 - **Reads:** Room DAOs return `Flow`s. Repositories map Room entities to `domain/` models, and

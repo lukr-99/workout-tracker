@@ -1,0 +1,18 @@
+# Files under ui/ that still write English straight into the screen. May only shrink.
+App.kt 1
+about/AboutAuthorCard.kt 2
+about/AboutHero.kt 2
+android/ClaudeConnectDialog.kt 1
+components/RestTimerBar.kt 3
+components/SetEntrySheet.kt 2
+components/SetRow.kt 3
+run/LiveRunCard.kt 2
+run/RunDetailScreen.kt 1
+run/RunsScreen.kt 2
+screens/EditSetRow.kt 1
+screens/FinishWorkoutSheet.kt 1
+screens/HistoryScreen.kt 1
+screens/HomeScreen.kt 3
+screens/LiveWorkoutScreen.kt 1
+screens/ProgressDetailScreen.kt 1
+screens/SupersetEditorSheet.kt 1

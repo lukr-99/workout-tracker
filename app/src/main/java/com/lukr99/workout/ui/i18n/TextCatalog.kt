@@ -5,7 +5,7 @@ package com.lukr99.workout.ui.i18n
  * every message with [msg] or [plural], and list the object in [AllCatalogs] so the translation
  * check sees it.
  */
-abstract class TextCatalog(val name: String) {
+abstract class TextCatalog(val catalogName: String) {
     internal class Entry(val msg: Msg?, val plural: PluralMsg?, val sameInCzech: Boolean)
 
     internal val entries = mutableListOf<Entry>()

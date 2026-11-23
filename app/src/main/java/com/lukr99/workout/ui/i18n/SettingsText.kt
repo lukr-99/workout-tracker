@@ -46,4 +46,42 @@ object SettingsText : TextCatalog("settings") {
     val dataLinkHint = msg("Ember backups, Lyfta CSV, plain CSV, and deleting all data.", "Zálohy Emberu, CSV z Lyfty, obyčejné CSV a smazání všech dat.")
     val aboutLink = msg("About Ember", "O aplikaci Ember")
     val aboutLinkHint = msg("Version {version}, who made it, feedback and credits.", "Verze {version}, kdo ji vytvořil, zpětná vazba a poděkování.")
+
+    val accentEmber = msg("Ember", "Ember", sameInCzech = true)
+    val accentBlue = msg("Blue", "Modrá")
+    val accentGreen = msg("Green", "Zelená")
+    val accentRose = msg("Rose", "Růžová")
+    val accentPurple = msg("Purple", "Fialová")
+
+    val working = msg("Working…", "Pracuji…")
+    val dangerZone = msg("DANGER ZONE", "NEBEZPEČNÁ ZÓNA")
+
+    val locationSaved = msg("Saved the position of {name}.", "Poloha místa {name} je uložená.")
+    val locationNoFix = msg(
+        "No location fix. Try again outside or near a window.",
+        "Poloha se nepodařila zjistit. Zkus to znovu venku nebo u okna.",
+    )
+    val locationNeedsPrecise = msg(
+        "Saving a position needs precise location. Turn on Precise for Ember in the phone's settings.",
+        "Uložení polohy potřebuje přesnou polohu. Zapni Přesná poloha pro Ember v nastavení telefonu.",
+    )
+    val locationNeedsPermission = msg("Location permission is needed to save a position.", "K uložení polohy je potřeba oprávnění k poloze.")
+    val addGym = msg("Add a gym", "Přidat posilovnu")
+    val addGymHint = msg(
+        "Pick the location when you start a workout. Exercises you track per gym keep their numbers apart.",
+        "Místo vybereš při zahájení tréninku. Cviky sledované podle posilovny mají čísla odděleně.",
+    )
+    val add = msg("Add", "Přidat")
+    val gymPlaceholder = msg("Brno gym", "Posilovna v Brně")
+    val renameLocation = msg("Rename location", "Přejmenovat místo")
+    val archivedHint = msg("Archived. Its workouts keep it.", "Archivováno. Tréninky si ho ponechají.")
+    val setPosition = msg("Set position", "Nastavit polohu")
+    val updatePosition = msg("Update position", "Aktualizovat polohu")
+    val restore = msg("Restore", "Obnovit")
+    val archive = msg("Archive", "Archivovat")
+    val outdoorsKind = msg("Built in. Has no fixed position. Tap to rename.", "Vestavěné. Nemá pevnou polohu. Klepnutím přejmenuješ.")
+    val homeKind = msg("Built in. {position}", "Vestavěné. {position}")
+    val gymKind = msg("Gym. {position}", "Posilovna. {position}")
+    val noPosition = msg("No position yet, so it is not suggested by GPS.", "Zatím bez polohy, takže ho GPS nenavrhne.")
+    val positionSaved = msg("Position saved. Suggested when you are near.", "Poloha uložená. Navrhne se, když jsi poblíž.")
 }
