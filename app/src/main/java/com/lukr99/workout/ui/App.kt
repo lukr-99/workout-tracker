@@ -70,7 +70,7 @@ fun App(container: AppContainer) {
     val homeVm: HomeViewModel = viewModel(factory = HomeViewModel.factory(container.repository, container.runRepository, container.whatsNew))
     val historyVm: HistoryViewModel = viewModel(factory = HistoryViewModel.factory(container.repository))
     val progressVm: ProgressViewModel = viewModel(factory = ProgressViewModel.factory(container.repository, container.workoutData, container.insights))
-    val settingsVm: SettingsViewModel = viewModel(factory = SettingsViewModel.factory(container.settings))
+    val settingsVm: SettingsViewModel = viewModel(factory = SettingsViewModel.factory(container.settings, container.devicePrefs))
     val libraryVm: LibraryViewModel = viewModel(factory = LibraryViewModel.factory(container.repository, container.workoutData, container.exercisePhotos))
     val liveVm: LiveWorkoutViewModel = viewModel(
         factory = LiveWorkoutViewModel.factory(

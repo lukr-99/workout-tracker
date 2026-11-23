@@ -40,6 +40,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.lukr99.workout.settings.LanguageSetting
 import com.lukr99.workout.settings.ThemeMode
 import com.lukr99.workout.settings.UnitSystem
 import com.lukr99.workout.ui.AppTags
@@ -50,6 +51,9 @@ import com.lukr99.workout.ui.components.Format
 import com.lukr99.workout.ui.components.RoundIconButton
 import com.lukr99.workout.ui.components.SegmentedControl
 import com.lukr99.workout.ui.components.rememberReduceMotion
+import com.lukr99.workout.ui.i18n.CommonText
+import com.lukr99.workout.ui.i18n.LocalLanguage
+import com.lukr99.workout.ui.i18n.SettingsText
 import com.lukr99.workout.ui.theme.EmberTheme
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
@@ -75,7 +79,10 @@ fun SettingsScreen(
 ) {
     val settings by vm.settings.collectAsState()
     val locations by locationsVm.locations.collectAsState()
+    val language by vm.language.collectAsState()
     val scope = rememberCoroutineScope()
+    val sectionsLabel = SettingsText.sectionsLabel.text()
+    val lang = LocalLanguage.current
 
     val sections = remember(host) {
         SettingsSection.entries.filter { section ->
@@ -136,17 +143,17 @@ fun SettingsScreen(
 
     Column(Modifier.fillMaxSize()) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            RoundIconButton(Icons.AutoMirrored.Rounded.ArrowBack, "Back", onBack)
-            Text("Settings", style = MaterialTheme.typography.displayLarge, color = EmberTheme.colors.textPrimary)
+            RoundIconButton(Icons.AutoMirrored.Rounded.ArrowBack, CommonText.back.text(), onBack)
+            Text(SettingsText.title.text(), style = MaterialTheme.typography.displayLarge, color = EmberTheme.colors.textPrimary)
         }
         if (SettingsScroll.showNavigation(sections.size)) {
             LazyRow(
                 state = chips,
-                modifier = Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 10.dp).semantics { contentDescription = "Settings sections" },
+                modifier = Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 10.dp).semantics { contentDescription = sectionsLabel },
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 itemsIndexed(sections) { index, section ->
-                    FilterChip(section.title, index == current, { jumpTo(index) })
+                    FilterChip(section.title.text(), index == current, { jumpTo(index) })
                 }
             }
         }
@@ -155,37 +162,57 @@ fun SettingsScreen(
                 SettingsCard(section, jump[index].value, scrollHint[index].value, Modifier.padding(top = if (index == 0) 4.dp else 12.dp)) {
                     when (section) {
                         SettingsSection.Appearance -> {
-                            SettingsRow("Theme", "Follows the phone unless you pick one.", first = true)
+                            SettingsRow(SettingsText.theme.text(), SettingsText.themeHint.text(), first = true)
                             SegmentedControl(
                                 options = listOf(ThemeMode.System, ThemeMode.Light, ThemeMode.Dark),
                                 selected = settings.themeMode,
                                 onSelect = vm::setTheme,
-                                label = { it.name },
+                                label = {
+                                    when (it) {
+                                        ThemeMode.System -> SettingsText.themeSystem
+                                        ThemeMode.Light -> SettingsText.themeLight
+                                        ThemeMode.Dark -> SettingsText.themeDark
+                                    }.get(lang)
+                                },
                                 modifier = Modifier.padding(bottom = 8.dp),
                             )
-                            SettingsRow("Accent colour", "The colour of buttons, rings and highlights.")
+                            SettingsRow(SettingsText.language.text(), SettingsText.languageHint.text())
+                            SegmentedControl(
+                                options = LanguageSetting.entries,
+                                selected = language,
+                                onSelect = vm::setLanguage,
+                                label = {
+                                    when (it) {
+                                        LanguageSetting.System -> SettingsText.languageSystem
+                                        LanguageSetting.English -> SettingsText.languageEnglish
+                                        LanguageSetting.Czech -> SettingsText.languageCzech
+                                    }.get(lang)
+                                },
+                                modifier = Modifier.padding(bottom = 8.dp),
+                            )
+                            SettingsRow(SettingsText.accent.text(), SettingsText.accentHint.text())
                             AccentPicker(
                                 selected = settings.accent,
                                 onSelect = vm::setAccent,
                                 modifier = Modifier.padding(bottom = 12.dp),
                             )
                             ToggleRow(
-                                "Reduce motion",
-                                "Jumps and highlights happen at once, with no sliding or fading.",
+                                SettingsText.reduceMotion.text(),
+                                SettingsText.reduceMotionHint.text(),
                                 checked = settings.reduceMotion,
                                 onChange = vm::setReduceMotion,
                             )
                         }
                         SettingsSection.Workouts -> {
-                            SettingsRow("Weight unit", "Logged weights are stored in kilograms either way.", first = true)
+                            SettingsRow(SettingsText.weightUnit.text(), SettingsText.weightUnitHint.text(), first = true)
                             SegmentedControl(
                                 options = listOf(UnitSystem.Metric, UnitSystem.Imperial),
                                 selected = settings.units,
                                 onSelect = vm::setUnits,
-                                label = { if (it == UnitSystem.Metric) "Kilograms" else "Pounds" },
+                                label = { (if (it == UnitSystem.Metric) SettingsText.kilograms else SettingsText.pounds).get(lang) },
                                 modifier = Modifier.padding(bottom = 8.dp),
                             )
-                            SettingsRow("Default rest", "Used when an exercise has no rest of its own.")
+                            SettingsRow(SettingsText.defaultRest.text(), SettingsText.defaultRestHint.text())
                             Row(Modifier.padding(bottom = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 listOf(60, 90, 120, 150, 180).forEach { seconds ->
                                     FilterChip(Format.clock(seconds), settings.defaultRestSeconds == seconds, { vm.setDefaultRest(seconds) })
@@ -206,7 +233,7 @@ fun SettingsScreen(
                         SettingsSection.YourData -> {
                             val hasBackup = host.has(SettingsSlot.Backup)
                             if (hasBackup) host.Rows(SettingsSlot.Backup, onOpenPrivacy)
-                            LinkRow("Import, export and delete", "Ember backups, Lyfta CSV, plain CSV, and deleting all data.", first = !hasBackup, onClick = onOpenData)
+                            LinkRow(SettingsText.dataLink.text(), SettingsText.dataLinkHint.text(), first = !hasBackup, onClick = onOpenData)
                         }
                         SettingsSection.Updates -> host.Rows(SettingsSlot.Updates, onOpenPrivacy)
                     }
@@ -219,7 +246,7 @@ fun SettingsScreen(
                     Modifier.padding(top = 12.dp).fillMaxWidth().clip(shape).background(colors.surface)
                         .border(1.dp, colors.border, shape).padding(horizontal = 16.dp).testTag(AppTags.SETTINGS_ABOUT),
                 ) {
-                    LinkRow("About Ember", "Version ${host.appVersion}, who made it, feedback and credits.", first = true, onClick = onOpenAbout)
+                    LinkRow(SettingsText.aboutLink.text(), SettingsText.aboutLinkHint.text("version" to host.appVersion), first = true, onClick = onOpenAbout)
                 }
             }
         }

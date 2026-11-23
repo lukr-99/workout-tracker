@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -35,6 +36,14 @@ class DataStoreDevicePrefs(private val context: Context) : DevicePrefs {
         context.devicePrefsDataStore.edit { it[UpdateAutoCheck] = on }
     }
 
+    override val language: Flow<LanguageSetting> = context.devicePrefsDataStore.data.map { prefs ->
+        prefs[Language]?.let { name -> LanguageSetting.entries.firstOrNull { it.name == name } } ?: LanguageSetting.System
+    }
+
+    override suspend fun setLanguage(language: LanguageSetting) {
+        context.devicePrefsDataStore.edit { it[Language] = language.name }
+    }
+
     override suspend fun markUpdateChecked(atUtc: Long) {
         context.devicePrefsDataStore.edit { it[LastUpdateCheck] = atUtc }
     }
@@ -48,6 +57,7 @@ class DataStoreDevicePrefs(private val context: Context) : DevicePrefs {
 
     private companion object {
         val PositionOfferAnswered = stringSetPreferencesKey("position_offer_answered")
+        val Language = stringPreferencesKey("language")
         val HealthAutoSend = booleanPreferencesKey("health_auto_send")
         val UpdateAutoCheck = booleanPreferencesKey("update_auto_check")
         val LastUpdateCheck = longPreferencesKey("last_update_check_utc")

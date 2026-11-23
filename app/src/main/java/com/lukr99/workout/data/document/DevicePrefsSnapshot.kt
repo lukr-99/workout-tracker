@@ -10,4 +10,6 @@ data class DevicePrefsSnapshot(
     val lastUpdateCheckUtc: Long? = null,
     val locationSetupDismissed: Boolean = false,
     val positionOfferAnswered: Set<String> = emptySet(),
+    /** A [com.lukr99.workout.settings.LanguageSetting] name. An unknown name reads as System. */
+    val language: String = "System",
 )

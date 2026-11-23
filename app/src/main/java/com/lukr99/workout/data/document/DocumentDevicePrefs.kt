@@ -1,6 +1,7 @@
 package com.lukr99.workout.data.document
 
 import com.lukr99.workout.settings.DevicePrefs
+import com.lukr99.workout.settings.LanguageSetting
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -26,6 +27,12 @@ class DocumentDevicePrefs(private val database: DocumentDatabase) : DevicePrefs 
     override val locationSetupDismissed: Flow<Boolean> = read { it.locationSetupDismissed }
 
     override val positionOfferAnswered: Flow<Set<String>> = read { it.positionOfferAnswered }
+
+    override val language: Flow<LanguageSetting> = read { snapshot ->
+        LanguageSetting.entries.firstOrNull { it.name == snapshot.language } ?: LanguageSetting.System
+    }
+
+    override suspend fun setLanguage(language: LanguageSetting) = change { it.copy(language = language.name) }
 
     override suspend fun dismissLocationSetup() = change { it.copy(locationSetupDismissed = true) }
 
