@@ -78,3 +78,25 @@ $env:ANDROID_SERIAL = '<emulator serial>'; .\gradlew.bat connectedDebugAndroidTe
 - Prefer `layout.xml` over a screenshot to check text or state.
 - Robolectric tests that render Compose use `@Config(application = android.app.Application::class)`,
   because `WorkoutApp` starts Room work that leaks into the next test.
+
+## CI with Kiln
+
+On the owner's PC, run CI in Kiln first. It is a local runner for the GitHub Actions workflows, and
+it runs jobs in Linux Docker containers. The `.kiln/workflows/` files mirror `.github/workflows/`.
+Start the daemon (`kiln daemon` or the Kiln tray app) if `http://127.0.0.1:7878/` does not answer.
+
+```powershell
+kiln run .kiln/workflows/codeprint.yml --repo .   # repository validation, PowerShell syntax
+kiln run .kiln/workflows/android.yml --repo .     # unit tests, lint, debug APK
+kiln run .kiln/workflows/web.yml --repo .         # web build, node tests, stamp, Chromium check
+kiln run .kiln/workflows/cloud.yml --repo .       # Claude server typecheck and tests
+```
+
+- Kiln copies the working tree, so uncommitted changes are tested. Gradle and Maven caches (the
+  Robolectric `android-all` jars too) stay in Kiln cache volumes, so only the first run downloads.
+- Kiln only: nothing. Every Kiln job has a GitHub twin.
+- GitHub only: instrumented tests (they need an emulator with KVM), the Cloudflare deploy (secrets),
+  and the signed release (`release.yml`, needs the signing secrets).
+  The first two have a Kiln job that only prints why it is skipped. The release has no Kiln file yet.
+- GitHub Actions stays the fallback and runs on every push and pull request. Do not delete or
+  disable it. Keep a Kiln file in step when you change its GitHub twin.

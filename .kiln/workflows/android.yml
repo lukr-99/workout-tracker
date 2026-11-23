@@ -1,0 +1,48 @@
+name: Android CI (Kiln)
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: codeprint/runner:latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build, test, and lint
+        run: |
+          bash gradlew testDebugUnitTest assembleDebug lintDebug --stacktrace
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - name: Upload JVM test and lint reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: jvm-test-and-lint-reports
+          path: |
+            app/build/reports/tests/
+            app/build/test-results/
+            app/build/reports/lint-results-debug.html
+            app/build/reports/lint-results-debug.txt
+          if-no-files-found: warn
+
+  # GITHUB ONLY. The instrumented tests need an Android emulator with KVM, and Kiln runs in Linux
+  # containers on Docker Desktop, which have no KVM. This job stays here so the file mirrors
+  # .github/workflows/android.yml, but in Kiln it only prints why it is skipped.
+  # Run the real thing on GitHub Actions, or on a local emulator (docs/android-agent-workflow.md).
+  instrumented-tests:
+    name: Instrumented tests (API 35), skipped in Kiln
+    needs: build
+    runs-on: ubuntu-latest
+    container: codeprint/runner:latest
+    timeout-minutes: 5
+    steps:
+      - name: Skipped in Kiln
+        run: |
+          echo "Skipped: instrumented tests need an emulator with KVM, which Kiln containers do not have."
+          echo "They run in GitHub Actions (.github/workflows/android.yml) or on a local emulator."
