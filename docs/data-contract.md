@@ -23,7 +23,7 @@ Health Connect once written.
 
 A backup is one JSON file, the `ExportBundle` (`data/export/ExportBundle.kt`):
 
-- `exportFormatVersion` is `1.13`. Every version from `1.0` on still imports.
+- `exportFormatVersion` is `1.14`. Every version from `1.0` on still imports.
 - Template exercises carry an optional plan (from 1.9): `targetSets`, `repsMin`, `repsMax`,
   `restSeconds` and `supersetGroup`.
 - Training locations (from 1.12): a `locations` list (`id`, `name`, `kind` as an ordinal: gym 0,
@@ -33,6 +33,8 @@ A backup is one JSON file, the `ExportBundle` (`data/export/ExportBundle.kt`):
   whose id is new and keeps the phone's own name for the rest.
 - Gym notes (from 1.13): a `locationNotes` list of `exerciseId`, `locationId` and `note`. A merge
   adds a note only for a pair that has none on the phone.
+- Settings (from 1.8) include the accent colour `accent` from 1.14, by name (`Ember`, `Blue`, `Green`,
+  `Rose`, `Purple`). A missing or unknown name reads as `Ember`.
 - `exportedAtUtc` and `appVersion` (from 1.8) say when it was made and by which build.
 - Ids are stable strings. Timestamps are ISO-8601 UTC. Weights are kilograms, distances are
   metres. Enums are ordinals, except in `settings`, where they are names.

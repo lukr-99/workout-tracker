@@ -23,6 +23,12 @@ class DataStoreSettingsStore(private val context: Context) : SettingsStore {
         }
     }
 
+    override suspend fun setAccent(accent: AccentColor) {
+        context.settingsDataStore.edit {
+            it[Keys.Accent] = accent.name
+        }
+    }
+
     override suspend fun setUnits(units: UnitSystem) {
         context.settingsDataStore.edit {
             it[Keys.Units] = units.name
@@ -44,6 +50,7 @@ class DataStoreSettingsStore(private val context: Context) : SettingsStore {
     override suspend fun replaceAll(settings: AppSettings) {
         context.settingsDataStore.edit {
             it[Keys.ThemeMode] = settings.themeMode.name
+            it[Keys.Accent] = settings.accent.name
             it[Keys.Units] = settings.units.name
             it[Keys.RestSeconds] = settings.defaultRestSeconds.coerceIn(0, 3_600)
             it[Keys.ReduceMotion] = settings.reduceMotion
@@ -53,6 +60,8 @@ class DataStoreSettingsStore(private val context: Context) : SettingsStore {
     private fun Preferences.toSettings(): AppSettings = AppSettings(
         themeMode = this[Keys.ThemeMode]?.let { runCatching { ThemeMode.valueOf(it) }.getOrNull() }
             ?: ThemeMode.System,
+        accent = this[Keys.Accent]?.let { runCatching { AccentColor.valueOf(it) }.getOrNull() }
+            ?: AccentColor.Ember,
         units = this[Keys.Units]?.let { runCatching { UnitSystem.valueOf(it) }.getOrNull() }
             ?: UnitSystem.Metric,
         defaultRestSeconds = this[Keys.RestSeconds] ?: 120,
@@ -61,6 +70,7 @@ class DataStoreSettingsStore(private val context: Context) : SettingsStore {
 
     private object Keys {
         val ThemeMode = stringPreferencesKey("theme_mode")
+        val Accent = stringPreferencesKey("accent")
         val Units = stringPreferencesKey("units")
         val RestSeconds = intPreferencesKey("default_rest_seconds")
         val ReduceMotion = booleanPreferencesKey("reduce_motion")

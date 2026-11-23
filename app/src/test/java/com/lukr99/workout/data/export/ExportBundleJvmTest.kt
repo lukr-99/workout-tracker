@@ -35,7 +35,7 @@ class ExportBundleJvmTest {
 
     private val bundle = ExportBundle(
         exportedAtUtc = "2024-01-01T10:00:00Z",
-        exportFormatVersion = "1.13",
+        exportFormatVersion = "1.14",
         exercises = listOf(
             Exercise(
                 id = "ex1", name = "Bench", category = ExerciseCategory.Strength,
@@ -118,7 +118,7 @@ class ExportBundleJvmTest {
             ),
         ),
         appVersion = "2.6.0",
-        settings = SettingsSnapshot(themeMode = "Dark", units = "Imperial", defaultRestSeconds = 150, reduceMotion = true),
+        settings = SettingsSnapshot(themeMode = "Dark", accent = "Blue", units = "Imperial", defaultRestSeconds = 150, reduceMotion = true),
         photos = listOf(ExercisePhoto(exerciseId = "ex1", dataBase64 = "/9j/4AAQ")),
         locations = Location.builtIns + listOf(
             Location(id = "gym1", name = "Brno Gym", kind = LocationKind.Gym, latitude = 49.19, longitude = 16.61),
@@ -224,8 +224,8 @@ class ExportBundleJvmTest {
 
     @Test
     fun supportsAllPublishedVersions() {
-        assertEquals(setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "1.10", "1.11", "1.12", "1.13"), ExportBundle.SUPPORTED_VERSIONS)
-        assertEquals("1.13", ExportBundle.CURRENT_VERSION)
+        assertEquals(setOf("1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "1.10", "1.11", "1.12", "1.13", "1.14"), ExportBundle.SUPPORTED_VERSIONS)
+        assertEquals("1.14", ExportBundle.CURRENT_VERSION)
     }
 
     @Test
@@ -278,6 +278,23 @@ class ExportBundleJvmTest {
         val restored = JsonExporter.fromJson(json)
         assertEquals(false, restored.settings?.reduceMotion)
         assertEquals("Dark", restored.settings?.themeMode)
+    }
+
+    @Test
+    fun reads_v113_settingsWithoutAccent() {
+        // A 1.13 backup's settings have no accent; it restores as Ember, and the rest is kept.
+        val json = JsonExporter.toJson(bundle.copy(exportFormatVersion = "1.13"))
+            .replace(Regex(""",\s*"accent":\s*"Blue""""), "")
+        assertTrue("the key should be gone", "accent" !in json.substringAfter("\"settings\""))
+        val restored = JsonExporter.fromJson(json)
+        assertEquals("Ember", restored.settings?.accent)
+        assertEquals("Dark", restored.settings?.themeMode)
+    }
+
+    @Test
+    fun roundTrips_accentInSettings() {
+        val restored = JsonExporter.fromJson(JsonExporter.toJson(bundle))
+        assertEquals("Blue", restored.settings?.accent)
     }
 
     @Test

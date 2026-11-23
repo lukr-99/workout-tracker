@@ -1,6 +1,7 @@
 package com.lukr99.workout.data.document
 
 import com.lukr99.workout.data.export.SettingsSnapshot
+import com.lukr99.workout.settings.AccentColor
 import com.lukr99.workout.settings.AppSettings
 import com.lukr99.workout.settings.SettingsStore
 import com.lukr99.workout.settings.ThemeMode
@@ -22,6 +23,8 @@ class DocumentSettingsStore(private val database: DocumentDatabase) : SettingsSt
 
     override suspend fun setThemeMode(mode: ThemeMode) = change { it.copy(themeMode = mode.name) }
 
+    override suspend fun setAccent(accent: AccentColor) = change { it.copy(accent = accent.name) }
+
     override suspend fun setUnits(units: UnitSystem) = change { it.copy(units = units.name) }
 
     override suspend fun setReduceMotion(on: Boolean) = change { it.copy(reduceMotion = on) }
@@ -31,6 +34,7 @@ class DocumentSettingsStore(private val database: DocumentDatabase) : SettingsSt
     override suspend fun replaceAll(settings: AppSettings) = change {
         SettingsSnapshot(
             themeMode = settings.themeMode.name,
+            accent = settings.accent.name,
             units = settings.units.name,
             defaultRestSeconds = settings.defaultRestSeconds.coerceIn(0, 3_600),
             reduceMotion = settings.reduceMotion,
@@ -46,6 +50,7 @@ class DocumentSettingsStore(private val database: DocumentDatabase) : SettingsSt
         if (this == null) return defaults
         return AppSettings(
             themeMode = ThemeMode.entries.firstOrNull { it.name == themeMode } ?: defaults.themeMode,
+            accent = AccentColor.entries.firstOrNull { it.name == accent } ?: defaults.accent,
             units = UnitSystem.entries.firstOrNull { it.name == units } ?: defaults.units,
             defaultRestSeconds = defaultRestSeconds,
             reduceMotion = reduceMotion,

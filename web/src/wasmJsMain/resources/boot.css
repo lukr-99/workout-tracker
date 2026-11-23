@@ -1,6 +1,7 @@
 /* Page chrome around the Compose canvas: the loading, unsupported and failed screens.
  * Colors are the dark EmberPalette (app/src/main/java/com/lukr99/workout/ui/theme/EmberPalette.kt);
- * change them there first and mirror them here. */
+ * change them there first and mirror them here. index.html sets data-theme (dark or light) and
+ * data-accent on <html> before the first paint; the dark Ember set below is the default. */
 :root {
   --background: #0F0D0C;
   --surface-raised: #25211E;
@@ -16,6 +17,20 @@
   --safe-left: env(safe-area-inset-left, 0px);
   color-scheme: dark;
 }
+
+:root[data-theme="light"] {
+  --background: #F7F4F0;
+  --surface-raised: #F1ECE6;
+  --border: #E2D9CF;
+  --text-primary: #1B1714;
+  --text-secondary: #584F47;
+  color-scheme: light;
+}
+/* Accent: fill, text on the fill, and the lighter bar colour of the loading mark. */
+:root[data-accent="blue"] { --primary: #3B82F6; --primary-light: #7DB2FF; --on-primary: #0B1220; }
+:root[data-accent="green"] { --primary: #22C55E; --primary-light: #4ADE80; --on-primary: #04170A; }
+:root[data-accent="rose"] { --primary: #F43F5E; --primary-light: #FF7A90; --on-primary: #1F0309; }
+:root[data-accent="purple"] { --primary: #8B5CF6; --primary-light: #B79CFF; --on-primary: #0E0720; }
 
 [hidden] { display: none !important; }
 

@@ -35,6 +35,9 @@ object AppTags {
     /** A row in the location picker, by location id, like `location_home`. */
     fun location(id: String): String = "location_$id"
 
+    /** A swatch in Settings > Appearance, like `accent_blue`. */
+    fun accent(accent: com.lukr99.workout.settings.AccentColor): String = "accent_${accent.name.lowercase()}"
+
     /** A day tile in Home's week strip, by its date, like `home_day_2026-10-13`. */
     fun homeDay(date: kotlinx.datetime.LocalDate): String = "home_day_$date"
 

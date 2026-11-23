@@ -7,7 +7,7 @@
   <title>Ember</title>
   <meta name="description" content="Log lifting workouts, track progress and keep your history on your own phone.">
   <meta name="theme-color" content="#0F0D0C">
-  <meta name="color-scheme" content="dark">
+  <meta name="color-scheme" content="dark light">
   <meta name="format-detection" content="telephone=no">
 
   <!-- Installable web app, including "Add to Home Screen" on iPhone. -->
@@ -21,6 +21,8 @@
   <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
 
+  <!-- Sets the saved theme and accent before the first paint (see appearance.js). -->
+  <script src="appearance.js"></script>
   <link rel="stylesheet" href="boot.css">
   <!-- boot.js checks the browser first and only then loads ember.js. -->
   <script src="boot.js" defer></script>

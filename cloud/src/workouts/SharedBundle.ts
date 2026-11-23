@@ -146,7 +146,7 @@ export type ParsedShare = { ok: true; bundle: SharedBundle } | { ok: false; prob
 
 /**
  * Reads Ember's share, `ClaudeShare` in app/.../data/claude: `{shareFormat, timeZone, units,
- * appVersion, bundle, runs}`. `bundle` is the backup's `ExportBundle` (format 1.13, enums as
+ * appVersion, bundle, runs}`. `bundle` is the backup's `ExportBundle` (format 1.14, enums as
  * ordinals, workout times as ISO-8601) without photos, settings or runs; `runs` are the runs without
  * their GPS trace, with the splits the phone worked out, and times as ISO-8601. Unknown fields are
  * ignored, missing text becomes empty, and every problem comes back at once.

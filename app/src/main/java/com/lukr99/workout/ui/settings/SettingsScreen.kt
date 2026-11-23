@@ -163,6 +163,12 @@ fun SettingsScreen(
                                 label = { it.name },
                                 modifier = Modifier.padding(bottom = 8.dp),
                             )
+                            SettingsRow("Accent colour", "The colour of buttons, rings and highlights.")
+                            AccentPicker(
+                                selected = settings.accent,
+                                onSelect = vm::setAccent,
+                                modifier = Modifier.padding(bottom = 12.dp),
+                            )
                             ToggleRow(
                                 "Reduce motion",
                                 "Jumps and highlights happen at once, with no sliding or fading.",

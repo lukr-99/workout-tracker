@@ -1,5 +1,6 @@
 package com.lukr99.workout.data.claude
 
+import com.lukr99.workout.settings.AccentColor
 import com.lukr99.workout.settings.AppSettings
 import com.lukr99.workout.settings.SettingsStore
 import com.lukr99.workout.settings.ThemeMode
@@ -14,6 +15,10 @@ class FixedSettingsStore(units: UnitSystem = UnitSystem.Metric) : SettingsStore 
 
     override suspend fun setThemeMode(mode: ThemeMode) {
         state.value = state.value.copy(themeMode = mode)
+    }
+
+    override suspend fun setAccent(accent: AccentColor) {
+        state.value = state.value.copy(accent = accent)
     }
 
     override suspend fun setUnits(units: UnitSystem) {

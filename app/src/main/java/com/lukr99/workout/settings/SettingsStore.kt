@@ -3,7 +3,7 @@ package com.lukr99.workout.settings
 import kotlinx.coroutines.flow.Flow
 
 /**
- * User settings: theme mode, unit system (kg/lb), rest-timer default.
+ * User settings: theme mode, accent colour, unit system (kg/lb), rest-timer default.
  *
  * The typed flow is read by the Settings screen and the theme root (see MainActivity). Writes are
  * suspending edits; the UI collects the flow. [DataStoreSettingsStore] is the Android implementation.
@@ -12,6 +12,8 @@ interface SettingsStore {
     val settings: Flow<AppSettings>
 
     suspend fun setThemeMode(mode: ThemeMode)
+
+    suspend fun setAccent(accent: AccentColor)
 
     suspend fun setUnits(units: UnitSystem)
 
